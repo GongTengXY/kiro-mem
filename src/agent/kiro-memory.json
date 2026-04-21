@@ -1,0 +1,42 @@
+{
+  "name": "kiro-memory",
+  "description": "带持久记忆的默认开发助手，自动记录会话历史并在后续会话中注入相关上下文",
+  "prompt": "file://~/.kiro-memory/prompt.md",
+  "tools": ["*"],
+  "hooks": {
+    "agentSpawn": [
+      {
+        "command": "~/.kiro-memory/hooks/context.sh",
+        "timeout_ms": 5000,
+        "max_output_size": 10240
+      }
+    ],
+    "userPromptSubmit": [
+      {
+        "command": "~/.kiro-memory/hooks/prompt-save.sh",
+        "timeout_ms": 3000
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "~/.kiro-memory/hooks/observation.sh",
+        "timeout_ms": 3000
+      }
+    ],
+    "stop": [
+      {
+        "command": "~/.kiro-memory/hooks/summary.sh",
+        "timeout_ms": 3000
+      }
+    ]
+  },
+  "mcpServers": {
+    "kiro-memory": {
+      "command": "bun",
+      "args": ["run", "~/.kiro-memory/server/mcp-server.ts"],
+      "env": {
+        "KIRO_MEMORY_DATA_DIR": "~/.kiro-memory"
+      }
+    }
+  }
+}

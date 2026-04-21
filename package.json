@@ -1,0 +1,26 @@
+{
+  "name": "kiro-memory",
+  "version": "0.1.0",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "kiro-memory-setup": "./scripts/setup.ts"
+  },
+  "scripts": {
+    "worker": "bun run src/server/worker.ts",
+    "mcp": "bun run src/server/mcp-server.ts",
+    "setup": "bun run scripts/setup.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.90.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "hono": "^4.12.14"
+  }
+}
