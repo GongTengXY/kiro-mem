@@ -1,11 +1,11 @@
 {
-  "name": "kiro-memory",
+  "name": "kiro-mem",
   "version": "0.1.0",
   "module": "index.ts",
   "type": "module",
   "private": true,
   "bin": {
-    "kiro-memory": "./scripts/setup.ts"
+    "kiro-mem": "./scripts/setup.ts"
   },
   "scripts": {
     "worker": "bun run src/server/worker.ts",

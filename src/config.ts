@@ -41,7 +41,7 @@ const defaults: Config = {
   context: { maxSessions: 10, maxOutputBytes: 8192, includePinned: true },
   session: { timeoutMinutes: 30, autoComplete: true },
   filter: {
-    skipTools: ['introspect', 'todo_list', '@kiro-memory/*'],
+    skipTools: ['introspect', 'todo_list', '@kiro-mem/*'],
     skipSmallReads: true,
     smallReadThreshold: 100,
   },
@@ -50,7 +50,7 @@ const defaults: Config = {
 export function getDataDir(): string {
   return (
     process.env.KIRO_MEMORY_DATA_DIR ||
-    join(process.env.HOME || '~', '.kiro-memory')
+    join(process.env.HOME || '~', '.kiro-mem')
   );
 }
 

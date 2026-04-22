@@ -9,7 +9,7 @@ import { MemoryDB } from '../db';
 const db = new MemoryDB();
 
 const server = new Server(
-  { name: 'kiro-memory', version: '1.0.0' },
+  { name: 'kiro-mem', version: '1.0.0' },
   { capabilities: { tools: {} } },
 );
 

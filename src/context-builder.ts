@@ -13,7 +13,7 @@ export function buildContext(
 
   if (!sessions.length && !pinned.length) return '';
 
-  const parts: string[] = ['<kiro-memory-context>', '## 最近会话记忆', ''];
+  const parts: string[] = ['<kiro-mem-context>', '## 最近会话记忆', ''];
 
   for (const s of sessions) {
     const date = formatLocalTime(s.started_at);
@@ -38,8 +38,8 @@ export function buildContext(
   }
 
   parts.push('---');
-  parts.push('提示: 如需搜索更多历史记忆，使用 @kiro-memory/search 工具。');
-  parts.push('</kiro-memory-context>');
+  parts.push('提示: 如需搜索更多历史记忆，使用 @kiro-mem/search 工具。');
+  parts.push('</kiro-mem-context>');
 
   const result = parts.join('\n');
   // 硬截断保护

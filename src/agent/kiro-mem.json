@@ -1,5 +1,5 @@
 {
-  "name": "kiro-memory",
+  "name": "kiro-mem",
   "description": "带持久记忆的默认开发助手，自动记录会话历史并在后续会话中注入相关上下文",
   "prompt": "file://__KIRO_MEMORY_DIR__/prompt.md",
   "tools": ["*"],
@@ -31,7 +31,7 @@
     ]
   },
   "mcpServers": {
-    "kiro-memory": {
+    "kiro-mem": {
       "command": "bun",
       "args": ["run", "__KIRO_MEMORY_DIR__/src/server/mcp-server.ts"],
       "env": {

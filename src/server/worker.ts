@@ -150,7 +150,7 @@ export function startWorker() {
   writeFileSync(join(dataDir, '.worker.pid'), String(process.pid));
   writeFileSync(join(dataDir, '.worker.port'), String(port));
 
-  console.log(`[kiro-memory] Worker starting on ${host}:${port}`);
+  console.log(`[kiro-mem] Worker starting on ${host}:${port}`);
 
   Bun.serve({ fetch: app.fetch, port, hostname: host });
 }

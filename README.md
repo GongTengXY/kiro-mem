@@ -1,4 +1,4 @@
-# kiro-memory
+# kiro-mem
 
 #### Persistent cross-session memory system for [Kiro CLI](https://kiro.dev).
 
@@ -8,7 +8,7 @@
 
 ---
 
-kiro-memory automatically captures tool call events during sessions, compresses them into structured memories via LLM, stores them in SQLite, and injects relevant historical context when a new session starts. It gives Kiro persistent awareness of your project across sessions.
+kiro-mem automatically captures tool call events during sessions, compresses them into structured memories via LLM, stores them in SQLite, and injects relevant historical context when a new session starts. It gives Kiro persistent awareness of your project across sessions.
 
 **Key Features:**
 
@@ -24,7 +24,7 @@ kiro-memory automatically captures tool call events during sessions, compresses 
 Requires [Bun](https://bun.sh) runtime and [Kiro CLI](https://kiro.dev).
 
 ```bash
-npx kiro-memory install
+npx kiro-mem install
 ```
 
 Follow the prompts to select an AI provider and enter your API key. Worker starts automatically after installation.
@@ -32,13 +32,13 @@ Follow the prompts to select an AI provider and enter your API key. Worker start
 ### Set as Default Agent
 
 ```bash
-kiro-cli settings chat.defaultAgent kiro-memory
+kiro-cli settings chat.defaultAgent kiro-mem
 ```
 
 Every `kiro-cli chat` session will now have memory enabled. Or switch manually:
 
 ```bash
-kiro-cli chat --agent kiro-memory
+kiro-cli chat --agent kiro-mem
 ```
 
 ### Verify Installation
@@ -51,7 +51,7 @@ bun run scripts/setup.ts status
 curl http://127.0.0.1:37778/health
 
 # Test memory injection manually
-echo '{"hook_event_name":"agentSpawn","cwd":"'$(pwd)'"}' | ~/.kiro-memory/hooks/context.sh
+echo '{"hook_event_name":"agentSpawn","cwd":"'$(pwd)'"}' | ~/.kiro-mem/hooks/context.sh
 ```
 
 ## How It Works
@@ -89,7 +89,7 @@ Raw tool I/O (1K-10K tokens)
 
 ## MCP Search Tools
 
-kiro-memory provides **2 MCP tools** following a token-efficient **two-layer retrieval pattern**:
+kiro-mem provides **2 MCP tools** following a token-efficient **two-layer retrieval pattern**:
 
 1. **`search`** — Get compact index with IDs (~50-100 tokens/result)
 2. **`get_observations`** — Fetch full details by ID (~500 tokens/result)
@@ -98,19 +98,19 @@ Filter first, then fetch details — **saves ~10x tokens**.
 
 ```
 // Step 1: Search index
-@kiro-memory/search query="auth module bug" type="bugfix" limit=10
+@kiro-mem/search query="auth module bug" type="bugfix" limit=10
 
 // Step 2: Review results, pick relevant IDs
 
 // Step 3: Fetch full details
-@kiro-memory/get_observations ids=[123, 456]
+@kiro-mem/get_observations ids=[123, 456]
 ```
 
 **Observation Types:** `decision` | `bugfix` | `feature` | `refactor` | `discovery` | `change`
 
 ## Configuration
 
-Edit `~/.kiro-memory/config.json`, or run `bun run scripts/setup.ts config` for interactive setup:
+Edit `~/.kiro-mem/config.json`, or run `bun run scripts/setup.ts config` for interactive setup:
 
 ```json
 {
@@ -125,7 +125,7 @@ Edit `~/.kiro-memory/config.json`, or run `bun run scripts/setup.ts config` for 
     "maxOutputBytes": 8192
   },
   "filter": {
-    "skipTools": ["introspect", "todo_list", "@kiro-memory/*"]
+    "skipTools": ["introspect", "todo_list", "@kiro-mem/*"]
   }
 }
 ```
