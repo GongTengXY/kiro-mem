@@ -14,9 +14,13 @@ export interface Config {
     enabled: boolean;
   };
   context: {
+    maxObservations: number;
     maxSessions: number;
+    fullCount: number;
+    fullField: 'narrative' | 'facts';
     maxOutputBytes: number;
     includePinned: boolean;
+    includeSummary: boolean;
   };
   session: { timeoutMinutes: number; autoComplete: boolean };
   filter: {
@@ -38,7 +42,15 @@ const defaults: Config = {
     concurrency: 6,
     enabled: true,
   },
-  context: { maxSessions: 10, maxOutputBytes: 8192, includePinned: true },
+  context: {
+    maxObservations: 50,
+    maxSessions: 10,
+    fullCount: 5,
+    fullField: 'narrative' as const,
+    maxOutputBytes: 8192,
+    includePinned: true,
+    includeSummary: false,
+  },
   session: { timeoutMinutes: 30, autoComplete: true },
   filter: {
     skipTools: ['introspect', 'todo_list', '@kiro-mem/*'],

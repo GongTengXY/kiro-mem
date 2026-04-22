@@ -278,6 +278,52 @@ export class MemoryDB {
       .all(limit) as Session[];
   }
 
+  getRecentObservations(
+    cwd: string | null,
+    repo: string | null,
+    maxSessions: number,
+    limit: number,
+  ): Observation[] {
+    const conditions: string[] = ["s.status = 'completed'", 'o.title IS NOT NULL'];
+    const params: (string | number)[] = [];
+
+    if (repo) {
+      conditions.push('(s.cwd = ? OR s.repo = ?)');
+      params.push(cwd || '', repo);
+    } else if (cwd) {
+      conditions.push('s.cwd = ?');
+      params.push(cwd);
+    }
+
+    const where = conditions.join(' AND ');
+
+    // 子查询：限定最近 N 个 session
+    const subWhere = repo
+      ? "status = 'completed' AND (cwd = ? OR repo = ?)"
+      : cwd
+        ? "status = 'completed' AND cwd = ?"
+        : "status = 'completed'";
+    const subParams: (string | number)[] = repo
+      ? [cwd || '', repo]
+      : cwd
+        ? [cwd]
+        : [];
+
+    const sql = `
+      SELECT o.* FROM observations o
+      JOIN sessions s ON o.session_id = s.id
+      WHERE ${where}
+        AND s.id IN (
+          SELECT id FROM sessions WHERE ${subWhere}
+          ORDER BY started_at DESC LIMIT ?
+        )
+      ORDER BY o.created_at DESC LIMIT ?`;
+
+    return this.db
+      .query(sql)
+      .all(...params, ...subParams, maxSessions, limit) as Observation[];
+  }
+
   // --- Observations ---
 
   insertObservation(obs: {
@@ -424,5 +470,22 @@ export class MemoryDB {
       pinned ? 1 : 0,
       id,
     ]);
+  }
+
+  getTimeline(observationId: number, before: number, after: number): Observation[] {
+    const obs = this.getObservation(observationId);
+    if (!obs) return [];
+    return this.db
+      .query(
+        `SELECT * FROM (
+          SELECT * FROM observations WHERE session_id = ? AND id < ? ORDER BY id DESC LIMIT ?
+        ) UNION ALL
+        SELECT * FROM observations WHERE id = ?
+        UNION ALL
+        SELECT * FROM (
+          SELECT * FROM observations WHERE session_id = ? AND id > ? ORDER BY id ASC LIMIT ?
+        ) ORDER BY id ASC`,
+      )
+      .all(obs.session_id, observationId, before, observationId, obs.session_id, observationId, after) as Observation[];
   }
 }

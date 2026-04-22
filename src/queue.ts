@@ -1,6 +1,7 @@
 import { Compressor } from './compressor';
 import { MemoryDB } from './db';
 import { loadConfig } from './config';
+import { logError } from './logger';
 
 export interface CompressionJob {
   sessionId: string;
@@ -137,7 +138,7 @@ export class CompressionQueue {
         job.retries++;
         this.queue.push(job);
       } else {
-        console.error(`[queue] Failed after 3 attempts: ${job.toolName}`, err);
+        logError('queue', `Failed after 3 attempts: ${job.toolName} - ${err}`);
       }
     }
   }

@@ -59,6 +59,33 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ['ids'],
       },
     },
+    {
+      name: 'timeline',
+      description:
+        '获取某个 observation 前后的时间线，用于理解事件上下文。返回同一会话中相邻的 observations。',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          observation_id: { type: 'number', description: '中心 observation ID' },
+          before: { type: 'number', description: '向前取 N 条', default: 5 },
+          after: { type: 'number', description: '向后取 N 条', default: 5 },
+        },
+        required: ['observation_id'],
+      },
+    },
+    {
+      name: 'pin',
+      description:
+        '标记/取消标记某个 observation 为高价值记忆。被 pin 的记忆会在后续会话中优先注入。',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          id: { type: 'number', description: 'observation ID' },
+          pinned: { type: 'boolean', description: 'true=标记, false=取消', default: true },
+        },
+        required: ['id'],
+      },
+    },
   ],
 }));
 
@@ -121,6 +148,49 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             null,
             2,
           ),
+        },
+      ],
+    };
+  }
+
+  if (name === 'timeline') {
+    const { observation_id, before, after } = args as {
+      observation_id: number;
+      before?: number;
+      after?: number;
+    };
+    const observations = db.getTimeline(observation_id, before ?? 5, after ?? 5);
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              center_id: observation_id,
+              observations: observations.map((o) => ({
+                id: o.id,
+                title: o.title,
+                type: o.obs_type,
+                date: o.created_at?.slice(0, 10),
+                is_center: o.id === observation_id,
+              })),
+            },
+            null,
+            2,
+          ),
+        },
+      ],
+    };
+  }
+
+  if (name === 'pin') {
+    const { id, pinned } = args as { id: number; pinned?: boolean };
+    db.pinObservation(id, pinned ?? true);
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({ ok: true, id, pinned: pinned ?? true }),
         },
       ],
     };
