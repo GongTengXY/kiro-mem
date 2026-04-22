@@ -23,22 +23,11 @@ kiro-memory automatically captures tool call events during sessions, compresses 
 
 Requires [Bun](https://bun.sh) runtime and [Kiro CLI](https://kiro.dev).
 
-### Option 1: npm Install (Recommended)
-
 ```bash
 npx kiro-memory install
 ```
 
 Follow the prompts to select an AI provider and enter your API key. Worker starts automatically after installation.
-
-### Option 2: Install from Source
-
-```bash
-git clone https://github.com/GongTengXY/kiro-memory.git
-cd kiro-memory
-bun install
-bun run scripts/setup.ts install
-```
 
 ### Set as Default Agent
 
@@ -119,29 +108,6 @@ Filter first, then fetch details — **saves ~10x tokens**.
 
 **Observation Types:** `decision` | `bugfix` | `feature` | `refactor` | `discovery` | `change`
 
-## Architecture
-
-```
-┌─────────────────────────────────────────────────┐
-│                   Kiro CLI                       │
-│                                                  │
-│  agentSpawn ──→ context.sh ──→ GET /context      │
-│  userPromptSubmit ──→ prompt-save.sh ──→ POST    │
-│  postToolUse ──→ observation.sh ──→ POST         │
-│  stop ──→ summary.sh ──→ POST                    │
-│                                                  │
-│  AI Chat ──→ @kiro-memory/* (MCP)                │
-└──────────────────────┬──────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────┐
-│              Worker Service (Bun)                 │
-│                                                  │
-│  Compression Queue ──→ LLM API ──→ SQLite + FTS5 │
-└─────────────────────────────────────────────────┘
-```
-
-**Storage:** `~/.kiro-memory/kiro-memory.db` (~36MB/year at 50 observations/day)
-
 ## Configuration
 
 Edit `~/.kiro-memory/config.json`, or run `bun run scripts/setup.ts config` for interactive setup:
@@ -166,12 +132,12 @@ Edit `~/.kiro-memory/config.json`, or run `bun run scripts/setup.ts config` for 
 
 **Supported Providers:**
 
-| Provider    | Configuration                                   | API Key Required |
-| ----------- | ----------------------------------------------- | :--------------: |
-| `anthropic` | Default                                         |        ✅        |
-| `openai`    | Set `provider` + `apiKey`                       |        ✅        |
-| `ollama`    | Set `provider` + `baseUrl`                      |        ❌        |
-| `custom`    | Any OpenAI-compatible API, set `baseUrl` + `apiKey` |    ✅        |
+| Provider    | Configuration                                       | API Key Required |
+| ----------- | --------------------------------------------------- | :--------------: |
+| `anthropic` | Default                                             |        ✅        |
+| `openai`    | Set `provider` + `apiKey`                           |        ✅        |
+| `ollama`    | Set `provider` + `baseUrl`                          |        ❌        |
+| `custom`    | Any OpenAI-compatible API, set `baseUrl` + `apiKey` |        ✅        |
 
 ## Management
 
@@ -202,13 +168,13 @@ bun run scripts/setup.ts uninstall    # Uninstall (preserves database)
 
 ## Known Limitations
 
-| Limitation                    | Impact                              | Mitigation                              |
-| ----------------------------- | ----------------------------------- | --------------------------------------- |
-| No session ID in hooks        | Cannot precisely map Kiro sessions  | Inferred via cwd + 30min time window    |
-| agentSpawn output limit 10KB  | History summary size is capped      | Summaries kept under 8KB               |
-| AI compression has cost       | Depends on model choice             | Configurable provider, supports Ollama  |
-| Chinese FTS < 3 chars         | Short Chinese words use LIKE fallback | Observations include bilingual concepts |
-| Local only                    | No cross-machine sync               | Future: git sync or cloud storage       |
+| Limitation                   | Impact                                | Mitigation                              |
+| ---------------------------- | ------------------------------------- | --------------------------------------- |
+| No session ID in hooks       | Cannot precisely map Kiro sessions    | Inferred via cwd + 30min time window    |
+| agentSpawn output limit 10KB | History summary size is capped        | Summaries kept under 8KB                |
+| AI compression has cost      | Depends on model choice               | Configurable provider, supports Ollama  |
+| Chinese FTS < 3 chars        | Short Chinese words use LIKE fallback | Observations include bilingual concepts |
+| Local only                   | No cross-machine sync                 | Future: git sync or cloud storage       |
 
 ## License
 

@@ -295,18 +295,27 @@ async function install() {
 }
 
 function uninstall() {
+  const purge = process.argv[3] === '--purge';
   stop();
+
   const agentPath = join(AGENT_DIR, 'kiro-memory.json');
   if (existsSync(agentPath)) rmSync(agentPath);
-  for (const dir of ['hooks', 'src', 'server']) {
-    const p = join(DATA_DIR, dir);
-    if (existsSync(p)) rmSync(p, { recursive: true });
+
+  if (purge) {
+    if (existsSync(DATA_DIR)) rmSync(DATA_DIR, { recursive: true });
+    console.log('✅ kiro-memory completely removed (all data deleted)');
+  } else {
+    for (const dir of ['hooks', 'src', 'server', 'node_modules', 'logs']) {
+      const p = join(DATA_DIR, dir);
+      if (existsSync(p)) rmSync(p, { recursive: true });
+    }
+    for (const f of ['prompt.md', 'package.json', 'bun.lock', '.worker.pid', '.worker.port']) {
+      const p = join(DATA_DIR, f);
+      if (existsSync(p)) rmSync(p);
+    }
+    console.log('✅ kiro-memory uninstalled (database & config preserved at ~/.kiro-memory/)');
+    console.log('   彻底删除所有数据: kiro-memory uninstall --purge');
   }
-  const prompt = join(DATA_DIR, 'prompt.md');
-  if (existsSync(prompt)) rmSync(prompt);
-  console.log(
-    '✅ kiro-memory uninstalled (database preserved at ~/.kiro-memory/kiro-memory.db)',
-  );
 }
 
 function status() {
@@ -355,10 +364,12 @@ function start() {
 
 function stop() {
   const pidFile = join(DATA_DIR, '.worker.pid');
+  const portFile = join(DATA_DIR, '.worker.port');
   if (!existsSync(pidFile)) return;
   const pid = readFileSync(pidFile, 'utf-8').trim();
   spawnSync('kill', [pid]);
   rmSync(pidFile, { force: true });
+  rmSync(portFile, { force: true });
   console.log('✓ Worker stopped');
 }
 
@@ -404,11 +415,12 @@ function help() {
   console.log(`kiro-memory setup <command>
 
 Commands:
-  install          安装 kiro-memory（交互式配置）
-  uninstall        卸载（保留数据库）
-  config           修改压缩模型配置
-  config --show    查看当前配置
-  status           查看 Worker 状态
-  start            启动 Worker
-  stop             停止 Worker`);
+  install              安装 kiro-memory（交互式配置）
+  uninstall            卸载（保留数据库和配置）
+  uninstall --purge    彻底卸载（删除所有数据）
+  config               修改压缩模型配置
+  config --show        查看当前配置
+  status               查看 Worker 状态
+  start                启动 Worker
+  stop                 停止 Worker`);
 }

@@ -10,7 +10,8 @@
   "scripts": {
     "worker": "bun run src/server/worker.ts",
     "mcp": "bun run src/server/mcp-server.ts",
-    "setup": "bun run scripts/setup.ts"
+    "setup": "bun run scripts/setup.ts",
+    "preuninstall": "bun run scripts/setup.ts uninstall --purge"
   },
   "devDependencies": {
     "@types/bun": "latest"
