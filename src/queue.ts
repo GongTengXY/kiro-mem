@@ -1,6 +1,6 @@
-import { Compressor } from "./compressor";
-import { MemoryDB } from "./db";
-import { loadConfig } from "./config";
+import { Compressor } from './compressor';
+import { MemoryDB } from './db';
+import { loadConfig } from './config';
 
 export interface CompressionJob {
   sessionId: string;
@@ -23,13 +23,20 @@ export class CompressionQueue {
 
   constructor(db: MemoryDB, compressor?: Compressor) {
     const config = loadConfig();
-    this.concurrency = Math.min(10, Math.max(5, config.compression.concurrency));
+    this.concurrency = Math.min(
+      10,
+      Math.max(5, config.compression.concurrency),
+    );
     this.db = db;
     this.compressor = compressor || new Compressor();
   }
 
-  get size() { return this.queue.length; }
-  get active() { return this.running; }
+  get size() {
+    return this.queue.length;
+  }
+  get active() {
+    return this.running;
+  }
 
   enqueue(job: CompressionJob) {
     this.queue.push({ ...job, retries: 0 });
@@ -58,7 +65,10 @@ export class CompressionQueue {
   }
 
   private hasSessionJobs(sessionId: string): boolean {
-    return this.queue.some(j => j.sessionId === sessionId) || (this.runningSessionIds.get(sessionId) || 0) > 0;
+    return (
+      this.queue.some((j) => j.sessionId === sessionId) ||
+      (this.runningSessionIds.get(sessionId) || 0) > 0
+    );
   }
 
   private removeWaiter(sessionId: string, fn: () => void) {
@@ -81,7 +91,10 @@ export class CompressionQueue {
     while (this.running < this.concurrency && this.queue.length > 0) {
       const job = this.queue.shift()!;
       this.running++;
-      this.runningSessionIds.set(job.sessionId, (this.runningSessionIds.get(job.sessionId) || 0) + 1);
+      this.runningSessionIds.set(
+        job.sessionId,
+        (this.runningSessionIds.get(job.sessionId) || 0) + 1,
+      );
       this.processJob(job).finally(() => {
         this.running--;
         const count = (this.runningSessionIds.get(job.sessionId) || 1) - 1;
@@ -102,11 +115,12 @@ export class CompressionQueue {
         cwd: job.cwd,
       });
 
-      const inputStr = JSON.stringify(job.toolInput) + JSON.stringify(job.toolResponse);
+      const inputStr =
+        JSON.stringify(job.toolInput) + JSON.stringify(job.toolResponse);
       this.db.insertObservation({
         session_id: job.sessionId,
         tool_name: job.toolName,
-        event_type: "tool_use",
+        event_type: 'tool_use',
         title: result.title,
         narrative: result.narrative,
         facts: result.facts,
@@ -114,7 +128,9 @@ export class CompressionQueue {
         obs_type: result.type,
         files: result.files,
         raw_tokens: Math.ceil(inputStr.length / 4),
-        compressed_tokens: Math.ceil((result.title + result.narrative).length / 4),
+        compressed_tokens: Math.ceil(
+          (result.title + result.narrative).length / 4,
+        ),
       });
     } catch (err) {
       if (job.retries < 2) {

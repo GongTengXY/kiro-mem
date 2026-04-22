@@ -1,7 +1,7 @@
-import { Database } from "bun:sqlite";
-import { join } from "path";
-import { mkdirSync, existsSync } from "fs";
-import { getDataDir } from "./config";
+import { Database } from 'bun:sqlite';
+import { join } from 'path';
+import { mkdirSync, existsSync } from 'fs';
+import { getDataDir } from './config';
 
 // --- Types ---
 
@@ -13,7 +13,7 @@ export interface Session {
   agent_name: string | null;
   started_at: string;
   ended_at: string | null;
-  status: "active" | "completed" | "abandoned";
+  status: 'active' | 'completed' | 'abandoned';
   summary_request: string | null;
   summary_investigated: string | null;
   summary_learned: string | null;
@@ -134,10 +134,10 @@ export class MemoryDB {
   constructor(dbPath?: string) {
     const dir = getDataDir();
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    const path = dbPath || join(dir, "kiro-memory.db");
+    const path = dbPath || join(dir, 'kiro-memory.db');
     this.db = new Database(path);
-    this.db.exec("PRAGMA journal_mode=WAL");
-    this.db.exec("PRAGMA foreign_keys=ON");
+    this.db.exec('PRAGMA journal_mode=WAL');
+    this.db.exec('PRAGMA foreign_keys=ON');
     this.db.exec(SCHEMA);
     this.db.exec(FTS_TRIGGERS);
   }
@@ -148,27 +148,37 @@ export class MemoryDB {
 
   // --- Sessions ---
 
-  createSession(id: string, cwd: string, repo?: string, branch?: string, agentName?: string): Session {
+  createSession(
+    id: string,
+    cwd: string,
+    repo?: string,
+    branch?: string,
+    agentName?: string,
+  ): Session {
     const now = new Date().toISOString();
     this.db.run(
       `INSERT INTO sessions (id, cwd, repo, branch, agent_name, started_at, prompts, files_touched)
        VALUES (?, ?, ?, ?, ?, ?, '[]', '[]')`,
-      [id, cwd, repo || null, branch || null, agentName || null, now]
+      [id, cwd, repo || null, branch || null, agentName || null, now],
     );
     return this.getSession(id)!;
   }
 
   getSession(id: string): Session | null {
-    return this.db.query("SELECT * FROM sessions WHERE id = ?").get(id) as Session | null;
+    return this.db
+      .query('SELECT * FROM sessions WHERE id = ?')
+      .get(id) as Session | null;
   }
 
   findActiveSession(cwd: string, timeoutMinutes: number): Session | null {
-    return this.db.query(
-      `SELECT * FROM sessions
+    return this.db
+      .query(
+        `SELECT * FROM sessions
        WHERE cwd = ? AND status = 'active'
          AND updated_at > datetime('now', ?)
-       ORDER BY updated_at DESC LIMIT 1`
-    ).get(cwd, `-${timeoutMinutes} minutes`) as Session | null;
+       ORDER BY updated_at DESC LIMIT 1`,
+      )
+      .get(cwd, `-${timeoutMinutes} minutes`) as Session | null;
   }
 
   appendPrompt(sessionId: string, prompt: string) {
@@ -178,14 +188,21 @@ export class MemoryDB {
     prompts.push(prompt);
     this.db.run(
       "UPDATE sessions SET prompts = ?, updated_at = datetime('now') WHERE id = ?",
-      [JSON.stringify(prompts), sessionId]
+      [JSON.stringify(prompts), sessionId],
     );
   }
 
-  completeSession(sessionId: string, summary: {
-    request?: string; investigated?: string; learned?: string;
-    completed?: string; next_steps?: string; files_touched?: string[];
-  }) {
+  completeSession(
+    sessionId: string,
+    summary: {
+      request?: string;
+      investigated?: string;
+      learned?: string;
+      completed?: string;
+      next_steps?: string;
+      files_touched?: string[];
+    },
+  ) {
     this.db.run(
       `UPDATE sessions SET
         status = 'completed', ended_at = datetime('now'),
@@ -194,19 +211,27 @@ export class MemoryDB {
         files_touched = ?, updated_at = datetime('now')
        WHERE id = ?`,
       [
-        summary.request || null, summary.investigated || null,
-        summary.learned || null, summary.completed || null,
+        summary.request || null,
+        summary.investigated || null,
+        summary.learned || null,
+        summary.completed || null,
         summary.next_steps || null,
         summary.files_touched ? JSON.stringify(summary.files_touched) : null,
         sessionId,
-      ]
+      ],
     );
     this.db.run(
       `INSERT INTO sessions_fts(rowid, summary_request, summary_investigated,
         summary_learned, summary_completed, summary_next_steps)
        VALUES ((SELECT rowid FROM sessions WHERE id = ?), ?, ?, ?, ?, ?)`,
-      [sessionId, summary.request || null, summary.investigated || null,
-       summary.learned || null, summary.completed || null, summary.next_steps || null]
+      [
+        sessionId,
+        summary.request || null,
+        summary.investigated || null,
+        summary.learned || null,
+        summary.completed || null,
+        summary.next_steps || null,
+      ],
     );
   }
 
@@ -214,86 +239,124 @@ export class MemoryDB {
     this.db.run(
       `UPDATE sessions SET status = 'abandoned', updated_at = datetime('now')
        WHERE cwd = ? AND status = 'active' AND updated_at <= datetime('now', ?)`,
-      [cwd, `-${timeoutMinutes} minutes`]
+      [cwd, `-${timeoutMinutes} minutes`],
     );
   }
 
   touchSession(sessionId: string) {
-    this.db.run("UPDATE sessions SET updated_at = datetime('now') WHERE id = ?", [sessionId]);
+    this.db.run(
+      "UPDATE sessions SET updated_at = datetime('now') WHERE id = ?",
+      [sessionId],
+    );
   }
 
-  getRecentSessions(cwd: string | null, repo: string | null, limit: number): Session[] {
+  getRecentSessions(
+    cwd: string | null,
+    repo: string | null,
+    limit: number,
+  ): Session[] {
     if (repo) {
-      return this.db.query(
-        `SELECT * FROM sessions WHERE status = 'completed' AND (cwd = ? OR repo = ?)
-         ORDER BY CASE WHEN cwd = ? THEN 0 ELSE 1 END, started_at DESC LIMIT ?`
-      ).all(cwd, repo, cwd, limit) as Session[];
+      return this.db
+        .query(
+          `SELECT * FROM sessions WHERE status = 'completed' AND (cwd = ? OR repo = ?)
+         ORDER BY CASE WHEN cwd = ? THEN 0 ELSE 1 END, started_at DESC LIMIT ?`,
+        )
+        .all(cwd, repo, cwd, limit) as Session[];
     }
     if (cwd) {
-      return this.db.query(
-        `SELECT * FROM sessions WHERE status = 'completed' AND cwd = ?
-         ORDER BY started_at DESC LIMIT ?`
-      ).all(cwd, limit) as Session[];
+      return this.db
+        .query(
+          `SELECT * FROM sessions WHERE status = 'completed' AND cwd = ?
+         ORDER BY started_at DESC LIMIT ?`,
+        )
+        .all(cwd, limit) as Session[];
     }
-    return this.db.query(
-      "SELECT * FROM sessions WHERE status = 'completed' ORDER BY started_at DESC LIMIT ?"
-    ).all(limit) as Session[];
+    return this.db
+      .query(
+        "SELECT * FROM sessions WHERE status = 'completed' ORDER BY started_at DESC LIMIT ?",
+      )
+      .all(limit) as Session[];
   }
 
   // --- Observations ---
 
   insertObservation(obs: {
-    session_id: string; tool_name?: string; event_type?: string;
-    title?: string; narrative?: string; facts?: string[];
-    concepts?: string[]; obs_type?: string; files?: string[];
-    raw_tokens?: number; compressed_tokens?: number;
+    session_id: string;
+    tool_name?: string;
+    event_type?: string;
+    title?: string;
+    narrative?: string;
+    facts?: string[];
+    concepts?: string[];
+    obs_type?: string;
+    files?: string[];
+    raw_tokens?: number;
+    compressed_tokens?: number;
   }): number {
     const result = this.db.run(
       `INSERT INTO observations (session_id, tool_name, event_type, title, narrative,
         facts, concepts, obs_type, files, raw_tokens, compressed_tokens)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        obs.session_id, obs.tool_name || null, obs.event_type || null,
-        obs.title || null, obs.narrative || null,
+        obs.session_id,
+        obs.tool_name || null,
+        obs.event_type || null,
+        obs.title || null,
+        obs.narrative || null,
         obs.facts ? JSON.stringify(obs.facts) : null,
         obs.concepts ? JSON.stringify(obs.concepts) : null,
         obs.obs_type || null,
         obs.files ? JSON.stringify(obs.files) : null,
-        obs.raw_tokens || null, obs.compressed_tokens || null,
-      ]
+        obs.raw_tokens || null,
+        obs.compressed_tokens || null,
+      ],
     );
     this.touchSession(obs.session_id);
     return Number(result.lastInsertRowid);
   }
 
   getObservation(id: number): Observation | null {
-    return this.db.query("SELECT * FROM observations WHERE id = ?").get(id) as Observation | null;
+    return this.db
+      .query('SELECT * FROM observations WHERE id = ?')
+      .get(id) as Observation | null;
   }
 
   getObservationsByIds(ids: number[]): Observation[] {
     if (!ids.length) return [];
-    const placeholders = ids.map(() => "?").join(",");
-    return this.db.query(
-      `SELECT * FROM observations WHERE id IN (${placeholders}) ORDER BY created_at`
-    ).all(...ids) as Observation[];
+    const placeholders = ids.map(() => '?').join(',');
+    return this.db
+      .query(
+        `SELECT * FROM observations WHERE id IN (${placeholders}) ORDER BY created_at`,
+      )
+      .all(...ids) as Observation[];
   }
 
   getSessionObservations(sessionId: string): Observation[] {
-    return this.db.query(
-      "SELECT * FROM observations WHERE session_id = ? ORDER BY created_at"
-    ).all(sessionId) as Observation[];
+    return this.db
+      .query(
+        'SELECT * FROM observations WHERE session_id = ? ORDER BY created_at',
+      )
+      .all(sessionId) as Observation[];
   }
 
   countPendingObservations(sessionId: string): number {
-    const row = this.db.query(
-      "SELECT COUNT(*) as cnt FROM observations WHERE session_id = ? AND title IS NULL"
-    ).get(sessionId) as { cnt: number };
+    const row = this.db
+      .query(
+        'SELECT COUNT(*) as cnt FROM observations WHERE session_id = ? AND title IS NULL',
+      )
+      .get(sessionId) as { cnt: number };
     return row.cnt;
   }
 
-  searchObservations(query: string, opts?: {
-    type?: string; repo?: string; days?: number; limit?: number;
-  }): SearchResult[] {
+  searchObservations(
+    query: string,
+    opts?: {
+      type?: string;
+      repo?: string;
+      days?: number;
+      limit?: number;
+    },
+  ): SearchResult[] {
     const limit = opts?.limit || 20;
     const days = opts?.days || 30;
     const dateThreshold = `-${days} days`;
@@ -306,10 +369,22 @@ export class MemoryDB {
         WHERE (o.title LIKE ? OR o.narrative LIKE ? OR o.facts LIKE ? OR o.concepts LIKE ?)
           AND o.created_at > datetime('now', ?)`;
       const like = `%${query}%`;
-      const params: (string | number)[] = [like, like, like, like, dateThreshold];
-      if (opts?.type) { sql += " AND o.obs_type = ?"; params.push(opts.type); }
-      if (opts?.repo) { sql += " AND s.repo = ?"; params.push(opts.repo); }
-      sql += " ORDER BY o.created_at DESC LIMIT ?";
+      const params: (string | number)[] = [
+        like,
+        like,
+        like,
+        like,
+        dateThreshold,
+      ];
+      if (opts?.type) {
+        sql += ' AND o.obs_type = ?';
+        params.push(opts.type);
+      }
+      if (opts?.repo) {
+        sql += ' AND s.repo = ?';
+        params.push(opts.repo);
+      }
+      sql += ' ORDER BY o.created_at DESC LIMIT ?';
       params.push(limit);
       return this.db.query(sql).all(...params) as SearchResult[];
     }
@@ -323,26 +398,31 @@ export class MemoryDB {
     const params: (string | number)[] = [query, dateThreshold];
 
     if (opts?.type) {
-      sql += " AND o.obs_type = ?";
+      sql += ' AND o.obs_type = ?';
       params.push(opts.type);
     }
     if (opts?.repo) {
-      sql += " AND s.repo = ?";
+      sql += ' AND s.repo = ?';
       params.push(opts.repo);
     }
-    sql += " ORDER BY fts.rank LIMIT ?";
+    sql += ' ORDER BY fts.rank LIMIT ?';
     params.push(limit);
 
     return this.db.query(sql).all(...params) as SearchResult[];
   }
 
   getPinnedObservations(limit: number = 20): Observation[] {
-    return this.db.query(
-      "SELECT * FROM observations WHERE is_pinned = 1 ORDER BY created_at DESC LIMIT ?"
-    ).all(limit) as Observation[];
+    return this.db
+      .query(
+        'SELECT * FROM observations WHERE is_pinned = 1 ORDER BY created_at DESC LIMIT ?',
+      )
+      .all(limit) as Observation[];
   }
 
   pinObservation(id: number, pinned: boolean) {
-    this.db.run("UPDATE observations SET is_pinned = ? WHERE id = ?", [pinned ? 1 : 0, id]);
+    this.db.run('UPDATE observations SET is_pinned = ? WHERE id = ?', [
+      pinned ? 1 : 0,
+      id,
+    ]);
   }
 }

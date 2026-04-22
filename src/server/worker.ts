@@ -1,12 +1,12 @@
-import { Hono } from "hono";
-import { randomUUID } from "crypto";
-import { writeFileSync } from "fs";
-import { join } from "path";
-import { MemoryDB } from "../db";
-import { Compressor } from "../compressor";
-import { CompressionQueue } from "../queue";
-import { buildContext } from "../context-builder";
-import { loadConfig, getDataDir } from "../config";
+import { Hono } from 'hono';
+import { randomUUID } from 'crypto';
+import { writeFileSync } from 'fs';
+import { join } from 'path';
+import { MemoryDB } from '../db';
+import { Compressor } from '../compressor';
+import { CompressionQueue } from '../queue';
+import { buildContext } from '../context-builder';
+import { loadConfig, getDataDir } from '../config';
 
 const config = loadConfig();
 const db = new MemoryDB();
@@ -19,29 +19,41 @@ const startTime = Date.now();
 // --- Filter ---
 
 function shouldSkip(toolName: string): boolean {
-  return config.filter.skipTools.some(pattern => {
-    if (pattern.endsWith("*")) return toolName.startsWith(pattern.slice(0, -1));
+  return config.filter.skipTools.some((pattern) => {
+    if (pattern.endsWith('*')) return toolName.startsWith(pattern.slice(0, -1));
     return toolName === pattern;
   });
 }
 
 // --- Routes ---
 
-app.get("/health", (c) =>
-  c.json({ status: "ok", version: "1.0.0", uptime: Math.floor((Date.now() - startTime) / 1000), queue_size: queue.size, queue_active: queue.active })
+app.get('/health', (c) =>
+  c.json({
+    status: 'ok',
+    version: '1.0.0',
+    uptime: Math.floor((Date.now() - startTime) / 1000),
+    queue_size: queue.size,
+    queue_active: queue.active,
+  }),
 );
 
-app.get("/context", async (c) => {
-  const cwd = c.req.query("cwd") || "";
-  const limit = Number(c.req.query("limit")) || config.context.maxSessions;
-  const text = buildContext(db, cwd, limit, config.context.maxOutputBytes, config.context.includePinned);
+app.get('/context', async (c) => {
+  const cwd = c.req.query('cwd') || '';
+  const limit = Number(c.req.query('limit')) || config.context.maxSessions;
+  const text = buildContext(
+    db,
+    cwd,
+    limit,
+    config.context.maxOutputBytes,
+    config.context.includePinned,
+  );
   return c.text(text);
 });
 
-app.post("/events/prompt", async (c) => {
+app.post('/events/prompt', async (c) => {
   const body = await c.req.json();
-  const cwd = body.cwd || "";
-  const prompt = body.prompt || "";
+  const cwd = body.cwd || '';
+  const prompt = body.prompt || '';
   if (!prompt) return c.json({ ok: true });
 
   // 找到或创建 session
@@ -55,10 +67,10 @@ app.post("/events/prompt", async (c) => {
   return c.json({ ok: true, session_id: session.id });
 });
 
-app.post("/events/observation", async (c) => {
+app.post('/events/observation', async (c) => {
   const body = await c.req.json();
-  const toolName = body.tool_name || "";
-  const cwd = body.cwd || "";
+  const toolName = body.tool_name || '';
+  const cwd = body.cwd || '';
 
   if (shouldSkip(toolName)) return c.json({ ok: true, skipped: true }, 200);
 
@@ -80,10 +92,10 @@ app.post("/events/observation", async (c) => {
   return c.json({ ok: true, queued: true }, 202);
 });
 
-app.post("/events/stop", async (c) => {
+app.post('/events/stop', async (c) => {
   const body = await c.req.json();
-  const cwd = body.cwd || "";
-  const assistantResponse = body.assistant_response || "";
+  const cwd = body.cwd || '';
+  const assistantResponse = body.assistant_response || '';
 
   const session = db.findActiveSession(cwd, config.session.timeoutMinutes);
   if (!session) return c.json({ ok: true, no_session: true });
@@ -93,8 +105,8 @@ app.post("/events/stop", async (c) => {
 
   // 收集 observations 摘要
   const observations = db.getSessionObservations(session.id);
-  const obsSummaries = observations.map(o => o.title || "").filter(Boolean);
-  const prompts: string[] = JSON.parse(session.prompts || "[]");
+  const obsSummaries = observations.map((o) => o.title || '').filter(Boolean);
+  const prompts: string[] = JSON.parse(session.prompts || '[]');
 
   // 生成 session summary
   const summary = await compressor.compressSession({
@@ -119,7 +131,9 @@ app.post("/events/stop", async (c) => {
 
 function detectRepo(cwd: string): string | null {
   try {
-    const proc = Bun.spawnSync(["git", "rev-parse", "--show-toplevel"], { cwd });
+    const proc = Bun.spawnSync(['git', 'rev-parse', '--show-toplevel'], {
+      cwd,
+    });
     if (proc.exitCode === 0) return proc.stdout.toString().trim();
   } catch {}
   return null;
@@ -133,8 +147,8 @@ export function startWorker() {
   const dataDir = getDataDir();
 
   // 写入 PID 和 port 文件
-  writeFileSync(join(dataDir, ".worker.pid"), String(process.pid));
-  writeFileSync(join(dataDir, ".worker.port"), String(port));
+  writeFileSync(join(dataDir, '.worker.pid'), String(process.pid));
+  writeFileSync(join(dataDir, '.worker.port'), String(port));
 
   console.log(`[kiro-memory] Worker starting on ${host}:${port}`);
 

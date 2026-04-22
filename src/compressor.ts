@@ -1,5 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { loadConfig, resolveEnvValue, type Config } from "./config";
+import Anthropic from '@anthropic-ai/sdk';
+import { loadConfig, resolveEnvValue, type Config } from './config';
 
 // --- Types ---
 
@@ -30,7 +30,12 @@ export interface CompressorProvider {
 const OBS_SYSTEM = `你是一个代码会话记忆压缩器。将工具调用事件压缩为结构化观察记录。
 输出纯 JSON，不要 markdown 代码块，不要额外文字。`;
 
-function buildObsPrompt(event: { tool_name: string; tool_input: unknown; tool_response: unknown; cwd: string }): string {
+function buildObsPrompt(event: {
+  tool_name: string;
+  tool_input: unknown;
+  tool_response: unknown;
+  cwd: string;
+}): string {
   const input = JSON.stringify(event.tool_input, null, 0).slice(0, 3000);
   const response = JSON.stringify(event.tool_response, null, 0).slice(0, 3000);
   return `## 输入
@@ -52,9 +57,13 @@ function buildObsPrompt(event: { tool_name: string; tool_input: unknown; tool_re
 const SUMMARY_SYSTEM = `你是一个代码会话摘要生成器。基于会话信息生成结构化摘要。
 输出纯 JSON，不要 markdown 代码块，不要额外文字。`;
 
-function buildSummaryPrompt(data: { prompts: string[]; observations: string[]; assistant_response: string }): string {
-  const prompts = data.prompts.join("\n- ");
-  const obs = data.observations.join("\n- ");
+function buildSummaryPrompt(data: {
+  prompts: string[];
+  observations: string[];
+  assistant_response: string;
+}): string {
+  const prompts = data.prompts.join('\n- ');
+  const obs = data.observations.join('\n- ');
   const response = data.assistant_response.slice(0, 2000);
   return `## 会话信息
 - 用户 Prompt: ${prompts}
@@ -79,7 +88,7 @@ class AnthropicProvider implements CompressorProvider {
   private maxTokens: number;
   private temperature: number;
 
-  constructor(config: Config["compression"]) {
+  constructor(config: Config['compression']) {
     const apiKey = resolveEnvValue(config.apiKey);
     this.client = new Anthropic({ apiKey });
     this.model = config.model;
@@ -92,11 +101,11 @@ class AnthropicProvider implements CompressorProvider {
       model: this.model,
       max_tokens: this.maxTokens,
       temperature: this.temperature,
-      system: prompt.includes("工具名称") ? OBS_SYSTEM : SUMMARY_SYSTEM,
-      messages: [{ role: "user", content: prompt }],
+      system: prompt.includes('工具名称') ? OBS_SYSTEM : SUMMARY_SYSTEM,
+      messages: [{ role: 'user', content: prompt }],
     });
     const block = msg.content[0];
-    return block?.type === "text" ? block.text : "";
+    return block?.type === 'text' ? block.text : '';
   }
 }
 
@@ -107,8 +116,8 @@ class OpenAICompatibleProvider implements CompressorProvider {
   private maxTokens: number;
   private temperature: number;
 
-  constructor(config: Config["compression"]) {
-    this.baseUrl = config.baseUrl || "https://api.openai.com/v1";
+  constructor(config: Config['compression']) {
+    this.baseUrl = config.baseUrl || 'https://api.openai.com/v1';
     this.apiKey = resolveEnvValue(config.apiKey);
     this.model = config.model;
     this.maxTokens = config.maxTokens;
@@ -116,22 +125,27 @@ class OpenAICompatibleProvider implements CompressorProvider {
   }
 
   async compress(prompt: string): Promise<string> {
-    const system = prompt.includes("工具名称") ? OBS_SYSTEM : SUMMARY_SYSTEM;
+    const system = prompt.includes('工具名称') ? OBS_SYSTEM : SUMMARY_SYSTEM;
     const res = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${this.apiKey}` },
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.apiKey}`,
+      },
       body: JSON.stringify({
         model: this.model,
         max_tokens: this.maxTokens,
         temperature: this.temperature,
         messages: [
-          { role: "system", content: system },
-          { role: "user", content: prompt },
+          { role: 'system', content: system },
+          { role: 'user', content: prompt },
         ],
       }),
     });
-    const json = (await res.json()) as { choices: { message: { content: string } }[] };
-    return json.choices?.[0]?.message?.content || "";
+    const json = (await res.json()) as {
+      choices: { message: { content: string } }[];
+    };
+    return json.choices?.[0]?.message?.content || '';
   }
 }
 
@@ -147,12 +161,12 @@ export class Compressor {
     }
     const config = loadConfig().compression;
     switch (config.provider) {
-      case "anthropic":
+      case 'anthropic':
         this.provider = new AnthropicProvider(config);
         break;
-      case "openai":
-      case "ollama":
-      case "custom":
+      case 'openai':
+      case 'ollama':
+      case 'custom':
         this.provider = new OpenAICompatibleProvider(config);
         break;
       default:
@@ -161,22 +175,37 @@ export class Compressor {
   }
 
   async compressObservation(event: {
-    tool_name: string; tool_input: unknown; tool_response: unknown; cwd: string;
+    tool_name: string;
+    tool_input: unknown;
+    tool_response: unknown;
+    cwd: string;
   }): Promise<CompressedObservation> {
     const prompt = buildObsPrompt(event);
     const raw = await this.provider.compress(prompt);
     return parseJSON<CompressedObservation>(raw, {
-      title: "", narrative: "", facts: [], concepts: [], type: "change", files: [],
+      title: '',
+      narrative: '',
+      facts: [],
+      concepts: [],
+      type: 'change',
+      files: [],
     });
   }
 
   async compressSession(data: {
-    prompts: string[]; observations: string[]; assistant_response: string;
+    prompts: string[];
+    observations: string[];
+    assistant_response: string;
   }): Promise<SessionSummary> {
     const prompt = buildSummaryPrompt(data);
     const raw = await this.provider.compress(prompt);
     return parseJSON<SessionSummary>(raw, {
-      request: "", investigated: "", learned: "", completed: "", next_steps: "", files_touched: [],
+      request: '',
+      investigated: '',
+      learned: '',
+      completed: '',
+      next_steps: '',
+      files_touched: [],
     });
   }
 }
@@ -184,7 +213,10 @@ export class Compressor {
 function parseJSON<T>(raw: string, fallback: T): T {
   try {
     // 去掉可能的 markdown 代码块包裹
-    const cleaned = raw.replace(/^```json?\n?/m, "").replace(/\n?```$/m, "").trim();
+    const cleaned = raw
+      .replace(/^```json?\n?/m, '')
+      .replace(/\n?```$/m, '')
+      .trim();
     return JSON.parse(cleaned) as T;
   } catch {
     return fallback;
