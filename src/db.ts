@@ -134,7 +134,7 @@ export class MemoryDB {
   constructor(dbPath?: string) {
     const dir = getDataDir();
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    const path = dbPath || join(dir, 'kiro-memory.db');
+    const path = dbPath || join(dir, 'kiro-mem.db');
     this.db = new Database(path);
     this.db.exec('PRAGMA journal_mode=WAL');
     this.db.exec('PRAGMA foreign_keys=ON');

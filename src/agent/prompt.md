@@ -5,11 +5,11 @@
 ## 使用记忆的原则
 
 1. 如果注入的摘要已经包含足够信息，直接使用，不需要额外搜索
-2. 如果用户提到"之前"、"上次"、"以前做过"等，或当前任务可能有历史相关记录，使用 @kiro-memory/search 搜索
+2. 如果用户提到"之前"、"上次"、"以前做过"等，或当前任务可能有历史相关记录，使用 @kiro-mem/search 搜索
 3. 搜索时遵循两层模式：先 search 获取索引 → 确认相关 ID → 用 get_observations 获取详情
 4. 不要一次获取过多 observation，按需逐步获取
 
 ## 可用工具
 
-- @kiro-memory/search: 搜索历史记忆（关键词、类型、时间过滤）
-- @kiro-memory/get_observations: 按 ID 获取完整记忆详情
+- @kiro-mem/search: 搜索历史记忆（关键词、类型、时间过滤）
+- @kiro-mem/get_observations: 按 ID 获取完整记忆详情

@@ -13,7 +13,7 @@ import { spawnSync } from 'child_process';
 import * as readline from 'readline';
 
 const HOME = process.env.HOME || '~';
-const DATA_DIR = join(HOME, '.kiro-memory');
+const DATA_DIR = join(HOME, '.kiro-mem');
 const AGENT_DIR = join(HOME, '.kiro', 'agents');
 const SRC_DIR = resolve(import.meta.dir, '../src');
 
@@ -169,7 +169,7 @@ async function collectConfig(rl: readline.Interface) {
     context: { maxSessions: 10, maxOutputBytes: 8192, includePinned: true },
     session: { timeoutMinutes: 30, autoComplete: true },
     filter: {
-      skipTools: ['introspect', 'todo_list', '@kiro-memory/*'],
+      skipTools: ['introspect', 'todo_list', '@kiro-mem/*'],
       skipSmallReads: true,
       smallReadThreshold: 100,
     },
@@ -179,7 +179,7 @@ async function collectConfig(rl: readline.Interface) {
 // --- Commands ---
 
 async function install() {
-  console.log('[kiro-memory] Installing...\n');
+  console.log('[kiro-mem] Installing...\n');
 
   // 1. Check bun
   const bunCheck = spawnSync('bun', ['--version']);
@@ -248,9 +248,9 @@ async function install() {
   console.log('✓ Prompt installed');
 
   // 8. Install agent config (替换路径占位符为绝对路径)
-  const agentTemplate = readFileSync(join(SRC_DIR, 'agent', 'kiro-memory.json'), 'utf-8');
+  const agentTemplate = readFileSync(join(SRC_DIR, 'agent', 'kiro-mem.json'), 'utf-8');
   const agentConfig = agentTemplate.replaceAll('__KIRO_MEMORY_DIR__', DATA_DIR);
-  writeFileSync(join(AGENT_DIR, 'kiro-memory.json'), agentConfig);
+  writeFileSync(join(AGENT_DIR, 'kiro-mem.json'), agentConfig);
   console.log('✓ Agent config installed');
 
   // 9. Install dependencies
@@ -260,7 +260,7 @@ async function install() {
       pkgPath,
       JSON.stringify(
         {
-          name: 'kiro-memory-server',
+          name: 'kiro-mem-server',
           private: true,
           type: 'module',
           dependencies: {
@@ -281,29 +281,29 @@ async function install() {
   if (r.status === 0) console.log('✓ Dependencies installed');
   else
     console.log(
-      '⚠ Dependencies install failed, run: cd ~/.kiro-memory && bun install',
+      '⚠ Dependencies install failed, run: cd ~/.kiro-mem && bun install',
     );
 
   // 10. Start worker
   start();
 
-  console.log('\n✅ kiro-memory installed!');
+  console.log('\n✅ kiro-mem installed!');
   console.log(
-    '   设为默认 Agent: kiro-cli settings chat.defaultAgent kiro-memory',
+    '   设为默认 Agent: kiro-cli settings chat.defaultAgent kiro-mem',
   );
-  console.log('   或手动切换: /agent kiro-memory');
+  console.log('   或手动切换: /agent kiro-mem');
 }
 
 function uninstall() {
   const purge = process.argv[3] === '--purge';
   stop();
 
-  const agentPath = join(AGENT_DIR, 'kiro-memory.json');
+  const agentPath = join(AGENT_DIR, 'kiro-mem.json');
   if (existsSync(agentPath)) rmSync(agentPath);
 
   if (purge) {
     if (existsSync(DATA_DIR)) rmSync(DATA_DIR, { recursive: true });
-    console.log('✅ kiro-memory completely removed (all data deleted)');
+    console.log('✅ kiro-mem completely removed (all data deleted)');
   } else {
     for (const dir of ['hooks', 'src', 'server', 'node_modules', 'logs']) {
       const p = join(DATA_DIR, dir);
@@ -313,8 +313,8 @@ function uninstall() {
       const p = join(DATA_DIR, f);
       if (existsSync(p)) rmSync(p);
     }
-    console.log('✅ kiro-memory uninstalled (database & config preserved at ~/.kiro-memory/)');
-    console.log('   彻底删除所有数据: kiro-memory uninstall --purge');
+    console.log('✅ kiro-mem uninstalled (database & config preserved at ~/.kiro-mem/)');
+    console.log('   彻底删除所有数据: kiro-mem uninstall --purge');
   }
 }
 
@@ -394,7 +394,7 @@ async function configCmd() {
     return;
   }
 
-  console.log('[kiro-memory] 修改压缩模型配置\n');
+  console.log('[kiro-mem] 修改压缩模型配置\n');
   const rl = createRL();
   const newConfig = await collectConfig(rl);
   rl.close();
@@ -412,10 +412,10 @@ async function configCmd() {
 }
 
 function help() {
-  console.log(`kiro-memory setup <command>
+  console.log(`kiro-mem setup <command>
 
 Commands:
-  install              安装 kiro-memory（交互式配置）
+  install              安装 kiro-mem（交互式配置）
   uninstall            卸载（保留数据库和配置）
   uninstall --purge    彻底卸载（删除所有数据）
   config               修改压缩模型配置
