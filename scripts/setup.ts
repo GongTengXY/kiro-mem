@@ -11,6 +11,14 @@ import {
 import { join, resolve } from 'path';
 import { spawnSync } from 'child_process';
 import * as readline from 'readline';
+import {
+  registerService,
+  removeService,
+  start,
+  stop,
+  status,
+  ansi,
+} from './service';
 
 const HOME = process.env.HOME || '~';
 const DATA_DIR = join(HOME, '.kiro-mem');
@@ -37,6 +45,9 @@ switch (command) {
     break;
   case 'stop':
     stop();
+    break;
+  case 'diagnose':
+    diagnose();
     break;
   default:
     help();
@@ -178,21 +189,157 @@ async function collectConfig(rl: readline.Interface) {
 
 // --- Commands ---
 
+function isRecord(val: unknown): val is Record<string, unknown> {
+  return typeof val === 'object' && val !== null && !Array.isArray(val);
+}
+
+function isValidProvider(provider: string): boolean {
+  return ['anthropic', 'openai', 'ollama', 'custom'].includes(provider);
+}
+
+function getDefaultConfig(compression: {
+  provider: string;
+  model: string;
+  apiKey?: string;
+  baseUrl?: string | null;
+  concurrency?: number;
+}) {
+  return {
+    worker: { port: 37778, host: '127.0.0.1', logLevel: 'info' },
+    compression: {
+      provider: compression.provider,
+      model: compression.model,
+      apiKey: compression.apiKey || '',
+      baseUrl: compression.baseUrl ?? null,
+      maxTokens: 800,
+      temperature: 0.1,
+      concurrency: Math.min(
+        10,
+        Math.max(5, Number(compression.concurrency) || 6),
+      ),
+      enabled: true,
+    },
+    context: {
+      maxObservations: 50,
+      maxSessions: 10,
+      fullCount: 5,
+      fullField: 'narrative',
+      maxOutputBytes: 8192,
+      includePinned: true,
+      includeSummary: false,
+    },
+    session: { timeoutMinutes: 30, autoComplete: true },
+    filter: {
+      skipTools: ['introspect', 'todo_list', '@kiro-mem/*'],
+      skipSmallReads: true,
+      smallReadThreshold: 100,
+    },
+  };
+}
+
+function loadExistingConfig(configPath: string): Record<string, unknown> | null {
+  if (!existsSync(configPath)) return null;
+  try {
+    const raw = JSON.parse(readFileSync(configPath, 'utf-8')) as unknown;
+    if (!isRecord(raw)) return null;
+
+    const compression = isRecord(raw.compression) ? raw.compression : null;
+    if (!compression) return null;
+
+    const provider = compression.provider;
+    const model = compression.model;
+    const apiKey = compression.apiKey;
+    const baseUrl = compression.baseUrl;
+    const concurrency = compression.concurrency;
+
+    if (typeof provider !== 'string' || !isValidProvider(provider)) {
+      return null;
+    }
+    if (typeof model !== 'string' || !model.trim()) return null;
+
+    switch (provider) {
+      case 'anthropic':
+      case 'openai':
+        if (typeof apiKey !== 'string' || !apiKey.trim()) return null;
+        break;
+      case 'custom':
+        if (typeof apiKey !== 'string' || !apiKey.trim()) return null;
+        if (typeof baseUrl !== 'string' || !baseUrl.trim()) return null;
+        break;
+      case 'ollama':
+        if (typeof baseUrl !== 'string' || !baseUrl.trim()) return null;
+        break;
+    }
+
+    const defaults = getDefaultConfig({
+      provider,
+      model,
+      apiKey: typeof apiKey === 'string' ? apiKey : '',
+      baseUrl: typeof baseUrl === 'string' ? baseUrl : null,
+      concurrency:
+        typeof concurrency === 'number' ? concurrency : Number(concurrency),
+    });
+
+    return {
+      ...defaults,
+      ...raw,
+      compression: {
+        ...defaults.compression,
+        ...(isRecord(raw.compression) ? raw.compression : {}),
+      },
+      context: {
+        ...defaults.context,
+        ...(isRecord(raw.context) ? raw.context : {}),
+      },
+      session: {
+        ...defaults.session,
+        ...(isRecord(raw.session) ? raw.session : {}),
+      },
+      filter: {
+        ...defaults.filter,
+        ...(isRecord(raw.filter) ? raw.filter : {}),
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function install() {
-  console.log('[kiro-mem] Installing...\n');
+  console.log(`${ansi.bold('[kiro-mem]')} Installing...\n`);
 
   // 1. Check bun
   const bunCheck = spawnSync('bun', ['--version']);
   if (bunCheck.status !== 0) {
-    console.error('❌ Bun is required. Install: https://bun.sh');
+    console.error(
+      `${ansi.err('✗')} Bun is required. Install: ${ansi.cyan('https://bun.sh')}`,
+    );
     process.exit(1);
   }
-  console.log(`✓ Bun ${bunCheck.stdout.toString().trim()}`);
+  console.log(
+    `${ansi.ok('✓')} Bun ${ansi.cyan(bunCheck.stdout.toString().trim())}`,
+  );
 
-  // 2. Interactive config
-  const rl = createRL();
-  const config = await collectConfig(rl);
-  rl.close();
+  // 2. Config — reuse existing if valid, otherwise interactive
+  const configPath = join(DATA_DIR, 'config.json');
+  let config: Awaited<ReturnType<typeof collectConfig>>;
+  const existing = loadExistingConfig(configPath);
+  if (existing) {
+    const cp = (
+      existing as { compression: { provider: string; model: string } }
+    ).compression;
+    console.log(
+      `${ansi.ok('✓')} Found existing config ${ansi.dim('(reusing)')}`,
+    );
+    console.log(
+      `  Provider: ${ansi.cyan(cp.provider)}, Model: ${ansi.cyan(cp.model)}`,
+    );
+    config = existing as typeof config;
+  } else {
+    const rl = createRL();
+    config = await collectConfig(rl);
+    rl.close();
+  }
 
   // 3. Create directories
   for (const dir of [
@@ -204,11 +351,11 @@ async function install() {
   ]) {
     mkdirSync(dir, { recursive: true });
   }
-  console.log(`\n✓ Created ${DATA_DIR}`);
+  console.log(`\n${ansi.ok('✓')} Created ${ansi.dim(DATA_DIR)}`);
 
   // 4. Save config
   writeFileSync(join(DATA_DIR, 'config.json'), JSON.stringify(config, null, 2));
-  console.log('✓ Config saved');
+  console.log(`${ansi.ok('✓')} Config saved`);
 
   // 5. Copy hooks
   for (const hook of [
@@ -222,12 +369,15 @@ async function install() {
     copyFileSync(src, dst);
     chmodSync(dst, 0o755);
   }
-  console.log('✓ Hooks installed');
+  console.log(`${ansi.ok('✓')} Hooks installed`);
 
-  // 6. Copy server files (保持 src/ 和 src/server/ 的目录结构)
+  // 6. Copy server files
   mkdirSync(join(DATA_DIR, 'src', 'server'), { recursive: true });
   for (const file of ['worker.ts', 'mcp-server.ts']) {
-    copyFileSync(join(SRC_DIR, 'server', file), join(DATA_DIR, 'src', 'server', file));
+    copyFileSync(
+      join(SRC_DIR, 'server', file),
+      join(DATA_DIR, 'src', 'server', file),
+    );
   }
   for (const file of [
     'db.ts',
@@ -239,20 +389,23 @@ async function install() {
   ]) {
     copyFileSync(join(SRC_DIR, file), join(DATA_DIR, 'src', file));
   }
-  console.log('✓ Server files installed');
+  console.log(`${ansi.ok('✓')} Server files installed`);
 
   // 7. Copy prompt
   copyFileSync(
     join(SRC_DIR, 'agent', 'prompt.md'),
     join(DATA_DIR, 'prompt.md'),
   );
-  console.log('✓ Prompt installed');
+  console.log(`${ansi.ok('✓')} Prompt installed`);
 
-  // 8. Install agent config (替换路径占位符为绝对路径)
-  const agentTemplate = readFileSync(join(SRC_DIR, 'agent', 'kiro-mem.json'), 'utf-8');
+  // 8. Install agent config
+  const agentTemplate = readFileSync(
+    join(SRC_DIR, 'agent', 'kiro-mem.json'),
+    'utf-8',
+  );
   const agentConfig = agentTemplate.replaceAll('__KIRO_MEMORY_DIR__', DATA_DIR);
   writeFileSync(join(AGENT_DIR, 'kiro-mem.json'), agentConfig);
-  console.log('✓ Agent config installed');
+  console.log(`${ansi.ok('✓')} Agent config installed`);
 
   // 9. Install dependencies
   const pkgPath = join(DATA_DIR, 'package.json');
@@ -279,24 +432,28 @@ async function install() {
     cwd: DATA_DIR,
     stdio: 'pipe',
   });
-  if (r.status === 0) console.log('✓ Dependencies installed');
+  if (r.status === 0) console.log(`${ansi.ok('✓')} Dependencies installed`);
   else
     console.log(
-      '⚠ Dependencies install failed, run: cd ~/.kiro-mem && bun install',
+      `${ansi.warn('⚠')} Dependencies install failed, run: ${ansi.cyan('cd ~/.kiro-mem && bun install')}`,
     );
 
-  // 10. Start worker
+  // 10. Register system service & start worker
+  const msg = registerService();
+  console.log(`${ansi.ok('✓')} ${msg}`);
   start();
 
-  console.log('\n✅ kiro-mem installed!');
+  console.log(`\n${ansi.ok('✅')} ${ansi.bold('kiro-mem installed!')}`);
   console.log(
-    '   设为默认 Agent: kiro-cli settings chat.defaultAgent kiro-mem',
+    `   设为默认 Agent: ${ansi.cyan('kiro-cli settings chat.defaultAgent kiro-mem')}`,
   );
-  console.log('   或手动切换: /agent kiro-mem');
+  console.log(`   或手动切换: ${ansi.cyan('/agent kiro-mem')}`);
 }
 
 function uninstall() {
   const purge = process.argv[3] === '--purge';
+
+  removeService();
   stop();
 
   const agentPath = join(AGENT_DIR, 'kiro-mem.json');
@@ -304,74 +461,31 @@ function uninstall() {
 
   if (purge) {
     if (existsSync(DATA_DIR)) rmSync(DATA_DIR, { recursive: true });
-    console.log('✅ kiro-mem completely removed (all data deleted)');
+    console.log(
+      `${ansi.ok('✅')} ${ansi.bold('kiro-mem completely removed')} ${ansi.dim('(all data deleted)')}`,
+    );
   } else {
     for (const dir of ['hooks', 'src', 'server', 'node_modules', 'logs']) {
       const p = join(DATA_DIR, dir);
       if (existsSync(p)) rmSync(p, { recursive: true });
     }
-    for (const f of ['prompt.md', 'package.json', 'bun.lock', '.worker.pid', '.worker.port']) {
+    for (const f of [
+      'prompt.md',
+      'package.json',
+      'bun.lock',
+      '.worker.pid',
+      '.worker.port',
+    ]) {
       const p = join(DATA_DIR, f);
       if (existsSync(p)) rmSync(p);
     }
-    console.log('✅ kiro-mem uninstalled (database & config preserved at ~/.kiro-mem/)');
-    console.log('   彻底删除所有数据: kiro-mem uninstall --purge');
+    console.log(
+      `${ansi.ok('✅')} ${ansi.bold('kiro-mem uninstalled')} ${ansi.dim('(database & config preserved at ~/.kiro-mem/')}`,
+    );
+    console.log(
+      `   彻底删除所有数据: ${ansi.cyan('kiro-mem uninstall --purge')}`,
+    );
   }
-}
-
-function status() {
-  const pidFile = join(DATA_DIR, '.worker.pid');
-  if (!existsSync(pidFile)) {
-    console.log('⏹ Worker not running');
-    return;
-  }
-  const pid = readFileSync(pidFile, 'utf-8').trim();
-  const check = spawnSync('kill', ['-0', pid]);
-  if (check.status === 0) {
-    const portFile = join(DATA_DIR, '.worker.port');
-    const port = existsSync(portFile)
-      ? readFileSync(portFile, 'utf-8').trim()
-      : '?';
-    console.log(`▶ Worker running (PID: ${pid}, port: ${port})`);
-  } else {
-    console.log('⏹ Worker not running (stale PID file)');
-    rmSync(pidFile);
-  }
-}
-
-function start() {
-  const pidFile = join(DATA_DIR, '.worker.pid');
-  if (existsSync(pidFile)) {
-    const pid = readFileSync(pidFile, 'utf-8').trim();
-    const check = spawnSync('kill', ['-0', pid]);
-    if (check.status === 0) {
-      console.log(`✓ Worker already running (PID: ${pid})`);
-      return;
-    }
-  }
-  const worker = join(DATA_DIR, 'src', 'server', 'worker.ts');
-  if (!existsSync(worker)) {
-    console.error('❌ Worker not found. Run install first.');
-    return;
-  }
-  const proc = Bun.spawn(['bun', 'run', worker], {
-    cwd: DATA_DIR,
-    env: { ...process.env, KIRO_MEMORY_DATA_DIR: DATA_DIR },
-    stdio: ['ignore', 'ignore', 'ignore'],
-  });
-  proc.unref();
-  console.log(`✓ Worker started (PID: ${proc.pid})`);
-}
-
-function stop() {
-  const pidFile = join(DATA_DIR, '.worker.pid');
-  const portFile = join(DATA_DIR, '.worker.port');
-  if (!existsSync(pidFile)) return;
-  const pid = readFileSync(pidFile, 'utf-8').trim();
-  spawnSync('kill', [pid]);
-  rmSync(pidFile, { force: true });
-  rmSync(portFile, { force: true });
-  console.log('✓ Worker stopped');
 }
 
 async function configCmd() {
@@ -379,19 +493,23 @@ async function configCmd() {
   const showOnly = process.argv[3] === '--show';
 
   if (!existsSync(configPath)) {
-    console.log('❌ 未安装，请先运行 install');
+    console.log(
+      `${ansi.err('✗')} 未安装，请先运行 ${ansi.cyan('kiro-mem install')}`,
+    );
     return;
   }
 
   if (showOnly) {
     const current = JSON.parse(readFileSync(configPath, 'utf-8'));
     const c = current.compression || {};
-    console.log('当前配置:');
-    console.log(`  提供商:   ${c.provider || 'anthropic'}`);
-    console.log(`  模型:     ${c.model || '未设置'}`);
-    console.log(`  API Key:  ${c.apiKey ? c.apiKey.slice(0, 8) + '...' : '未设置'}`);
-    console.log(`  Base URL: ${c.baseUrl || '默认'}`);
-    console.log(`  并发数:   ${c.concurrency || 6}`);
+    console.log(ansi.bold('当前配置:'));
+    console.log(`  提供商:   ${ansi.cyan(c.provider || 'anthropic')}`);
+    console.log(`  模型:     ${ansi.cyan(c.model || '未设置')}`);
+    console.log(
+      `  API Key:  ${c.apiKey ? ansi.dim(c.apiKey.slice(0, 8) + '...') : ansi.err('未设置')}`,
+    );
+    console.log(`  Base URL: ${ansi.cyan(c.baseUrl || '默认')}`);
+    console.log(`  并发数:   ${ansi.cyan(String(c.concurrency || 6))}`);
     return;
   }
 
@@ -400,20 +518,186 @@ async function configCmd() {
   const newConfig = await collectConfig(rl);
   rl.close();
 
-  // 保留非 compression 的配置
   const current = JSON.parse(readFileSync(configPath, 'utf-8'));
   const merged = { ...current, compression: newConfig.compression };
   writeFileSync(configPath, JSON.stringify(merged, null, 2));
-  console.log('\n✓ Config updated');
+  console.log(`\n${ansi.ok('✓')} Config updated`);
 
-  // 重启 Worker 使配置生效
   stop();
   start();
-  console.log('✓ Worker restarted');
+  console.log(`${ansi.ok('✓')} Worker restarted`);
+}
+
+function diagnose() {
+  console.log('');
+  console.log(ansi.bold('╔══════════════════════════════════════╗'));
+  console.log(ansi.bold('║        kiro-mem diagnostics          ║'));
+  console.log(ansi.bold('╚══════════════════════════════════════╝'));
+
+  const pidFile = join(DATA_DIR, '.worker.pid');
+  const portFile = join(DATA_DIR, '.worker.port');
+  const configPath = join(DATA_DIR, 'config.json');
+  const dbPath = join(DATA_DIR, 'kiro-mem.db');
+
+  // 1. Worker process
+  console.log(`\n${ansi.bold('── Worker ──────────────────────────────')}`);
+  let workerOk = false;
+  let port = '37778';
+  if (existsSync(pidFile)) {
+    const pid = readFileSync(pidFile, 'utf-8').trim();
+    const check = spawnSync('kill', ['-0', pid]);
+    if (check.status === 0) {
+      port = existsSync(portFile)
+        ? readFileSync(portFile, 'utf-8').trim()
+        : '?';
+      console.log(
+        `  ${ansi.ok('✓')} Process     PID ${ansi.cyan(pid)}, port ${ansi.cyan(port)}`,
+      );
+      workerOk = true;
+    } else {
+      console.log(
+        `  ${ansi.err('✗')} Process     not running ${ansi.dim(`(stale PID: ${pid})`)}`,
+      );
+    }
+  } else {
+    console.log(`  ${ansi.err('✗')} Process     not running`);
+  }
+
+  // 2. Health check
+  if (workerOk) {
+    const r = spawnSync(
+      'curl',
+      ['-s', '--max-time', '2', `http://127.0.0.1:${port}/health`],
+      { stdio: 'pipe' },
+    );
+    if (r.status === 0) {
+      try {
+        const h = JSON.parse(r.stdout.toString());
+        const uptime =
+          h.uptime >= 3600
+            ? `${Math.floor(h.uptime / 3600)}h ${Math.floor((h.uptime % 3600) / 60)}m`
+            : h.uptime >= 60
+              ? `${Math.floor(h.uptime / 60)}m ${h.uptime % 60}s`
+              : `${h.uptime}s`;
+        console.log(
+          `  ${ansi.ok('✓')} Health      uptime ${ansi.cyan(uptime)}, queue ${h.queue_active}/${h.queue_size}`,
+        );
+      } catch {
+        console.log(`  ${ansi.warn('⚠')} Health      response not parseable`);
+      }
+    } else {
+      console.log(`  ${ansi.err('✗')} Health      endpoint unreachable`);
+    }
+  }
+
+  // 3. Service registration
+  const platform = process.platform === 'darwin' ? 'macos' : 'linux';
+  const plistPath = join(
+    HOME,
+    'Library',
+    'LaunchAgents',
+    'com.kiro-mem.worker.plist',
+  );
+  const servicePath = join(
+    HOME,
+    '.config',
+    'systemd',
+    'user',
+    'kiro-mem.service',
+  );
+  const svcName = platform === 'macos' ? 'launchd' : 'systemd';
+  const svcExists =
+    platform === 'macos' ? existsSync(plistPath) : existsSync(servicePath);
+  console.log(
+    svcExists
+      ? `  ${ansi.ok('✓')} Service     ${svcName} managed ${ansi.dim('(auto-restart enabled)')}`
+      : `  ${ansi.err('✗')} Service     ${svcName} not registered`,
+  );
+
+  // 4. Config
+  console.log(`\n${ansi.bold('── Config ──────────────────────────────')}`);
+  if (existsSync(configPath)) {
+    try {
+      const cfg = JSON.parse(readFileSync(configPath, 'utf-8'));
+      const cc = cfg.compression || {};
+      console.log(`  Provider      ${ansi.cyan(cc.provider || 'not set')}`);
+      console.log(`  Model         ${ansi.cyan(cc.model || 'not set')}`);
+      console.log(
+        `  API Key       ${cc.apiKey ? ansi.dim(cc.apiKey.slice(0, 8) + '...') : ansi.err('not set')}`,
+      );
+      console.log(`  Concurrency   ${ansi.cyan(String(cc.concurrency || 6))}`);
+    } catch {
+      console.log(`  ${ansi.err('✗')} Config file parse error`);
+    }
+  } else {
+    console.log(
+      `  ${ansi.err('✗')} Not found ${ansi.dim('(run: kiro-mem install)')}`,
+    );
+  }
+
+  // 5. Database stats
+  console.log(`\n${ansi.bold('── Database ────────────────────────────')}`);
+  if (existsSync(dbPath)) {
+    try {
+      const { Database } = require('bun:sqlite');
+      const db = new Database(dbPath, { readonly: true });
+      const obs = db.query('SELECT COUNT(*) as c FROM observations').get() as {
+        c: number;
+      };
+      const sess = db.query('SELECT COUNT(*) as c FROM sessions').get() as {
+        c: number;
+      };
+      const pinned = db
+        .query('SELECT COUNT(*) as c FROM observations WHERE is_pinned = 1')
+        .get() as { c: number };
+      const pending = db
+        .query('SELECT COUNT(*) as c FROM observations WHERE title IS NULL')
+        .get() as { c: number };
+      console.log(`  Sessions      ${ansi.cyan(String(sess.c))}`);
+      console.log(
+        `  Observations  ${ansi.cyan(String(obs.c))} ${ansi.dim(`(${pinned.c} pinned, ${pending.c} pending)`)}`,
+      );
+
+      const stat = Bun.file(dbPath);
+      const sizeMB = (stat.size / 1024 / 1024).toFixed(1);
+      console.log(`  Size          ${ansi.cyan(sizeMB + ' MB')}`);
+      db.close();
+    } catch (e) {
+      console.log(
+        `  ${ansi.err('✗')} Error: ${e instanceof Error ? e.message : e}`,
+      );
+    }
+  } else {
+    console.log(`  ${ansi.warn('⚠')} Not created yet`);
+  }
+
+  // 6. Recent errors
+  console.log(`\n${ansi.bold('── Errors ──────────────────────────────')}`);
+  const logsDir = join(DATA_DIR, 'logs');
+  let hasErrors = false;
+  if (existsSync(logsDir)) {
+    const date = new Date().toISOString().slice(0, 10);
+    const logFile = join(logsDir, `worker-${date}.log`);
+    if (existsSync(logFile)) {
+      const content = readFileSync(logFile, 'utf-8').trim();
+      if (content) {
+        const lines = content.split('\n').slice(-5);
+        console.log(
+          `  ${ansi.warn('⚠')} Last ${lines.length} entries from today:`,
+        );
+        for (const line of lines)
+          console.log(`  ${ansi.dim('│')} ${ansi.dim(line)}`);
+        hasErrors = true;
+      }
+    }
+  }
+  if (!hasErrors) console.log(`  ${ansi.ok('✓')} No errors today`);
+
+  console.log('');
 }
 
 function help() {
-  console.log(`kiro-mem setup <command>
+  console.log(`kiro-mem <command>
 
 Commands:
   install              安装 kiro-mem（交互式配置）
@@ -423,5 +707,6 @@ Commands:
   config --show        查看当前配置
   status               查看 Worker 状态
   start                启动 Worker
-  stop                 停止 Worker`);
+  stop                 停止 Worker
+  diagnose             输出完整诊断信息`);
 }

@@ -168,15 +168,15 @@ Edit `~/.kiro-mem/config.json`, or run `kiro-mem config` for interactive setup:
 
 **Context Settings:**
 
-| Setting | Default | Description |
-| --- | --- | --- |
-| `maxObservations` | 50 | Max observations in the index |
-| `maxSessions` | 10 | Pull observations from recent N sessions |
-| `fullCount` | 5 | Number of observations to expand with full narrative |
-| `fullField` | `narrative` | Field to expand (`narrative` or `facts`) |
-| `maxOutputBytes` | 8192 | Output size cap (agentSpawn limit is 10KB) |
-| `includePinned` | true | Show pinned observations in a top section |
-| `includeSummary` | false | Include last session's summary line |
+| Setting           | Default     | Description                                          |
+| ----------------- | ----------- | ---------------------------------------------------- |
+| `maxObservations` | 50          | Max observations in the index                        |
+| `maxSessions`     | 10          | Pull observations from recent N sessions             |
+| `fullCount`       | 5           | Number of observations to expand with full narrative |
+| `fullField`       | `narrative` | Field to expand (`narrative` or `facts`)             |
+| `maxOutputBytes`  | 8192        | Output size cap (agentSpawn limit is 10KB)           |
+| `includePinned`   | true        | Show pinned observations in a top section            |
+| `includeSummary`  | false       | Include last session's summary line                  |
 
 **Supported Providers:**
 
