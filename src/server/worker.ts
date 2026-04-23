@@ -7,6 +7,19 @@ import { Compressor } from '../compressor';
 import { CompressionQueue } from '../queue';
 import { buildContext } from '../context-builder';
 import { loadConfig, getDataDir } from '../config';
+import { logError } from '../logger';
+
+// --- Global error handlers ---
+
+process.on('uncaughtException', (err) => {
+  logError('uncaughtException', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  logError('unhandledRejection', reason);
+});
+
+// --- Init ---
 
 const config = loadConfig();
 const db = new MemoryDB();
@@ -25,7 +38,25 @@ function shouldSkip(toolName: string): boolean {
   });
 }
 
+const PRIVATE_RE = /<private>[\s\S]*?<\/private>/gi;
+
+function stripPrivateTags(val: unknown): unknown {
+  if (typeof val === 'string') return val.replace(PRIVATE_RE, '[REDACTED]');
+  if (Array.isArray(val)) return val.map(stripPrivateTags);
+  if (val && typeof val === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(val)) out[k] = stripPrivateTags(v);
+    return out;
+  }
+  return val;
+}
+
 // --- Routes ---
+
+app.onError((err, c) => {
+  logError(`${c.req.method} ${c.req.path}`, err);
+  return c.json({ ok: false, error: 'internal error' }, 500);
+});
 
 app.get('/health', (c) =>
   c.json({
@@ -39,14 +70,7 @@ app.get('/health', (c) =>
 
 app.get('/context', async (c) => {
   const cwd = c.req.query('cwd') || '';
-  const limit = Number(c.req.query('limit')) || config.context.maxSessions;
-  const text = buildContext(
-    db,
-    cwd,
-    limit,
-    config.context.maxOutputBytes,
-    config.context.includePinned,
-  );
+  const text = buildContext(db, cwd, config.context);
   return c.text(text);
 });
 
@@ -56,14 +80,13 @@ app.post('/events/prompt', async (c) => {
   const prompt = body.prompt || '';
   if (!prompt) return c.json({ ok: true });
 
-  // 找到或创建 session
   db.abandonStaleSessions(cwd, config.session.timeoutMinutes);
   let session = db.findActiveSession(cwd, config.session.timeoutMinutes);
   if (!session) {
     const repo = detectRepo(cwd);
     session = db.createSession(randomUUID(), cwd, repo || undefined);
   }
-  db.appendPrompt(session.id, prompt);
+  db.appendPrompt(session.id, stripPrivateTags(prompt) as string);
   return c.json({ ok: true, session_id: session.id });
 });
 
@@ -84,8 +107,8 @@ app.post('/events/observation', async (c) => {
   queue.enqueue({
     sessionId: session.id,
     toolName,
-    toolInput: body.tool_input,
-    toolResponse: body.tool_response,
+    toolInput: stripPrivateTags(body.tool_input),
+    toolResponse: stripPrivateTags(body.tool_response),
     cwd,
   });
 
@@ -95,7 +118,7 @@ app.post('/events/observation', async (c) => {
 app.post('/events/stop', async (c) => {
   const body = await c.req.json();
   const cwd = body.cwd || '';
-  const assistantResponse = body.assistant_response || '';
+  const assistantResponse = stripPrivateTags(body.assistant_response || '') as string;
 
   const session = db.findActiveSession(cwd, config.session.timeoutMinutes);
   if (!session) return c.json({ ok: true, no_session: true });

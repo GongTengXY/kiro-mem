@@ -235,6 +235,7 @@ async function install() {
     'queue.ts',
     'context-builder.ts',
     'config.ts',
+    'logger.ts',
   ]) {
     copyFileSync(join(SRC_DIR, file), join(DATA_DIR, 'src', file));
   }
