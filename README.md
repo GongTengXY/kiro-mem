@@ -25,7 +25,8 @@ kiro-mem automatically captures tool call events during sessions, compresses the
 Requires [Bun](https://bun.sh) runtime and [Kiro CLI](https://kiro.dev).
 
 ```bash
-npx kiro-mem install
+npm i -g kiro-mem
+kiro-mem install
 ```
 
 Follow the prompts to select an AI provider and enter your API key. Worker starts automatically after installation.
@@ -46,7 +47,7 @@ kiro-cli chat --agent kiro-mem
 
 ```bash
 # Check Worker status
-bun run scripts/setup.ts status
+kiro-mem status
 
 # Check Worker health
 curl http://127.0.0.1:37778/health
@@ -140,7 +141,7 @@ Content inside `<private>` tags is replaced with `[REDACTED]` before storage. Th
 
 ## Configuration
 
-Edit `~/.kiro-mem/config.json`, or run `bun run scripts/setup.ts config` for interactive setup:
+Edit `~/.kiro-mem/config.json`, or run `kiro-mem config` for interactive setup:
 
 ```json
 {
@@ -189,12 +190,12 @@ Edit `~/.kiro-mem/config.json`, or run `bun run scripts/setup.ts config` for int
 ## Management
 
 ```bash
-bun run scripts/setup.ts status       # Check Worker status
-bun run scripts/setup.ts start        # Start Worker
-bun run scripts/setup.ts stop         # Stop Worker
-bun run scripts/setup.ts config       # Change compression model config
-bun run scripts/setup.ts config --show # View current config
-bun run scripts/setup.ts uninstall    # Uninstall (preserves database)
+kiro-mem status       # Check Worker status
+kiro-mem start        # Start Worker
+kiro-mem stop         # Stop Worker
+kiro-mem config       # Change compression model config
+kiro-mem config --show # View current config
+kiro-mem uninstall    # Uninstall (preserves database)
 ```
 
 ## System Requirements
