@@ -1,7 +1,10 @@
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 
+export type Language = 'zh' | 'en';
+
 export interface Config {
+  language: Language;
   worker: { port: number; host: string; logLevel: string };
   compression: {
     provider: 'anthropic' | 'openai' | 'ollama' | 'custom';
@@ -31,6 +34,7 @@ export interface Config {
 }
 
 const defaults: Config = {
+  language: 'zh',
   worker: { port: 37778, host: '127.0.0.1', logLevel: 'info' },
   compression: {
     provider: 'anthropic',
@@ -72,6 +76,7 @@ export function loadConfig(): Config {
 
   const raw = JSON.parse(readFileSync(configPath, 'utf-8'));
   return {
+    language: raw.language === 'en' ? 'en' : 'zh',
     worker: { ...defaults.worker, ...raw.worker },
     compression: { ...defaults.compression, ...raw.compression },
     context: { ...defaults.context, ...raw.context },

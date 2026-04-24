@@ -3,6 +3,8 @@ import { MemoryDB } from './db';
 import { loadConfig } from './config';
 import { logError } from './logger';
 
+import { generateEmbedding, embeddingToBlob, buildSearchText, DIMENSIONS } from './embedding';
+
 export interface CompressionJob {
   sessionId: string;
   toolName: string;
@@ -118,7 +120,7 @@ export class CompressionQueue {
 
       const inputStr =
         JSON.stringify(job.toolInput) + JSON.stringify(job.toolResponse);
-      this.db.insertObservation({
+      const obsId = this.db.insertObservation({
         session_id: job.sessionId,
         tool_name: job.toolName,
         event_type: 'tool_use',
@@ -133,6 +135,11 @@ export class CompressionQueue {
           (result.title + result.narrative).length / 4,
         ),
       });
+
+      // Async embedding generation — failure doesn't affect main flow
+      this.generateEmbeddingForObs(obsId, result).catch((e) =>
+        logError('embedding', `obs #${obsId}: ${e}`),
+      );
     } catch (err) {
       if (job.retries < 2) {
         job.retries++;
@@ -141,5 +148,20 @@ export class CompressionQueue {
         logError('queue', `Failed after 3 attempts: ${job.toolName} - ${err}`);
       }
     }
+  }
+
+  private async generateEmbeddingForObs(
+    obsId: number,
+    obs: { title: string; narrative: string; facts: string[]; concepts: string[] },
+  ) {
+    const text = buildSearchText({
+      title: obs.title,
+      narrative: obs.narrative,
+      facts: JSON.stringify(obs.facts),
+      concepts: JSON.stringify(obs.concepts),
+    });
+    if (!text.trim()) return;
+    const embedding = await generateEmbedding(text);
+    this.db.upsertEmbedding(obsId, 'all-MiniLM-L6-v2', DIMENSIONS, embeddingToBlob(embedding));
   }
 }

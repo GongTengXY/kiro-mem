@@ -100,7 +100,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       days?: number;
       limit?: number;
     };
-    const results = db.searchObservations(query, { type, repo, days, limit });
+    const results = await db.searchObservations(query, { type, repo, days, limit });
     return {
       content: [
         {
@@ -113,6 +113,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 type: r.obs_type,
                 date: r.created_at?.slice(0, 10),
                 session_id: r.session_id,
+                match_source: r.match_source,
+                semantic_score: r.semantic_score != null ? Math.round(r.semantic_score * 100) / 100 : null,
               })),
               total: results.length,
               hint: '使用 get_observations 获取完整详情',
