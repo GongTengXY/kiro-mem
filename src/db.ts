@@ -2,6 +2,7 @@ import { Database } from 'bun:sqlite';
 import { join } from 'path';
 import { mkdirSync, existsSync } from 'fs';
 import { getDataDir } from './config';
+import { generateEmbedding, cosineSimilarity, blobToEmbedding } from './embedding';
 
 // --- Types ---
 
@@ -49,6 +50,8 @@ export interface SearchResult {
   created_at: string;
   session_id: string;
   rank: number;
+  match_source: 'fts' | 'semantic' | 'hybrid';
+  semantic_score: number | null;
 }
 
 // --- Schema ---
@@ -111,6 +114,15 @@ CREATE VIRTUAL TABLE IF NOT EXISTS sessions_fts USING fts5(
   summary_request, summary_investigated, summary_learned,
   summary_completed, summary_next_steps,
   tokenize='trigram'
+);
+
+CREATE TABLE IF NOT EXISTS observation_embeddings (
+  observation_id   INTEGER PRIMARY KEY REFERENCES observations(id),
+  model            TEXT NOT NULL,
+  dimensions       INTEGER NOT NULL,
+  embedding        BLOB NOT NULL,
+  created_at       TEXT DEFAULT (datetime('now')),
+  updated_at       TEXT DEFAULT (datetime('now'))
 );
 `;
 
@@ -394,7 +406,7 @@ export class MemoryDB {
     return row.cnt;
   }
 
-  searchObservations(
+  async searchObservations(
     query: string,
     opts?: {
       type?: string;
@@ -402,12 +414,100 @@ export class MemoryDB {
       days?: number;
       limit?: number;
     },
-  ): SearchResult[] {
+  ): Promise<SearchResult[]> {
     const limit = opts?.limit || 20;
     const days = opts?.days || 30;
     const dateThreshold = `-${days} days`;
+    const RRF_K = 60;
 
-    // trigram 需要最少 3 字符，短词用 LIKE fallback
+    // --- Step 1: FTS candidates ---
+    const ftsResults = this.ftsSearch(query, dateThreshold, opts?.type, opts?.repo, 50);
+
+    // --- Step 2: Time-window candidates for semantic search ---
+    const recentIds = this.getRecentObservationIds(days, 200, opts?.repo);
+    const ftsIds = new Set(ftsResults.map(r => r.id));
+    // Merge: FTS ids + recent ids (deduped)
+    const candidateIds = [...new Set([...ftsIds, ...recentIds])];
+
+    // --- Step 3: Semantic rerank on candidates ---
+    let semanticRanking = new Map<number, number>(); // id → similarity score
+    try {
+      const queryEmbedding = await generateEmbedding(query);
+      const embeddings = this.getEmbeddingsByIds(candidateIds);
+      const scored: { id: number; score: number }[] = [];
+      for (const row of embeddings) {
+        const vec = blobToEmbedding(row.embedding);
+        const score = cosineSimilarity(queryEmbedding, vec);
+        if (score > 0.2) scored.push({ id: row.observation_id, score });
+      }
+      scored.sort((a, b) => b.score - a.score);
+      scored.forEach((item, idx) => semanticRanking.set(item.id, idx + 1));
+    } catch {
+      // Embedding not available — fall back to FTS only
+    }
+
+    // --- Step 4: RRF fusion ---
+    const allIds = new Set([...ftsIds, ...semanticRanking.keys()]);
+    const ftsRankMap = new Map<number, number>();
+    ftsResults.forEach((r, idx) => ftsRankMap.set(r.id, idx + 1));
+
+    const ftsLookup = new Map(ftsResults.map(r => [r.id, r]));
+
+    const scored: { id: number; score: number; ftsRank: number | null; semRank: number | null; semScore: number | null }[] = [];
+    for (const id of allIds) {
+      const ftsRank = ftsRankMap.get(id) ?? null;
+      const semRank = semanticRanking.get(id) ?? null;
+      let score = 0;
+      if (ftsRank !== null) score += 1 / (RRF_K + ftsRank);
+      if (semRank !== null) score += 1 / (RRF_K + semRank);
+      scored.push({ id, score, ftsRank, semRank, semScore: null });
+    }
+    scored.sort((a, b) => b.score - a.score);
+
+    // --- Step 5: Build results ---
+    const topIds = scored.slice(0, limit);
+    // Fetch observation details for ids not already in FTS results
+    const missingIds = topIds.filter(s => !ftsLookup.has(s.id)).map(s => s.id);
+    const missingObs = this.getObservationsByIds(missingIds);
+    const missingMap = new Map(missingObs.map(o => [o.id, o]));
+
+    // Get semantic scores for final results
+    let finalEmbeddings: Map<number, number> | null = null;
+    try {
+      const queryEmbedding = await generateEmbedding(query);
+      const embRows = this.getEmbeddingsByIds(topIds.map(s => s.id));
+      finalEmbeddings = new Map();
+      for (const row of embRows) {
+        finalEmbeddings.set(row.observation_id, cosineSimilarity(queryEmbedding, blobToEmbedding(row.embedding)));
+      }
+    } catch {}
+
+    return topIds.map(s => {
+      const fts = ftsLookup.get(s.id);
+      const obs = fts || missingMap.get(s.id);
+      const matchSource: SearchResult['match_source'] =
+        s.ftsRank !== null && s.semRank !== null ? 'hybrid'
+        : s.ftsRank !== null ? 'fts' : 'semantic';
+      return {
+        id: s.id,
+        title: obs?.title ?? fts?.title ?? '',
+        obs_type: obs?.obs_type ?? fts?.obs_type ?? '',
+        created_at: obs?.created_at ?? fts?.created_at ?? '',
+        session_id: obs?.session_id ?? fts?.session_id ?? '',
+        rank: s.score,
+        match_source: matchSource,
+        semantic_score: finalEmbeddings?.get(s.id) ?? null,
+      };
+    });
+  }
+
+  private ftsSearch(
+    query: string,
+    dateThreshold: string,
+    type?: string,
+    repo?: string,
+    limit: number = 50,
+  ): SearchResult[] {
     if (query.length < 3) {
       let sql = `SELECT o.id, o.title, o.obs_type, o.created_at, o.session_id, 0 as rank
         FROM observations o
@@ -415,24 +515,14 @@ export class MemoryDB {
         WHERE (o.title LIKE ? OR o.narrative LIKE ? OR o.facts LIKE ? OR o.concepts LIKE ?)
           AND o.created_at > datetime('now', ?)`;
       const like = `%${query}%`;
-      const params: (string | number)[] = [
-        like,
-        like,
-        like,
-        like,
-        dateThreshold,
-      ];
-      if (opts?.type) {
-        sql += ' AND o.obs_type = ?';
-        params.push(opts.type);
-      }
-      if (opts?.repo) {
-        sql += ' AND s.repo = ?';
-        params.push(opts.repo);
-      }
+      const params: (string | number)[] = [like, like, like, like, dateThreshold];
+      if (type) { sql += ' AND o.obs_type = ?'; params.push(type); }
+      if (repo) { sql += ' AND s.repo = ?'; params.push(repo); }
       sql += ' ORDER BY o.created_at DESC LIMIT ?';
       params.push(limit);
-      return this.db.query(sql).all(...params) as SearchResult[];
+      return (this.db.query(sql).all(...params) as SearchResult[]).map(r => ({
+        ...r, match_source: 'fts' as const, semantic_score: null,
+      }));
     }
 
     let sql = `SELECT o.id, o.title, o.obs_type, o.created_at, o.session_id, fts.rank
@@ -442,19 +532,13 @@ export class MemoryDB {
       WHERE observations_fts MATCH ?
         AND o.created_at > datetime('now', ?)`;
     const params: (string | number)[] = [query, dateThreshold];
-
-    if (opts?.type) {
-      sql += ' AND o.obs_type = ?';
-      params.push(opts.type);
-    }
-    if (opts?.repo) {
-      sql += ' AND s.repo = ?';
-      params.push(opts.repo);
-    }
+    if (type) { sql += ' AND o.obs_type = ?'; params.push(type); }
+    if (repo) { sql += ' AND s.repo = ?'; params.push(repo); }
     sql += ' ORDER BY fts.rank LIMIT ?';
     params.push(limit);
-
-    return this.db.query(sql).all(...params) as SearchResult[];
+    return (this.db.query(sql).all(...params) as SearchResult[]).map(r => ({
+      ...r, match_source: 'fts' as const, semantic_score: null,
+    }));
   }
 
   getPinnedObservations(limit: number = 20): Observation[] {
@@ -487,5 +571,48 @@ export class MemoryDB {
         ) ORDER BY id ASC`,
       )
       .all(obs.session_id, observationId, before, observationId, obs.session_id, observationId, after) as Observation[];
+  }
+
+  // --- Embeddings ---
+
+  upsertEmbedding(observationId: number, model: string, dimensions: number, embedding: Buffer) {
+    this.db.run(
+      `INSERT INTO observation_embeddings (observation_id, model, dimensions, embedding)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(observation_id) DO UPDATE SET
+         model = excluded.model, dimensions = excluded.dimensions,
+         embedding = excluded.embedding, updated_at = datetime('now')`,
+      [observationId, model, dimensions, embedding],
+    );
+  }
+
+  getEmbeddingsByIds(ids: number[]): { observation_id: number; embedding: Buffer }[] {
+    if (!ids.length) return [];
+    const placeholders = ids.map(() => '?').join(',');
+    return this.db
+      .query(`SELECT observation_id, embedding FROM observation_embeddings WHERE observation_id IN (${placeholders})`)
+      .all(...ids) as { observation_id: number; embedding: Buffer }[];
+  }
+
+  getRecentObservationIds(days: number, limit: number, repo?: string): number[] {
+    const dateThreshold = `-${days} days`;
+    let sql = `SELECT o.id FROM observations o
+      JOIN sessions s ON o.session_id = s.id
+      WHERE o.title IS NOT NULL AND o.created_at > datetime('now', ?)`;
+    const params: (string | number)[] = [dateThreshold];
+    if (repo) {
+      sql += ' AND s.repo = ?';
+      params.push(repo);
+    }
+    sql += ' ORDER BY o.created_at DESC LIMIT ?';
+    params.push(limit);
+    return (this.db.query(sql).all(...params) as { id: number }[]).map(r => r.id);
+  }
+
+  hasEmbedding(observationId: number): boolean {
+    const row = this.db
+      .query('SELECT 1 FROM observation_embeddings WHERE observation_id = ?')
+      .get(observationId);
+    return !!row;
   }
 }

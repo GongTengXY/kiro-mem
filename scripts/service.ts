@@ -7,6 +7,8 @@ import {
 } from 'fs';
 import { join } from 'path';
 import { spawnSync } from 'child_process';
+import type { Language } from '../src/config';
+import { t } from '../src/i18n';
 
 export const ansi = {
   ok: (s: string) => `\x1b[32m${s}\x1b[0m`,
@@ -107,18 +109,19 @@ WantedBy=default.target`;
 
 // --- Public API ---
 
-export function registerService(): string {
+export function registerService(lang: Language = 'zh'): string {
+  const m = t(lang);
   const platform = getPlatform();
   if (platform === 'macos') {
     mkdirSync(PLIST_DIR, { recursive: true });
     writeFileSync(PLIST_PATH, generatePlist());
-    return 'launchd service registered (auto-restart on crash, start on login)';
+    return m.serviceRegisteredLaunchd;
   }
   mkdirSync(SYSTEMD_DIR, { recursive: true });
   writeFileSync(SERVICE_PATH, generateService());
   spawnSync('systemctl', ['--user', 'daemon-reload'], { stdio: 'pipe' });
   spawnSync('systemctl', ['--user', 'enable', SERVICE_NAME], { stdio: 'pipe' });
-  return 'systemd service registered (auto-restart on crash, start on boot)';
+  return m.serviceRegisteredSystemd;
 }
 
 export function removeService() {
@@ -133,19 +136,20 @@ export function removeService() {
   }
 }
 
-export function start() {
+export function start(lang: Language = 'zh') {
+  const m = t(lang);
   const pidFile = join(DATA_DIR, '.worker.pid');
   if (existsSync(pidFile)) {
     const pid = readFileSync(pidFile, 'utf-8').trim();
     const check = spawnSync('kill', ['-0', pid]);
     if (check.status === 0) {
-      console.log(`${ansi.ok('✓')} Worker already running ${ansi.dim(`(PID: ${pid})`)}`);
+      console.log(`${ansi.ok('✓')} ${m.workerAlreadyRunning} ${ansi.dim(`(PID: ${pid})`)}`);
       return;
     }
   }
   const worker = join(DATA_DIR, 'src', 'server', 'worker.ts');
   if (!existsSync(worker)) {
-    console.error(`${ansi.err('✗')} Worker not found. Run ${ansi.cyan('kiro-mem install')} first.`);
+    console.error(`${ansi.err('✗')} ${m.workerNotFound} ${ansi.cyan('kiro-mem install')} ${m.first}`);
     return;
   }
 
@@ -154,17 +158,18 @@ export function start() {
     if (!existsSync(PLIST_PATH)) registerService();
     spawnSync('launchctl', ['unload', PLIST_PATH], { stdio: 'pipe' });
     const r = spawnSync('launchctl', ['load', PLIST_PATH], { stdio: 'pipe' });
-    if (r.status === 0) console.log(`${ansi.ok('✓')} Worker started ${ansi.dim('(launchd)')}`);
-    else console.error(`${ansi.err('✗')} launchctl load failed`);
+    if (r.status === 0) console.log(`${ansi.ok('✓')} ${m.workerStarted} ${ansi.dim('(launchd)')}`);
+    else console.error(`${ansi.err('✗')} ${m.launchctlFailed}`);
   } else {
     if (!existsSync(SERVICE_PATH)) registerService();
     const r = spawnSync('systemctl', ['--user', 'start', SERVICE_NAME], { stdio: 'pipe' });
-    if (r.status === 0) console.log(`${ansi.ok('✓')} Worker started ${ansi.dim('(systemd)')}`);
-    else console.error(`${ansi.err('✗')} systemctl start failed`);
+    if (r.status === 0) console.log(`${ansi.ok('✓')} ${m.workerStarted} ${ansi.dim('(systemd)')}`);
+    else console.error(`${ansi.err('✗')} ${m.systemctlFailed}`);
   }
 }
 
-export function stop() {
+export function stop(lang: Language = 'zh') {
+  const m = t(lang);
   const platform = getPlatform();
   if (platform === 'macos') {
     if (existsSync(PLIST_PATH)) {
@@ -182,10 +187,11 @@ export function stop() {
   }
   rmSync(pidFile, { force: true });
   rmSync(portFile, { force: true });
-  console.log(`${ansi.ok('✓')} Worker stopped`);
+  console.log(`${ansi.ok('✓')} ${m.workerStopped}`);
 }
 
-export function status() {
+export function status(lang: Language = 'zh') {
+  const m = t(lang);
   const pidFile = join(DATA_DIR, '.worker.pid');
   const portFile = join(DATA_DIR, '.worker.port');
   const platform = getPlatform();
@@ -197,17 +203,17 @@ export function status() {
       const port = existsSync(portFile) ? readFileSync(portFile, 'utf-8').trim() : '?';
       const managed = platform === 'macos' ? existsSync(PLIST_PATH) : existsSync(SERVICE_PATH);
       const svc = managed ? ansi.dim(` [${platform === 'macos' ? 'launchd' : 'systemd'} managed]`) : '';
-      console.log(`${ansi.ok('▶')} Worker running ${ansi.dim(`(PID: ${pid}, port: ${port})`)}${svc}`);
+      console.log(`${ansi.ok('▶')} ${m.workerRunning} ${ansi.dim(`(PID: ${pid}, port: ${port})`)}${svc}`);
       return;
     }
     rmSync(pidFile);
   }
 
   if (platform === 'macos' && existsSync(PLIST_PATH)) {
-    console.log(`${ansi.warn('⏹')} Worker not running ${ansi.dim('(launchd registered, try: kiro-mem start)')}`);
+    console.log(`${ansi.warn('⏹')} ${m.workerNotRunning} ${ansi.dim(`(${m.launchdRegistered})`)}`);
   } else if (platform === 'linux' && existsSync(SERVICE_PATH)) {
-    console.log(`${ansi.warn('⏹')} Worker not running ${ansi.dim('(systemd registered, try: kiro-mem start)')}`);
+    console.log(`${ansi.warn('⏹')} ${m.workerNotRunning} ${ansi.dim(`(${m.systemdRegistered})`)}`);
   } else {
-    console.log(`${ansi.err('⏹')} Worker not running`);
+    console.log(`${ansi.err('⏹')} ${m.workerNotRunning}`);
   }
 }
