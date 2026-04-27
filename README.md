@@ -1,4 +1,8 @@
-# kiro-mem
+<p align="center">
+  <img src="docs/assets/logo.png" alt="kiro-mem logo" width="120" />
+</p>
+
+[🇨🇳 中文](docs/i18n/README.zh.md)
 
 #### Persistent memory system for [Kiro CLI](https://kiro.dev).
 
