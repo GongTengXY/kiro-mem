@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/logo.png" alt="kiro-mem logo" width="120" />
+  <img src="docs/assets/logo.png" alt="kiro-mem logo" width="320" />
 </p>
 
 [🇨🇳 中文](docs/i18n/README.zh.md)
@@ -78,12 +78,12 @@ kiro-mem follows a simple three-layer retrieval flow:
 
 `pin` marks important observations so they are prioritized in future context injection.
 
-| Tool | Purpose |
-| --- | --- |
-| `search` | Hybrid search with `type`, `days`, and `repo` filters |
-| `get_observations` | Fetch full observation details by ID |
-| `timeline` | Show observations before and after a target item |
-| `pin` | Mark or unmark important memories |
+| Tool               | Purpose                                               |
+| ------------------ | ----------------------------------------------------- |
+| `search`           | Hybrid search with `type`, `days`, and `repo` filters |
+| `get_observations` | Fetch full observation details by ID                  |
+| `timeline`         | Show observations before and after a target item      |
+| `pin`              | Mark or unmark important memories                     |
 
 ```text
 @kiro-mem/search query="auth module bug" type="bugfix" limit=10
@@ -161,14 +161,14 @@ kiro-mem uninstall --purge
 
 ## Limitations
 
-| Limitation | Impact | Mitigation |
-| --- | --- | --- |
-| No session ID in hooks | Session matching is approximate | Inferred with `cwd` + 30-minute activity window |
-| `agentSpawn` output limit 10KB | Injected index must stay compact | Default settings usually stay well below the limit |
-| Search queries shorter than 3 chars | Falls back to `LIKE`, less precise | Use longer terms when possible |
-| First semantic-search use | Downloads local embedding model once | Cached locally after first use |
-| No Web Viewer UI yet | Memory can only be inspected through CLI/MCP/DB | Planned separately from the core memory flow |
-| Local only | No built-in cross-machine sync | Future: git sync or cloud storage |
+| Limitation                          | Impact                                          | Mitigation                                         |
+| ----------------------------------- | ----------------------------------------------- | -------------------------------------------------- |
+| No session ID in hooks              | Session matching is approximate                 | Inferred with `cwd` + 30-minute activity window    |
+| `agentSpawn` output limit 10KB      | Injected index must stay compact                | Default settings usually stay well below the limit |
+| Search queries shorter than 3 chars | Falls back to `LIKE`, less precise              | Use longer terms when possible                     |
+| First semantic-search use           | Downloads local embedding model once            | Cached locally after first use                     |
+| No Web Viewer UI yet                | Memory can only be inspected through CLI/MCP/DB | Planned separately from the core memory flow       |
+| Local only                          | No built-in cross-machine sync                  | Future: git sync or cloud storage                  |
 
 ## License
 

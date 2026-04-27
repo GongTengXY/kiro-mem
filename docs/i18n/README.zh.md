@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../../docs/assets/logo.png" alt="kiro-mem logo" width="120" />
+  <img src="../../docs/assets/logo.png" alt="kiro-mem logo" width="320" />
 </p>
 
 [🇬🇧 English](../../README.md)
