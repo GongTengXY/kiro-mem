@@ -2,7 +2,18 @@ import { Database } from 'bun:sqlite';
 import { join } from 'path';
 import { mkdirSync, existsSync } from 'fs';
 import { getDataDir } from './config';
-import { generateEmbedding, cosineSimilarity, blobToEmbedding } from './embedding';
+import {
+  generateEmbedding,
+  cosineSimilarity,
+  blobToEmbedding,
+} from './embedding';
+
+// --- Helpers ---
+
+/** Current timestamp in ISO 8601 format (UTC). Single source of "now" for the DB layer. */
+function nowISO(): string {
+  return new Date().toISOString();
+}
 
 // --- Types ---
 
@@ -73,8 +84,8 @@ CREATE TABLE IF NOT EXISTS sessions (
   summary_next_steps TEXT,
   prompts       TEXT DEFAULT '[]',
   files_touched TEXT DEFAULT '[]',
-  created_at    TEXT DEFAULT (datetime('now')),
-  updated_at    TEXT DEFAULT (datetime('now'))
+  created_at    TEXT NOT NULL,
+  updated_at    TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_sessions_cwd ON sessions(cwd);
@@ -96,7 +107,7 @@ CREATE TABLE IF NOT EXISTS observations (
   raw_tokens    INTEGER,
   compressed_tokens INTEGER,
   is_pinned     INTEGER DEFAULT 0,
-  created_at    TEXT DEFAULT (datetime('now'))
+  created_at    TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_obs_session ON observations(session_id);
@@ -121,8 +132,8 @@ CREATE TABLE IF NOT EXISTS observation_embeddings (
   model            TEXT NOT NULL,
   dimensions       INTEGER NOT NULL,
   embedding        BLOB NOT NULL,
-  created_at       TEXT DEFAULT (datetime('now')),
-  updated_at       TEXT DEFAULT (datetime('now'))
+  created_at       TEXT NOT NULL,
+  updated_at       TEXT NOT NULL
 );
 `;
 
@@ -167,11 +178,11 @@ export class MemoryDB {
     branch?: string,
     agentName?: string,
   ): Session {
-    const now = new Date().toISOString();
+    const now = nowISO();
     this.db.run(
-      `INSERT INTO sessions (id, cwd, repo, branch, agent_name, started_at, prompts, files_touched)
-       VALUES (?, ?, ?, ?, ?, ?, '[]', '[]')`,
-      [id, cwd, repo || null, branch || null, agentName || null, now],
+      `INSERT INTO sessions (id, cwd, repo, branch, agent_name, started_at, prompts, files_touched, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, '[]', '[]', ?, ?)`,
+      [id, cwd, repo || null, branch || null, agentName || null, now, now, now],
     );
     return this.getSession(id)!;
   }
@@ -183,14 +194,17 @@ export class MemoryDB {
   }
 
   findActiveSession(cwd: string, timeoutMinutes: number): Session | null {
+    const threshold = new Date(
+      Date.now() - timeoutMinutes * 60000,
+    ).toISOString();
     return this.db
       .query(
         `SELECT * FROM sessions
        WHERE cwd = ? AND status = 'active'
-         AND updated_at > datetime('now', ?)
+         AND updated_at > ?
        ORDER BY updated_at DESC LIMIT 1`,
       )
-      .get(cwd, `-${timeoutMinutes} minutes`) as Session | null;
+      .get(cwd, threshold) as Session | null;
   }
 
   appendPrompt(sessionId: string, prompt: string) {
@@ -199,8 +213,8 @@ export class MemoryDB {
     const prompts = JSON.parse(session.prompts);
     prompts.push(prompt);
     this.db.run(
-      "UPDATE sessions SET prompts = ?, updated_at = datetime('now') WHERE id = ?",
-      [JSON.stringify(prompts), sessionId],
+      'UPDATE sessions SET prompts = ?, updated_at = ? WHERE id = ?',
+      [JSON.stringify(prompts), nowISO(), sessionId],
     );
   }
 
@@ -215,20 +229,23 @@ export class MemoryDB {
       files_touched?: string[];
     },
   ) {
+    const now = nowISO();
     this.db.run(
       `UPDATE sessions SET
-        status = 'completed', ended_at = datetime('now'),
+        status = 'completed', ended_at = ?,
         summary_request = ?, summary_investigated = ?, summary_learned = ?,
         summary_completed = ?, summary_next_steps = ?,
-        files_touched = ?, updated_at = datetime('now')
+        files_touched = ?, updated_at = ?
        WHERE id = ?`,
       [
+        now,
         summary.request || null,
         summary.investigated || null,
         summary.learned || null,
         summary.completed || null,
         summary.next_steps || null,
         summary.files_touched ? JSON.stringify(summary.files_touched) : null,
+        now,
         sessionId,
       ],
     );
@@ -248,18 +265,22 @@ export class MemoryDB {
   }
 
   abandonStaleSessions(cwd: string, timeoutMinutes: number) {
+    const threshold = new Date(
+      Date.now() - timeoutMinutes * 60000,
+    ).toISOString();
+    const now = nowISO();
     this.db.run(
-      `UPDATE sessions SET status = 'abandoned', updated_at = datetime('now')
-       WHERE cwd = ? AND status = 'active' AND updated_at <= datetime('now', ?)`,
-      [cwd, `-${timeoutMinutes} minutes`],
+      `UPDATE sessions SET status = 'abandoned', updated_at = ?
+       WHERE cwd = ? AND status = 'active' AND updated_at <= ?`,
+      [now, cwd, threshold],
     );
   }
 
   touchSession(sessionId: string) {
-    this.db.run(
-      "UPDATE sessions SET updated_at = datetime('now') WHERE id = ?",
-      [sessionId],
-    );
+    this.db.run('UPDATE sessions SET updated_at = ? WHERE id = ?', [
+      nowISO(),
+      sessionId,
+    ]);
   }
 
   getRecentSessions(
@@ -296,7 +317,10 @@ export class MemoryDB {
     maxSessions: number,
     limit: number,
   ): Observation[] {
-    const conditions: string[] = ["s.status = 'completed'", 'o.title IS NOT NULL'];
+    const conditions: string[] = [
+      "s.status = 'completed'",
+      'o.title IS NOT NULL',
+    ];
     const params: (string | number)[] = [];
 
     if (repo) {
@@ -351,10 +375,11 @@ export class MemoryDB {
     raw_tokens?: number;
     compressed_tokens?: number;
   }): number {
+    const now = nowISO();
     const result = this.db.run(
       `INSERT INTO observations (session_id, tool_name, event_type, title, narrative,
-        facts, concepts, obs_type, files, raw_tokens, compressed_tokens)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        facts, concepts, obs_type, files, raw_tokens, compressed_tokens, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         obs.session_id,
         obs.tool_name || null,
@@ -367,6 +392,7 @@ export class MemoryDB {
         obs.files ? JSON.stringify(obs.files) : null,
         obs.raw_tokens || null,
         obs.compressed_tokens || null,
+        now,
       ],
     );
     this.touchSession(obs.session_id);
@@ -417,15 +443,21 @@ export class MemoryDB {
   ): Promise<SearchResult[]> {
     const limit = opts?.limit || 20;
     const days = opts?.days || 30;
-    const dateThreshold = `-${days} days`;
+    const dateThreshold = new Date(Date.now() - days * 86400000).toISOString();
     const RRF_K = 60;
 
     // --- Step 1: FTS candidates ---
-    const ftsResults = this.ftsSearch(query, dateThreshold, opts?.type, opts?.repo, 50);
+    const ftsResults = this.ftsSearch(
+      query,
+      dateThreshold,
+      opts?.type,
+      opts?.repo,
+      50,
+    );
 
     // --- Step 2: Time-window candidates for semantic search ---
     const recentIds = this.getRecentObservationIds(days, 200, opts?.repo);
-    const ftsIds = new Set(ftsResults.map(r => r.id));
+    const ftsIds = new Set(ftsResults.map((r) => r.id));
     // Merge: FTS ids + recent ids (deduped)
     const candidateIds = [...new Set([...ftsIds, ...recentIds])];
 
@@ -451,9 +483,15 @@ export class MemoryDB {
     const ftsRankMap = new Map<number, number>();
     ftsResults.forEach((r, idx) => ftsRankMap.set(r.id, idx + 1));
 
-    const ftsLookup = new Map(ftsResults.map(r => [r.id, r]));
+    const ftsLookup = new Map(ftsResults.map((r) => [r.id, r]));
 
-    const scored: { id: number; score: number; ftsRank: number | null; semRank: number | null; semScore: number | null }[] = [];
+    const scored: {
+      id: number;
+      score: number;
+      ftsRank: number | null;
+      semRank: number | null;
+      semScore: number | null;
+    }[] = [];
     for (const id of allIds) {
       const ftsRank = ftsRankMap.get(id) ?? null;
       const semRank = semanticRanking.get(id) ?? null;
@@ -467,27 +505,35 @@ export class MemoryDB {
     // --- Step 5: Build results ---
     const topIds = scored.slice(0, limit);
     // Fetch observation details for ids not already in FTS results
-    const missingIds = topIds.filter(s => !ftsLookup.has(s.id)).map(s => s.id);
+    const missingIds = topIds
+      .filter((s) => !ftsLookup.has(s.id))
+      .map((s) => s.id);
     const missingObs = this.getObservationsByIds(missingIds);
-    const missingMap = new Map(missingObs.map(o => [o.id, o]));
+    const missingMap = new Map(missingObs.map((o) => [o.id, o]));
 
     // Get semantic scores for final results
     let finalEmbeddings: Map<number, number> | null = null;
     try {
       const queryEmbedding = await generateEmbedding(query);
-      const embRows = this.getEmbeddingsByIds(topIds.map(s => s.id));
+      const embRows = this.getEmbeddingsByIds(topIds.map((s) => s.id));
       finalEmbeddings = new Map();
       for (const row of embRows) {
-        finalEmbeddings.set(row.observation_id, cosineSimilarity(queryEmbedding, blobToEmbedding(row.embedding)));
+        finalEmbeddings.set(
+          row.observation_id,
+          cosineSimilarity(queryEmbedding, blobToEmbedding(row.embedding)),
+        );
       }
     } catch {}
 
-    return topIds.map(s => {
+    return topIds.map((s) => {
       const fts = ftsLookup.get(s.id);
       const obs = fts || missingMap.get(s.id);
       const matchSource: SearchResult['match_source'] =
-        s.ftsRank !== null && s.semRank !== null ? 'hybrid'
-        : s.ftsRank !== null ? 'fts' : 'semantic';
+        s.ftsRank !== null && s.semRank !== null
+          ? 'hybrid'
+          : s.ftsRank !== null
+            ? 'fts'
+            : 'semantic';
       return {
         id: s.id,
         title: obs?.title ?? fts?.title ?? '',
@@ -513,15 +559,29 @@ export class MemoryDB {
         FROM observations o
         JOIN sessions s ON o.session_id = s.id
         WHERE (o.title LIKE ? OR o.narrative LIKE ? OR o.facts LIKE ? OR o.concepts LIKE ?)
-          AND o.created_at > datetime('now', ?)`;
+          AND o.created_at > ?`;
       const like = `%${query}%`;
-      const params: (string | number)[] = [like, like, like, like, dateThreshold];
-      if (type) { sql += ' AND o.obs_type = ?'; params.push(type); }
-      if (repo) { sql += ' AND s.repo = ?'; params.push(repo); }
+      const params: (string | number)[] = [
+        like,
+        like,
+        like,
+        like,
+        dateThreshold,
+      ];
+      if (type) {
+        sql += ' AND o.obs_type = ?';
+        params.push(type);
+      }
+      if (repo) {
+        sql += ' AND s.repo = ?';
+        params.push(repo);
+      }
       sql += ' ORDER BY o.created_at DESC LIMIT ?';
       params.push(limit);
-      return (this.db.query(sql).all(...params) as SearchResult[]).map(r => ({
-        ...r, match_source: 'fts' as const, semantic_score: null,
+      return (this.db.query(sql).all(...params) as SearchResult[]).map((r) => ({
+        ...r,
+        match_source: 'fts' as const,
+        semantic_score: null,
       }));
     }
 
@@ -530,14 +590,22 @@ export class MemoryDB {
       JOIN observations o ON fts.rowid = o.id
       JOIN sessions s ON o.session_id = s.id
       WHERE observations_fts MATCH ?
-        AND o.created_at > datetime('now', ?)`;
+        AND o.created_at > ?`;
     const params: (string | number)[] = [query, dateThreshold];
-    if (type) { sql += ' AND o.obs_type = ?'; params.push(type); }
-    if (repo) { sql += ' AND s.repo = ?'; params.push(repo); }
+    if (type) {
+      sql += ' AND o.obs_type = ?';
+      params.push(type);
+    }
+    if (repo) {
+      sql += ' AND s.repo = ?';
+      params.push(repo);
+    }
     sql += ' ORDER BY fts.rank LIMIT ?';
     params.push(limit);
-    return (this.db.query(sql).all(...params) as SearchResult[]).map(r => ({
-      ...r, match_source: 'fts' as const, semantic_score: null,
+    return (this.db.query(sql).all(...params) as SearchResult[]).map((r) => ({
+      ...r,
+      match_source: 'fts' as const,
+      semantic_score: null,
     }));
   }
 
@@ -556,7 +624,11 @@ export class MemoryDB {
     ]);
   }
 
-  getTimeline(observationId: number, before: number, after: number): Observation[] {
+  getTimeline(
+    observationId: number,
+    before: number,
+    after: number,
+  ): Observation[] {
     const obs = this.getObservation(observationId);
     if (!obs) return [];
     return this.db
@@ -570,35 +642,57 @@ export class MemoryDB {
           SELECT * FROM observations WHERE session_id = ? AND id > ? ORDER BY id ASC LIMIT ?
         ) ORDER BY id ASC`,
       )
-      .all(obs.session_id, observationId, before, observationId, obs.session_id, observationId, after) as Observation[];
+      .all(
+        obs.session_id,
+        observationId,
+        before,
+        observationId,
+        obs.session_id,
+        observationId,
+        after,
+      ) as Observation[];
   }
 
   // --- Embeddings ---
 
-  upsertEmbedding(observationId: number, model: string, dimensions: number, embedding: Buffer) {
+  upsertEmbedding(
+    observationId: number,
+    model: string,
+    dimensions: number,
+    embedding: Buffer,
+  ) {
+    const now = nowISO();
     this.db.run(
-      `INSERT INTO observation_embeddings (observation_id, model, dimensions, embedding)
-       VALUES (?, ?, ?, ?)
+      `INSERT INTO observation_embeddings (observation_id, model, dimensions, embedding, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?)
        ON CONFLICT(observation_id) DO UPDATE SET
          model = excluded.model, dimensions = excluded.dimensions,
-         embedding = excluded.embedding, updated_at = datetime('now')`,
-      [observationId, model, dimensions, embedding],
+         embedding = excluded.embedding, updated_at = ?`,
+      [observationId, model, dimensions, embedding, now, now, now],
     );
   }
 
-  getEmbeddingsByIds(ids: number[]): { observation_id: number; embedding: Buffer }[] {
+  getEmbeddingsByIds(
+    ids: number[],
+  ): { observation_id: number; embedding: Buffer }[] {
     if (!ids.length) return [];
     const placeholders = ids.map(() => '?').join(',');
     return this.db
-      .query(`SELECT observation_id, embedding FROM observation_embeddings WHERE observation_id IN (${placeholders})`)
+      .query(
+        `SELECT observation_id, embedding FROM observation_embeddings WHERE observation_id IN (${placeholders})`,
+      )
       .all(...ids) as { observation_id: number; embedding: Buffer }[];
   }
 
-  getRecentObservationIds(days: number, limit: number, repo?: string): number[] {
-    const dateThreshold = `-${days} days`;
+  getRecentObservationIds(
+    days: number,
+    limit: number,
+    repo?: string,
+  ): number[] {
+    const dateThreshold = new Date(Date.now() - days * 86400000).toISOString();
     let sql = `SELECT o.id FROM observations o
       JOIN sessions s ON o.session_id = s.id
-      WHERE o.title IS NOT NULL AND o.created_at > datetime('now', ?)`;
+      WHERE o.title IS NOT NULL AND o.created_at > ?`;
     const params: (string | number)[] = [dateThreshold];
     if (repo) {
       sql += ' AND s.repo = ?';
@@ -606,7 +700,9 @@ export class MemoryDB {
     }
     sql += ' ORDER BY o.created_at DESC LIMIT ?';
     params.push(limit);
-    return (this.db.query(sql).all(...params) as { id: number }[]).map(r => r.id);
+    return (this.db.query(sql).all(...params) as { id: number }[]).map(
+      (r) => r.id,
+    );
   }
 
   hasEmbedding(observationId: number): boolean {
