@@ -92,13 +92,28 @@ const messages = {
     diagNoErrors: '今天没有错误',
     diagRecentErrors: '条今日记录：',
     diagLast: '最近',
-    diagSessions: '会话数',
-    diagObservations: '观察数',
+    diagTurns: '轮次',
+    diagMemories: '记忆',
+    diagTopics: '主题',
     diagPinned: 'pinned',
-    diagPending: 'pending',
+    diagPendingJobs: '待处理任务',
     diagSize: '大小',
     serviceRegisteredLaunchd: '已注册 launchd 服务（崩溃自动重启，登录自动启动）',
     serviceRegisteredSystemd: '已注册 systemd 服务（崩溃自动重启，开机自动启动）',
+
+    // --- embedding ---
+    embDownloading: '下载 embedding 模型...',
+    embCached: 'embedding 模型已缓存',
+    embFailed: 'embedding 模型下载失败',
+    embDirectFailure: '直连失败详情:',
+    embMirrorFailure: '镜像失败详情:',
+    embRetryHint: '请检查网络后重试：',
+
+    // --- diagnose: jobs ---
+    diagJobsLabel: '任务',
+    diagJobsInflight: '执行中',
+    diagJobsPending: '等待中',
+    diagJobsDead: '失败',
 
     // --- help ---
     helpInstall: '安装 kiro-mem（交互式配置）',
@@ -203,11 +218,26 @@ const messages = {
     diagNoErrors: 'No errors today',
     diagRecentErrors: 'entries from today:',
     diagLast: 'Last',
-    diagSessions: 'Sessions',
-    diagObservations: 'Observations',
+    diagTurns: 'Turns',
+    diagMemories: 'Memories',
+    diagTopics: 'Topics',
     diagPinned: 'pinned',
-    diagPending: 'pending',
+    diagPendingJobs: 'pending jobs',
     diagSize: 'Size',
+
+    // --- embedding ---
+    embDownloading: 'Downloading embedding model...',
+    embCached: 'Embedding model cached',
+    embFailed: 'Embedding model download failed',
+    embDirectFailure: 'Direct failure:',
+    embMirrorFailure: 'Mirror failure:',
+    embRetryHint: 'Check network and retry:',
+
+    // --- diagnose: jobs ---
+    diagJobsLabel: 'jobs',
+    diagJobsInflight: 'inflight',
+    diagJobsPending: 'pending',
+    diagJobsDead: 'dead',
 
     // --- help ---
     helpInstall: 'Install kiro-mem (interactive setup)',

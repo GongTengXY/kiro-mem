@@ -6,27 +6,39 @@
   "hooks": {
     "agentSpawn": [
       {
-        "command": "__KIRO_MEMORY_DIR__/hooks/context.sh",
+        "command": "__KIRO_MEMORY_DIR__/hooks/context.ts",
         "timeout_ms": 5000,
-        "max_output_size": 10240
+        "max_output_size": 10240,
+        "env": {
+          "KIRO_MEMORY_DATA_DIR": "__KIRO_MEMORY_DIR__"
+        }
       }
     ],
     "userPromptSubmit": [
       {
-        "command": "__KIRO_MEMORY_DIR__/hooks/prompt-save.sh",
-        "timeout_ms": 3000
+        "command": "__KIRO_MEMORY_DIR__/hooks/prompt-save.ts",
+        "timeout_ms": 3000,
+        "env": {
+          "KIRO_MEMORY_DATA_DIR": "__KIRO_MEMORY_DIR__"
+        }
       }
     ],
     "postToolUse": [
       {
-        "command": "__KIRO_MEMORY_DIR__/hooks/observation.sh",
-        "timeout_ms": 3000
+        "command": "__KIRO_MEMORY_DIR__/hooks/observation.ts",
+        "timeout_ms": 3000,
+        "env": {
+          "KIRO_MEMORY_DATA_DIR": "__KIRO_MEMORY_DIR__"
+        }
       }
     ],
     "stop": [
       {
-        "command": "__KIRO_MEMORY_DIR__/hooks/summary.sh",
-        "timeout_ms": 3000
+        "command": "__KIRO_MEMORY_DIR__/hooks/stop.ts",
+        "timeout_ms": 3000,
+        "env": {
+          "KIRO_MEMORY_DATA_DIR": "__KIRO_MEMORY_DIR__"
+        }
       }
     ]
   },

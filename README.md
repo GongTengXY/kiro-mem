@@ -18,20 +18,20 @@
 
 > Kiro CLI only. Not compatible with Kiro IDE.
 
-[Quick Start](#quick-start) • [How It Works](#how-it-works) • [MCP Search Tools](#mcp-search-tools) • [Configuration](#configuration) • [CLI](#cli) • [Limitations](#limitations) • [License](#license)
+[Quick Start](#quick-start) • [How It Works](#how-it-works) • [MCP Tools](#mcp-tools) • [Configuration](#configuration) • [CLI](#cli) • [Limitations](#limitations) • [License](#license)
 
 ---
 
-kiro-mem automatically captures prompts and tool-call history during Kiro sessions, compresses them into structured memories, and injects a compact memory index into later sessions. The agent scans the index first, then fetches details only when needed.
+kiro-mem automatically captures each turn (prompt → tool calls → stop) during Kiro sessions, compresses them into structured **memories**, organizes them by **topics**, and injects a compact memory index into later sessions. The agent scans the index first, then fetches details only when needed.
 
 **Key Features**
 
 - 🧠 **Persistent Memory** — Keep project context across sessions
 - 🔍 **Hybrid Search** — FTS5 full-text search + local semantic reranking
 - 📊 **Progressive Disclosure** — Inject a small index first, fetch details on demand
-- 🔧 **MCP Tools** — `search`, `get_observations`, `timeline`, `pin`
+- 🔧 **MCP Tools** — `search`, `get_memories`, `trace_memory`, `topics`, `pin`
 - 🔒 **Privacy Control** — Use `<private>` tags to redact sensitive content before storage
-- 🚀 **Async Processing** — Background compression queue, no tool-call blocking
+- 🚀 **Async Processing** — Persistent job queue, no tool-call blocking
 - 🔄 **Process Keepalive** — Worker managed by `launchd` or `systemd`
 - 🌐 **i18n** — `zh` and `en` for CLI and compression prompts
 
@@ -68,40 +68,40 @@ curl http://127.0.0.1:37778/health
 
 ## How It Works
 
-**Core Components**
+**Architecture (V2 Turn+)**
 
-1. **4 Lifecycle Hooks** — `agentSpawn`, `userPromptSubmit`, `postToolUse`, `stop`
-2. **Worker Service** — Bun HTTP server on port `37778` with async compression queue
-3. **SQLite Database** — Stores sessions, observations, summaries, and embeddings
-4. **MCP Server** — Exposes 4 retrieval tools over stdio
-5. **Local Embeddings** — `all-MiniLM-L6-v2` for semantic reranking
+1. **Truth Layer** — `session_id` → `turns` → `turn_events` (append-only raw payloads)
+2. **Synthesis Layer** — Persistent jobs: `summarize_turn` → `normalize_topic` → `merge_cluster_to_memory`
+3. **Retrieval Layer** — `memories_fts` + semantic reranking → MCP tools → context injection
 
-At session start, kiro-mem injects a compact observation index. The agent can then use MCP tools to search history, inspect nearby context, and fetch full details only for relevant memories.
+At session start, kiro-mem injects a compact memory index organized by **Pinned Memories**, **Active Topics**, and **Recent Memories**. The agent can then use MCP tools to search, inspect, and trace memories on demand.
 
-## MCP Search Tools
+**Data Model**
 
-kiro-mem follows a simple three-layer retrieval flow:
+- `session_refs` — Session isolation metadata
+- `turns` — One per user prompt → stop cycle
+- `turn_events` — Append-only raw hook payloads
+- `memories` — User-facing memory units (turn or merged)
+- `topics` — Normalized topic labels for aggregation
+- `jobs` — Persistent async task queue
 
-1. **Search the index** with `search`
-2. **Inspect local context** with `timeline`
-3. **Fetch full details** with `get_observations`
+## MCP Tools
 
-`pin` marks important observations so they are prioritized in future context injection.
-
-| Tool               | Purpose                                               |
-| ------------------ | ----------------------------------------------------- |
-| `search`           | Hybrid search with `type`, `days`, and `repo` filters |
-| `get_observations` | Fetch full observation details by ID                  |
-| `timeline`         | Show observations before and after a target item      |
-| `pin`              | Mark or unmark important memories                     |
+| Tool | Purpose |
+|------|---------|
+| `search` | Hybrid search memories with `type`, `days`, `repo` filters |
+| `get_memories` | Fetch full memory details by ID |
+| `trace_memory` | Show source turns and neighboring memories |
+| `topics` | Browse active topics and unresolved items |
+| `pin` | Mark or unmark important memories |
 
 ```text
 @kiro-mem/search query="auth module bug" type="bugfix" limit=10
-@kiro-mem/timeline observation_id=123 before=5 after=5
-@kiro-mem/get_observations ids=[123,456]
+@kiro-mem/trace_memory memory_id=42 before=3 after=3
+@kiro-mem/get_memories ids=[42,56]
 ```
 
-**Observation Types:** `decision` | `bugfix` | `feature` | `refactor` | `discovery` | `change`
+**Memory Types:** `decision` | `bugfix` | `feature` | `refactor` | `discovery` | `change`
 
 ## Privacy
 
@@ -128,10 +128,7 @@ Edit `~/.kiro-mem/config.json`, or run `kiro-mem config` for interactive setup:
     "concurrency": 6
   },
   "context": {
-    "maxObservations": 50,
-    "maxSessions": 10,
-    "fullCount": 5,
-    "fullField": "narrative",
+    "maxMemories": 50,
     "maxOutputBytes": 8192,
     "includePinned": true,
     "includeSummary": false
@@ -141,13 +138,6 @@ Edit `~/.kiro-mem/config.json`, or run `kiro-mem config` for interactive setup:
   }
 }
 ```
-
-**Common Settings**
-
-- `language`: `zh` or `en`
-- `compression.provider`: `anthropic`, `openai`, `ollama`, or `custom`
-- `context.*`: controls how much memory is injected on session start
-- `includePinned`: show pinned memories first
 
 ## CLI
 
@@ -171,14 +161,14 @@ kiro-mem uninstall --purge
 
 ## Limitations
 
-| Limitation                          | Impact                                          | Mitigation                                         |
-| ----------------------------------- | ----------------------------------------------- | -------------------------------------------------- |
-| No session ID in hooks              | Session matching is approximate                 | Inferred with `cwd` + 30-minute activity window    |
-| `agentSpawn` output limit 10KB      | Injected index must stay compact                | Default settings usually stay well below the limit |
-| Search queries shorter than 3 chars | Falls back to `LIKE`, less precise              | Use longer terms when possible                     |
-| First semantic-search use           | Downloads local embedding model once            | Cached locally after first use                     |
-| No Web Viewer UI yet                | Memory can only be inspected through CLI/MCP/DB | Planned separately from the core memory flow       |
-| Local only                          | No built-in cross-machine sync                  | Future: git sync or cloud storage                  |
+| Limitation | Impact | Mitigation |
+|------------|--------|------------|
+| `agentSpawn` output limit 10KB | Injected index must stay compact | Budget-controlled context builder |
+| Search queries shorter than 3 chars | Falls back to `LIKE`, less precise | Use longer terms when possible |
+| First semantic-search use | Downloads local embedding model once | Cached locally after first use |
+| No Web Viewer UI yet | Memory inspected through CLI/MCP/DB | Planned separately |
+| Local only | No built-in cross-machine sync | Future: git sync or cloud storage |
+| Topic normalization | LLM-dependent, may drift | Periodic re-normalization planned |
 
 ## License
 
