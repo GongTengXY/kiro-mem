@@ -1,5 +1,5 @@
 import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
-import { MemoryDB } from '../../src/db';
+import { MemoryDB, computeScopeKey } from '../../src/db';
 import { Compressor } from '../../src/compressor';
 import { JobRunner } from '../../src/jobs';
 import { buildContext } from '../../src/context-builder';
@@ -69,25 +69,40 @@ describe('WP5 / normalize_topic', () => {
     const compressor = new Compressor(fakeProvider);
     const runner = new JobRunner(db, { concurrency: 1, pollMs: 50 });
 
+    // Mirror the production handler from src/server/worker.ts so this test
+    // actually exercises the post-refactor path: scope-aware candidate lookup
+    // + atomic upsertTopicAndLinkMemory. If that helper ever changes shape,
+    // this test should follow the production handler, not diverge again.
     runner.register('normalize_topic', async (job) => {
       const { memory_id } = JSON.parse(job.payload_json);
       const memory = db.getMemory(memory_id);
-      if (!memory || memory.state !== 'active') return;
+      if (!memory || memory.state !== 'active' || memory.topic_id != null) return;
+
       const concepts: string[] = JSON.parse(memory.concepts_json || '[]');
-      const candidate = concepts[0] || memory.title.slice(0, 40);
-      const existingTopics = db.getActiveTopics(memory.repo, 50);
-      const result = await compressor.normalizeTopic({
-        candidate, existing_labels: existingTopics.map(t => t.canonical_label), memory_title: memory.title,
+      const candidate =
+        (memory.topic_candidate || '').trim() ||
+        concepts[0] ||
+        memory.title.slice(0, 40);
+      if (!candidate) return;
+
+      const scopeKey = computeScopeKey(memory.repo, memory.cwd_scope);
+      const existingTopics = db.getActiveTopics({
+        repo: memory.repo, cwd: memory.cwd_scope, limit: 50,
       });
-      let topicId: number;
-      if (result.action === 'existing') {
-        const existing = db.findTopic(memory.repo, result.canonical_label);
-        topicId = existing ? existing.id : db.createTopic({ repo: memory.repo, canonical_label: result.canonical_label }).id;
-      } else {
-        topicId = db.createTopic({ repo: memory.repo, canonical_label: result.canonical_label }).id;
-      }
-      db.updateTopic(topicId, { memory_count_delta: 1 });
-      db.raw.run('UPDATE memories SET topic_id = ? WHERE id = ?', [topicId, memory_id]);
+      const result = await compressor.normalizeTopic({
+        candidate,
+        existing_labels: existingTopics.map((t) => t.canonical_label),
+        memory_title: memory.title,
+      });
+
+      const { topic_id } = db.upsertTopicAndLinkMemory({
+        memory_id,
+        scope_key: scopeKey,
+        repo: memory.repo,
+        canonical_label: result.canonical_label,
+        aliases: result.aliases,
+      });
+      void topic_id;
     });
 
     runner.start();
@@ -99,6 +114,7 @@ describe('WP5 / normalize_topic', () => {
     const topic = db.getTopic(mem.topic_id!)!;
     expect(topic.canonical_label).toBe('auth');
     expect(topic.memory_count).toBe(1);
+    expect(topic.scope_key).toBe('/proj');
   });
 });
 

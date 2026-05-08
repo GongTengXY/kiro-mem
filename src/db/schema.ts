@@ -86,8 +86,12 @@ CREATE TABLE IF NOT EXISTS turn_artifacts (
 );
 
 -- Canonical topics: aggregation + dedup + context injection anchor.
+-- scope_key is the uniqueness key and is derived from (repo, cwd) via
+-- computeScopeKey so that non-git workspaces still get a stable per-workspace
+-- namespace. repo is kept as optional metadata for display / filtering.
 CREATE TABLE IF NOT EXISTS topics (
   id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  scope_key           TEXT NOT NULL,
   repo                TEXT,
   canonical_label     TEXT NOT NULL,
   aliases_json        TEXT NOT NULL DEFAULT '[]',
@@ -100,10 +104,11 @@ CREATE TABLE IF NOT EXISTS topics (
   updated_at          TEXT NOT NULL
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_topics_repo_label
-  ON topics(repo, canonical_label);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_topics_scope_label
+  ON topics(scope_key, canonical_label);
 CREATE INDEX IF NOT EXISTS idx_topics_last_active
   ON topics(last_active_at DESC);
+CREATE INDEX IF NOT EXISTS idx_topics_repo ON topics(repo);
 
 -- User-facing primary memory unit.
 -- object returned by MCP \`search\`.
@@ -113,6 +118,7 @@ CREATE TABLE IF NOT EXISTS memories (
   repo                TEXT,
   cwd_scope           TEXT,
   topic_id            INTEGER REFERENCES topics(id),
+  topic_candidate     TEXT,
   title               TEXT NOT NULL,
   summary             TEXT NOT NULL,
   request             TEXT,
@@ -234,8 +240,8 @@ END;
 
 /**
  * Single entry point for DB schema initialization. Called from the `MemoryDB`
- * constructor and from the migration entry. Order matters: base tables first,
- * then FTS virtual tables, then triggers that depend on both.
+ * constructor. Order matters: base tables first, then FTS virtual tables,
+ * then triggers that depend on both.
  */
 export const ALL_SCHEMA = [
   V2_SCHEMA,

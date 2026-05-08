@@ -18,19 +18,21 @@ export function buildContext(
   let used = 20; // opening tag
 
   // --- Pinned Memories ---
-  if (ctx.includePinned) {
-    const pinned = db.getPinnedMemories(10);
-    if (pinned.length) {
-      const section = renderPinned(pinned);
-      if (used + section.length < budget) {
-        parts.push(section);
-        used += section.length;
-      }
+  // Fetched once and reused as the exclusion set for recent memories below.
+  const pinned = ctx.includePinned ? db.getPinnedMemories(10) : [];
+  if (pinned.length) {
+    const section = renderPinned(pinned);
+    if (used + section.length < budget) {
+      parts.push(section);
+      used += section.length;
     }
   }
 
   // --- Active Topics ---
-  const topics = db.getActiveTopics(repo, 8);
+  // Use scope-aware lookup so non-git workspaces get their own topic
+  // namespace (computeScopeKey(repo, cwd)) instead of seeing all NULL-repo
+  // topics from every unrelated non-git session in the world.
+  const topics = db.getActiveTopics({ repo, cwd: cwd || null, limit: 8 });
   if (topics.length) {
     const section = renderTopics(topics);
     if (used + section.length < budget) {
@@ -47,7 +49,7 @@ export function buildContext(
     limit: ctx.maxMemories || 30,
   });
   // Exclude pinned (already shown above)
-  const pinnedIds = new Set(db.getPinnedMemories(10).map(m => m.id));
+  const pinnedIds = new Set(pinned.map(m => m.id));
   const recentFiltered = recent.filter(m => !pinnedIds.has(m.id));
 
   if (recentFiltered.length) {

@@ -125,6 +125,12 @@ export interface Memory {
   repo: string | null;
   cwd_scope: string | null;
   topic_id: number | null;
+  /**
+   * LLM-generated topic candidate from summarize_turn. Persisted so
+   * normalize_topic can use the strongest available semantic signal instead of
+   * falling back to concepts[0] / title truncation.
+   */
+  topic_candidate: string | null;
   title: string;
   summary: string;
   request: string | null;
@@ -158,6 +164,11 @@ export interface MemoryTurnLink {
 /** Canonical topic used for aggregation, dedup, and context injection. */
 export interface Topic {
   id: number;
+  /**
+   * Non-null uniqueness key, derived via `computeScopeKey(repo, cwd)`.
+   * Paired with `canonical_label` to form the real UNIQUE constraint.
+   */
+  scope_key: string;
   repo: string | null;
   canonical_label: string;
   aliases_json: string;

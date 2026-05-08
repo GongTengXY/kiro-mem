@@ -40,6 +40,8 @@ const toolText = isEnglish
       beforeDescription: 'Number of previous neighboring memories',
       afterDescription: 'Number of next neighboring memories',
       topicsDescription: 'Get active topics and their unresolved summaries.',
+      topicsCwdDescription:
+        'Current working directory. When no `repo` is given, topics are narrowed to this workspace so non-git projects stay isolated. Omit both to browse all topics.',
       pinDescription:
         'Mark or unmark a memory as high-value. Pinned memories are prioritized in later context injection.',
       pinnedDescription: 'true = pin, false = unpin',
@@ -62,6 +64,8 @@ const toolText = isEnglish
       beforeDescription: '向前取 N 条相邻记忆',
       afterDescription: '向后取 N 条相邻记忆',
       topicsDescription: '获取活跃主题列表及其未完成摘要。',
+      topicsCwdDescription:
+        '当前工作目录。未传 `repo` 时按此 workspace 过滤，非 git 项目也能独立浏览。两者都不传则返回所有 topics。',
       pinDescription:
         '标记/取消标记某个 memory 为高价值记忆。被 pin 的记忆会在后续会话中优先注入。',
       pinnedDescription: 'true=标记, false=取消',
@@ -181,6 +185,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         type: 'object' as const,
         properties: {
           repo: { type: 'string', description: toolText.repoDescription },
+          cwd: { type: 'string', description: toolText.topicsCwdDescription },
           limit: { type: 'number', description: toolText.limitDescription, default: 20 },
         },
       },
@@ -276,8 +281,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   if (name === 'topics') {
-    const { repo, limit } = args as { repo?: string; limit?: number };
-    const topics = db.getActiveTopics(repo, limit ?? 20);
+    const { repo, cwd, limit } = args as {
+      repo?: string;
+      cwd?: string;
+      limit?: number;
+    };
+    const topics = db.getActiveTopics({ repo, cwd, limit: limit ?? 20 });
     return {
       content: [{
         type: 'text',

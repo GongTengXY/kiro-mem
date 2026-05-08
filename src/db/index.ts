@@ -5,6 +5,7 @@ import { join, dirname } from 'path';
 import { mkdirSync, existsSync } from 'fs';
 import { getDataDir } from '../config';
 import { ALL_SCHEMA } from './schema';
+import { computeScopeKey } from './scope';
 import type {
   SessionRef,
   SessionRefState,
@@ -32,6 +33,7 @@ import type {
 
 // Re-export types
 export * from './types';
+export { computeScopeKey } from './scope';
 
 // ---------- Helpers ----------
 
@@ -80,7 +82,7 @@ export class MemoryDB {
     this.db.close();
   }
 
-  /** Exposed for test / migration tooling that needs raw SQL access. */
+  /** Exposed for tests and ad-hoc maintenance scripts that need raw SQL. */
   get raw(): Database {
     return this.db;
   }
@@ -448,15 +450,19 @@ export class MemoryDB {
   // topics
   // ===========================================================
 
-  findTopic(repo: string | null, canonical_label: string): Topic | null {
+  /**
+   * Look up a topic by its real uniqueness key. `scope_key` is derived from
+   * `(repo, cwd)` via {@link computeScopeKey} — for a git project that will
+   * be the repo path, for a non-git workspace it will be `cwd:<cwd>`.
+   */
+  findTopicByScope(scope_key: string, canonical_label: string): Topic | null {
     return this.db
       .query(
         `SELECT * FROM topics
-           WHERE (repo IS ? OR repo = ?)
-             AND canonical_label = ?
+           WHERE scope_key = ? AND canonical_label = ?
            LIMIT 1`,
       )
-      .get(repo, repo, canonical_label) as Topic | null;
+      .get(scope_key, canonical_label) as Topic | null;
   }
 
   getTopic(id: number): Topic | null {
@@ -467,6 +473,7 @@ export class MemoryDB {
 
   createTopic(input: {
     repo?: string | null;
+    cwd?: string | null;
     canonical_label: string;
     aliases?: string[];
     summary?: string | null;
@@ -474,12 +481,14 @@ export class MemoryDB {
     status?: TopicStatus;
   }): Topic {
     const now = nowISO();
+    const scopeKey = computeScopeKey(input.repo ?? null, input.cwd ?? null);
     const result = this.db.run(
       `INSERT INTO topics (
-         repo, canonical_label, aliases_json, summary, unresolved_summary,
+         scope_key, repo, canonical_label, aliases_json, summary, unresolved_summary,
          status, last_active_at, memory_count, created_at, updated_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
       [
+        scopeKey,
         input.repo ?? null,
         input.canonical_label,
         JSON.stringify(input.aliases ?? []),
@@ -492,6 +501,91 @@ export class MemoryDB {
       ],
     );
     return this.getTopic(Number(result.lastInsertRowid))!;
+  }
+
+  /**
+   * Atomic "get-or-create topic and link memory".
+   *
+   * Inside a single transaction:
+   *   1. Idempotency guard — bail out if the memory is already linked to a
+   *      topic so crash+retry never inflates memory_count.
+   *   2. `INSERT ... ON CONFLICT(scope_key, canonical_label) DO UPDATE` —
+   *      creates the topic row or atomically increments memory_count.
+   *      On conflict, `aliases_json` is recomputed as the distinct union of
+   *      the existing aliases and the ones passed in this call; the union
+   *      happens in pure SQL so concurrent alias writes never lose entries.
+   *   3. Link `memories.topic_id → topic.id`.
+   */
+  upsertTopicAndLinkMemory(input: {
+    memory_id: number;
+    scope_key: string;
+    repo: string | null;
+    canonical_label: string;
+    aliases?: string[];
+  }): { topic_id: number; linked: boolean } {
+    const aliasesJson = JSON.stringify(
+      Array.from(
+        new Set(
+          (input.aliases ?? []).filter(
+            (a): a is string => typeof a === 'string' && !!a,
+          ),
+        ),
+      ),
+    );
+
+    const txn = this.db.transaction(() => {
+      const memRow = this.db
+        .query('SELECT topic_id FROM memories WHERE id = ?')
+        .get(input.memory_id) as { topic_id: number | null } | null;
+      if (!memRow) {
+        throw new Error(`memory ${input.memory_id} not found`);
+      }
+      if (memRow.topic_id != null) {
+        return { topic_id: memRow.topic_id, linked: false };
+      }
+
+      const now = nowISO();
+      const row = this.db
+        .query(
+          `INSERT INTO topics (
+             scope_key, repo, canonical_label, aliases_json, status,
+             last_active_at, memory_count, created_at, updated_at
+           ) VALUES (?, ?, ?, ?, 'active', ?, 1, ?, ?)
+           ON CONFLICT(scope_key, canonical_label) DO UPDATE SET
+             memory_count = topics.memory_count + 1,
+             aliases_json = (
+               SELECT json_group_array(value) FROM (
+                 SELECT value FROM json_each(topics.aliases_json)
+                 UNION
+                 SELECT value FROM json_each(excluded.aliases_json)
+               )
+             ),
+             last_active_at = excluded.last_active_at,
+             status = CASE WHEN topics.status = 'archived'
+                           THEN 'active' ELSE topics.status END,
+             updated_at = excluded.updated_at
+           RETURNING id`,
+        )
+        .get(
+          input.scope_key,
+          input.repo ?? null,
+          input.canonical_label,
+          aliasesJson,
+          now,
+          now,
+          now,
+        ) as { id: number };
+
+      this.db.run(
+        `UPDATE memories
+           SET topic_id = ?, updated_at = ?
+         WHERE id = ? AND topic_id IS NULL`,
+        [row.id, now, input.memory_id],
+      );
+
+      return { topic_id: row.id, linked: true };
+    });
+    return txn();
   }
 
   updateTopic(
@@ -551,6 +645,7 @@ export class MemoryDB {
     unresolved_score?: number;
     files_touched?: string[];
     concepts?: string[];
+    topic_candidate?: string | null;
     source_turn_count?: number;
     first_turn_at: string;
     last_turn_at: string;
@@ -558,18 +653,19 @@ export class MemoryDB {
     const now = nowISO();
     const result = this.db.run(
       `INSERT INTO memories (
-         memory_kind, repo, cwd_scope, topic_id,
+         memory_kind, repo, cwd_scope, topic_id, topic_candidate,
          title, summary, request, investigated, learned, completed, next_steps,
          memory_type, importance_score, confidence_score, unresolved_score,
          files_touched_json, concepts_json,
          source_turn_count, is_pinned, state,
          first_turn_at, last_turn_at, created_at, updated_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'active', ?, ?, ?, ?)`,
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'active', ?, ?, ?, ?)`,
       [
         input.memory_kind,
         input.repo ?? null,
         input.cwd_scope ?? null,
         input.topic_id ?? null,
+        input.topic_candidate ?? null,
         input.title,
         input.summary,
         input.request ?? null,
@@ -682,13 +778,39 @@ export class MemoryDB {
   }
 
   /** Get active topics for a repo. */
-  getActiveTopics(repo?: string | null, limit = 20): Topic[] {
-    let sql = `SELECT * FROM topics WHERE status = 'active'`;
-    const params: (string | number)[] = [];
-    if (repo) { sql += ' AND repo = ?'; params.push(repo); }
-    sql += ' ORDER BY last_active_at DESC LIMIT ?';
-    params.push(limit);
-    return this.db.query(sql).all(...params) as Topic[];
+  /**
+   * List active topics.
+   *
+   * - With `repo` or `cwd` specified: narrows to that scope (computed via
+   *   {@link computeScopeKey}). Use this for normalize_topic and for any
+   *   "topics in my current workspace" browse case.
+   * - With neither specified: returns all active topics across every scope.
+   *   Used by the MCP `topics` tool when the user wants a global browse.
+   */
+  getActiveTopics(opts?: {
+    repo?: string | null;
+    cwd?: string | null;
+    limit?: number;
+  }): Topic[] {
+    const limit = opts?.limit ?? 20;
+    const scoped = !!(opts?.repo || opts?.cwd);
+    if (scoped) {
+      const scopeKey = computeScopeKey(opts?.repo ?? null, opts?.cwd ?? null);
+      return this.db
+        .query(
+          `SELECT * FROM topics
+             WHERE status = 'active' AND scope_key = ?
+             ORDER BY last_active_at DESC LIMIT ?`,
+        )
+        .all(scopeKey, limit) as Topic[];
+    }
+    return this.db
+      .query(
+        `SELECT * FROM topics
+           WHERE status = 'active'
+           ORDER BY last_active_at DESC LIMIT ?`,
+      )
+      .all(limit) as Topic[];
   }
 
   /** Trace a memory: get its source turns and neighboring memories. */
@@ -781,6 +903,12 @@ export class MemoryDB {
     unresolved_score?: number;
     files_touched?: string[];
     concepts?: string[];
+    /**
+     * LLM-generated topic candidate from summarize_turn. Persisting it here
+     * lets normalize_topic use the strongest available semantic signal
+     * instead of re-deriving from concepts[0] / title.
+     */
+    topic_candidate?: string | null;
     first_turn_at: string;
     last_turn_at: string;
   }): number | null {
@@ -795,17 +923,18 @@ export class MemoryDB {
       // Insert memory
       const result = this.db.run(
         `INSERT INTO memories (
-           memory_kind, repo, cwd_scope, topic_id,
+           memory_kind, repo, cwd_scope, topic_id, topic_candidate,
            title, summary, request, investigated, learned, completed, next_steps,
            memory_type, importance_score, confidence_score, unresolved_score,
            files_touched_json, concepts_json,
            source_turn_count, is_pinned, state,
            first_turn_at, last_turn_at, created_at, updated_at
-         ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 'active', ?, ?, ?, ?)`,
+         ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 'active', ?, ?, ?, ?)`,
         [
           input.memory_kind,
           input.repo ?? null,
           input.cwd_scope ?? null,
+          input.topic_candidate ?? null,
           input.title,
           input.summary,
           input.request ?? null,

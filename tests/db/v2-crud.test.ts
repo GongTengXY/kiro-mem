@@ -128,10 +128,11 @@ describe('WP0 / V2 CRUD — jobs', () => {
 });
 
 describe('WP0 / V2 CRUD — topics', () => {
-  test('createTopic + findTopic', () => {
+  test('createTopic + findTopicByScope', () => {
     const t = db.createTopic({ repo: '/repo', canonical_label: 'auth' });
     expect(t.canonical_label).toBe('auth');
-    const found = db.findTopic('/repo', 'auth');
+    expect(t.scope_key).toBe('/repo');
+    const found = db.findTopicByScope('/repo', 'auth');
     expect(found?.id).toBe(t.id);
   });
 });

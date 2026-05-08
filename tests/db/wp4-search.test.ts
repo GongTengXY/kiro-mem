@@ -113,7 +113,7 @@ describe('WP4 / topics', () => {
     db.createTopic({ repo: '/proj', canonical_label: 'auth' });
     db.createTopic({ repo: '/proj', canonical_label: 'db migration', status: 'archived' });
 
-    const topics = db.getActiveTopics('/proj');
+    const topics = db.getActiveTopics({ repo: '/proj' });
     expect(topics.length).toBe(1);
     expect(topics[0]!.canonical_label).toBe('auth');
   });

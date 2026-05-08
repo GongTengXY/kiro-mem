@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { writeFileSync, readFileSync } from 'fs';
 import { join } from 'path';
-import { MemoryDB } from '../db';
+import { MemoryDB, computeScopeKey } from '../db';
 import type { MemoryType } from '../db/types';
 import { Compressor, type CompressorProvider } from '../compressor';
 import { buildContext } from '../context-builder';
@@ -120,6 +120,10 @@ export function createApp(deps: AppDeps) {
         unresolved_score: result.unresolved_score ?? 0,
         files_touched: result.files_touched ?? [],
         concepts: result.concepts ?? [],
+        // Persist the LLM-generated topic candidate so normalize_topic can use
+        // the strongest available semantic signal instead of falling back to
+        // concepts[0] / title truncation.
+        topic_candidate: (result.topic_candidate || '').trim() || null,
         first_turn_at: turn.started_at,
         last_turn_at: turn.stopped_at || turn.last_event_at,
       });
@@ -160,21 +164,39 @@ export function createApp(deps: AppDeps) {
   });
 
   // --- normalize_topic job ---
+  //
+  // Takes a freshly-summarized memory and attaches it to a canonical topic.
+  // Candidate precedence: persisted topic_candidate > concepts[0] > title.
+  // The memory → topic link, memory_count increment, and alias union are
+  // performed as one atomic upsert (see db.upsertTopicAndLinkMemory).
   jobRunner.register('normalize_topic', async (job) => {
     const { memory_id } = JSON.parse(job.payload_json) as { memory_id: number };
     const memory = db.getMemory(memory_id);
     if (!memory || memory.state !== 'active') return;
 
-    // Fix #3: Idempotency — if memory already has a topic, skip.
+    // Idempotency: memory already linked to a topic — nothing to do.
     if (memory.topic_id != null) return;
 
-    // Get topic_candidate from concepts or title
-    const concepts: string[] = JSON.parse(memory.concepts_json || '[]');
-    const candidate = concepts[0] || memory.title.slice(0, 40);
+    // Candidate precedence: persisted topic_candidate > concepts[0] > title
+    const concepts: string[] = (() => {
+      try {
+        const p = JSON.parse(memory.concepts_json || '[]');
+        return Array.isArray(p) ? p.filter((x) => typeof x === 'string') : [];
+      } catch { return []; }
+    })();
+    const candidate =
+      (memory.topic_candidate || '').trim() ||
+      concepts[0] ||
+      memory.title.slice(0, 40);
     if (!candidate) return;
 
-    const existingTopics = db.getActiveTopics(memory.repo, 50);
-    const existingLabels = existingTopics.map(t => t.canonical_label);
+    const scopeKey = computeScopeKey(memory.repo, memory.cwd_scope);
+    const existingTopics = db.getActiveTopics({
+      repo: memory.repo,
+      cwd: memory.cwd_scope,
+      limit: 50,
+    });
+    const existingLabels = existingTopics.map((t) => t.canonical_label);
 
     const result = await compressor.normalizeTopic({
       candidate,
@@ -182,44 +204,32 @@ export function createApp(deps: AppDeps) {
       memory_title: memory.title,
     });
 
-    let topicId: number;
-    if (result.action === 'existing') {
-      const existing = db.findTopic(memory.repo, result.canonical_label);
-      if (existing) {
-        topicId = existing.id;
-        const currentAliases: string[] = JSON.parse(existing.aliases_json || '[]');
-        const newAliases = [...new Set([...currentAliases, ...result.aliases])];
-        db.updateTopic(topicId, { aliases: newAliases, memory_count_delta: 1, last_active_at: new Date().toISOString() });
-      } else {
-        topicId = db.createTopic({ repo: memory.repo, canonical_label: result.canonical_label, aliases: result.aliases }).id;
-        db.updateTopic(topicId, { memory_count_delta: 1 });
-      }
-    } else {
-      topicId = db.createTopic({ repo: memory.repo, canonical_label: result.canonical_label, aliases: result.aliases }).id;
-      db.updateTopic(topicId, { memory_count_delta: 1 });
-    }
+    // Atomic upsert + link + alias union. All three happen in one SQLite
+    // transaction; aliases are merged via a pure-SQL DISTINCT UNION so
+    // concurrent writes to the same topic never lose entries.
+    const { topic_id } = db.upsertTopicAndLinkMemory({
+      memory_id,
+      scope_key: scopeKey,
+      repo: memory.repo,
+      canonical_label: result.canonical_label,
+      aliases: result.aliases,
+    });
 
-    // Link memory to topic
-    db.raw.run('UPDATE memories SET topic_id = ?, updated_at = ? WHERE id = ? AND topic_id IS NULL', [topicId, new Date().toISOString(), memory_id]);
-
-    // Check if topic has enough memories to trigger merge (Fix #1: auto-enqueue merge)
-    const topic = db.getTopic(topicId);
+    // Check if topic has enough memories to trigger merge.
+    const topic = db.getTopic(topic_id);
     if (topic && topic.memory_count >= 3) {
-      // Find un-merged turn memories for this topic
       const candidates = db.raw.query(
         `SELECT id FROM memories WHERE topic_id = ? AND state = 'active' AND memory_kind = 'turn' ORDER BY first_turn_at LIMIT 6`,
-      ).all(topicId) as { id: number }[];
+      ).all(topic_id) as { id: number }[];
       if (candidates.length >= 3) {
         const ids = candidates.map(c => c.id);
-        // Dedupe key includes the specific candidate set so future merges with
-        // new memories get their own job (not permanently blocked by old ones).
-        const dedupeKey = `merge:topic:${topicId}:${ids.join(',')}`;
+        const dedupeKey = `merge:topic:${topic_id}:${ids.join(',')}`;
         db.enqueueJob({
           job_type: 'merge_cluster_to_memory',
           dedupe_key: dedupeKey,
           entity_type: 'topic',
-          entity_id: String(topicId),
-          payload_json: JSON.stringify({ memory_ids: ids, topic_id: topicId }),
+          entity_id: String(topic_id),
+          payload_json: JSON.stringify({ memory_ids: ids, topic_id }),
         });
       }
     }
@@ -265,6 +275,7 @@ export function createApp(deps: AppDeps) {
       unresolved_score: result.unresolved_score ?? 0,
       files_touched: result.files_touched ?? [],
       concepts: result.concepts ?? [],
+      topic_candidate: (result.topic_candidate || topicLabel || '').trim() || null,
       source_turn_count: memories.length,
       first_turn_at: firstTurnAt,
       last_turn_at: lastTurnAt,

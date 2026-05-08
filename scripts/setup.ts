@@ -429,7 +429,7 @@ async function install() {
       join(DATA_DIR, 'src', 'server', file),
     );
   }
-  for (const file of ['schema.ts', 'types.ts', 'index.ts']) {
+  for (const file of ['schema.ts', 'types.ts', 'index.ts', 'scope.ts']) {
     copyFileSync(join(SRC_DIR, 'db', file), join(DATA_DIR, 'src', 'db', file));
   }
   for (const file of ['runner.ts', 'artifacts.ts', 'index.ts']) {
