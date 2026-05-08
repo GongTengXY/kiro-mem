@@ -32,7 +32,7 @@ const defaults: Config = {
   worker: { port: 37778, host: '127.0.0.1', logLevel: 'info' },
   compression: {
     provider: 'anthropic',
-    model: 'gpt-5.4',
+    model: 'claude-opus-4-6',
     apiKey: '',
     baseUrl: null,
     maxTokens: 800,

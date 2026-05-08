@@ -44,7 +44,7 @@ npm i -g kiro-mem
 kiro-mem install
 ```
 
-安装器会询问语言、模型提供商、模型名称和 API Key，然后自动注册并启动 Worker。
+安装器会询问语言、模型提供商、模型名称和 API Key，预下载本地 embedding 模型，然后自动注册并启动 Worker。
 
 ### 设为默认 Agent
 
@@ -81,6 +81,7 @@ curl http://127.0.0.1:37778/health
 - `session_refs` — 会话隔离元数据
 - `turns` — 每轮 prompt → stop 为一条
 - `turn_events` — 追加写入的原始 hook payload
+- `turn_artifacts` — 确定性提取（工具名、文件、命令、错误）
 - `memories` — 面向用户的记忆单元（turn 或 merged）
 - `topics` — 归一化主题标签
 - `jobs` — 持久异步任务队列
@@ -92,7 +93,7 @@ curl http://127.0.0.1:37778/health
 | `search` | 混合搜索记忆，支持 `type`、`days`、`repo` 过滤 |
 | `get_memories` | 按 ID 获取记忆完整详情 |
 | `trace_memory` | 查看来源 turn 和相邻记忆 |
-| `topics` | 浏览活跃主题和未完成事项 |
+| `topics` | 浏览活跃主题 |
 | `pin` | 标记/取消标记重要记忆 |
 
 ```text
@@ -122,16 +123,15 @@ curl http://127.0.0.1:37778/health
 {
   "language": "zh",
   "compression": {
-    "provider": "openai",
-    "model": "gpt-5.4",
+    "provider": "anthropic",
+    "model": "claude-opus-4-6",
     "apiKey": "sk-proj-xxx",
     "concurrency": 6
   },
   "context": {
     "maxMemories": 50,
     "maxOutputBytes": 8192,
-    "includePinned": true,
-    "includeSummary": false
+    "includePinned": true
   },
   "filter": {
     "skipTools": ["introspect", "todo_list", "@kiro-mem/*"]
@@ -165,10 +165,10 @@ kiro-mem uninstall --purge
 |------|------|------|
 | `agentSpawn` 输出限制 10KB | 注入索引必须紧凑 | 预算控制的 context builder |
 | 搜索词短于 3 字符 | 回退到 `LIKE`，精度较低 | 尽量使用较长搜索词 |
-| 首次语义搜索 | 需下载本地 embedding 模型 | 下载后本地缓存 |
+| 安装阶段 | Worker 启动前会下载本地 embedding 模型 | 安装完成后本地缓存 |
 | 暂无 Web 查看器 | 通过 CLI/MCP/DB 查看记忆 | 单独规划中 |
 | 仅本地 | 无内置跨机器同步 | 未来：git sync 或云存储 |
-| 主题归一化 | 依赖 LLM，可能漂移 | 计划定期重新归一化 |
+| 主题归一化 | 依赖 LLM，可能漂移 | 后期会补充定期重新归一化 |
 
 ## 许可证
 

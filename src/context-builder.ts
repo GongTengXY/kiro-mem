@@ -1,7 +1,7 @@
 /** V2 Context builder — topic-first progressive disclosure for agentSpawn injection. */
 
 import { MemoryDB, type Memory, type Topic } from './db';
-import type { Config } from './config';
+import type { Config, Language } from './config';
 
 const MAX_BYTES = 9500; // leave margin below 10240
 
@@ -9,6 +9,7 @@ export function buildContext(
   db: MemoryDB,
   cwd: string,
   ctx: Config['context'],
+  language: Language = 'zh',
 ): string {
   const repo = detectRepoSync(cwd);
   const budget = Math.min(ctx.maxOutputBytes || 8192, MAX_BYTES);
@@ -58,7 +59,9 @@ export function buildContext(
   }
 
   // --- How To Use ---
-  const howTo = `\n---\n💡 使用 @kiro-mem/search 搜索记忆 | @kiro-mem/get_memories 获取详情 | @kiro-mem/trace_memory 追溯来源 | @kiro-mem/topics 浏览主题`;
+  const howTo = language === 'en'
+    ? '\n---\n💡 Use @kiro-mem/search to search memories | @kiro-mem/get_memories for details | @kiro-mem/trace_memory to trace sources | @kiro-mem/topics to browse topics'
+    : '\n---\n💡 使用 @kiro-mem/search 搜索记忆 | @kiro-mem/get_memories 获取详情 | @kiro-mem/trace_memory 追溯来源 | @kiro-mem/topics 浏览主题';
   if (used + howTo.length + 25 < budget) {
     parts.push(howTo);
   }

@@ -4,6 +4,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+import { loadConfig } from '../config';
 import { MemoryDB } from '../db';
 import type { Memory } from '../db/types';
 import {
@@ -13,11 +14,59 @@ import {
 } from '../embedding';
 
 const db = new MemoryDB();
+const config = loadConfig();
+const isEnglish = config.language === 'en';
 
 const server = new Server(
   { name: 'kiro-mem', version: '2.0.0' },
   { capabilities: { tools: {} } },
 );
+
+const toolText = isEnglish
+  ? {
+      searchDescription:
+        'Search history memories. Returns matching memory summaries with type, time, and repo filters.',
+      queryDescription: 'Search keywords',
+      typeDescription: 'Filter by memory type',
+      repoDescription: 'Filter by git repo',
+      daysDescription: 'Within the last N days',
+      limitDescription: 'Maximum number of results',
+      getMemoriesDescription:
+        'Fetch full memory details by ID. Use search first, then fetch the relevant memories.',
+      idsDescription: 'List of memory IDs',
+      traceDescription:
+        'Trace one memory back to its source turns and neighboring memories.',
+      memoryIdDescription: 'Memory ID',
+      beforeDescription: 'Number of previous neighboring memories',
+      afterDescription: 'Number of next neighboring memories',
+      topicsDescription: 'Get active topics and their unresolved summaries.',
+      pinDescription:
+        'Mark or unmark a memory as high-value. Pinned memories are prioritized in later context injection.',
+      pinnedDescription: 'true = pin, false = unpin',
+      hint: 'Use get_memories to fetch full details',
+    }
+  : {
+      searchDescription:
+        '搜索历史记忆。返回匹配的 memory 摘要列表，支持按类型、时间、repo 过滤。',
+      queryDescription: '搜索关键词',
+      typeDescription: '按类型过滤',
+      repoDescription: '按 git repo 过滤',
+      daysDescription: '最近 N 天内',
+      limitDescription: '最大返回数',
+      getMemoriesDescription:
+        '按 ID 批量获取 memory 完整内容。先用 search 找到相关 ID，再用此工具获取详情。',
+      idsDescription: 'memory ID 列表',
+      traceDescription:
+        '追溯一条 memory 的来源 turn 和相邻记忆，用于理解上下文。',
+      memoryIdDescription: 'memory ID',
+      beforeDescription: '向前取 N 条相邻记忆',
+      afterDescription: '向后取 N 条相邻记忆',
+      topicsDescription: '获取活跃主题列表及其未完成摘要。',
+      pinDescription:
+        '标记/取消标记某个 memory 为高价值记忆。被 pin 的记忆会在后续会话中优先注入。',
+      pinnedDescription: 'true=标记, false=取消',
+      hint: '使用 get_memories 获取完整详情',
+    };
 
 // --- Hybrid search: FTS + semantic rerank ---
 
@@ -88,62 +137,62 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
       name: 'search',
-      description: '搜索历史记忆。返回匹配的 memory 摘要列表，支持按类型、时间、repo 过滤。',
+      description: toolText.searchDescription,
       inputSchema: {
         type: 'object' as const,
         properties: {
-          query: { type: 'string', description: '搜索关键词' },
-          type: { type: 'string', enum: ['decision', 'bugfix', 'feature', 'refactor', 'discovery', 'change'], description: '按类型过滤' },
-          repo: { type: 'string', description: '按 git repo 过滤' },
-          days: { type: 'number', description: '最近 N 天内', default: 90 },
-          limit: { type: 'number', description: '最大返回数', default: 20 },
+          query: { type: 'string', description: toolText.queryDescription },
+          type: { type: 'string', enum: ['decision', 'bugfix', 'feature', 'refactor', 'discovery', 'change'], description: toolText.typeDescription },
+          repo: { type: 'string', description: toolText.repoDescription },
+          days: { type: 'number', description: toolText.daysDescription, default: 90 },
+          limit: { type: 'number', description: toolText.limitDescription, default: 20 },
         },
         required: ['query'],
       },
     },
     {
       name: 'get_memories',
-      description: '按 ID 批量获取 memory 完整内容。先用 search 找到相关 ID，再用此工具获取详情。',
+      description: toolText.getMemoriesDescription,
       inputSchema: {
         type: 'object' as const,
         properties: {
-          ids: { type: 'array', items: { type: 'number' }, description: 'memory ID 列表', maxItems: 20 },
+          ids: { type: 'array', items: { type: 'number' }, description: toolText.idsDescription, maxItems: 20 },
         },
         required: ['ids'],
       },
     },
     {
       name: 'trace_memory',
-      description: '追溯一条 memory 的来源 turn 和相邻记忆，用于理解上下文。',
+      description: toolText.traceDescription,
       inputSchema: {
         type: 'object' as const,
         properties: {
-          memory_id: { type: 'number', description: 'memory ID' },
-          before: { type: 'number', description: '向前取 N 条相邻记忆', default: 3 },
-          after: { type: 'number', description: '向后取 N 条相邻记忆', default: 3 },
+          memory_id: { type: 'number', description: toolText.memoryIdDescription },
+          before: { type: 'number', description: toolText.beforeDescription, default: 3 },
+          after: { type: 'number', description: toolText.afterDescription, default: 3 },
         },
         required: ['memory_id'],
       },
     },
     {
       name: 'topics',
-      description: '获取活跃主题列表及其未完成摘要。',
+      description: toolText.topicsDescription,
       inputSchema: {
         type: 'object' as const,
         properties: {
-          repo: { type: 'string', description: '按 repo 过滤' },
-          limit: { type: 'number', description: '最大返回数', default: 20 },
+          repo: { type: 'string', description: toolText.repoDescription },
+          limit: { type: 'number', description: toolText.limitDescription, default: 20 },
         },
       },
     },
     {
       name: 'pin',
-      description: '标记/取消标记某个 memory 为高价值记忆。被 pin 的记忆会在后续会话中优先注入。',
+      description: toolText.pinDescription,
       inputSchema: {
         type: 'object' as const,
         properties: {
-          memory_id: { type: 'number', description: 'memory ID' },
-          pinned: { type: 'boolean', description: 'true=标记, false=取消', default: true },
+          memory_id: { type: 'number', description: toolText.memoryIdDescription },
+          pinned: { type: 'boolean', description: toolText.pinnedDescription, default: true },
         },
         required: ['memory_id'],
       },
@@ -172,7 +221,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             source_turn_count: m.source_turn_count,
           })),
           total: results.length,
-          hint: '使用 get_memories 获取完整详情',
+          hint: toolText.hint,
         }, null, 2),
       }],
     };

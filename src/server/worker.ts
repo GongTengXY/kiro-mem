@@ -318,7 +318,7 @@ export function createApp(deps: AppDeps) {
 
   app.get('/context', async (c) => {
     const cwd = c.req.query('cwd') || '';
-    const text = buildContext(db, cwd, config.context);
+    const text = buildContext(db, cwd, config.context, config.language);
     return c.text(text);
   });
 

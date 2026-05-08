@@ -44,7 +44,7 @@ npm i -g kiro-mem
 kiro-mem install
 ```
 
-The installer will ask for language, model provider, model name, and API key, then register and start the Worker automatically.
+The installer will ask for language, model provider, model name, and API key, pre-download the local embedding model, then register and start the Worker automatically.
 
 ### Set As Default Agent
 
@@ -81,6 +81,7 @@ At session start, kiro-mem injects a compact memory index organized by **Pinned 
 - `session_refs` — Session isolation metadata
 - `turns` — One per user prompt → stop cycle
 - `turn_events` — Append-only raw hook payloads
+- `turn_artifacts` — Deterministic extraction (tools, files, commands, errors)
 - `memories` — User-facing memory units (turn or merged)
 - `topics` — Normalized topic labels for aggregation
 - `jobs` — Persistent async task queue
@@ -92,7 +93,7 @@ At session start, kiro-mem injects a compact memory index organized by **Pinned 
 | `search` | Hybrid search memories with `type`, `days`, `repo` filters |
 | `get_memories` | Fetch full memory details by ID |
 | `trace_memory` | Show source turns and neighboring memories |
-| `topics` | Browse active topics and unresolved items |
+| `topics` | Browse active topics |
 | `pin` | Mark or unmark important memories |
 
 ```text
@@ -122,16 +123,15 @@ Edit `~/.kiro-mem/config.json`, or run `kiro-mem config` for interactive setup:
 {
   "language": "zh",
   "compression": {
-    "provider": "openai",
-    "model": "gpt-5.4",
+    "provider": "anthropic",
+    "model": "claude-opus-4-6",
     "apiKey": "sk-proj-xxx",
     "concurrency": 6
   },
   "context": {
     "maxMemories": 50,
     "maxOutputBytes": 8192,
-    "includePinned": true,
-    "includeSummary": false
+    "includePinned": true
   },
   "filter": {
     "skipTools": ["introspect", "todo_list", "@kiro-mem/*"]
@@ -165,10 +165,10 @@ kiro-mem uninstall --purge
 |------------|--------|------------|
 | `agentSpawn` output limit 10KB | Injected index must stay compact | Budget-controlled context builder |
 | Search queries shorter than 3 chars | Falls back to `LIKE`, less precise | Use longer terms when possible |
-| First semantic-search use | Downloads local embedding model once | Cached locally after first use |
+| Install step | Downloads the local embedding model before the Worker starts | Cached locally after install |
 | No Web Viewer UI yet | Memory inspected through CLI/MCP/DB | Planned separately |
 | Local only | No built-in cross-machine sync | Future: git sync or cloud storage |
-| Topic normalization | LLM-dependent, may drift | Periodic re-normalization planned |
+| Topic normalization | LLM-dependent, may drift | Periodic re-normalization will be added later |
 
 ## License
 

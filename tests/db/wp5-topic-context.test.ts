@@ -220,4 +220,15 @@ describe('WP5 / context-builder — topic-first', () => {
     // With no data, should be minimal or empty
     expect(output.length).toBeLessThan(200);
   });
+
+  test('how-to hint switches with language', () => {
+    insertMem({ title: 'Recent work A' });
+    const config = loadConfig();
+
+    const zhOutput = buildContext(db, '', config.context, 'zh');
+    const enOutput = buildContext(db, '', config.context, 'en');
+
+    expect(zhOutput).toContain('使用 @kiro-mem/search 搜索记忆');
+    expect(enOutput).toContain('Use @kiro-mem/search to search memories');
+  });
 });
