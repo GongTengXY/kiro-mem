@@ -12,7 +12,6 @@ import type {
   Turn,
   TurnState,
   SummarizationState,
-  MergeState,
   LegacyTrust,
   TurnEvent,
   HookEventName,
@@ -198,14 +197,14 @@ export class MemoryDB {
     const result = this.db.run(
       `INSERT INTO turns (
          session_id, seq, cwd, repo, branch,
-         state, summarization_state, merge_state, memory_id,
+         state, summarization_state, memory_id,
          prompt_text, prompt_hash,
          started_at, stopped_at, last_event_at,
-         tool_event_count, file_touch_count, has_error_signal,
+         tool_event_count,
          legacy_trust, created_at, updated_at
-       ) VALUES (?, ?, ?, ?, ?, 'open', 'pending', 'none', NULL,
+       ) VALUES (?, ?, ?, ?, ?, 'open', 'pending', NULL,
                  ?, ?, ?, NULL, ?,
-                 0, 0, 0,
+                 0,
                  ?, ?, ?)`,
       [
         input.session_id,
@@ -303,14 +302,6 @@ export class MemoryDB {
     );
   }
 
-  setTurnMergeState(turn_id: number, state: MergeState) {
-    const now = nowISO();
-    this.db.run(
-      'UPDATE turns SET merge_state = ?, updated_at = ? WHERE id = ?',
-      [state, now, turn_id],
-    );
-  }
-
   /**
    * Update turn counters after an event is appended. Kept atomic against the
    * current row values so concurrent events don't stomp each other.
@@ -319,8 +310,6 @@ export class MemoryDB {
     turn_id: number,
     delta: {
       tool_events?: number;
-      file_touches?: number;
-      error_signals?: number;
       last_event_at?: string;
     },
   ) {
@@ -328,15 +317,11 @@ export class MemoryDB {
     this.db.run(
       `UPDATE turns
          SET tool_event_count = tool_event_count + ?,
-             file_touch_count = file_touch_count + ?,
-             has_error_signal = CASE WHEN ? > 0 THEN 1 ELSE has_error_signal END,
              last_event_at = COALESCE(?, last_event_at),
              updated_at = ?
          WHERE id = ?`,
       [
         delta.tool_events ?? 0,
-        delta.file_touches ?? 0,
-        delta.error_signals ?? 0,
         delta.last_event_at ?? null,
         now,
         turn_id,
@@ -981,6 +966,18 @@ export class MemoryDB {
         'SELECT * FROM memory_turn_links WHERE memory_id = ? ORDER BY ordinal ASC',
       )
       .all(memory_id) as MemoryTurnLink[];
+  }
+
+  listTurnsByIdsOrdered(turnIds: number[]): Turn[] {
+    const uniqueIds = Array.from(new Set(turnIds.filter(Number.isFinite)));
+    if (!uniqueIds.length) return [];
+    return this.db
+      .query(
+        `SELECT * FROM turns
+          WHERE id IN (${uniqueIds.map(() => '?').join(',')})
+          ORDER BY started_at ASC, id ASC`,
+      )
+      .all(...uniqueIds) as Turn[];
   }
 
   // ---------- memory_embeddings ----------

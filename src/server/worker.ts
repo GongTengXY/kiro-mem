@@ -196,18 +196,66 @@ export function createApp(deps: AppDeps) {
       cwd: memory.cwd_scope,
       limit: 50,
     });
-    const existingLabels = existingTopics.map((t) => t.canonical_label);
 
-    const result = await compressor.normalizeTopic({
-      candidate,
-      existing_labels: existingLabels,
-      memory_title: memory.title,
+    // --- Deterministic pre-dedup (Fix 3.4) ---
+    //
+    // Before spending an LLM call on "is this candidate equivalent to an
+    // existing topic?", try a cheap structural match first. This covers the
+    // dominant drift case where summarize_turn emits a slight re-wording of a
+    // topic the system already knows about (either as the canonical label or
+    // as a previously-seen alias). Only fall through to the LLM when no exact
+    // structural hit exists.
+    //
+    // Keeping this matcher narrow (case/whitespace/trailing-punct only) is
+    // intentional: it must never produce false positives. Anything semantic
+    // — synonyms, translations, inclusion — still goes through the LLM path
+    // with aliases surfaced in the prompt.
+    const existingParsed = existingTopics.map((t) => {
+      let aliases: string[] = [];
+      try {
+        const p = JSON.parse(t.aliases_json || '[]');
+        if (Array.isArray(p)) aliases = p.filter((x): x is string => typeof x === 'string');
+      } catch { /* ignore malformed aliases_json */ }
+      return { id: t.id, canonical_label: t.canonical_label, aliases };
     });
+
+    const normalizeForMatch = (s: string): string =>
+      s.trim().replace(/\s+/g, ' ').replace(/[\s。.!?！？,，、;；:：]+$/u, '').toLowerCase();
+
+    const candNorm = normalizeForMatch(candidate);
+    let result: { canonical_label: string; aliases: string[] } | null = null;
+    if (candNorm) {
+      for (const t of existingParsed) {
+        if (normalizeForMatch(t.canonical_label) === candNorm) {
+          result = { canonical_label: t.canonical_label, aliases: [] };
+          break;
+        }
+        if (t.aliases.some((a) => normalizeForMatch(a) === candNorm)) {
+          result = { canonical_label: t.canonical_label, aliases: [candidate] };
+          break;
+        }
+      }
+    }
+
+    if (!result) {
+      const llmResult = await compressor.normalizeTopic({
+        candidate,
+        existing_topics: existingParsed.map((t) => ({
+          canonical_label: t.canonical_label,
+          aliases: t.aliases,
+        })),
+        memory_title: memory.title,
+      });
+      result = {
+        canonical_label: llmResult.canonical_label,
+        aliases: llmResult.aliases,
+      };
+    }
 
     // Atomic upsert + link + alias union. All three happen in one SQLite
     // transaction; aliases are merged via a pure-SQL DISTINCT UNION so
     // concurrent writes to the same topic never lose entries.
-    const { topic_id } = db.upsertTopicAndLinkMemory({
+    const { topic_id, linked } = db.upsertTopicAndLinkMemory({
       memory_id,
       scope_key: scopeKey,
       repo: memory.repo,
@@ -217,6 +265,26 @@ export function createApp(deps: AppDeps) {
 
     // Check if topic has enough memories to trigger merge.
     const topic = db.getTopic(topic_id);
+
+    // --- Enqueue summarize_topic at threshold boundaries (Fix 3.1) ---
+    //
+    // Only fire when this call actually incremented memory_count (`linked`).
+    // Dedupe on the concrete threshold so each boundary fires at most once
+    // per topic, even if normalize_topic runs many times at the same count
+    // due to retries or concurrent work.
+    if (linked && topic) {
+      const SUMMARY_THRESHOLDS = [3, 5, 10, 20];
+      if (SUMMARY_THRESHOLDS.includes(topic.memory_count)) {
+        db.enqueueJob({
+          job_type: 'summarize_topic',
+          dedupe_key: `summary:topic:${topic_id}:count:${topic.memory_count}`,
+          entity_type: 'topic',
+          entity_id: String(topic_id),
+          payload_json: JSON.stringify({ topic_id }),
+        });
+      }
+    }
+
     if (topic && topic.memory_count >= 3) {
       const candidates = db.raw.query(
         `SELECT id FROM memories WHERE topic_id = ? AND state = 'active' AND memory_kind = 'turn' ORDER BY first_turn_at LIMIT 6`,
@@ -233,6 +301,65 @@ export function createApp(deps: AppDeps) {
         });
       }
     }
+  });
+
+  // --- summarize_topic job (Fix 3.1) ---
+  //
+  // Produces a compact topic-level narrative that context-builder's
+  // Active Topics renderer already expects (`topics.unresolved_summary`).
+  // Pulls the current active memories under the topic — this means the
+  // summary always reflects the latest state, whether the topic has been
+  // through a merge or not.
+  jobRunner.register('summarize_topic', async (job) => {
+    const { topic_id } = JSON.parse(job.payload_json) as { topic_id: number };
+    const topic = db.getTopic(topic_id);
+    if (!topic || topic.status === 'archived') return;
+
+    const rows = db.raw.query(
+      `SELECT title, summary, learned, next_steps
+         FROM memories
+        WHERE topic_id = ? AND state = 'active'
+        ORDER BY last_turn_at DESC
+        LIMIT 20`,
+    ).all(topic_id) as Array<{
+      title: string;
+      summary: string;
+      learned: string | null;
+      next_steps: string | null;
+    }>;
+
+    // Nothing to summarize — bail silently. This can happen if all memories
+    // under the topic have been superseded/archived between enqueue and run.
+    if (!rows.length) return;
+
+    const result = await compressor.summarizeTopic({
+      topic_label: topic.canonical_label,
+      memories: rows.map((r) => ({
+        title: r.title,
+        summary: r.summary,
+        learned: r.learned || undefined,
+        next_steps: r.next_steps || undefined,
+      })),
+    });
+
+    // Guard: when BOTH fields are empty, this is almost certainly a
+    // parseJSON fallback (LLM returned unparseable output). Skip the update
+    // entirely so we don't erase a previously-valid unresolved_summary.
+    const summaryVal = (result.summary || '').trim();
+    const unresolvedVal = (result.unresolved_summary || '').trim();
+    if (!summaryVal && !unresolvedVal) return;
+
+    const patch: {
+      summary?: string;
+      unresolved_summary?: string;
+    } = {};
+    if (summaryVal) {
+      patch.summary = summaryVal;
+    }
+    // Unresolved explicitly supports empty string (means: nothing outstanding).
+    // We only write it when summary is also non-empty (i.e. a real LLM response).
+    patch.unresolved_summary = unresolvedVal;
+    db.updateTopic(topic_id, patch);
   });
 
   // --- merge_cluster_to_memory job ---
@@ -281,18 +408,33 @@ export function createApp(deps: AppDeps) {
       last_turn_at: lastTurnAt,
     });
 
-    // Link merged memory to all source turns
-    for (let i = 0; i < memories.length; i++) {
-      const links = db.listMemoryTurnLinks(memories[i]!.id);
-      for (const link of links) {
-        db.linkMemoryToTurn({ memory_id: mergedId, turn_id: link.turn_id, ordinal: i + 1 });
-      }
-    }
+    // Link merged memory to all source turns in true turn timeline order.
+    // Source memory order can differ from source turn order after retries or
+    // future multi-turn inputs, so ordinal must be global across turns.
+    const sourceTurnIds = memories.flatMap((m) =>
+      db.listMemoryTurnLinks(m.id).map((link) => link.turn_id),
+    );
+    const sourceTurns = db.listTurnsByIdsOrdered(sourceTurnIds);
+    sourceTurns.forEach((turn, idx) => {
+      db.linkMemoryToTurn({ memory_id: mergedId, turn_id: turn.id, ordinal: idx + 1 });
+    });
 
     // Supersede source turn memories
     for (const m of memories) {
       db.setMemoryState(m.id, 'superseded');
     }
+
+    // A merge materially changes the active memory set under this topic.
+    // Threshold-based summary jobs cover count=3/5/10/20, but repeated merges
+    // can happen at counts like 6/9/12. Refresh after every successful merge so
+    // Active Topics does not keep narrating superseded turn memories.
+    db.enqueueJob({
+      job_type: 'summarize_topic',
+      dedupe_key: `summary:topic:${topic_id}:merge:${mergedId}`,
+      entity_type: 'topic',
+      entity_id: String(topic_id),
+      payload_json: JSON.stringify({ topic_id }),
+    });
   });
 
   // --- Hono app ---

@@ -131,13 +131,16 @@ curl http://127.0.0.1:37778/health
   "context": {
     "maxMemories": 50,
     "maxOutputBytes": 8192,
-    "includePinned": true
+    "includePinned": true,
+    "includeSummary": false
   },
   "filter": {
     "skipTools": ["introspect", "todo_list", "@kiro-mem/*"]
   }
 }
 ```
+
+- `context.includeSummary`：设为 `true` 时，注入的 Recent Memories 每条会额外带一行 summary 截断。每条体积约为原来的 3 倍，因此 kiro-mem 会自动把条数上限收紧到 20 条，以避免突破 agentSpawn 的字节预算。
 
 ## CLI 命令
 

@@ -8,7 +8,6 @@ export type SessionRefState = 'active' | 'idle' | 'stale';
 
 export type TurnState = 'open' | 'closed' | 'archived' | 'quarantined';
 export type SummarizationState = 'pending' | 'running' | 'ready' | 'failed';
-export type MergeState = 'none' | 'clustered' | 'absorbed';
 export type LegacyTrust = 'trusted' | 'legacy' | 'quarantined';
 
 export type HookEventName =
@@ -56,8 +55,8 @@ export interface SessionRef {
 
 /**
  * One Kiro turn: `userPromptSubmit` → … → `stop`.
- * `state`, `summarization_state`, `merge_state` are independent axes so we never
- * collapse lifecycle / summary / aggregation into a single overloaded enum.
+ * `state` and `summarization_state` are independent axes so we never
+ * collapse lifecycle and summary into a single overloaded enum.
  */
 export interface Turn {
   id: number;
@@ -68,7 +67,6 @@ export interface Turn {
   branch: string | null;
   state: TurnState;
   summarization_state: SummarizationState;
-  merge_state: MergeState;
   memory_id: number | null;
   prompt_text: string | null;
   prompt_hash: string | null;
@@ -76,8 +74,6 @@ export interface Turn {
   stopped_at: string | null;
   last_event_at: string;
   tool_event_count: number;
-  file_touch_count: number;
-  has_error_signal: number; // 0/1 boolean flag
   legacy_trust: LegacyTrust;
   created_at: string;
   updated_at: string;

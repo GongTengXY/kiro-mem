@@ -4,6 +4,12 @@ import { MemoryDB, type Memory, type Topic } from './db';
 import type { Config, Language } from './config';
 
 const MAX_BYTES = 9500; // leave margin below 10240
+const CLOSING_TAG = '</kiro-mem-context>';
+
+/** UTF-8 byte length helper — the real cost unit for agentSpawn budget. */
+function byteLen(s: string): number {
+  return Buffer.byteLength(s, 'utf8');
+}
 
 export function buildContext(
   db: MemoryDB,
@@ -15,16 +21,17 @@ export function buildContext(
   const budget = Math.min(ctx.maxOutputBytes || 8192, MAX_BYTES);
 
   const parts: string[] = ['<kiro-mem-context>'];
-  let used = 20; // opening tag
+  let used = byteLen(parts[0]!);
 
   // --- Pinned Memories ---
   // Fetched once and reused as the exclusion set for recent memories below.
   const pinned = ctx.includePinned ? db.getPinnedMemories(10) : [];
   if (pinned.length) {
     const section = renderPinned(pinned);
-    if (used + section.length < budget) {
+    const sectionBytes = byteLen(section) + 1; // +1 for join '\n'
+    if (used + sectionBytes < budget) {
       parts.push(section);
-      used += section.length;
+      used += sectionBytes;
     }
   }
 
@@ -35,28 +42,37 @@ export function buildContext(
   const topics = db.getActiveTopics({ repo, cwd: cwd || null, limit: 8 });
   if (topics.length) {
     const section = renderTopics(topics);
-    if (used + section.length < budget) {
+    const sectionBytes = byteLen(section) + 1;
+    if (used + sectionBytes < budget) {
       parts.push(section);
-      used += section.length;
+      used += sectionBytes;
     }
   }
 
   // --- Recent Memories ---
+  // `includeSummary` turns every memory line into a two-line entry (title +
+  // indented summary snippet). Each entry therefore costs ~3x bytes, so we
+  // auto-cap the list at ~20 to keep injection inside budget. Users who
+  // really want more can raise maxMemories explicitly, but the
+  // auto-tightening is the safe default.
+  const recentLimit = ctx.includeSummary
+    ? Math.min(ctx.maxMemories || 30, 20)
+    : (ctx.maxMemories || 30);
   const recent = db.searchMemoriesFts('', {
     repo: repo || undefined,
     cwd: !repo && cwd ? cwd : undefined,
     days: 30,
-    limit: ctx.maxMemories || 30,
+    limit: recentLimit,
   });
   // Exclude pinned (already shown above)
   const pinnedIds = new Set(pinned.map(m => m.id));
   const recentFiltered = recent.filter(m => !pinnedIds.has(m.id));
 
   if (recentFiltered.length) {
-    const section = renderRecent(recentFiltered, budget - used - 200);
+    const section = renderRecent(recentFiltered, budget - used - 200, ctx.includeSummary);
     if (section) {
       parts.push(section);
-      used += section.length;
+      used += byteLen(section) + 1;
     }
   }
 
@@ -64,14 +80,25 @@ export function buildContext(
   const howTo = language === 'en'
     ? '\n---\n💡 Use @kiro-mem/search to search memories | @kiro-mem/get_memories for details | @kiro-mem/trace_memory to trace sources | @kiro-mem/topics to browse topics'
     : '\n---\n💡 使用 @kiro-mem/search 搜索记忆 | @kiro-mem/get_memories 获取详情 | @kiro-mem/trace_memory 追溯来源 | @kiro-mem/topics 浏览主题';
-  if (used + howTo.length + 25 < budget) {
+  if (used + byteLen(howTo) + byteLen(CLOSING_TAG) + 2 < budget) {
     parts.push(howTo);
   }
 
-  parts.push('</kiro-mem-context>');
+  parts.push(CLOSING_TAG);
 
   const result = parts.join('\n');
-  return result || '';
+  if (byteLen(result) <= budget) return result;
+
+  // Last-ditch safety net: drop optional sections from the end while keeping
+  // the XML wrapper valid. This should only trigger on pathological pinned /
+  // topic text because normal section admission already budgets by UTF-8 bytes.
+  while (parts.length > 2 && byteLen(parts.join('\n')) > budget) {
+    parts.splice(parts.length - 2, 1);
+  }
+  const minimal = parts.join('\n');
+  if (byteLen(minimal) <= budget) return minimal;
+
+  return `<kiro-mem-context>\n${CLOSING_TAG}`;
 }
 
 // --- Renderers ---
@@ -93,14 +120,35 @@ function renderTopics(topics: Topic[]): string {
   return lines.join('\n');
 }
 
-function renderRecent(memories: Memory[], maxBytes: number): string | null {
+function renderRecent(
+  memories: Memory[],
+  maxBytes: number,
+  includeSummary: boolean = false,
+): string | null {
   const lines = ['', '## Recent Memories'];
-  let size = 20;
+  let size = byteLen('## Recent Memories') + 2; // header + two newlines
   for (const m of memories) {
     const line = `- #M${m.id} [${m.memory_type}] ${m.title} (${m.last_turn_at?.slice(0, 10) || ''})`;
-    if (size + line.length + 1 > maxBytes) break;
+    const lineBytes = byteLen(line) + 1;
+    if (size + lineBytes > maxBytes) break;
     lines.push(line);
-    size += line.length + 1;
+    size += lineBytes;
+
+    // Opt-in second line: indented summary snippet. Keep the snippet small
+    // (160 chars) — longer summaries rapidly chew through the 8-10KB budget
+    // that agentSpawn gives us. If the budget can't fit this line we just
+    // skip it rather than aborting the whole section.
+    if (includeSummary && m.summary) {
+      const snippet = m.summary.replace(/\s+/g, ' ').trim().slice(0, 160);
+      if (snippet) {
+        const summaryLine = `  ${snippet}`;
+        const summaryBytes = byteLen(summaryLine) + 1;
+        if (size + summaryBytes <= maxBytes) {
+          lines.push(summaryLine);
+          size += summaryBytes;
+        }
+      }
+    }
   }
   if (lines.length <= 2) return null; // only header, no items
   return lines.join('\n');

@@ -54,6 +54,19 @@ describe('WP3 / summarizeTurn via Compressor', () => {
     expect(result.importance_score).toBe(0.8);
     expect(fakeProvider.calls.length).toBe(1);
   });
+
+  test('invalid JSON fallback is marked with zero confidence', async () => {
+    fakeProvider.setFallback('not valid json');
+    const compressor = new Compressor(fakeProvider);
+
+    const result = await compressor.summarizeTurn({
+      prompt_text: 'fix the auth bug',
+      artifacts: { tool_names: ['read'], files_touched: ['/src/auth.ts'], commands: [], error_signals: [] },
+    });
+
+    expect(result.title).toBe('');
+    expect(result.confidence_score).toBe(0);
+  });
 });
 
 describe('WP3 / turn → memory pipeline', () => {

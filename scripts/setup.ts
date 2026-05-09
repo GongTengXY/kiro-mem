@@ -192,7 +192,6 @@ async function collectConfig(rl: readline.Interface, language: Language) {
       maxTokens: 800,
       temperature: 0.1,
       concurrency,
-      enabled: true,
     },
     context: {
       maxMemories: 50,
@@ -271,7 +270,6 @@ function getDefaultConfig(compression: {
         10,
         Math.max(5, Number(compression.concurrency) || 6),
       ),
-      enabled: true,
     },
     context: {
       maxMemories: 50,

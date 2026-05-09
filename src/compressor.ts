@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { loadConfig, resolveEnvValue, type Config, type Language } from './config';
+import { logError } from './logger';
 
 // --- Types ---
 
@@ -26,6 +27,12 @@ export interface NormalizeTopicResult {
   action: 'existing' | 'new';
   canonical_label: string;
   aliases: string[];
+}
+
+/** Topic summary output — written back to topics.summary / topics.unresolved_summary. */
+export interface TopicSummaryResult {
+  summary: string;
+  unresolved_summary: string;
 }
 
 export interface CompressorProvider {
@@ -149,30 +156,123 @@ export class Compressor {
       title: '', summary: '', request: '', investigated: '', learned: '',
       completed: '', next_steps: '', memory_type: 'change', files_touched: [],
       concepts: [], topic_candidate: '', importance_score: 0.5,
-      confidence_score: 0.5, unresolved_score: 0,
-    });
+      confidence_score: 0, unresolved_score: 0,
+    }, 'summarizeTurn');
   }
 
   /**
    * Normalize a topic candidate against existing topics.
+   *
+   * `existing_topics` should include both the canonical label and the known
+   * aliases for each topic. Surfacing aliases in the prompt lets the LLM
+   * recognize that e.g. "用户认证链路" is equivalent to a topic whose
+   * canonical label is "auth 登录链路" when one of its aliases is exactly
+   * that string — which cuts down on the long-tail semantic drift caused by
+   * only showing canonical labels.
    */
   async normalizeTopic(input: {
     candidate: string;
-    existing_labels: string[];
+    existing_topics: Array<{ canonical_label: string; aliases: string[] }>;
     memory_title: string;
   }): Promise<NormalizeTopicResult> {
-    const existing = input.existing_labels.slice(0, 30).join(', ') || '(none)';
     const lang = this.language;
+    const existingLines = input.existing_topics
+      .slice(0, 30)
+      .map((t) => {
+        const aliasList = t.aliases.filter((a) => a && a !== t.canonical_label).slice(0, 8);
+        return aliasList.length
+          ? `- ${t.canonical_label} (aliases: ${aliasList.join(', ')})`
+          : `- ${t.canonical_label}`;
+      })
+      .join('\n');
+    const existing = existingLines || (lang === 'en' ? '(none)' : '（无）');
     const system = lang === 'en'
       ? 'You normalize topic labels. Output pure JSON only.'
       : '你负责归一化主题标签。输出纯 JSON，不要额外文字。';
     const prompt = lang === 'en'
-      ? `Candidate topic: "${input.candidate}"\nMemory title: "${input.memory_title}"\nExisting topics: [${existing}]\n\nIf the candidate matches an existing topic (same meaning, different wording), return:\n{"action":"existing","canonical_label":"<the existing label>","aliases":["${input.candidate}"]}\nOtherwise return:\n{"action":"new","canonical_label":"${input.candidate}","aliases":[]}`
-      : `候选主题: "${input.candidate}"\n记忆标题: "${input.memory_title}"\n已有主题: [${existing}]\n\n如果候选与已有主题语义相同（只是措辞不同），返回：\n{"action":"existing","canonical_label":"<已有标签>","aliases":["${input.candidate}"]}\n否则返回：\n{"action":"new","canonical_label":"${input.candidate}","aliases":[]}`;
+      ? `Candidate topic: "${input.candidate}"
+Memory title: "${input.memory_title}"
+Existing topics (with known aliases):
+${existing}
+
+If the candidate matches one of the existing topics — either the canonical label or any listed alias, same meaning with different wording — return:
+{"action":"existing","canonical_label":"<the existing canonical label>","aliases":["${input.candidate}"]}
+Otherwise return:
+{"action":"new","canonical_label":"${input.candidate}","aliases":[]}`
+      : `候选主题: "${input.candidate}"
+记忆标题: "${input.memory_title}"
+已有主题（含已知别名）：
+${existing}
+
+如果候选与已有主题等价——无论匹配 canonical label 还是任一列出的 alias，语义相同只是措辞不同——返回：
+{"action":"existing","canonical_label":"<已有 canonical label>","aliases":["${input.candidate}"]}
+否则返回：
+{"action":"new","canonical_label":"${input.candidate}","aliases":[]}`;
     const raw = await this.provider.compress(system, prompt);
     return parseJSON<NormalizeTopicResult>(raw, {
       action: 'new', canonical_label: input.candidate, aliases: [],
-    });
+    }, 'normalizeTopic');
+  }
+
+  /**
+   * Summarize a topic's recent active memories into a compact narrative used
+   * by context injection and MCP `topics`. Produces both:
+   *   - summary: 2-3 sentence rolling progress line
+   *   - unresolved_summary: <= 80 chars of what's still outstanding
+   *
+   * `memories` should be pre-filtered to active rows under the topic,
+   * ordered by recency (last_turn_at DESC) and truncated to a manageable
+   * count. Keeping this contract narrow lets the handler stay simple.
+   */
+  async summarizeTopic(input: {
+    topic_label: string;
+    memories: Array<{
+      title: string;
+      summary: string;
+      learned?: string;
+      next_steps?: string;
+    }>;
+  }): Promise<TopicSummaryResult> {
+    const lang = this.language;
+    const system = lang === 'en'
+      ? 'You summarize a topic thread in a developer memory system. Output pure JSON only.'
+      : '你负责总结一个主题在代码记忆系统中的当前进展。输出纯 JSON，不要额外文字。';
+    const items = input.memories
+      .slice(0, 20)
+      .map((m, i) => {
+        const learned = m.learned ? ` | Learned: ${m.learned.slice(0, 120)}` : '';
+        const next = m.next_steps ? ` | Next: ${m.next_steps.slice(0, 120)}` : '';
+        return `${i + 1}. ${m.title}: ${m.summary.slice(0, 160)}${learned}${next}`;
+      })
+      .join('\n');
+    const prompt = lang === 'en'
+      ? `Topic: ${input.topic_label}
+
+Recent active memories under this topic (newest first):
+${items}
+
+Produce a compact topic status object.
+- "summary": 2-3 sentences capturing overall progress across these memories.
+- "unresolved_summary": single line <= 80 chars listing what's still outstanding or blocked. Empty string if everything is done.
+
+Return JSON only:
+{"summary":"...","unresolved_summary":"..."}`
+      : `主题: ${input.topic_label}
+
+该主题下最近的 active 记忆（最新在前）:
+${items}
+
+请产出紧凑的主题进展对象。
+- "summary": 2-3 句话概括该主题整体进展。
+- "unresolved_summary": 单行不超过 80 字，列出当前仍未完成/被阻塞的关键事项；若全部完成返回空串。
+
+只返回 JSON:
+{"summary":"...","unresolved_summary":"..."}`;
+    const raw = await this.provider.compress(system, prompt);
+    return parseJSON<TopicSummaryResult>(raw, {
+      summary: '',
+      unresolved_summary: '',
+    }, 'summarizeTopic');
   }
 
   /**
@@ -195,16 +295,20 @@ export class Compressor {
       title: '', summary: '', request: '', investigated: '', learned: '',
       completed: '', next_steps: '', memory_type: 'change', files_touched: [],
       concepts: [], topic_candidate: input.topic_label, importance_score: 0.5,
-      confidence_score: 0.5, unresolved_score: 0,
-    });
+      confidence_score: 0, unresolved_score: 0,
+    }, 'mergeTurnMemories');
   }
 }
 
-function parseJSON<T>(raw: string, fallback: T): T {
+function parseJSON<T>(raw: string, fallback: T, context: string): T {
   try {
     const cleaned = raw.replace(/^```json?\n?/m, '').replace(/\n?```$/m, '').trim();
     return JSON.parse(cleaned) as T;
-  } catch {
+  } catch (error) {
+    logError(`compressor/parseJSON/${context}`, JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+      raw: raw.slice(0, 500),
+    }));
     return fallback;
   }
 }

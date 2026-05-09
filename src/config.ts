@@ -14,7 +14,6 @@ export interface Config {
     maxTokens: number;
     temperature: number;
     concurrency: number;
-    enabled: boolean;
   };
   context: {
     maxMemories: number;
@@ -38,7 +37,6 @@ const defaults: Config = {
     maxTokens: 800,
     temperature: 0.1,
     concurrency: 6,
-    enabled: true,
   },
   context: {
     maxMemories: 50,

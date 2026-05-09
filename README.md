@@ -131,13 +131,16 @@ Edit `~/.kiro-mem/config.json`, or run `kiro-mem config` for interactive setup:
   "context": {
     "maxMemories": 50,
     "maxOutputBytes": 8192,
-    "includePinned": true
+    "includePinned": true,
+    "includeSummary": false
   },
   "filter": {
     "skipTools": ["introspect", "todo_list", "@kiro-mem/*"]
   }
 }
 ```
+
+- `context.includeSummary`: when `true`, each Recent Memories entry carries a short summary line in the injected context. Each entry becomes ~3× the size, so kiro-mem automatically caps the list at 20 entries to stay within the agentSpawn byte budget.
 
 ## CLI
 
