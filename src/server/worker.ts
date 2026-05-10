@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { writeFileSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import { MemoryDB, computeScopeKey } from '../db';
 import type { MemoryType } from '../db/types';
 import { Compressor, type CompressorProvider } from '../compressor';
@@ -9,6 +9,14 @@ import { loadConfig, getDataDir, type Config } from '../config';
 import { logError } from '../logger';
 import { JobRunner, extractArtifacts } from '../jobs';
 import { generateEmbedding, embeddingToBlob, DIMENSIONS } from '../embedding';
+
+// --- Version ---
+
+const PKG_VERSION: string = (() => {
+  try {
+    return JSON.parse(readFileSync(resolve(import.meta.dir, '../../package.json'), 'utf-8')).version;
+  } catch { return '2.0.0'; }
+})();
 
 // --- Global error handlers (only in production entry) ---
 
@@ -466,7 +474,7 @@ export function createApp(deps: AppDeps) {
   });
 
   app.get('/health', (c) =>
-    c.json({ status: 'ok', version: '2.0.0', jobs: jobRunner.stats }),
+    c.json({ status: 'ok', version: PKG_VERSION, jobs: jobRunner.stats }),
   );
 
   app.get('/context', async (c) => {

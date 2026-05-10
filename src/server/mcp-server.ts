@@ -4,6 +4,8 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { loadConfig } from '../config';
 import { MemoryDB } from '../db';
 import type { Memory } from '../db/types';
@@ -13,12 +15,18 @@ import {
   blobToEmbedding,
 } from '../embedding';
 
+const PKG_VERSION: string = (() => {
+  try {
+    return JSON.parse(readFileSync(resolve(import.meta.dir, '../../package.json'), 'utf-8')).version;
+  } catch { return '2.0.0'; }
+})();
+
 const db = new MemoryDB();
 const config = loadConfig();
 const isEnglish = config.language === 'en';
 
 const server = new Server(
-  { name: 'kiro-mem', version: '2.0.0' },
+  { name: 'kiro-mem', version: PKG_VERSION },
   { capabilities: { tools: {} } },
 );
 

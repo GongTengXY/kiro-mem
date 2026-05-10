@@ -675,6 +675,12 @@ function diagnose() {
   console.log(ansi.bold(`│ ${' '.repeat(padL)}${title}${' '.repeat(padR)} │`));
   console.log(ansi.bold(`└${'─'.repeat(boxW + 2)}┘`));
 
+  // Version from package.json
+  try {
+    const pkg = JSON.parse(readFileSync(resolve(import.meta.dir, '../package.json'), 'utf-8'));
+    console.log(`  version: ${ansi.cyan(pkg.version || '?')}`);
+  } catch {}
+
   const pidFile = join(DATA_DIR, '.worker.pid');
   const portFile = join(DATA_DIR, '.worker.port');
   const configPath = join(DATA_DIR, 'config.json');
