@@ -1,44 +1,41 @@
-# 记忆系统
+# Memory System / 记忆系统
 
-你拥有跨会话的持久记忆能力。会话开始时，系统注入了历史记忆的**索引概览**。
+You have persistent cross-session memory. At session start, a compact index of relevant memories and active topics is injected.
 
-## 何时搜索记忆
+你拥有跨会话的持久记忆能力。会话开始时，系统注入了相关记忆和活跃主题的紧凑索引。
 
-**主动搜索** — 遇到以下任何情况，先用 @kiro-mem/search 搜索再回答：
+## When to Search / 何时搜索
 
-- 用户提到"之前"、"上次"、"以前"、"历史"等明确回忆词
-- 任务涉及**迁移、对比、重构、升级**等暗示存在历史版本的场景
-- 用户提到某个模块/项目/功能"是从 XX 来的"、"基于 XX 改的"、"参考了 XX"
+**Search first** when:
+- User mentions "before", "last time", "previously", "history" / 用户提到"之前"、"上次"、"以前"、"历史"
+- Task involves migration, comparison, refactoring, upgrade / 任务涉及迁移、对比、重构、升级
+- User references a module/feature "based on X", "from X" / 用户提到某模块"基于 XX 改的"
 
-**无需搜索** — 全新的、与历史无关的独立任务。
+**Skip search** for entirely new, independent tasks. / 全新的独立任务无需搜索。
 
-## 渐进式披露
+## Tools / 可用工具
 
-注入的索引展示了每条记忆的标题、类型和检索成本（token 数）。你应该：
+| Tool | Purpose |
+|------|---------|
+| `@kiro-mem/search` | Hybrid search memories (keyword + semantic) |
+| `@kiro-mem/get_memories` | Fetch full memory details by ID |
+| `@kiro-mem/trace_memory` | View source turns and neighboring memories |
+| `@kiro-mem/topics` | Browse active topics and unresolved items |
+| `@kiro-mem/pin` | Mark/unmark important memories |
 
-1. **扫描索引**：根据当前任务判断哪些记忆可能相关
-2. **按需获取**：只对相关的记忆调用 get_observations 获取详情，不要全部获取
-3. **关注关键类型**：🟤决策 和 📌pinned 通常包含重要的架构约定和关键决策，值得优先查看
-4. **控制预算**：每条记忆的 ~Tokens 列显示了获取成本，优先获取低成本高相关的记忆
+## Retrieval Pattern / 检索模式
 
-## 可用工具
+0. **Understand injected index** — memories are referenced as `#M{id}` (e.g. `#M42`). Use `get_memories ids=[42]` to fetch details.
+1. **Scan injected index** — identify relevant memories by title and topic
+2. **Search or browse topics** — `search` for keywords, `topics` for overview
+3. **Fetch details on demand** — `get_memories` only for what you need
+4. **Trace when needed** — `trace_memory` to understand history and context
 
-- @kiro-mem/search: 搜索历史记忆（关键词、类型、时间过滤）
-- @kiro-mem/get_observations: 按 ID 获取完整记忆详情（先看索引再按需获取）
-- @kiro-mem/timeline: 查看某个事件前后的时间线上下文
-- @kiro-mem/pin: 标记重要记忆，后续会话优先注入
+## Privacy / 隐私保护
 
-## 三层检索模式
-
-1. **索引层**（自动注入）：标题 + 类型 + token 成本
-2. **详情层**（按需获取）：get_observations 获取 narrative/facts/concepts
-3. **上下文层**（深入探索）：timeline 查看前因后果，search 搜索更多
-
-## 隐私保护
-
-用户可以在消息中用 `<private>` 标签包裹不想被记录的内容。例如：
+Users can wrap sensitive content in `<private>` tags — it will be redacted before storage.
 
 ```
-<private>数据库密码是 xxx</private>
-帮我配置连接
+<private>database password is xxx</private>
+Help me configure the connection
 ```

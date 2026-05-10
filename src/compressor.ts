@@ -1,24 +1,38 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { loadConfig, resolveEnvValue, type Config, type Language } from './config';
+import { logError } from './logger';
 
 // --- Types ---
 
-export interface CompressedObservation {
+/** Turn summary output (V2) — maps directly to a `memory` row. */
+export interface TurnSummaryResult {
   title: string;
-  narrative: string;
-  facts: string[];
-  concepts: string[];
-  type: string;
-  files: string[];
-}
-
-export interface SessionSummary {
+  summary: string;
   request: string;
   investigated: string;
   learned: string;
   completed: string;
   next_steps: string;
+  memory_type: string;
   files_touched: string[];
+  concepts: string[];
+  topic_candidate: string;
+  importance_score: number;
+  confidence_score: number;
+  unresolved_score: number;
+}
+
+/** Topic normalization output. */
+export interface NormalizeTopicResult {
+  action: 'existing' | 'new';
+  canonical_label: string;
+  aliases: string[];
+}
+
+/** Topic summary output — written back to topics.summary / topics.unresolved_summary. */
+export interface TopicSummaryResult {
+  summary: string;
+  unresolved_summary: string;
 }
 
 export interface CompressorProvider {
@@ -26,98 +40,6 @@ export interface CompressorProvider {
 }
 
 // --- Prompts ---
-
-const OBS_SYSTEM: Record<Language, string> = {
-  zh: '你是一个代码会话记忆压缩器。将工具调用事件压缩为结构化观察记录。\n输出纯 JSON，不要 markdown 代码块，不要额外文字。',
-  en: 'You are a code session memory compressor. Compress tool call events into structured observations.\nOutput pure JSON only. No markdown code blocks, no extra text.',
-};
-
-const SUMMARY_SYSTEM: Record<Language, string> = {
-  zh: '你是一个代码会话摘要生成器。基于会话信息生成结构化摘要。\n输出纯 JSON，不要 markdown 代码块，不要额外文字。',
-  en: 'You are a code session summary generator. Generate structured summaries from session data.\nOutput pure JSON only. No markdown code blocks, no extra text.',
-};
-
-function buildObsPrompt(event: {
-  tool_name: string;
-  tool_input: unknown;
-  tool_response: unknown;
-  cwd: string;
-}, lang: Language): string {
-  const input = JSON.stringify(event.tool_input, null, 0).slice(0, 3000);
-  const response = JSON.stringify(event.tool_response, null, 0).slice(0, 3000);
-
-  if (lang === 'en') {
-    return `## Input
-- Tool name: ${event.tool_name}
-- Tool input: ${input}
-- Tool output: ${response}
-- Working directory: ${event.cwd}
-
-## Output
-Return JSON:
-{"title":"One-line description (<80 chars)","narrative":"2-3 sentences with details","facts":["Key facts, 3-5 items"],"concepts":["Concept tags, both English AND Chinese, 3-8 items"],"type":"decision|bugfix|feature|refactor|discovery|change","files":["File paths involved"]}
-
-## Rules
-- Keep: decision reasons, error causes, key config values, API contracts, edge cases
-- Drop: full code content, verbose logs, redundant info
-- concepts MUST include both English and Chinese tags`;
-  }
-
-  return `## 输入
-- 工具名称: ${event.tool_name}
-- 工具输入: ${input}
-- 工具输出: ${response}
-- 工作目录: ${event.cwd}
-
-## 输出要求
-返回 JSON：
-{"title":"一句话描述(<20字)","narrative":"2-3句详细说明","facts":["关键事实,3-5条"],"concepts":["概念标签,中英文都要,3-8个"],"type":"decision|bugfix|feature|refactor|discovery|change","files":["涉及的文件路径"]}
-
-## 压缩原则
-- 保留：决策原因、错误原因、关键配置值、接口约定、边界条件
-- 丢弃：完整代码内容、冗长日志、重复信息
-- concepts 同时包含中文和英文标签`;
-}
-
-function buildSummaryPrompt(data: {
-  prompts: string[];
-  observations: string[];
-  assistant_response: string;
-}, lang: Language): string {
-  const prompts = data.prompts.join('\n- ');
-  const obs = data.observations.join('\n- ');
-  const response = data.assistant_response.slice(0, 2000);
-
-  if (lang === 'en') {
-    return `## Session Info
-- User prompts: ${prompts}
-- Observations: ${obs}
-- AI final response: ${response}
-
-## Output
-Return JSON:
-{"request":"What the user requested (1-2 sentences)","investigated":"What AI explored (2-3 sentences)","learned":"Key findings and decisions (3-5 items, semicolon-separated)","completed":"What was completed (1-2 sentences)","next_steps":"Follow-up suggestions (1-3 items, semicolon-separated)","files_touched":["File paths involved"]}
-
-## Rules
-- Focus on information useful for future sessions
-- Keep key decisions and reasons
-- Keep unfinished items`;
-  }
-
-  return `## 会话信息
-- 用户 Prompt: ${prompts}
-- Observations: ${obs}
-- AI 最终回复: ${response}
-
-## 输出要求
-返回 JSON：
-{"request":"用户请求了什么(1-2句)","investigated":"AI探索了什么(2-3句)","learned":"关键发现和决策(3-5条,用分号分隔)","completed":"完成了什么(1-2句)","next_steps":"后续建议(1-3条,用分号分隔)","files_touched":["涉及的文件路径"]}
-
-## 摘要原则
-- 聚焦对未来有用的信息
-- 保留关键决策和原因
-- 保留未完成事项`;
-}
 
 // --- Providers ---
 
@@ -214,37 +136,228 @@ export class Compressor {
     }
   }
 
-  async compressObservation(event: {
-    tool_name: string;
-    tool_input: unknown;
-    tool_response: unknown;
-    cwd: string;
-  }): Promise<CompressedObservation> {
-    const prompt = buildObsPrompt(event, this.language);
-    const raw = await this.provider.compress(OBS_SYSTEM[this.language], prompt);
-    return parseJSON<CompressedObservation>(raw, {
-      title: '', narrative: '', facts: [], concepts: [], type: 'change', files: [],
-    });
+  /**
+   * Summarize a single turn into a memory object.
+   * Input: prompt text + deterministic artifacts + optional event digest.
+   */
+  async summarizeTurn(input: {
+    prompt_text: string;
+    artifacts: {
+      tool_names: string[];
+      files_touched: string[];
+      commands: string[];
+      error_signals: string[];
+    };
+    event_digest?: string;
+  }): Promise<TurnSummaryResult> {
+    const prompt = buildTurnSummaryPrompt(input, this.language);
+    const raw = await this.provider.compress(TURN_SUMMARY_SYSTEM[this.language], prompt);
+    return parseJSON<TurnSummaryResult>(raw, {
+      title: '', summary: '', request: '', investigated: '', learned: '',
+      completed: '', next_steps: '', memory_type: 'change', files_touched: [],
+      concepts: [], topic_candidate: '', importance_score: 0.5,
+      confidence_score: 0, unresolved_score: 0,
+    }, 'summarizeTurn');
   }
 
-  async compressSession(data: {
-    prompts: string[];
-    observations: string[];
-    assistant_response: string;
-  }): Promise<SessionSummary> {
-    const prompt = buildSummaryPrompt(data, this.language);
-    const raw = await this.provider.compress(SUMMARY_SYSTEM[this.language], prompt);
-    return parseJSON<SessionSummary>(raw, {
-      request: '', investigated: '', learned: '', completed: '', next_steps: '', files_touched: [],
-    });
+  /**
+   * Normalize a topic candidate against existing topics.
+   *
+   * `existing_topics` should include both the canonical label and the known
+   * aliases for each topic. Surfacing aliases in the prompt lets the LLM
+   * recognize that e.g. "用户认证链路" is equivalent to a topic whose
+   * canonical label is "auth 登录链路" when one of its aliases is exactly
+   * that string — which cuts down on the long-tail semantic drift caused by
+   * only showing canonical labels.
+   */
+  async normalizeTopic(input: {
+    candidate: string;
+    existing_topics: Array<{ canonical_label: string; aliases: string[] }>;
+    memory_title: string;
+  }): Promise<NormalizeTopicResult> {
+    const lang = this.language;
+    const existingLines = input.existing_topics
+      .slice(0, 30)
+      .map((t) => {
+        const aliasList = t.aliases.filter((a) => a && a !== t.canonical_label).slice(0, 8);
+        return aliasList.length
+          ? `- ${t.canonical_label} (aliases: ${aliasList.join(', ')})`
+          : `- ${t.canonical_label}`;
+      })
+      .join('\n');
+    const existing = existingLines || (lang === 'en' ? '(none)' : '（无）');
+    const system = lang === 'en'
+      ? 'You normalize topic labels. Output pure JSON only.'
+      : '你负责归一化主题标签。输出纯 JSON，不要额外文字。';
+    const prompt = lang === 'en'
+      ? `Candidate topic: "${input.candidate}"
+Memory title: "${input.memory_title}"
+Existing topics (with known aliases):
+${existing}
+
+If the candidate matches one of the existing topics — either the canonical label or any listed alias, same meaning with different wording — return:
+{"action":"existing","canonical_label":"<the existing canonical label>","aliases":["${input.candidate}"]}
+Otherwise return:
+{"action":"new","canonical_label":"${input.candidate}","aliases":[]}`
+      : `候选主题: "${input.candidate}"
+记忆标题: "${input.memory_title}"
+已有主题（含已知别名）：
+${existing}
+
+如果候选与已有主题等价——无论匹配 canonical label 还是任一列出的 alias，语义相同只是措辞不同——返回：
+{"action":"existing","canonical_label":"<已有 canonical label>","aliases":["${input.candidate}"]}
+否则返回：
+{"action":"new","canonical_label":"${input.candidate}","aliases":[]}`;
+    const raw = await this.provider.compress(system, prompt);
+    return parseJSON<NormalizeTopicResult>(raw, {
+      action: 'new', canonical_label: input.candidate, aliases: [],
+    }, 'normalizeTopic');
+  }
+
+  /**
+   * Summarize a topic's recent active memories into a compact narrative used
+   * by context injection and MCP `topics`. Produces both:
+   *   - summary: 2-3 sentence rolling progress line
+   *   - unresolved_summary: <= 80 chars of what's still outstanding
+   *
+   * `memories` should be pre-filtered to active rows under the topic,
+   * ordered by recency (last_turn_at DESC) and truncated to a manageable
+   * count. Keeping this contract narrow lets the handler stay simple.
+   */
+  async summarizeTopic(input: {
+    topic_label: string;
+    memories: Array<{
+      title: string;
+      summary: string;
+      learned?: string;
+      next_steps?: string;
+    }>;
+  }): Promise<TopicSummaryResult> {
+    const lang = this.language;
+    const system = lang === 'en'
+      ? 'You summarize a topic thread in a developer memory system. Output pure JSON only.'
+      : '你负责总结一个主题在代码记忆系统中的当前进展。输出纯 JSON，不要额外文字。';
+    const items = input.memories
+      .slice(0, 20)
+      .map((m, i) => {
+        const learned = m.learned ? ` | Learned: ${m.learned.slice(0, 120)}` : '';
+        const next = m.next_steps ? ` | Next: ${m.next_steps.slice(0, 120)}` : '';
+        return `${i + 1}. ${m.title}: ${m.summary.slice(0, 160)}${learned}${next}`;
+      })
+      .join('\n');
+    const prompt = lang === 'en'
+      ? `Topic: ${input.topic_label}
+
+Recent active memories under this topic (newest first):
+${items}
+
+Produce a compact topic status object.
+- "summary": 2-3 sentences capturing overall progress across these memories.
+- "unresolved_summary": single line <= 80 chars listing what's still outstanding or blocked. Empty string if everything is done.
+
+Return JSON only:
+{"summary":"...","unresolved_summary":"..."}`
+      : `主题: ${input.topic_label}
+
+该主题下最近的 active 记忆（最新在前）:
+${items}
+
+请产出紧凑的主题进展对象。
+- "summary": 2-3 句话概括该主题整体进展。
+- "unresolved_summary": 单行不超过 80 字，列出当前仍未完成/被阻塞的关键事项；若全部完成返回空串。
+
+只返回 JSON:
+{"summary":"...","unresolved_summary":"..."}`;
+    const raw = await this.provider.compress(system, prompt);
+    return parseJSON<TopicSummaryResult>(raw, {
+      summary: '',
+      unresolved_summary: '',
+    }, 'summarizeTopic');
+  }
+
+  /**
+   * Merge 2-6 turn memories into a higher-level merged memory.
+   */
+  async mergeTurnMemories(input: {
+    memories: Array<{ title: string; summary: string; learned?: string; next_steps?: string }>;
+    topic_label: string;
+  }): Promise<TurnSummaryResult> {
+    const lang = this.language;
+    const system = lang === 'en'
+      ? 'You merge multiple turn memories into one cohesive memory. Output pure JSON only.'
+      : '你将多条 turn 记忆合并为一条完整记忆。输出纯 JSON，不要额外文字。';
+    const items = input.memories.map((m, i) => `${i + 1}. ${m.title}: ${m.summary}${m.learned ? ' | Learned: ' + m.learned : ''}${m.next_steps ? ' | Next: ' + m.next_steps : ''}`).join('\n');
+    const prompt = lang === 'en'
+      ? `Topic: ${input.topic_label}\n\nTurn memories to merge:\n${items}\n\nReturn JSON:\n{"title":"Merged title","summary":"Cohesive 3-5 sentence summary","request":"Overall goal","investigated":"What was explored across turns","learned":"Key consolidated findings","completed":"What was accomplished","next_steps":"Remaining items","memory_type":"decision|bugfix|feature|refactor|discovery|change","files_touched":[],"concepts":[],"topic_candidate":"${input.topic_label}","importance_score":0.0-1.0,"confidence_score":0.0-1.0,"unresolved_score":0.0-1.0}`
+      : `主题: ${input.topic_label}\n\n待合并的 turn 记忆:\n${items}\n\n返回 JSON：\n{"title":"合并标题","summary":"3-5句完整摘要","request":"总体目标","investigated":"跨轮探索了什么","learned":"关键发现汇总","completed":"完成了什么","next_steps":"剩余事项","memory_type":"decision|bugfix|feature|refactor|discovery|change","files_touched":[],"concepts":[],"topic_candidate":"${input.topic_label}","importance_score":0.0-1.0,"confidence_score":0.0-1.0,"unresolved_score":0.0-1.0}`;
+    const raw = await this.provider.compress(system, prompt);
+    return parseJSON<TurnSummaryResult>(raw, {
+      title: '', summary: '', request: '', investigated: '', learned: '',
+      completed: '', next_steps: '', memory_type: 'change', files_touched: [],
+      concepts: [], topic_candidate: input.topic_label, importance_score: 0.5,
+      confidence_score: 0, unresolved_score: 0,
+    }, 'mergeTurnMemories');
   }
 }
 
-function parseJSON<T>(raw: string, fallback: T): T {
+function parseJSON<T>(raw: string, fallback: T, context: string): T {
   try {
     const cleaned = raw.replace(/^```json?\n?/m, '').replace(/\n?```$/m, '').trim();
     return JSON.parse(cleaned) as T;
-  } catch {
+  } catch (error) {
+    logError(`compressor/parseJSON/${context}`, JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+      raw: raw.slice(0, 500),
+    }));
     return fallback;
   }
+}
+
+// --- V2 Turn Summary Prompts ---
+
+const TURN_SUMMARY_SYSTEM: Record<Language, string> = {
+  zh: '你是一个代码会话记忆压缩器。将单轮对话压缩为结构化记忆对象。\n输出纯 JSON，不要 markdown 代码块，不要额外文字。',
+  en: 'You are a code session memory compressor. Compress a single turn into a structured memory object.\nOutput pure JSON only. No markdown code blocks, no extra text.',
+};
+
+function buildTurnSummaryPrompt(input: {
+  prompt_text: string;
+  artifacts: {
+    tool_names: string[];
+    files_touched: string[];
+    commands: string[];
+    error_signals: string[];
+  };
+  event_digest?: string;
+}, lang: Language): string {
+  const a = input.artifacts;
+  const tools = a.tool_names.join(', ') || 'none';
+  const files = a.files_touched.slice(0, 10).join(', ') || 'none';
+  const cmds = a.commands.slice(0, 5).join('; ') || 'none';
+  const errors = a.error_signals.slice(0, 3).join('; ') || 'none';
+  const digest = input.event_digest ? `\n- Event digest: ${input.event_digest}` : '';
+
+  if (lang === 'en') {
+    return `## Turn Input
+- User prompt: ${input.prompt_text.slice(0, 2000)}
+- Tools used: ${tools}
+- Files touched: ${files}
+- Commands: ${cmds}
+- Errors: ${errors}${digest}
+
+## Output
+Return JSON:
+{"title":"One-line title (<80 chars)","summary":"2-4 sentence summary","request":"What the user asked","investigated":"What was explored","learned":"Key findings/decisions","completed":"What was done","next_steps":"Remaining items","memory_type":"decision|bugfix|feature|refactor|discovery|change","files_touched":["paths"],"concepts":["tags, both EN and ZH"],"topic_candidate":"normalized topic label","importance_score":0.0-1.0,"confidence_score":0.0-1.0,"unresolved_score":0.0-1.0}`;
+  }
+
+  return `## 本轮输入
+- 用户 Prompt: ${input.prompt_text.slice(0, 2000)}
+- 使用工具: ${tools}
+- 涉及文件: ${files}
+- 命令: ${cmds}
+- 错误: ${errors}${digest}
+
+## 输出要求
+返回 JSON：
+{"title":"一句话标题(<40字)","summary":"2-4句摘要","request":"用户要什么","investigated":"探索了什么","learned":"关键发现/决策","completed":"完成了什么","next_steps":"后续事项","memory_type":"decision|bugfix|feature|refactor|discovery|change","files_touched":["文件路径"],"concepts":["标签,中英文都要"],"topic_candidate":"规范化主题","importance_score":0.0-1.0,"confidence_score":0.0-1.0,"unresolved_score":0.0-1.0}`;
 }

@@ -14,22 +14,15 @@ export interface Config {
     maxTokens: number;
     temperature: number;
     concurrency: number;
-    enabled: boolean;
   };
   context: {
-    maxObservations: number;
-    maxSessions: number;
-    fullCount: number;
-    fullField: 'narrative' | 'facts';
+    maxMemories: number;
     maxOutputBytes: number;
     includePinned: boolean;
     includeSummary: boolean;
   };
-  session: { timeoutMinutes: number; autoComplete: boolean };
   filter: {
     skipTools: string[];
-    skipSmallReads: boolean;
-    smallReadThreshold: number;
   };
 }
 
@@ -38,28 +31,21 @@ const defaults: Config = {
   worker: { port: 37778, host: '127.0.0.1', logLevel: 'info' },
   compression: {
     provider: 'anthropic',
-    model: 'gpt-5.4',
+    model: 'claude-opus-4-6',
     apiKey: '',
     baseUrl: null,
     maxTokens: 800,
     temperature: 0.1,
     concurrency: 6,
-    enabled: true,
   },
   context: {
-    maxObservations: 50,
-    maxSessions: 10,
-    fullCount: 5,
-    fullField: 'narrative' as const,
+    maxMemories: 50,
     maxOutputBytes: 8192,
     includePinned: true,
     includeSummary: false,
   },
-  session: { timeoutMinutes: 30, autoComplete: true },
   filter: {
     skipTools: ['introspect', 'todo_list', '@kiro-mem/*'],
-    skipSmallReads: true,
-    smallReadThreshold: 100,
   },
 };
 
@@ -79,8 +65,11 @@ export function loadConfig(): Config {
     language: raw.language === 'en' ? 'en' : 'zh',
     worker: { ...defaults.worker, ...raw.worker },
     compression: { ...defaults.compression, ...raw.compression },
-    context: { ...defaults.context, ...raw.context },
-    session: { ...defaults.session, ...raw.session },
+    context: {
+      ...defaults.context,
+      ...raw.context,
+      maxMemories: raw.context?.maxMemories ?? raw.context?.maxObservations ?? defaults.context.maxMemories,
+    },
     filter: { ...defaults.filter, ...raw.filter },
   };
 }
