@@ -25,6 +25,7 @@ You have persistent cross-session memory. At session start, a compact index of r
 
 ## Retrieval Pattern / 检索模式
 
+0. **Understand injected index** — memories are referenced as `#M{id}` (e.g. `#M42`). Use `get_memories ids=[42]` to fetch details.
 1. **Scan injected index** — identify relevant memories by title and topic
 2. **Search or browse topics** — `search` for keywords, `topics` for overview
 3. **Fetch details on demand** — `get_memories` only for what you need
