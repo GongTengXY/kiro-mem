@@ -44,6 +44,7 @@ let m = t(lang);
 
 const command = process.argv[2] || 'help';
 const EMBEDDING_MODEL_ID = 'Xenova/all-MiniLM-L6-v2';
+const EMBEDDING_MODEL_DTYPE = 'q8';
 const HF_REMOTE_HOST = 'https://huggingface.co/';
 const HF_MIRROR_REMOTE_HOST = 'https://hf-mirror.com/';
 
@@ -224,7 +225,7 @@ function buildEmbeddingPrefetchScript(remoteHost: string): string {
     env.remotePathTemplate = '{model}/resolve/{revision}/';
 
     await pipeline('feature-extraction', ${JSON.stringify(EMBEDDING_MODEL_ID)}, {
-      dtype: 'fp32',
+      dtype: ${JSON.stringify(EMBEDDING_MODEL_DTYPE)},
     });
   `;
 }

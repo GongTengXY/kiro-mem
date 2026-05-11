@@ -88,13 +88,13 @@ At session start, kiro-mem injects a compact memory index organized by **Pinned 
 
 ## MCP Tools
 
-| Tool | Purpose |
-|------|---------|
-| `search` | Hybrid search memories with `type`, `days`, `repo` filters |
-| `get_memories` | Fetch full memory details by ID |
-| `trace_memory` | Show source turns and neighboring memories |
-| `topics` | Browse active topics |
-| `pin` | Mark or unmark important memories |
+| Tool           | Purpose                                                    |
+| -------------- | ---------------------------------------------------------- |
+| `search`       | Hybrid search memories with `type`, `days`, `repo` filters |
+| `get_memories` | Fetch full memory details by ID                            |
+| `trace_memory` | Show source turns and neighboring memories                 |
+| `topics`       | Browse active topics                                       |
+| `pin`          | Mark or unmark important memories                          |
 
 ```text
 @kiro-mem/search query="auth module bug" type="bugfix" limit=10
@@ -164,14 +164,14 @@ kiro-mem uninstall --purge
 
 ## Limitations
 
-| Limitation | Impact | Mitigation |
-|------------|--------|------------|
-| `agentSpawn` output limit 10KB | Injected index must stay compact | Budget-controlled context builder |
-| Search queries shorter than 3 chars | Falls back to `LIKE`, less precise | Use longer terms when possible |
-| Install step | Downloads the local embedding model before the Worker starts | Cached locally after install |
-| No Web Viewer UI yet | Memory inspected through CLI/MCP/DB | Planned separately |
-| Local only | No built-in cross-machine sync | Future: git sync or cloud storage |
-| Topic normalization | LLM-dependent, may drift | Periodic re-normalization will be added later |
+| Limitation                          | Impact                                                       | Mitigation                                    |
+| ----------------------------------- | ------------------------------------------------------------ | --------------------------------------------- |
+| `agentSpawn` output limit 10KB      | Injected index must stay compact                             | Budget-controlled context builder             |
+| Search queries shorter than 3 chars | Falls back to `LIKE`, less precise                           | Use longer terms when possible                |
+| Install step                        | Downloads the local embedding model before the Worker starts | Cached locally after install                  |
+| No Web Viewer UI yet                | Memory inspected through CLI/MCP/DB                          | Planned separately                            |
+| Local only                          | No built-in cross-machine sync                               | Future: git sync or cloud storage             |
+| Topic normalization                 | LLM-dependent, may drift                                     | Periodic re-normalization will be added later |
 
 ## License
 

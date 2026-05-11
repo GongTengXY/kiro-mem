@@ -4,6 +4,7 @@ import {
 } from '@huggingface/transformers';
 
 const MODEL_ID = 'Xenova/all-MiniLM-L6-v2';
+const MODEL_DTYPE = 'q8';
 const DIMENSIONS = 384;
 
 let extractor: FeatureExtractionPipeline | null = null;
@@ -13,7 +14,7 @@ async function getExtractor(): Promise<FeatureExtractionPipeline> {
   if (extractor) return extractor;
   if (loading) return loading;
   loading = pipeline('feature-extraction', MODEL_ID, {
-    dtype: 'fp32',
+    dtype: MODEL_DTYPE,
   }).then((ext) => {
     extractor = ext;
     return ext;
