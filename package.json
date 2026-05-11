@@ -1,6 +1,6 @@
 {
   "name": "kiro-mem",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "Persistent cross-session memory system for Kiro CLI. Auto-captures tool calls, compresses via LLM, and injects historical context.",
   "module": "index.ts",
   "type": "module",
