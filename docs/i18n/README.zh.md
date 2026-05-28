@@ -171,7 +171,7 @@ kiro-mem uninstall --purge
 ## 系统要求
 
 - **Bun**：最新版本
-- **Kiro CLI**：需支持 hooks、agent 与 `acp` 子命令（运行 `kiro-cli acp --help` 验证）
+- **Kiro CLI**：**>= 2.3.0** —— 更早版本既没有 `acp` 子命令，也不支持隔离压缩子 agent 所依赖的 `KIRO_HOME` 覆盖。可通过 `kiro-cli --version` 与 `kiro-cli acp --help` 验证。
 - **macOS / Linux**：Worker 保活需要 `launchd` / `systemd`
 
 ## 限制

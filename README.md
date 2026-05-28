@@ -171,7 +171,7 @@ kiro-mem uninstall --purge
 ## System Requirements
 
 - **Bun**: Latest version
-- **Kiro CLI**: Must support hooks, agents, and the `acp` subcommand (run `kiro-cli acp --help` to verify)
+- **Kiro CLI**: **>= 2.3.0** — earlier versions lack the `acp` subcommand and the `KIRO_HOME` override that the isolated compressor sub-agent depends on. Run `kiro-cli --version` and `kiro-cli acp --help` to verify.
 - **macOS / Linux**: Required for Worker keepalive via `launchd` / `systemd`
 
 ## Limitations
