@@ -2,6 +2,13 @@
   "name": "kiro-mem",
   "description": "带持久记忆的默认开发助手，自动记录会话历史并在后续会话中注入相关上下文",
   "prompt": "file://__KIRO_MEMORY_DIR__/prompt.md",
+  "resources": [
+    "skill://.kiro/skills/*/SKILL.md",
+    "skill://~/.kiro/skills/*/SKILL.md",
+    "file://.kiro/steering/**/*.md",
+    "file://~/.kiro/steering/**/*.md"
+  ],
+  "includeMcpJson": true,
   "tools": ["*"],
   "hooks": {
     "agentSpawn": [

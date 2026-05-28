@@ -7,13 +7,12 @@ export interface Config {
   language: Language;
   worker: { port: number; host: string; logLevel: string };
   compression: {
-    provider: 'anthropic' | 'openai' | 'ollama' | 'custom';
-    model: string;
-    apiKey: string;
-    baseUrl: string | null;
-    maxTokens: number;
-    temperature: number;
+    /** Number of concurrent ACP runtime processes. */
     concurrency: number;
+    /** Per-prompt timeout for the ACP runtime, in milliseconds. */
+    timeoutMs: number;
+    /** Maximum repair retries when the model returns invalid JSON. */
+    maxRetries: number;
   };
   context: {
     maxMemories: number;
@@ -24,19 +23,23 @@ export interface Config {
   filter: {
     skipTools: string[];
   };
+  runtime: {
+    /**
+     * Isolated KIRO_HOME used by the ACP compressor sub-agent. When empty,
+     * the worker defaults to `<dataDir>/kiro-runtime`, which is the layout
+     * `kiro-mem install` lays down.
+     */
+    kiroHome: string;
+  };
 }
 
 const defaults: Config = {
   language: 'zh',
   worker: { port: 37778, host: '127.0.0.1', logLevel: 'info' },
   compression: {
-    provider: 'anthropic',
-    model: 'claude-opus-4-6',
-    apiKey: '',
-    baseUrl: null,
-    maxTokens: 800,
-    temperature: 0.1,
-    concurrency: 6,
+    concurrency: 3,
+    timeoutMs: 30000,
+    maxRetries: 2,
   },
   context: {
     maxMemories: 50,
@@ -46,6 +49,9 @@ const defaults: Config = {
   },
   filter: {
     skipTools: ['introspect', 'todo_list', '@kiro-mem/*'],
+  },
+  runtime: {
+    kiroHome: '',
   },
 };
 
@@ -64,20 +70,22 @@ export function loadConfig(): Config {
   return {
     language: raw.language === 'en' ? 'en' : 'zh',
     worker: { ...defaults.worker, ...raw.worker },
-    compression: { ...defaults.compression, ...raw.compression },
+    compression: {
+      concurrency: raw.compression?.concurrency ?? defaults.compression.concurrency,
+      timeoutMs: raw.compression?.timeoutMs ?? defaults.compression.timeoutMs,
+      maxRetries: raw.compression?.maxRetries ?? defaults.compression.maxRetries,
+    },
     context: {
       ...defaults.context,
       ...raw.context,
-      maxMemories: raw.context?.maxMemories ?? raw.context?.maxObservations ?? defaults.context.maxMemories,
+      maxMemories:
+        raw.context?.maxMemories ??
+        raw.context?.maxObservations ??
+        defaults.context.maxMemories,
     },
     filter: { ...defaults.filter, ...raw.filter },
+    runtime: {
+      kiroHome: raw.runtime?.kiroHome ?? defaults.runtime.kiroHome,
+    },
   };
-}
-
-export function resolveEnvValue(val: string): string {
-  if (val.startsWith('${') && val.endsWith('}')) {
-    const envKey = val.slice(2, -1);
-    return process.env[envKey] || '';
-  }
-  return val;
 }

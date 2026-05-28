@@ -1,7 +1,7 @@
 {
   "name": "kiro-mem",
-  "version": "2.1.0",
-  "description": "Persistent cross-session memory system for Kiro CLI. Auto-captures tool calls, compresses via LLM, and injects historical context.",
+  "version": "2.2.0",
+  "description": "Persistent cross-session memory system for Kiro CLI. Captures every turn, compresses via Kiro CLI ACP, and injects a compact memory index into later sessions.",
   "module": "index.ts",
   "type": "module",
   "license": "MIT",
@@ -14,11 +14,11 @@
     "kiro-cli",
     "memory",
     "mcp",
+    "acp",
     "ai",
     "context",
     "persistence",
-    "sqlite",
-    "llm"
+    "sqlite"
   ],
   "bin": {
     "kiro-mem": "./scripts/setup.ts"
@@ -26,6 +26,7 @@
   "files": [
     "src",
     "scripts",
+    "models",
     "index.ts",
     "tsconfig.json",
     "README.md"
@@ -33,16 +34,15 @@
   "scripts": {
     "worker": "bun run src/server/worker.ts",
     "mcp": "bun run src/server/mcp-server.ts",
-    "setup": "bun run scripts/setup.ts"
+    "setup": "bun run scripts/setup.ts",
+    "test": "bun test",
+    "typecheck": "bun node_modules/typescript/bin/tsc --noEmit"
   },
   "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
+    "@types/bun": "latest",
     "typescript": "^5"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.90.0",
     "@huggingface/transformers": "^4.2.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "hono": "^4.12.14"

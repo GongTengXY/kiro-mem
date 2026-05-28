@@ -3,7 +3,8 @@ import { writeFileSync, readFileSync } from 'fs';
 import { join, resolve } from 'path';
 import { MemoryDB, computeScopeKey } from '../db';
 import type { MemoryType } from '../db/types';
-import { Compressor, type CompressorProvider } from '../compressor';
+import type { MemoryCompressor } from '../compressor';
+import { ACPCompressor, checkRuntimeHome, formatIssues } from '../acp';
 import { buildContext } from '../context-builder';
 import { loadConfig, getDataDir, type Config } from '../config';
 import { logError } from '../logger';
@@ -14,8 +15,15 @@ import { generateEmbedding, embeddingToBlob, DIMENSIONS } from '../embedding';
 
 const PKG_VERSION: string = (() => {
   try {
-    return JSON.parse(readFileSync(resolve(import.meta.dir, '../../package.json'), 'utf-8')).version;
-  } catch { return '2.0.0'; }
+    const pkg = JSON.parse(
+      readFileSync(resolve(import.meta.dir, '../../package.json'), 'utf-8'),
+    ) as { version?: unknown };
+    return typeof pkg.version === 'string' && pkg.version.trim()
+      ? pkg.version
+      : '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
 })();
 
 // --- Global error handlers (only in production entry) ---
@@ -62,7 +70,7 @@ function detectRepo(cwd: string): string | null {
 
 export interface AppDeps {
   db: MemoryDB;
-  compressor: Compressor;
+  compressor: MemoryCompressor;
   config: Config;
   /** Set false to skip embedding generation (tests). */
   enableEmbeddings?: boolean;
@@ -600,12 +608,36 @@ export function createApp(deps: AppDeps) {
 
 const config = loadConfig();
 const db = new MemoryDB();
-const compressor = new Compressor();
+
+// kiroHome holds the isolated KIRO_HOME for the ACP compressor sub-agent.
+// Empty config falls back to the layout `kiro-mem install` lays down at
+// <dataDir>/kiro-runtime.
+const KIRO_RUNTIME_HOME = config.runtime.kiroHome || join(getDataDir(), 'kiro-runtime');
+const COMPRESSOR_AGENT_NAME = 'kiro-mem-compressor';
+
+const compressor: MemoryCompressor = new ACPCompressor({
+  agentName: COMPRESSOR_AGENT_NAME,
+  kiroHome: KIRO_RUNTIME_HOME,
+  concurrency: config.compression.concurrency,
+  timeoutMs: config.compression.timeoutMs,
+  maxRetries: config.compression.maxRetries,
+});
 const { app, jobRunner } = createApp({ db, compressor, config });
 
 export { app };
 
 export function startWorker() {
+  // Fail loudly if the runtime layout is broken — a missing prompt or
+  // accidentally-tooled compressor agent silently breaks ACP purity.
+  const issues = checkRuntimeHome(KIRO_RUNTIME_HOME, COMPRESSOR_AGENT_NAME);
+  const errors = issues.filter((i) => i.severity === 'error');
+  if (errors.length > 0) {
+    console.error('[kiro-mem] kiro-runtime check failed:');
+    console.error(formatIssues(issues));
+    console.error('[kiro-mem] Run `kiro-mem install` to (re)create the runtime layout.');
+    process.exit(1);
+  }
+
   const port = config.worker.port;
   const host = config.worker.host;
   const dataDir = getDataDir();

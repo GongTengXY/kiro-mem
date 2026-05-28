@@ -191,7 +191,7 @@ describe('Integration / synthesis pipeline', () => {
     expect(merged.source_turn_count).toBe(3);
 
     const links = db.listMemoryTurnLinks(merged.id);
-    expect(links.map((l) => l.turn_id)).toEqual([turnIds[1], turnIds[2], turnIds[0]]);
+    expect(links.map((l) => l.turn_id)).toEqual([turnIds[1]!, turnIds[2]!, turnIds[0]!]);
     expect(links.map((l) => l.ordinal)).toEqual([1, 2, 3]);
 
     const topic = db.getTopic(merged.topic_id)!;

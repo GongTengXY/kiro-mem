@@ -2,8 +2,16 @@ import {
   pipeline,
   type FeatureExtractionPipeline,
 } from '@huggingface/transformers';
+import { resolve } from 'path';
 
-const MODEL_ID = 'Xenova/all-MiniLM-L6-v2';
+// Local model bundled with the package — no network download needed.
+//
+// At runtime the worker code lives at ~/.kiro-mem/src/server/worker.ts and
+// `import.meta.dir` therefore resolves to ~/.kiro-mem/src; the joined path is
+// ~/.kiro-mem/models/all-MiniLM-L6-v2 — exactly where `kiro-mem install`
+// copies the model files. During in-tree dev (`bun test`, `bun run …`) the
+// same relative path lands on the project's own `models/` directory.
+const MODEL_LOCAL_PATH = resolve(import.meta.dir, '../models/all-MiniLM-L6-v2');
 const MODEL_DTYPE = 'q8';
 const DIMENSIONS = 384;
 
@@ -13,8 +21,9 @@ let loading: Promise<FeatureExtractionPipeline> | null = null;
 async function getExtractor(): Promise<FeatureExtractionPipeline> {
   if (extractor) return extractor;
   if (loading) return loading;
-  loading = pipeline('feature-extraction', MODEL_ID, {
+  loading = pipeline('feature-extraction', MODEL_LOCAL_PATH, {
     dtype: MODEL_DTYPE,
+    local_files_only: true,
   }).then((ext) => {
     extractor = ext;
     return ext;

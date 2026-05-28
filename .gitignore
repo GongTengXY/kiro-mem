@@ -33,3 +33,6 @@ plan
 
 # Finder (MacOS) folder config
 .DS_Store
+
+# tests
+tests/acp/fake-acp-wrapper.sh

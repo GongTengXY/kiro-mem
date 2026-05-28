@@ -1,0 +1,6 @@
+{
+  "name": "kiro-mem-compressor",
+  "description": "Internal kiro-mem compression agent. Produces strict JSON only.",
+  "prompt": "file://__KIRO_MEMORY_DIR__/kiro-runtime/kiro-mem-compressor-prompt.md",
+  "tools": []
+}

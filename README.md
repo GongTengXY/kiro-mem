@@ -27,24 +27,27 @@ kiro-mem automatically captures each turn (prompt → tool calls → stop) durin
 **Key Features**
 
 - 🧠 **Persistent Memory** — Keep project context across sessions
+- 🤖 **ACP-native** — Compression runs through Kiro CLI ACP — no LLM API key required
 - 🔍 **Hybrid Search** — FTS5 full-text search + local semantic reranking
 - 📊 **Progressive Disclosure** — Inject a small index first, fetch details on demand
 - 🔧 **MCP Tools** — `search`, `get_memories`, `trace_memory`, `topics`, `pin`
 - 🔒 **Privacy Control** — Use `<private>` tags to redact sensitive content before storage
 - 🚀 **Async Processing** — Persistent job queue, no tool-call blocking
 - 🔄 **Process Keepalive** — Worker managed by `launchd` or `systemd`
-- 🌐 **i18n** — `zh` and `en` for CLI and compression prompts
+- 🌐 **i18n** — `zh` and `en` for CLI and runtime compressor prompts
 
 ## Quick Start
 
-Requires [Bun](https://bun.sh) and [Kiro CLI](https://kiro.dev).
+Requires [Bun](https://bun.sh) and a [Kiro CLI](https://kiro.dev) build that supports the `acp` subcommand.
 
 ```bash
 npm i -g kiro-mem
 kiro-mem install
 ```
 
-The installer will ask for language, model provider, model name, and API key, pre-download the local embedding model, then register and start the Worker automatically.
+The installer checks Kiro CLI ACP availability, copies the bundled embedding model (~23 MB) into `~/.kiro-mem/models/`, lays out the isolated `kiro-runtime` (compressor sub-agent + prompt), and registers the Worker. **No API key required** — memory compression runs through `kiro-cli acp` against your existing Kiro session.
+
+The Worker fails fast on startup if `kiro-runtime` is incomplete (missing agent file, missing prompt, or `tools` accidentally non-empty), so a broken layout never silently degrades compression purity. Re-run `kiro-mem install` to repair.
 
 ### Set As Default Agent
 
@@ -71,7 +74,7 @@ curl http://127.0.0.1:37778/health
 **Architecture (V2 Turn+)**
 
 1. **Truth Layer** — `session_id` → `turns` → `turn_events` (append-only raw payloads)
-2. **Synthesis Layer** — Persistent jobs: `summarize_turn` → `normalize_topic` → `merge_cluster_to_memory`
+2. **Synthesis Layer** — Persistent jobs (`summarize_turn` → `normalize_topic` → `summarize_topic` / `merge_cluster_to_memory`) drive an **ACP runtime pool**: each prompt goes to a `kiro-cli acp` sub-process running an isolated `kiro-mem-compressor` sub-agent declared with `tools: []`. Any tool-call notification on that session is treated as contamination and the runtime slot is recycled. `normalize_topic` first tries a deterministic pre-match (case/whitespace/trailing-punctuation only) and falls back to the model only when no exact hit exists. `summarize_topic` fires when a topic crosses 3/5/10/20 memories or right after a merge, so Active Topics stays in sync with the current memory set.
 3. **Retrieval Layer** — `memories_fts` + semantic reranking → MCP tools → context injection
 
 At session start, kiro-mem injects a compact memory index organized by **Pinned Memories**, **Active Topics**, and **Recent Memories**. The agent can then use MCP tools to search, inspect, and trace memories on demand.
@@ -79,11 +82,11 @@ At session start, kiro-mem injects a compact memory index organized by **Pinned 
 **Data Model**
 
 - `session_refs` — Session isolation metadata
-- `turns` — One per user prompt → stop cycle
-- `turn_events` — Append-only raw hook payloads
+- `turns` + `turn_events` — Per-turn lifecycle row + append-only raw hook payloads (truth layer)
 - `turn_artifacts` — Deterministic extraction (tools, files, commands, errors)
-- `memories` — User-facing memory units (turn or merged)
-- `topics` — Normalized topic labels for aggregation
+- `memories` + `memory_turn_links` — User-facing memory units (turn or merged) and their source-turn pointers
+- `topics` — Normalized topic labels with `summary` / `unresolved_summary`
+- `memories_fts` (FTS5 trigram) + `memory_embeddings` — Hybrid search backing tables
 - `jobs` — Persistent async task queue
 
 ## MCP Tools
@@ -100,7 +103,10 @@ At session start, kiro-mem injects a compact memory index organized by **Pinned 
 @kiro-mem/search query="auth module bug" type="bugfix" limit=10
 @kiro-mem/trace_memory memory_id=42 before=3 after=3
 @kiro-mem/get_memories ids=[42,56]
+@kiro-mem/topics cwd="/path/to/non-git-project"
 ```
+
+`topics` accepts an optional `cwd` so non-git workspaces stay isolated even though they share a `NULL` repo. Pass `repo` to filter by git root, `cwd` to filter by workspace, or omit both to see everything.
 
 **Memory Types:** `decision` | `bugfix` | `feature` | `refactor` | `discovery` | `change`
 
@@ -123,10 +129,9 @@ Edit `~/.kiro-mem/config.json`, or run `kiro-mem config` for interactive setup:
 {
   "language": "zh",
   "compression": {
-    "provider": "anthropic",
-    "model": "claude-opus-4-6",
-    "apiKey": "sk-proj-xxx",
-    "concurrency": 6
+    "concurrency": 3,
+    "timeoutMs": 30000,
+    "maxRetries": 2
   },
   "context": {
     "maxMemories": 50,
@@ -136,10 +141,17 @@ Edit `~/.kiro-mem/config.json`, or run `kiro-mem config` for interactive setup:
   },
   "filter": {
     "skipTools": ["introspect", "todo_list", "@kiro-mem/*"]
+  },
+  "runtime": {
+    "kiroHome": ""
   }
 }
 ```
 
+- `compression.concurrency`: number of parallel `kiro-cli acp` runtime processes (default `3`).
+- `compression.timeoutMs`: per-prompt timeout in milliseconds, clamped to `[5000, 60000]` when set via `kiro-mem config` (default `30000`).
+- `compression.maxRetries`: how many JSON-repair retries to attempt before falling back to a stub memory (default `2`).
+- `runtime.kiroHome`: isolated `KIRO_HOME` for the compressor sub-agent. Empty falls back to `<dataDir>/kiro-runtime`, which is the layout `kiro-mem install` lays down.
 - `context.includeSummary`: when `true`, each Recent Memories entry carries a short summary line in the injected context. Each entry becomes ~3× the size, so kiro-mem automatically caps the list at 20 entries to stay within the agentSpawn byte budget.
 
 ## CLI
@@ -159,19 +171,20 @@ kiro-mem uninstall --purge
 ## System Requirements
 
 - **Bun**: Latest version
-- **Kiro CLI**: Must support hooks and agent system
+- **Kiro CLI**: Must support hooks, agents, and the `acp` subcommand (run `kiro-cli acp --help` to verify)
 - **macOS / Linux**: Required for Worker keepalive via `launchd` / `systemd`
 
 ## Limitations
 
-| Limitation                          | Impact                                                       | Mitigation                                    |
-| ----------------------------------- | ------------------------------------------------------------ | --------------------------------------------- |
-| `agentSpawn` output limit 10KB      | Injected index must stay compact                             | Budget-controlled context builder             |
-| Search queries shorter than 3 chars | Falls back to `LIKE`, less precise                           | Use longer terms when possible                |
-| Install step                        | Downloads the local embedding model before the Worker starts | Cached locally after install                  |
-| No Web Viewer UI yet                | Memory inspected through CLI/MCP/DB                          | Planned separately                            |
-| Local only                          | No built-in cross-machine sync                               | Future: git sync or cloud storage             |
-| Topic normalization                 | LLM-dependent, may drift                                     | Periodic re-normalization will be added later |
+| Limitation                          | Impact                                                                | Mitigation                                    |
+| ----------------------------------- | --------------------------------------------------------------------- | --------------------------------------------- |
+| Requires Kiro CLI ACP               | Compression cannot run without a working `kiro-cli acp` subcommand    | `kiro-mem diagnose` runs an ACP smoke test    |
+| `agentSpawn` output limit 10KB      | Injected index must stay compact                                      | Budget-controlled context builder             |
+| Search queries shorter than 3 chars | Falls back to `LIKE`, less precise                                    | Use longer terms when possible                |
+| Install step                        | Copies the bundled embedding model (~23 MB) into `~/.kiro-mem/models` | Local-only — no network needed once installed |
+| No Web Viewer UI yet                | Memory inspected through CLI/MCP/DB                                   | Planned separately                            |
+| Local only                          | No built-in cross-machine sync                                        | Future: git sync or cloud storage             |
+| Topic normalization                 | LLM-dependent, may drift                                              | Periodic re-normalization will be added later |
 
 ## License
 

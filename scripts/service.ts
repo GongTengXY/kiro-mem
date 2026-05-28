@@ -46,6 +46,11 @@ function generatePlist(): string {
   const workerPath = join(DATA_DIR, 'src', 'server', 'worker.ts');
   const stdoutLog = join(DATA_DIR, 'logs', 'worker-stdout.log');
   const stderrLog = join(DATA_DIR, 'logs', 'worker-stderr.log');
+  // launchd ignores the user shell's PATH (it only sees a minimal default
+  // like `/usr/bin:/bin:...`), so the worker's spawn of `kiro-cli` would
+  // ENOENT. Snapshot the install-time PATH (which already passed the
+  // `kiro-cli --version` precheck) into the plist instead.
+  const pathEnv = process.env.PATH || '/usr/local/bin:/usr/bin:/bin';
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -64,6 +69,8 @@ function generatePlist(): string {
   <dict>
     <key>KIRO_MEMORY_DATA_DIR</key>
     <string>${DATA_DIR}</string>
+    <key>PATH</key>
+    <string>${pathEnv}</string>
   </dict>
   <key>RunAtLoad</key>
   <true/>
@@ -91,6 +98,9 @@ const SERVICE_PATH = join(SYSTEMD_DIR, SERVICE_NAME);
 function generateService(): string {
   const bunPath = getBunPath();
   const workerPath = join(DATA_DIR, 'src', 'server', 'worker.ts');
+  // systemd user services start with a minimal PATH; mirror the install-time
+  // PATH so spawning `kiro-cli` from the worker keeps working.
+  const pathEnv = process.env.PATH || '/usr/local/bin:/usr/bin:/bin';
   return `[Unit]
 Description=kiro-mem Worker Service
 After=network.target
@@ -100,6 +110,7 @@ Type=simple
 ExecStart=${bunPath} run ${workerPath}
 WorkingDirectory=${DATA_DIR}
 Environment=KIRO_MEMORY_DATA_DIR=${DATA_DIR}
+Environment=PATH=${pathEnv}
 Restart=on-failure
 RestartSec=5
 

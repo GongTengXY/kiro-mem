@@ -1,4 +1,15 @@
 #!/usr/bin/env bun
+/**
+ * kiro-mem CLI: install, uninstall, config, status, start, stop, diagnose.
+ *
+ * v2.2.0 highlights:
+ * - ACP-native: no LLM provider / API key prompts. Compression is handled by
+ *   `kiro-cli acp` against an isolated KIRO_HOME.
+ * - Embedding model ships with the npm package and is copied (not downloaded)
+ *   into `~/.kiro-mem/models/` during install.
+ * - i18n preserved (zh/en) for all user-visible CLI output and the compressor
+ *   prompt that is written into the kiro-runtime layout.
+ */
 import {
   existsSync,
   mkdirSync,
@@ -7,8 +18,9 @@ import {
   writeFileSync,
   rmSync,
   readFileSync,
+  statSync,
 } from 'fs';
-import { join, resolve } from 'path';
+import { dirname, join, resolve } from 'path';
 import { spawnSync } from 'child_process';
 import * as readline from 'readline';
 import {
@@ -21,13 +33,50 @@ import {
 } from './service';
 import type { Language } from '../src/config';
 import { t } from '../src/i18n';
+import { checkRuntimeHome } from '../src/acp/integrity';
 
 const HOME = process.env.HOME || '~';
 const DATA_DIR = join(HOME, '.kiro-mem');
-const AGENT_DIR = join(HOME, '.kiro', 'agents');
-const SRC_DIR = resolve(import.meta.dir, '../src');
+const KIRO_HOME = process.env.KIRO_HOME || join(HOME, '.kiro');
+const AGENT_DIR = join(KIRO_HOME, 'agents');
 
-// --- Resolve language from existing config or default ---
+const PKG_ROOT = resolve(import.meta.dir, '..');
+const SRC_DIR = join(PKG_ROOT, 'src');
+const MODELS_DIR = join(PKG_ROOT, 'models');
+
+/**
+ * Single source of truth for the package version. Reads the main
+ * `package.json` at install time and is written into the runtime
+ * `~/.kiro-mem/package.json` so the MCP server's `serverInfo.version`
+ * (a required field in the MCP protocol) is always populated.
+ */
+const PKG_VERSION: string = (() => {
+  try {
+    const pkg = JSON.parse(
+      readFileSync(join(PKG_ROOT, 'package.json'), 'utf-8'),
+    ) as { version?: unknown };
+    return typeof pkg.version === 'string' && pkg.version.trim()
+      ? pkg.version
+      : '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+})();
+
+const RUNTIME_DIR = join(DATA_DIR, 'kiro-runtime');
+const RUNTIME_AGENT_DIR = join(RUNTIME_DIR, 'agents');
+const COMPRESSOR_AGENT_NAME = 'kiro-mem-compressor';
+
+const MODEL_NAME = 'all-MiniLM-L6-v2';
+const MODEL_DEST_DIR = join(DATA_DIR, 'models', MODEL_NAME);
+const MODEL_FILES = [
+  'config.json',
+  'tokenizer.json',
+  'tokenizer_config.json',
+  'onnx/model_quantized.onnx',
+] as const;
+
+// --- Resolve language from existing config (or default) ---
 
 function resolveLanguage(): Language {
   try {
@@ -43,10 +92,6 @@ let lang: Language = resolveLanguage();
 let m = t(lang);
 
 const command = process.argv[2] || 'help';
-const EMBEDDING_MODEL_ID = 'Xenova/all-MiniLM-L6-v2';
-const EMBEDDING_MODEL_DTYPE = 'q8';
-const HF_REMOTE_HOST = 'https://huggingface.co/';
-const HF_MIRROR_REMOTE_HOST = 'https://hf-mirror.com/';
 
 switch (command) {
   case 'install':
@@ -96,28 +141,6 @@ function ask(
   });
 }
 
-function askRequired(
-  rl: readline.Interface,
-  question: string,
-  defaultVal?: string,
-): Promise<string> {
-  const suffix = defaultVal ? ` (${m.default} ${defaultVal})` : '';
-  return new Promise((resolve) => {
-    const doAsk = () => {
-      rl.question(`${question}${suffix}: `, (answer) => {
-        const val = answer.trim() || defaultVal || '';
-        if (!val) {
-          console.log(`  ${m.required}`);
-          doAsk();
-          return;
-        }
-        resolve(val);
-      });
-    };
-    doAsk();
-  });
-}
-
 function askChoice(
   rl: readline.Interface,
   question: string,
@@ -133,226 +156,68 @@ function askChoice(
   });
 }
 
-async function collectConfig(rl: readline.Interface, language: Language) {
-  const cm = t(language);
-  const providers = [
-    {
-      name: 'Anthropic (Claude)',
-      provider: 'anthropic',
-      defaultModel: 'claude-opus-4-6',
-    },
-    { name: 'OpenAI (GPT)', provider: 'openai', defaultModel: 'gpt-5.4' },
-    {
-      name: cm.providerOllama,
-      provider: 'ollama',
-      defaultModel: 'qwen2.5:14b',
-    },
-    { name: cm.providerCustom, provider: 'custom', defaultModel: '' },
-  ];
+interface BootstrapConfig {
+  language: Language;
+  worker: { port: number; host: string; logLevel: string };
+  compression: { concurrency: number; timeoutMs: number; maxRetries: number };
+  context: {
+    maxMemories: number;
+    maxOutputBytes: number;
+    includePinned: boolean;
+    includeSummary: boolean;
+  };
+  filter: { skipTools: string[] };
+  runtime: { kiroHome: string };
+}
 
-  const choice = await askChoice(
-    rl,
-    cm.chooseProvider,
-    providers.map((p) => p.name),
-  );
-  const selected = providers[choice] ?? providers[0]!;
-
-  const model = await askRequired(rl, cm.modelName, selected.defaultModel);
-
-  let apiKey = '';
-  if (selected.provider !== 'ollama') {
-    apiKey = await askRequired(rl, cm.apiKey);
-  }
-
-  let baseUrl: string | null = null;
-  if (selected.provider === 'custom') {
-    baseUrl = await askRequired(rl, cm.baseUrlCustom);
-  } else if (selected.provider === 'ollama') {
-    baseUrl = await askRequired(
-      rl,
-      cm.baseUrlOllama,
-      'http://localhost:11434/v1',
-    );
-    apiKey = 'ollama';
-  }
-
-  const concurrencyInput = parseInt(await ask(rl, cm.concurrency, '6'));
-  const concurrency = Math.min(
-    10,
-    Math.max(5, isNaN(concurrencyInput) ? 6 : concurrencyInput),
-  );
-
+function defaultConfig(language: Language): BootstrapConfig {
   return {
     language,
     worker: { port: 37778, host: '127.0.0.1', logLevel: 'info' },
-    compression: {
-      provider: selected.provider,
-      model,
-      apiKey,
-      baseUrl,
-      maxTokens: 800,
-      temperature: 0.1,
-      concurrency,
-    },
+    compression: { concurrency: 3, timeoutMs: 30000, maxRetries: 2 },
     context: {
       maxMemories: 50,
       maxOutputBytes: 8192,
       includePinned: true,
       includeSummary: false,
     },
-    filter: {
-      skipTools: ['introspect', 'todo_list', '@kiro-mem/*'],
-    },
+    filter: { skipTools: ['introspect', 'todo_list', '@kiro-mem/*'] },
+    runtime: { kiroHome: RUNTIME_DIR },
   };
 }
 
-// --- Config validation ---
+async function collectCompressionConfig(
+  rl: readline.Interface,
+  language: Language,
+): Promise<BootstrapConfig> {
+  const cm = t(language);
+  const concurrencyRaw = parseInt(await ask(rl, cm.compressionConcurrency, '3'));
+  const concurrency = Math.min(
+    10,
+    Math.max(1, isNaN(concurrencyRaw) ? 3 : concurrencyRaw),
+  );
+  const timeoutRaw = parseInt(await ask(rl, cm.compressionTimeoutMs, '30000'));
+  const timeoutMs = Math.min(
+    60000,
+    Math.max(5000, isNaN(timeoutRaw) ? 30000 : timeoutRaw),
+  );
+  const retriesRaw = parseInt(await ask(rl, cm.compressionMaxRetries, '2'));
+  const maxRetries = Math.min(
+    5,
+    Math.max(2, isNaN(retriesRaw) ? 2 : retriesRaw),
+  );
 
-function isRecord(val: unknown): val is Record<string, unknown> {
-  return typeof val === 'object' && val !== null && !Array.isArray(val);
-}
-
-function isValidProvider(provider: string): boolean {
-  return ['anthropic', 'openai', 'ollama', 'custom'].includes(provider);
-}
-
-function buildEmbeddingPrefetchScript(remoteHost: string): string {
-  return `
-    import { env, pipeline } from '@huggingface/transformers';
-
-    env.allowRemoteModels = true;
-    env.remoteHost = ${JSON.stringify(remoteHost)};
-    env.remotePathTemplate = '{model}/resolve/{revision}/';
-
-    await pipeline('feature-extraction', ${JSON.stringify(EMBEDDING_MODEL_ID)}, {
-      dtype: ${JSON.stringify(EMBEDDING_MODEL_DTYPE)},
-    });
-  `;
-}
-
-function formatSpawnFailure(result: ReturnType<typeof spawnSync>): string {
-  const parts: string[] = [];
-  if (typeof result.status === 'number') parts.push(`exit=${result.status}`);
-  if (result.signal) parts.push(`signal=${result.signal}`);
-
-  const stderr = result.stderr?.toString().trim();
-  if (stderr) {
-    const compact = stderr.split('\n').slice(-3).join(' | ');
-    parts.push(`stderr=${compact}`);
-  }
-
-  const stdout = result.stdout?.toString().trim();
-  if (!stderr && stdout) {
-    const compact = stdout.split('\n').slice(-3).join(' | ');
-    parts.push(`stdout=${compact}`);
-  }
-
-  return parts.join(', ') || 'unknown error';
-}
-
-function getDefaultConfig(compression: {
-  provider: string;
-  model: string;
-  apiKey?: string;
-  baseUrl?: string | null;
-  concurrency?: number;
-}) {
-  return {
-    language: 'zh' as Language,
-    worker: { port: 37778, host: '127.0.0.1', logLevel: 'info' },
-    compression: {
-      provider: compression.provider,
-      model: compression.model,
-      apiKey: compression.apiKey || '',
-      baseUrl: compression.baseUrl ?? null,
-      maxTokens: 800,
-      temperature: 0.1,
-      concurrency: Math.min(
-        10,
-        Math.max(5, Number(compression.concurrency) || 6),
-      ),
-    },
-    context: {
-      maxMemories: 50,
-      maxOutputBytes: 8192,
-      includePinned: true,
-      includeSummary: false,
-    },
-    filter: {
-      skipTools: ['introspect', 'todo_list', '@kiro-mem/*'],
-    },
-  };
-}
-
-function loadExistingConfig(
-  configPath: string,
-): Record<string, unknown> | null {
-  if (!existsSync(configPath)) return null;
-  try {
-    const raw = JSON.parse(readFileSync(configPath, 'utf-8')) as unknown;
-    if (!isRecord(raw)) return null;
-    const compression = isRecord(raw.compression) ? raw.compression : null;
-    if (!compression) return null;
-    const provider = compression.provider;
-    const model = compression.model;
-    const apiKey = compression.apiKey;
-    const baseUrl = compression.baseUrl;
-    const concurrency = compression.concurrency;
-    if (typeof provider !== 'string' || !isValidProvider(provider)) return null;
-    if (typeof model !== 'string' || !model.trim()) return null;
-    switch (provider) {
-      case 'anthropic':
-      case 'openai':
-        if (typeof apiKey !== 'string' || !apiKey.trim()) return null;
-        break;
-      case 'custom':
-        if (typeof apiKey !== 'string' || !apiKey.trim()) return null;
-        if (typeof baseUrl !== 'string' || !baseUrl.trim()) return null;
-        break;
-      case 'ollama':
-        if (typeof baseUrl !== 'string' || !baseUrl.trim()) return null;
-        break;
-    }
-    const defaults = getDefaultConfig({
-      provider,
-      model,
-      apiKey: typeof apiKey === 'string' ? apiKey : '',
-      baseUrl: typeof baseUrl === 'string' ? baseUrl : null,
-      concurrency:
-        typeof concurrency === 'number' ? concurrency : Number(concurrency),
-    });
-    return {
-      ...defaults,
-      language: raw.language === 'en' ? 'en' : 'zh',
-      compression: {
-        ...defaults.compression,
-        ...(isRecord(raw.compression) ? raw.compression : {}),
-      },
-      context: {
-        ...defaults.context,
-        ...(isRecord(raw.context) ? raw.context : {}),
-      },
-      filter: {
-        ...defaults.filter,
-        ...(isRecord(raw.filter) ? raw.filter : {}),
-      },
-    };
-  } catch {
-    return null;
-  }
+  const cfg = defaultConfig(language);
+  cfg.compression = { concurrency, timeoutMs, maxRetries };
+  return cfg;
 }
 
 // --- Commands ---
 
 async function install() {
-  const configPath = join(DATA_DIR, 'config.json');
-  const existing = loadExistingConfig(configPath);
-  const installText = existing
-    ? t((existing.language === 'en' ? 'en' : 'zh') as Language).installing
-    : 'Installing...';
-  console.log(`${ansi.bold('[kiro-mem]')} ${installText}\n`);
+  console.log(`${ansi.bold('[kiro-mem]')} ${m.installing}\n`);
 
-  // 1. Check bun
+  // 1. Check Bun
   const bunCheck = spawnSync('bun', ['--version']);
   if (bunCheck.status !== 0) {
     console.error(
@@ -364,49 +229,95 @@ async function install() {
     `${ansi.ok('✓')} Bun ${ansi.cyan(bunCheck.stdout.toString().trim())}`,
   );
 
-  // 2. Config — reuse existing if valid, otherwise interactive
-  let config: Awaited<ReturnType<typeof collectConfig>>;
-  if (existing) {
-    const cp = (
-      existing as { compression: { provider: string; model: string } }
-    ).compression;
-    lang = (existing.language === 'en' ? 'en' : 'zh') as Language;
-    m = t(lang);
-    console.log(`${ansi.ok('✓')} ${m.reusingConfig} ${ansi.dim(m.reusing)}`);
-    console.log(
-      `  ${m.provider} ${ansi.cyan(cp.provider)}, ${m.model} ${ansi.cyan(cp.model)}`,
+  // 2. Check Kiro CLI
+  const kiroCheck = spawnSync('kiro-cli', ['--version'], { stdio: 'pipe' });
+  if (kiroCheck.status !== 0) {
+    console.error(
+      `${ansi.err('✗')} ${m.kiroCliRequired} ${ansi.cyan('https://kiro.dev')}`,
     );
-    config = existing as typeof config;
+    process.exit(1);
+  }
+  console.log(
+    `${ansi.ok('✓')} Kiro CLI ${ansi.cyan(kiroCheck.stdout.toString().trim())}`,
+  );
+
+  // 2b. ACP availability
+  const acpCheck = spawnSync('kiro-cli', ['acp', '--help'], {
+    stdio: 'pipe',
+    timeout: 10000,
+  });
+  if (acpCheck.status !== 0) {
+    console.error(`${ansi.err('✗')} ${m.acpUnavailable}`);
+    process.exit(1);
+  }
+  console.log(`${ansi.ok('✓')} ${m.kiroCliCheckOk}`);
+
+  // 3. Resolve language + collect config
+  //
+  // Install is intentionally non-interactive beyond the language choice. ACP
+  // compression knobs (concurrency / timeoutMs / maxRetries) all default to
+  // values that work well for the typical local Kiro CLI runtime; users who
+  // want to tune them run `kiro-mem config` after install.
+  const configPath = join(DATA_DIR, 'config.json');
+  let config: BootstrapConfig;
+  if (existsSync(configPath)) {
+    try {
+      const existing = JSON.parse(readFileSync(configPath, 'utf-8'));
+      lang = existing.language === 'en' ? 'en' : 'zh';
+      m = t(lang);
+      console.log(`${ansi.ok('✓')} ${m.reusingConfig} ${ansi.dim(m.reusing)}`);
+      config = {
+        ...defaultConfig(lang),
+        ...existing,
+        compression: {
+          ...defaultConfig(lang).compression,
+          ...(existing.compression || {}),
+        },
+        runtime: { kiroHome: RUNTIME_DIR },
+      };
+    } catch {
+      // Existing config unparseable — fall back to a fresh language choice.
+      const rl = createRL();
+      const langChoice = await askChoice(rl, t('en').chooseLanguageBootstrap, [
+        t('en').langEn,
+        t('zh').langZh,
+      ]);
+      lang = langChoice === 0 ? 'en' : 'zh';
+      m = t(lang);
+      rl.close();
+      config = defaultConfig(lang);
+    }
   } else {
     const rl = createRL();
-    // Ask language first
     const langChoice = await askChoice(rl, t('en').chooseLanguageBootstrap, [
       t('en').langEn,
       t('zh').langZh,
     ]);
     lang = langChoice === 0 ? 'en' : 'zh';
     m = t(lang);
-    config = await collectConfig(rl, lang);
     rl.close();
+    config = defaultConfig(lang);
   }
 
-  // 3. Create directories
+  // 4. Create directories
   for (const dir of [
     DATA_DIR,
     join(DATA_DIR, 'hooks'),
-    join(DATA_DIR, 'server'),
     join(DATA_DIR, 'logs'),
+    RUNTIME_DIR,
+    RUNTIME_AGENT_DIR,
+    join(RUNTIME_DIR, 'sessions'),
     AGENT_DIR,
   ]) {
     mkdirSync(dir, { recursive: true });
   }
   console.log(`\n${ansi.ok('✓')} ${m.created} ${ansi.dim(DATA_DIR)}`);
 
-  // 4. Save config
-  writeFileSync(join(DATA_DIR, 'config.json'), JSON.stringify(config, null, 2));
+  // 5. Save config
+  writeFileSync(configPath, JSON.stringify(config, null, 2));
   console.log(`${ansi.ok('✓')} ${m.configSaved}`);
 
-  // 5. Copy hooks
+  // 6. Copy hooks
   for (const hook of [
     'context.ts',
     'prompt-save.ts',
@@ -418,10 +329,13 @@ async function install() {
   }
   console.log(`${ansi.ok('✓')} ${m.hooksInstalled}`);
 
-  // 6. Copy server & source files
+  // 7. Copy server & source files
   mkdirSync(join(DATA_DIR, 'src', 'server'), { recursive: true });
   mkdirSync(join(DATA_DIR, 'src', 'db'), { recursive: true });
   mkdirSync(join(DATA_DIR, 'src', 'jobs'), { recursive: true });
+  mkdirSync(join(DATA_DIR, 'src', 'acp'), { recursive: true });
+  mkdirSync(join(DATA_DIR, 'src', 'types'), { recursive: true });
+
   for (const file of ['worker.ts', 'mcp-server.ts']) {
     copyFileSync(
       join(SRC_DIR, 'server', file),
@@ -438,6 +352,24 @@ async function install() {
     );
   }
   for (const file of [
+    'client.ts',
+    'runtime.ts',
+    'pool.ts',
+    'compressor.ts',
+    'integrity.ts',
+    'types.ts',
+    'index.ts',
+  ]) {
+    copyFileSync(
+      join(SRC_DIR, 'acp', file),
+      join(DATA_DIR, 'src', 'acp', file),
+    );
+  }
+  copyFileSync(
+    join(SRC_DIR, 'types', 'huggingface-transformers.d.ts'),
+    join(DATA_DIR, 'src', 'types', 'huggingface-transformers.d.ts'),
+  );
+  for (const file of [
     'compressor.ts',
     'embedding.ts',
     'context-builder.ts',
@@ -449,37 +381,68 @@ async function install() {
   }
   console.log(`${ansi.ok('✓')} ${m.serverFilesInstalled}`);
 
-  // 7. Copy prompt
+  // 8. Copy embedding model from package payload
+  if (!isModelComplete(MODELS_DIR, MODEL_NAME)) {
+    console.error(
+      `${ansi.err('✗')} ${m.embModelMissing} ${ansi.dim(MODELS_DIR)}`,
+    );
+    process.exit(1);
+  }
+  copyEmbeddingModel();
+  console.log(`${ansi.ok('✓')} ${m.modelsCopied}`);
+
+  // 9. Copy main agent prompt
   copyFileSync(
     join(SRC_DIR, 'agent', 'prompt.md'),
     join(DATA_DIR, 'prompt.md'),
   );
   console.log(`${ansi.ok('✓')} ${m.promptInstalled}`);
 
-  // 8. Install agent config
-  const agentTemplate = readFileSync(
+  // 10. Install main agent JSON
+  const mainAgentTpl = readFileSync(
     join(SRC_DIR, 'agent', 'kiro-mem.json'),
     'utf-8',
   );
   writeFileSync(
     join(AGENT_DIR, 'kiro-mem.json'),
-    agentTemplate.replaceAll('__KIRO_MEMORY_DIR__', DATA_DIR),
+    mainAgentTpl.replaceAll('__KIRO_MEMORY_DIR__', DATA_DIR),
   );
   console.log(`${ansi.ok('✓')} ${m.agentConfigInstalled}`);
 
-  // 9. Install dependencies
-  const pkgPath = join(DATA_DIR, 'package.json');
-  if (!existsSync(pkgPath)) {
+  // 11. Install internal compressor sub-agent into kiro-runtime
+  const compressorAgentTpl = readFileSync(
+    join(SRC_DIR, 'agent', `${COMPRESSOR_AGENT_NAME}.json`),
+    'utf-8',
+  );
+  writeFileSync(
+    join(RUNTIME_AGENT_DIR, `${COMPRESSOR_AGENT_NAME}.json`),
+    compressorAgentTpl.replaceAll('__KIRO_MEMORY_DIR__', DATA_DIR),
+  );
+  // Prompt: pick the language-matched body and write under runtime root.
+  const promptSrc = join(
+    SRC_DIR,
+    'acp',
+    lang === 'en' ? 'compressor-prompt.en.md' : 'compressor-prompt.zh.md',
+  );
+  copyFileSync(
+    promptSrc,
+    join(RUNTIME_DIR, `${COMPRESSOR_AGENT_NAME}-prompt.md`),
+  );
+  console.log(`${ansi.ok('✓')} ${m.compressorAgentInstalled}`);
+
+  // 12. Install runtime dependencies
+  const runtimePkg = join(DATA_DIR, 'package.json');
+  if (!existsSync(runtimePkg)) {
     writeFileSync(
-      pkgPath,
+      runtimePkg,
       JSON.stringify(
         {
           name: 'kiro-mem-server',
+          version: PKG_VERSION,
           private: true,
           type: 'module',
           dependencies: {
             hono: '^4.12.0',
-            '@anthropic-ai/sdk': '^0.90.0',
             '@huggingface/transformers': '^4.2.0',
             '@modelcontextprotocol/sdk': '^1.29.0',
           },
@@ -490,72 +453,16 @@ async function install() {
     );
   }
   const r = spawnSync('bun', ['install'], { cwd: DATA_DIR, stdio: 'pipe' });
-  if (r.status === 0) console.log(`${ansi.ok('✓')} ${m.depsInstalled}`);
-  else {
+  if (r.status === 0) {
+    console.log(`${ansi.ok('✓')} ${m.depsInstalled}`);
+  } else {
     console.log(
       `${ansi.err('✗')} ${m.depsFailed} ${ansi.cyan('cd ~/.kiro-mem && bun install')}`,
     );
     process.exit(1);
   }
 
-  // 10. Pre-download embedding model (required)
-  console.log(
-    `  ⏳ ${m.embDownloading}`,
-  );
-  const directScript = buildEmbeddingPrefetchScript(HF_REMOTE_HOST);
-  const mirrorScript = buildEmbeddingPrefetchScript(HF_MIRROR_REMOTE_HOST);
-
-  let embOk = false;
-  let directFailure = '';
-  let mirrorFailure = '';
-  // 尝试 1：直连（或继承用户的代理环境变量）
-  const try1 = spawnSync('bun', ['-e', directScript], {
-    cwd: DATA_DIR,
-    stdio: 'pipe',
-    timeout: 120000,
-  });
-  if (try1.status === 0) {
-    embOk = true;
-  } else {
-    directFailure = formatSpawnFailure(try1);
-    // 尝试 2：使用国内镜像
-    const try2 = spawnSync('bun', ['-e', mirrorScript], {
-      cwd: DATA_DIR,
-      stdio: 'pipe',
-      timeout: 120000,
-    });
-    if (try2.status === 0) {
-      embOk = true;
-    } else {
-      mirrorFailure = formatSpawnFailure(try2);
-    }
-  }
-
-  if (embOk) {
-    console.log(
-      `${ansi.ok('✓')} ${m.embCached}`,
-    );
-  } else {
-    console.error(
-      `${ansi.err('✗')} ${m.embFailed}`,
-    );
-    if (directFailure) {
-      console.error(
-        `  ${m.embDirectFailure} ${ansi.dim(directFailure)}`,
-      );
-    }
-    if (mirrorFailure) {
-      console.error(
-        `  ${m.embMirrorFailure} ${ansi.dim(mirrorFailure)}`,
-      );
-    }
-    console.error(
-      `  ${m.embRetryHint} ${ansi.cyan('bun run scripts/setup.ts install')}`,
-    );
-    process.exit(1);
-  }
-
-  // 11. Register system service & start worker
+  // 13. Register system service & start worker
   const msg = registerService(lang);
   console.log(`${ansi.ok('✓')} ${msg}`);
   start(lang);
@@ -565,6 +472,23 @@ async function install() {
     `   ${m.setDefault} ${ansi.cyan('kiro-cli settings chat.defaultAgent kiro-mem')}`,
   );
   console.log(`   ${m.orSwitch} ${ansi.cyan('/agent kiro-mem')}`);
+}
+
+function isModelComplete(root: string, modelName: string): boolean {
+  const dir = join(root, modelName);
+  return MODEL_FILES.every((file) => {
+    const p = join(dir, file);
+    return existsSync(p) && statSync(p).size > 0;
+  });
+}
+
+function copyEmbeddingModel() {
+  const src = join(MODELS_DIR, MODEL_NAME);
+  for (const file of MODEL_FILES) {
+    const dest = join(MODEL_DEST_DIR, file);
+    mkdirSync(dirname(dest), { recursive: true });
+    copyFileSync(join(src, file), dest);
+  }
 }
 
 function uninstall() {
@@ -580,26 +504,35 @@ function uninstall() {
     console.log(
       `${ansi.ok('✅')} ${ansi.bold(m.removedAll)} ${ansi.dim(m.allDataDeleted)}`,
     );
-  } else {
-    for (const dir of ['hooks', 'src', 'server', 'node_modules', 'logs']) {
-      const p = join(DATA_DIR, dir);
-      if (existsSync(p)) rmSync(p, { recursive: true });
-    }
-    for (const f of [
-      'prompt.md',
-      'package.json',
-      'bun.lock',
-      '.worker.pid',
-      '.worker.port',
-    ]) {
-      const p = join(DATA_DIR, f);
-      if (existsSync(p)) rmSync(p);
-    }
-    console.log(
-      `${ansi.ok('✅')} ${ansi.bold(m.uninstalled)} ${ansi.dim(m.dbPreserved)}`,
-    );
-    console.log(`   ${m.purgeHint} ${ansi.cyan('kiro-mem uninstall --purge')}`);
+    return;
   }
+
+  // Non-purge: drop runtime artefacts but keep DB + config + models
+  for (const dir of [
+    'hooks',
+    'src',
+    'server',
+    'node_modules',
+    'logs',
+    'kiro-runtime',
+  ]) {
+    const p = join(DATA_DIR, dir);
+    if (existsSync(p)) rmSync(p, { recursive: true });
+  }
+  for (const f of [
+    'prompt.md',
+    'package.json',
+    'bun.lock',
+    '.worker.pid',
+    '.worker.port',
+  ]) {
+    const p = join(DATA_DIR, f);
+    if (existsSync(p)) rmSync(p);
+  }
+  console.log(
+    `${ansi.ok('✅')} ${ansi.bold(m.uninstalled)} ${ansi.dim(m.dbPreserved)}`,
+  );
+  console.log(`   ${m.purgeHint} ${ansi.cyan('kiro-mem uninstall --purge')}`);
 }
 
 async function configCmd() {
@@ -613,27 +546,26 @@ async function configCmd() {
     return;
   }
 
+  const current = JSON.parse(readFileSync(configPath, 'utf-8'));
+  const c = current.compression || {};
+  const r = current.runtime || {};
+
   if (showOnly) {
-    const current = JSON.parse(readFileSync(configPath, 'utf-8'));
-    const c = current.compression || {};
     console.log(ansi.bold(m.currentConfig));
-    console.log(`  ${m.language}   ${ansi.cyan(current.language || 'zh')}`);
-    console.log(`  ${m.provider}   ${ansi.cyan(c.provider || 'anthropic')}`);
-    console.log(`  ${m.model}     ${ansi.cyan(c.model || m.notSet)}`);
+    console.log(`  ${m.language}              ${ansi.cyan(current.language || 'zh')}`);
+    console.log(`  ${m.concurrencyLabel}        ${ansi.cyan(String(c.concurrency ?? 3))}`);
     console.log(
-      `  ${m.apiKeyLabel}  ${c.apiKey ? ansi.dim(c.apiKey.slice(0, 8) + '...') : ansi.err(m.notSet)}`,
+      `  ${m.timeoutLabel}    ${ansi.cyan(String(c.timeoutMs ?? 30000))}`,
     );
-    console.log(`  ${m.baseUrl} ${ansi.cyan(c.baseUrl || m.defaultVal)}`);
+    console.log(`  ${m.maxRetriesLabel}     ${ansi.cyan(String(c.maxRetries ?? 2))}`);
     console.log(
-      `  ${m.concurrencyLabel}   ${ansi.cyan(String(c.concurrency || 6))}`,
+      `  ${m.runtimeHomeLabel}      ${ansi.cyan(r.kiroHome || RUNTIME_DIR)}`,
     );
     return;
   }
 
   console.log(`${m.modifyConfig}\n`);
   const rl = createRL();
-
-  // Ask language
   const langChoice = await askChoice(rl, m.chooseLanguage, [
     m.langZh,
     m.langEn,
@@ -641,18 +573,28 @@ async function configCmd() {
   const newLang: Language = langChoice === 1 ? 'en' : 'zh';
   lang = newLang;
   m = t(lang);
-
-  const newConfig = await collectConfig(rl, newLang);
+  const newCfg = await collectCompressionConfig(rl, newLang);
   rl.close();
 
-  const current = JSON.parse(readFileSync(configPath, 'utf-8'));
   const merged = {
     ...current,
     language: newLang,
-    compression: newConfig.compression,
+    compression: newCfg.compression,
+    runtime: { kiroHome: r.kiroHome || RUNTIME_DIR },
   };
   writeFileSync(configPath, JSON.stringify(merged, null, 2));
   console.log(`\n${ansi.ok('✓')} ${m.configUpdated}`);
+
+  // If language changed, refresh the compressor prompt that the runtime uses.
+  const promptSrc = join(
+    SRC_DIR,
+    'acp',
+    newLang === 'en' ? 'compressor-prompt.en.md' : 'compressor-prompt.zh.md',
+  );
+  const promptDest = join(RUNTIME_DIR, `${COMPRESSOR_AGENT_NAME}-prompt.md`);
+  if (existsSync(promptSrc) && existsSync(RUNTIME_DIR)) {
+    copyFileSync(promptSrc, promptDest);
+  }
 
   stop(lang);
   start(lang);
@@ -660,7 +602,6 @@ async function configCmd() {
 }
 
 function diagnose() {
-  // 中文字符占 2 列宽度的 padEnd
   const cjkWidth = (s: string) =>
     [...s].reduce((w, c) => w + (c.charCodeAt(0) > 0x7f ? 2 : 1), 0);
   const padLabel = (s: string, width: number) =>
@@ -676,9 +617,10 @@ function diagnose() {
   console.log(ansi.bold(`│ ${' '.repeat(padL)}${title}${' '.repeat(padR)} │`));
   console.log(ansi.bold(`└${'─'.repeat(boxW + 2)}┘`));
 
-  // Version from package.json
   try {
-    const pkg = JSON.parse(readFileSync(resolve(import.meta.dir, '../package.json'), 'utf-8'));
+    const pkg = JSON.parse(
+      readFileSync(resolve(import.meta.dir, '../package.json'), 'utf-8'),
+    );
     console.log(`  version: ${ansi.cyan(pkg.version || '?')}`);
   } catch {}
 
@@ -766,7 +708,123 @@ function diagnose() {
       : `  ${ansi.err('✗')} ${padLabel(m.diagService, 10)}${svcName} ${m.diagNotRegistered}`,
   );
 
-  // 4. Config
+  // 4. ACP runtime
+  console.log(
+    `\n${ansi.bold(`── ${m.diagACP} ──────────────────────────────`)}`,
+  );
+  const kiroCheck = spawnSync('kiro-cli', ['--version'], { stdio: 'pipe' });
+  if (kiroCheck.status === 0) {
+    console.log(
+      `  ${ansi.ok('✓')} ${padLabel('Kiro CLI', 14)}${ansi.cyan(kiroCheck.stdout.toString().trim())}`,
+    );
+  } else {
+    console.log(
+      `  ${ansi.err('✗')} ${padLabel('Kiro CLI', 14)}${m.diagNotFound}`,
+    );
+  }
+
+  const acpHelpCheck = spawnSync('kiro-cli', ['acp', '--help'], {
+    stdio: 'pipe',
+    timeout: 10000,
+  });
+  if (acpHelpCheck.status === 0) {
+    console.log(
+      `  ${ansi.ok('✓')} ${padLabel('ACP command', 14)}${ansi.cyan('available')}`,
+    );
+  } else {
+    console.log(
+      `  ${ansi.err('✗')} ${padLabel('ACP command', 14)}${m.acpUnavailable}`,
+    );
+  }
+
+  // Runtime home integrity
+  const homeIssues = checkRuntimeHome(RUNTIME_DIR, COMPRESSOR_AGENT_NAME);
+  const homeErrors = homeIssues.filter((i) => i.severity === 'error');
+  if (homeErrors.length === 0) {
+    console.log(
+      `  ${ansi.ok('✓')} ${padLabel(m.diagACPRuntime, 14)}${ansi.cyan(m.runtimeHomeOk)}`,
+    );
+  } else {
+    console.log(
+      `  ${ansi.err('✗')} ${padLabel(m.diagACPRuntime, 14)}${m.runtimeHomeMissing}`,
+    );
+    for (const issue of homeErrors) {
+      console.log(`      ${ansi.err('-')} ${issue.message}`);
+    }
+  }
+
+  // Embedding model presence
+  const modelOk = isModelComplete(join(DATA_DIR, 'models'), MODEL_NAME);
+  console.log(
+    modelOk
+      ? `  ${ansi.ok('✓')} ${padLabel(m.diagEmbedding, 14)}${ansi.cyan(m.embModelReady)}`
+      : `  ${ansi.err('✗')} ${padLabel(m.diagEmbedding, 14)}${m.embModelMissing} ${ansi.dim(MODEL_DEST_DIR)}`,
+  );
+
+  // ACP smoke test
+  if (
+    kiroCheck.status === 0 &&
+    acpHelpCheck.status === 0 &&
+    homeErrors.length === 0
+  ) {
+    process.stdout.write(`  ⏳ ${m.diagACPSmoke}...`);
+    const runtimePath = resolve(SRC_DIR, 'acp/runtime.ts');
+    const smokeScript = `
+import { ACPRuntime } from ${JSON.stringify(runtimePath)};
+const rt = new ACPRuntime({
+  kiroCliPath: 'kiro-cli',
+  kiroHome: ${JSON.stringify(RUNTIME_DIR)},
+  agentName: ${JSON.stringify(COMPRESSOR_AGENT_NAME)},
+  timeoutMs: 30000,
+  maxOutputBytes: 1024,
+});
+try {
+  await rt.start();
+  await rt.createSession();
+  const r = await rt.prompt('Return ONLY this exact JSON, do not call any tools, do not add any other text: {"ok":true,"agent":${JSON.stringify(COMPRESSOR_AGENT_NAME)}}');
+  let parsed;
+  try { parsed = JSON.parse(r.text.trim()); }
+  catch (e) { console.log('SMOKE_FAIL:non-JSON: ' + r.text.slice(0, 200)); process.exit(0); }
+  if (parsed && parsed.ok === true && parsed.agent === ${JSON.stringify(COMPRESSOR_AGENT_NAME)}) {
+    console.log('SMOKE_OK');
+  } else {
+    console.log('SMOKE_FAIL:identity mismatch: ' + JSON.stringify(parsed));
+  }
+} catch (e) {
+  if (e && e.name === 'ACPContaminationError') {
+    console.log('SMOKE_FAIL:tool contamination: ' + e.message);
+  } else {
+    console.log('SMOKE_FAIL:' + (e instanceof Error ? e.message : String(e)));
+  }
+} finally {
+  await rt.close();
+}
+`;
+    const smokeResult = spawnSync('bun', ['-e', smokeScript], {
+      cwd: DATA_DIR,
+      stdio: 'pipe',
+      timeout: 45000,
+      env: {
+        ...process.env,
+        KIRO_MEMORY_DISABLE_HOOKS: '1',
+        KIRO_MEMORY_INTERNAL: '1',
+      },
+    });
+    const smokeOut = smokeResult.stdout?.toString().trim() || '';
+    process.stdout.write('\r\x1b[2K');
+    if (smokeOut.includes('SMOKE_OK')) {
+      console.log(
+        `  ${ansi.ok('✓')} ${padLabel(m.diagACPSmoke, 14)}${ansi.cyan(m.acpSmokeOk)}`,
+      );
+    } else {
+      const reason = smokeOut.replace('SMOKE_FAIL:', '') || 'unknown';
+      console.log(
+        `  ${ansi.err('✗')} ${padLabel(m.diagACPSmoke, 14)}${m.acpSmokeFail} ${ansi.dim(reason)}`,
+      );
+    }
+  }
+
+  // 5. Config
   console.log(
     `\n${ansi.bold(`── ${m.diagConfig} ──────────────────────────────`)}`,
   );
@@ -774,20 +832,21 @@ function diagnose() {
     try {
       const cfg = JSON.parse(readFileSync(configPath, 'utf-8'));
       const cc = cfg.compression || {};
+      const rr = cfg.runtime || {};
       console.log(
-        `  ${padLabel(m.language, 12)}${ansi.cyan(cfg.language || 'zh')}`,
+        `  ${padLabel(m.language, 14)}${ansi.cyan(cfg.language || 'zh')}`,
       );
       console.log(
-        `  ${padLabel(m.provider, 12)}${ansi.cyan(cc.provider || m.notSet)}`,
+        `  ${padLabel(m.concurrencyLabel, 14)}${ansi.cyan(String(cc.concurrency ?? 3))}`,
       );
       console.log(
-        `  ${padLabel(m.model, 12)}${ansi.cyan(cc.model || m.notSet)}`,
+        `  ${padLabel(m.timeoutLabel, 14)}${ansi.cyan(String(cc.timeoutMs ?? 30000))}`,
       );
       console.log(
-        `  ${padLabel(m.apiKeyLabel, 12)}${cc.apiKey ? ansi.dim(cc.apiKey.slice(0, 8) + '...') : ansi.err(m.notSet)}`,
+        `  ${padLabel(m.maxRetriesLabel, 14)}${ansi.cyan(String(cc.maxRetries ?? 2))}`,
       );
       console.log(
-        `  ${padLabel(m.concurrencyLabel, 12)}${ansi.cyan(String(cc.concurrency || 6))}`,
+        `  ${padLabel(m.runtimeHomeLabel, 14)}${ansi.cyan(rr.kiroHome || RUNTIME_DIR)}`,
       );
     } catch {
       console.log(`  ${ansi.err('✗')} ${m.diagParseError}`);
@@ -798,7 +857,7 @@ function diagnose() {
     );
   }
 
-  // 5. Database stats
+  // 6. Database stats
   console.log(
     `\n${ansi.bold(`── ${m.diagDatabase} ────────────────────────────`)}`,
   );
@@ -822,20 +881,20 @@ function diagnose() {
         c: number;
       };
       console.log(
-        `  ${padLabel(m.diagTurns, 12)}${ansi.cyan(String(turns.c))}`,
+        `  ${padLabel(m.diagTurns, 14)}${ansi.cyan(String(turns.c))}`,
       );
       console.log(
-        `  ${padLabel(m.diagMemories, 12)}${ansi.cyan(String(memories.c))} ${ansi.dim(`(${pinned.c} ${m.diagPinned})`)}`,
+        `  ${padLabel(m.diagMemories, 14)}${ansi.cyan(String(memories.c))} ${ansi.dim(`(${pinned.c} ${m.diagPinned})`)}`,
       );
       console.log(
-        `  ${padLabel(m.diagTopics, 12)}${ansi.cyan(String(topics.c))}`,
+        `  ${padLabel(m.diagTopics, 14)}${ansi.cyan(String(topics.c))}`,
       );
       console.log(
-        `  ${padLabel(m.diagPendingJobs, 12)}${ansi.cyan(String(pendingJobs.c))}`,
+        `  ${padLabel(m.diagPendingJobs, 14)}${ansi.cyan(String(pendingJobs.c))}`,
       );
       const stat = Bun.file(dbPath);
       console.log(
-        `  ${padLabel(m.diagSize, 12)}${ansi.cyan((stat.size / 1024 / 1024).toFixed(1) + ' MB')}`,
+        `  ${padLabel(m.diagSize, 14)}${ansi.cyan((stat.size / 1024 / 1024).toFixed(1) + ' MB')}`,
       );
       db.close();
     } catch (e) {
@@ -847,7 +906,7 @@ function diagnose() {
     console.log(`  ${ansi.warn('⚠')} ${m.diagNotCreated}`);
   }
 
-  // 6. Recent errors
+  // 7. Recent errors
   console.log(
     `\n${ansi.bold(`── ${m.diagErrors} ──────────────────────────────`)}`,
   );
