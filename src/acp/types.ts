@@ -97,7 +97,15 @@ export interface ACPRuntimeOptions {
   agentName?: string;
 }
 
+export type ACPMetricKind = 'repair' | 'contamination';
+
 export interface ACPPoolOptions extends ACPRuntimeOptions {
   concurrency?: number;
   maxJobsPerProcess?: number;
+  /**
+   * Best-effort observability hook (§12.4). Fired on each JSON-repair attempt
+   * ('repair') and each contamination-driven runtime recycle ('contamination').
+   * The worker wires this to persist a metric_events row.
+   */
+  onMetric?: (kind: ACPMetricKind) => void;
 }

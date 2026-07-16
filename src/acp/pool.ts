@@ -18,6 +18,7 @@ export class ACPPool {
   private opts: Required<ACPPoolOptions>;
   private closed = false;
   private _restartCount = 0;
+  private _contaminationCount = 0;
 
   constructor(opts: ACPPoolOptions = {}) {
     this.opts = {
@@ -28,6 +29,7 @@ export class ACPPool {
       agentName: opts.agentName ?? '',
       concurrency: opts.concurrency ?? 3,
       maxJobsPerProcess: opts.maxJobsPerProcess ?? 50,
+      onMetric: opts.onMetric ?? (() => {}),
     };
   }
 
@@ -37,6 +39,7 @@ export class ACPPool {
       busy: this.slots.filter((s) => s.busy).length,
       queued: this.queue.length,
       restarts: this._restartCount,
+      contaminations: this._contaminationCount,
     };
   }
 
@@ -130,6 +133,12 @@ export class ACPPool {
 
   private async recycleSlot(slot: PoolSlot): Promise<void> {
     this._restartCount++;
+    // Distinguish contamination-driven recycles (tool-call leaked into the pure
+    // compressor session) from routine over-job-limit recycles.
+    if (slot.runtime.isContaminated) {
+      this._contaminationCount++;
+      this.opts.onMetric('contamination');
+    }
     await slot.runtime.close();
     const runtime = new ACPRuntime({
       kiroCliPath: this.opts.kiroCliPath,

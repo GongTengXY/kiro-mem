@@ -22,15 +22,16 @@
 
 ---
 
-kiro-mem 自动捕获 Kiro 会话中的每一轮对话（prompt → 工具调用 → stop），将其压缩为结构化**记忆**，按**主题**组织，并在后续会话中注入紧凑的记忆索引。Agent 先扫描索引，按需获取详情。
+kiro-mem 自动捕获 Kiro 会话中的每一轮对话（prompt → 工具调用 → stop），并将其压缩为一条不可变的 **Observation**——每个 closed turn 对应一条。它从不改写历史，也不在写入时猜测主题。会话开始时，它注入当前 workspace 历史工作的紧凑索引；Agent 先扫描这份"菜单"，再按需搜索、拉取完整详情。相关性组织发生在**读取时**，由 Agent 驱动，而非脆弱的写入期聚类。
 
 **核心特性**
 
 - 🧠 **持久记忆** — 跨会话保留项目上下文
+- 🧩 **原子且不可变** — 一个 closed turn → 一条 Observation，文本永不改写或融合
 - 🤖 **ACP 原生** — 压缩通过 Kiro CLI ACP 完成，无需配置 LLM API Key
-- 🔍 **混合搜索** — FTS5 全文搜索 + 本地语义重排
-- 📊 **渐进式披露** — 先注入小索引，按需获取详情
-- 🔧 **MCP 工具** — `search`、`get_memories`、`trace_memory`、`topics`、`pin`
+- 🔍 **混合搜索** — FTS5 全文搜索 + 本地语义重排，按 workspace 硬隔离
+- 📊 **读取期组织** — 先注入紧凑索引，Agent 按需拉取相关性（`search` → `timeline` → `get_observations`）
+- 🔧 **MCP 工具** — `search`、`timeline`、`get_observations`、`pin`
 - 🔒 **隐私控制** — 使用 `<private>` 标签在存储前脱敏
 - 🚀 **异步处理** — 持久任务队列，不阻塞工具调用
 - 🔄 **进程保活** — Worker 由 `launchd` 或 `systemd` 管理
@@ -71,44 +72,41 @@ curl http://127.0.0.1:37778/health
 
 ## 工作原理
 
-**架构（V2 Turn+）**
+**架构**
 
-1. **真相层** — `session_id` → `turns` → `turn_events`（追加写入原始 payload）
-2. **提炼层** — 持久任务（`summarize_turn` → `normalize_topic` → `summarize_topic` / `merge_cluster_to_memory`）驱动一个 **ACP runtime 池**：每次压缩都会向 `kiro-cli acp` 子进程发送 prompt，子进程内部跑的是 `tools: []` 的隔离 sub-agent `kiro-mem-compressor`。任何 tool-call 通知都视为污染，对应的 runtime 槽位会被立即回收。`normalize_topic` 会先做一次确定性预匹配（仅做 case/whitespace/末尾标点归一），匹不上才回退到模型；`summarize_topic` 在 topic memory_count 跨过 3/5/10/20，或每次 merge 完成后入队，确保 Active Topics 始终反映当前记忆集合。
-3. **检索层** — `memories_fts` + 语义重排 → MCP 工具 → 上下文注入
+1. **核心真相层** — `session_id` → `turns` → `turn_events`（追加写入原始 hook payload）+ `turn_artifacts`（确定性提取：工具、文件、命令、测试/构建/lint 信号、错误）。该层永不改写，可重建任意投影。
+2. **提炼层** — 持久任务（`summarize_turn` → `embed_observation`）驱动一个 **ACP runtime 池**：每次压缩都会向 `kiro-cli acp` 子进程发送 prompt，子进程内部跑的是 `tools: []` 的隔离 sub-agent `kiro-mem-compressor`。任何 tool-call 通知都视为污染，对应的 runtime 槽位会被立即回收。`summarize_turn` 消费用户 prompt、助手最终回复（`assistant_response`）与确定性 artifacts，对每个 closed turn 恰好写出一条不可变 Observation（按 `turn_id` 幂等）。它从不聚类、融合或 supersede。压缩失败时降级为 `quality=fallback` 的 Observation，只携带确定性证据——绝不虚构结果。
+3. **检索层** — `observations_fts`（FTS5）+ 本地语义重排，用 RRF 融合并按 workspace 硬隔离 → MCP 工具 → 上下文注入。
 
-会话开始时，kiro-mem 注入按 **Pinned Memories**、**Active Topics**、**Recent Memories** 组织的紧凑记忆索引。Agent 可通过 MCP 工具按需搜索、查看和追溯记忆。
+会话开始时，kiro-mem 为当前 workspace 注入一份紧凑的 **Observation 索引**：置顶观察、少数最近条目（附简短 outcome 片段）、以及更长的最近索引（每行带近似读取成本）。它是"菜单"而非正文——不做 LLM 合成，也没有主题。Agent 随后通过 `search` → `timeline` → `get_observations` 按需拉取相关性。
 
 **数据模型**
 
 - `session_refs` — 会话隔离元数据
 - `turns` + `turn_events` — 每轮 prompt → stop 的生命周期行 + 追加写入的原始 hook payload（真相层）
-- `turn_artifacts` — 确定性提取（工具名、文件、命令、错误信号）
-- `memories` + `memory_turn_links` — 面向用户的记忆单元（turn 或 merged）以及它们的来源 turn 指针
-- `topics` — 归一化主题标签，含 `summary` / `unresolved_summary`
-- `memories_fts`（FTS5 trigram）+ `memory_embeddings` — 混合搜索的索引表
+- `turn_artifacts` — 确定性提取（工具、文件、命令、测试/构建/lint 信号、错误）
+- `observations` — 不可变的按 turn 记忆单元：一个 closed turn → 一条 Observation，文本永不改写
+- `observations_fts`（FTS5 trigram）+ `observation_embeddings` — 混合搜索的索引表
 - `jobs` — 持久异步任务队列
 
 ## MCP 工具
 
 | 工具 | 用途 |
 |------|------|
-| `search` | 混合搜索记忆，支持 `type`、`days`、`repo` 过滤 |
-| `get_memories` | 按 ID 获取记忆完整详情 |
-| `trace_memory` | 查看来源 turn 和相邻记忆 |
-| `topics` | 浏览活跃主题 |
-| `pin` | 标记/取消标记重要记忆 |
+| `search` | 混合搜索观察，支持 `type`、`days`、`repo`/`cwd` 过滤 |
+| `timeline` | 按真实 source-turn 顺序展示某条观察前后相邻的观察 |
+| `get_observations` | 按 ID 获取观察完整详情，含来源 turn 元数据 |
+| `pin` | 标记/取消标记某条观察供后续上下文使用 |
 
 ```text
 @kiro-mem/search query="auth 模块 bug" type="bugfix" limit=10
-@kiro-mem/trace_memory memory_id=42 before=3 after=3
-@kiro-mem/get_memories ids=[42,56]
-@kiro-mem/topics cwd="/path/to/non-git-project"
+@kiro-mem/timeline observation_id=42 before=3 after=3 mode="scope"
+@kiro-mem/get_observations ids=[42,56]
 ```
 
-`topics` 接受可选的 `cwd` 参数，让非 git 项目即使共享 `NULL` repo 也能彼此隔离。传 `repo` 按 git root 过滤，传 `cwd` 按工作目录过滤，两者都不传则浏览全部。
+`search` 通过 `computeScopeKey(repo, cwd)` 硬隔离到当前 workspace——传 `repo`/`cwd` 指定 scope，或传 `all_scopes: true` 浏览全部。`timeline` 以观察的**来源 turn**（而非其 ID）为锚点，因此相邻项反映真实工作时间线；传 `mode="session"` 可只看同一会话，而非整个 workspace。
 
-**记忆类型：** `decision` | `bugfix` | `feature` | `refactor` | `discovery` | `change`
+**观察类型（`memory_type`）：** `decision` | `bugfix` | `feature` | `refactor` | `discovery` | `change`
 
 ## 隐私
 
@@ -119,7 +117,7 @@ curl http://127.0.0.1:37778/health
 帮我配置连接
 ```
 
-`<private>` 标签内的内容会在写入记忆前替换为 `[REDACTED]`。
+`<private>` 标签内的内容会在写入存储前替换为 `[REDACTED]`——覆盖用户 prompt、工具 payload 和助手最终回复，因此私密内容不会进入任何 Observation 或注入索引。
 
 ## 配置
 
@@ -134,10 +132,7 @@ curl http://127.0.0.1:37778/health
     "maxRetries": 2
   },
   "context": {
-    "maxMemories": 50,
-    "maxOutputBytes": 8192,
-    "includePinned": true,
-    "includeSummary": false
+    "maxOutputBytes": 8192
   },
   "filter": {
     "skipTools": ["introspect", "todo_list", "@kiro-mem/*"]
@@ -150,9 +145,9 @@ curl http://127.0.0.1:37778/health
 
 - `compression.concurrency`：并行运行的 `kiro-cli acp` 进程数（默认 `3`）。
 - `compression.timeoutMs`：单次压缩超时（毫秒）。通过 `kiro-mem config` 修改时会限制在 `[5000, 60000]` 区间内（默认 `30000`）。
-- `compression.maxRetries`：JSON 修复重试次数，超出后回退到 stub memory（默认 `2`）。
+- `compression.maxRetries`：JSON 修复重试次数，超出后降级为 `quality=fallback` 的 Observation（默认 `2`）。
 - `runtime.kiroHome`：压缩子 agent 使用的隔离 `KIRO_HOME`。空串时会回退到 `<dataDir>/kiro-runtime`，这是 `kiro-mem install` 默认布局。
-- `context.includeSummary`：设为 `true` 时，注入的 Recent Memories 每条会额外带一行 summary 截断。每条体积约为原来的 3 倍，因此 kiro-mem 会自动把条数上限收紧到 20 条，以避免突破 agentSpawn 的字节预算。
+- `context.maxOutputBytes`：注入 Observation 索引的字节预算，保持在 `agentSpawn` 的 10KB 上限之下（默认 `8192`）。
 
 ## CLI 命令
 
@@ -184,7 +179,6 @@ kiro-mem uninstall --purge
 | 安装阶段 | 把内置 embedding 模型（约 23 MB）复制到 `~/.kiro-mem/models` | 完全本地，安装后无需联网 |
 | 暂无 Web 查看器 | 通过 CLI/MCP/DB 查看记忆 | 单独规划中 |
 | 仅本地 | 无内置跨机器同步 | 未来：git sync 或云存储 |
-| 主题归一化 | 依赖 LLM，可能漂移 | 后期会补充定期重新归一化 |
 
 ## 许可证
 

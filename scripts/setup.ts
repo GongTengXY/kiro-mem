@@ -34,6 +34,7 @@ import {
 import type { Language } from '../src/config';
 import { t } from '../src/i18n';
 import { checkRuntimeHome } from '../src/acp/integrity';
+import { MemoryDB } from '../src/db';
 
 const HOME = process.env.HOME || '~';
 const DATA_DIR = join(HOME, '.kiro-mem');
@@ -161,10 +162,7 @@ interface BootstrapConfig {
   worker: { port: number; host: string; logLevel: string };
   compression: { concurrency: number; timeoutMs: number; maxRetries: number };
   context: {
-    maxMemories: number;
     maxOutputBytes: number;
-    includePinned: boolean;
-    includeSummary: boolean;
   };
   filter: { skipTools: string[] };
   runtime: { kiroHome: string };
@@ -176,10 +174,7 @@ function defaultConfig(language: Language): BootstrapConfig {
     worker: { port: 37778, host: '127.0.0.1', logLevel: 'info' },
     compression: { concurrency: 3, timeoutMs: 30000, maxRetries: 2 },
     context: {
-      maxMemories: 50,
       maxOutputBytes: 8192,
-      includePinned: true,
-      includeSummary: false,
     },
     filter: { skipTools: ['introspect', 'todo_list', '@kiro-mem/*'] },
     runtime: { kiroHome: RUNTIME_DIR },
@@ -323,6 +318,7 @@ async function install() {
     'prompt-save.ts',
     'observation.ts',
     'stop.ts',
+    'session.ts',
   ]) {
     copyFileSync(join(SRC_DIR, 'hooks', hook), join(DATA_DIR, 'hooks', hook));
     chmodSync(join(DATA_DIR, 'hooks', hook), 0o755);
@@ -336,7 +332,7 @@ async function install() {
   mkdirSync(join(DATA_DIR, 'src', 'acp'), { recursive: true });
   mkdirSync(join(DATA_DIR, 'src', 'types'), { recursive: true });
 
-  for (const file of ['worker.ts', 'mcp-server.ts']) {
+  for (const file of ['worker.ts', 'mcp-server.ts', 'mcp-scope.ts', 'observation-search.ts']) {
     copyFileSync(
       join(SRC_DIR, 'server', file),
       join(DATA_DIR, 'src', 'server', file),
@@ -372,7 +368,7 @@ async function install() {
   for (const file of [
     'compressor.ts',
     'embedding.ts',
-    'context-builder.ts',
+    'bootstrap-context.ts',
     'config.ts',
     'logger.ts',
     'i18n.ts',
@@ -863,40 +859,35 @@ try {
   );
   if (existsSync(dbPath)) {
     try {
-      const { Database } = require('bun:sqlite');
-      const db = new Database(dbPath, { readonly: true });
-      const turns = db.query('SELECT COUNT(*) as c FROM turns').get() as {
-        c: number;
-      };
-      const memories = db.query('SELECT COUNT(*) as c FROM memories').get() as {
-        c: number;
-      };
-      const pinned = db
-        .query('SELECT COUNT(*) as c FROM memories WHERE is_pinned = 1')
-        .get() as { c: number };
-      const pendingJobs = db
-        .query("SELECT COUNT(*) as c FROM jobs WHERE state = 'pending'")
-        .get() as { c: number };
-      const topics = db.query('SELECT COUNT(*) as c FROM topics').get() as {
-        c: number;
-      };
+      // Open through MemoryDB so the query logic is shared with /health and the
+      // metric_events table is created if an older DB predates it (idempotent).
+      const mdb = new MemoryDB(dbPath);
+      const turns =
+        (mdb.raw.query('SELECT COUNT(*) AS c FROM turns').get() as { c: number } | null)?.c ?? 0;
+      const s = mdb.getObservabilityStats();
+      const pct = (n: number) => `${Math.round(n * 100)}%`;
+
+      console.log(`  ${padLabel(m.diagTurns, 14)}${ansi.cyan(String(turns))}`);
       console.log(
-        `  ${padLabel(m.diagTurns, 14)}${ansi.cyan(String(turns.c))}`,
+        `  ${padLabel(m.diagObservations, 14)}${ansi.cyan(String(s.observations.total))} ${ansi.dim(`(${s.observations.normal} ${m.diagReady} / ${s.observations.fallback} ${m.diagFallback} / ${s.observations.pinned} ${m.diagPinned})`)}`,
       );
       console.log(
-        `  ${padLabel(m.diagMemories, 14)}${ansi.cyan(String(memories.c))} ${ansi.dim(`(${pinned.c} ${m.diagPinned})`)}`,
+        `  ${padLabel(m.diagEmbedded, 14)}${ansi.cyan(`${s.embeddings.ready}/${s.observations.total}`)} ${ansi.dim(`(${pct(s.embeddings.coverage)} ${m.diagCoverage})`)}`,
       );
       console.log(
-        `  ${padLabel(m.diagTopics, 14)}${ansi.cyan(String(topics.c))}`,
+        `  ${padLabel(m.diagJobsLabel, 14)}${ansi.cyan(String(s.jobs.pending))} ${m.diagJobsPending} / ${ansi.cyan(String(s.jobs.leased))} ${m.diagJobsLeased} / ${ansi.cyan(String(s.jobs.dead))} ${m.diagJobsDead}`,
       );
       console.log(
-        `  ${padLabel(m.diagPendingJobs, 14)}${ansi.cyan(String(pendingJobs.c))}`,
+        `  ${padLabel(m.diagSearch, 14)}${ansi.cyan(String(s.search24h.requests))} / ${ansi.cyan(pct(s.search24h.degradeRate))} ${m.diagDegrade} / p95 ${ansi.cyan(`${s.search24h.latencyMsP95}ms`)}`,
+      );
+      console.log(
+        `  ${padLabel(m.diagAcpWindow, 14)}${m.diagRepairs}: ${ansi.cyan(String(s.acp24h.repairs))} / ${m.diagContam}: ${ansi.cyan(String(s.acp24h.contaminations))}`,
       );
       const stat = Bun.file(dbPath);
       console.log(
         `  ${padLabel(m.diagSize, 14)}${ansi.cyan((stat.size / 1024 / 1024).toFixed(1) + ' MB')}`,
       );
-      db.close();
+      mdb.close();
     } catch (e) {
       console.log(
         `  ${ansi.err('✗')} Error: ${e instanceof Error ? e.message : e}`,

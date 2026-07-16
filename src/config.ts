@@ -15,10 +15,8 @@ export interface Config {
     maxRetries: number;
   };
   context: {
-    maxMemories: number;
+    /** UTF-8 byte budget for the injected Observation index (agentSpawn < 10KB). */
     maxOutputBytes: number;
-    includePinned: boolean;
-    includeSummary: boolean;
   };
   filter: {
     skipTools: string[];
@@ -42,10 +40,7 @@ const defaults: Config = {
     maxRetries: 2,
   },
   context: {
-    maxMemories: 50,
     maxOutputBytes: 8192,
-    includePinned: true,
-    includeSummary: false,
   },
   filter: {
     skipTools: ['introspect', 'todo_list', '@kiro-mem/*'],
@@ -76,12 +71,8 @@ export function loadConfig(): Config {
       maxRetries: raw.compression?.maxRetries ?? defaults.compression.maxRetries,
     },
     context: {
-      ...defaults.context,
-      ...raw.context,
-      maxMemories:
-        raw.context?.maxMemories ??
-        raw.context?.maxObservations ??
-        defaults.context.maxMemories,
+      maxOutputBytes:
+        raw.context?.maxOutputBytes ?? defaults.context.maxOutputBytes,
     },
     filter: { ...defaults.filter, ...raw.filter },
     runtime: {

@@ -1,11 +1,11 @@
 import { Hono } from 'hono';
 import { writeFileSync, readFileSync } from 'fs';
 import { join, resolve } from 'path';
-import { MemoryDB, computeScopeKey } from '../db';
+import { MemoryDB } from '../db';
 import type { MemoryType } from '../db/types';
-import type { MemoryCompressor } from '../compressor';
+import type { MemoryCompressor, ObservationSummaryResult } from '../compressor';
 import { ACPCompressor, checkRuntimeHome, formatIssues } from '../acp';
-import { buildContext } from '../context-builder';
+import { buildBootstrapContext } from '../bootstrap-context';
 import { loadConfig, getDataDir, type Config } from '../config';
 import { logError } from '../logger';
 import { JobRunner, extractArtifacts } from '../jobs';
@@ -64,6 +64,31 @@ function detectRepo(cwd: string): string | null {
   return null;
 }
 
+/**
+ * Extract the assistant's final response from a turn's Stop event.
+ *
+ * The Stop payload is already private-tag-redacted at ingest time, so whatever
+ * we read here is safe to feed the compressor.
+ *
+ * VERIFIED against kiro-cli 2.12.1 (and the official hooks docs, updated
+ * 2026-06-05): the Stop hook payload carries the assistant's last response as
+ * a top-level string field named `assistant_response`. We read exactly that
+ * and tolerate its absence (returns ''), so a missing/older payload never
+ * breaks the job.
+ */
+function extractAssistantResponse(db: MemoryDB, turn_id: number): string {
+  const events = db.listTurnEvents(turn_id);
+  // Prefer the last stop event if there are several (there should be one).
+  const stop = [...events].reverse().find((e) => e.hook_event_name === 'stop');
+  if (!stop) return '';
+  try {
+    const payload = JSON.parse(stop.payload_json) as Record<string, unknown>;
+    return typeof payload.assistant_response === 'string' ? payload.assistant_response : '';
+  } catch {
+    return '';
+  }
+}
+
 // =============================================================
 // createApp — testable factory. Tests inject their own DB/compressor.
 // =============================================================
@@ -90,367 +115,166 @@ export function createApp(deps: AppDeps) {
     pollMs: 2000,
   });
 
+  // =============================================================
+  // Synthesis jobs — project closed turns into atomic Observations.
+  // =============================================================
+
+  // --- summarize_turn job ---
+  //
+  // Projects exactly one closed turn into at most one immutable Observation.
+  // Input = user prompt + assistant final response + deterministic artifacts.
+  // Idempotent on observations.turn_id (UNIQUE). Compression failure never
+  // touches the Truth Layer; on retry exhaustion it degrades to a
+  // quality='fallback' Observation carrying only deterministic evidence.
+  // It never schedules any cross-observation organization job.
   jobRunner.register('summarize_turn', async (job) => {
     const { turn_id } = JSON.parse(job.payload_json) as { turn_id: number };
     const turn = db.getTurn(turn_id);
     if (!turn || turn.state !== 'closed') return;
 
-    // Idempotency: canonical memory already claimed
-    if (turn.memory_id != null) {
-      db.setTurnSummarizationState(turn_id, 'ready');
-      return;
-    }
+    // Idempotency: an Observation already exists for this turn.
+    if (db.getObservationByTurnId(turn_id)) return;
 
-    db.setTurnSummarizationState(turn_id, 'running');
     const artifacts = extractArtifacts(db, turn_id);
+    const assistantResponse = extractAssistantResponse(db, turn_id);
+    const turnStoppedAt = turn.stopped_at || turn.last_event_at;
 
+    let result: ObservationSummaryResult;
     try {
-      const result = await compressor.summarizeTurn({
-        prompt_text: turn.prompt_text || '',
+      result = await compressor.summarizeObservation({
+        user_prompt: turn.prompt_text || '',
+        assistant_response: assistantResponse,
         artifacts: {
-          tool_names: artifacts.tool_names,
           files_touched: artifacts.files_touched,
           commands: artifacts.commands,
+          test_signals: artifacts.test_signals,
           error_signals: artifacts.error_signals,
+          facts: artifacts.facts,
         },
       });
-
-      const validTypes = ['decision', 'bugfix', 'feature', 'refactor', 'discovery', 'change'];
-      const memoryType = (validTypes.includes(result.memory_type) ? result.memory_type : 'change') as MemoryType;
-
-      // Atomic: insert memory + claim slot + link — all in one SQLite txn
-      const memoryId = db.createTurnMemoryAtomic(turn_id, {
-        memory_kind: 'turn',
-        repo: turn.repo,
-        cwd_scope: turn.cwd,
-        title: result.title || 'Untitled turn',
-        summary: result.summary || '',
-        request: result.request || null,
-        investigated: result.investigated || null,
-        learned: result.learned || null,
-        completed: result.completed || null,
-        next_steps: result.next_steps || null,
-        memory_type: memoryType,
-        importance_score: result.importance_score ?? 0.5,
-        confidence_score: result.confidence_score ?? 0.5,
-        unresolved_score: result.unresolved_score ?? 0,
-        files_touched: result.files_touched ?? [],
-        concepts: result.concepts ?? [],
-        // Persist the LLM-generated topic candidate so normalize_topic can use
-        // the strongest available semantic signal instead of falling back to
-        // concepts[0] / title truncation.
-        topic_candidate: (result.topic_candidate || '').trim() || null,
-        first_turn_at: turn.started_at,
-        last_turn_at: turn.stopped_at || turn.last_event_at,
-      });
-
-      if (memoryId == null) {
-        // Concurrent run already claimed
-        db.setTurnSummarizationState(turn_id, 'ready');
-        return;
-      }
-
-      // Embedding (non-blocking)
-      if (enableEmbeddings) {
-        try {
-          const searchText = [result.title, result.summary, result.learned, (result.concepts || []).join(', ')].filter(Boolean).join('\n');
-          if (searchText.trim()) {
-            const embedding = await generateEmbedding(searchText);
-            db.upsertMemoryEmbedding(memoryId, 'all-MiniLM-L6-v2', DIMENSIONS, embeddingToBlob(embedding));
-          }
-        } catch (embErr) {
-          logError('summarize_turn/embedding', embErr);
-        }
-      }
-
-      db.setTurnSummarizationState(turn_id, 'ready');
-
-      // Enqueue normalize_topic for the new memory (Fix #1: connect to main pipeline)
-      db.enqueueJob({
-        job_type: 'normalize_topic',
-        dedupe_key: `topic:mem:${memoryId}`,
-        entity_type: 'memory',
-        entity_id: String(memoryId),
-        payload_json: JSON.stringify({ memory_id: memoryId }),
-      });
     } catch (err) {
-      db.setTurnSummarizationState(turn_id, 'failed');
-      throw err;
-    }
-  });
-
-  // --- normalize_topic job ---
-  //
-  // Takes a freshly-summarized memory and attaches it to a canonical topic.
-  // Candidate precedence: persisted topic_candidate > concepts[0] > title.
-  // The memory → topic link, memory_count increment, and alias union are
-  // performed as one atomic upsert (see db.upsertTopicAndLinkMemory).
-  jobRunner.register('normalize_topic', async (job) => {
-    const { memory_id } = JSON.parse(job.payload_json) as { memory_id: number };
-    const memory = db.getMemory(memory_id);
-    if (!memory || memory.state !== 'active') return;
-
-    // Idempotency: memory already linked to a topic — nothing to do.
-    if (memory.topic_id != null) return;
-
-    // Candidate precedence: persisted topic_candidate > concepts[0] > title
-    const concepts: string[] = (() => {
-      try {
-        const p = JSON.parse(memory.concepts_json || '[]');
-        return Array.isArray(p) ? p.filter((x) => typeof x === 'string') : [];
-      } catch { return []; }
-    })();
-    const candidate =
-      (memory.topic_candidate || '').trim() ||
-      concepts[0] ||
-      memory.title.slice(0, 40);
-    if (!candidate) return;
-
-    const scopeKey = computeScopeKey(memory.repo, memory.cwd_scope);
-    const existingTopics = db.getActiveTopics({
-      repo: memory.repo,
-      cwd: memory.cwd_scope,
-      limit: 50,
-    });
-
-    // --- Deterministic pre-dedup (Fix 3.4) ---
-    //
-    // Before spending an LLM call on "is this candidate equivalent to an
-    // existing topic?", try a cheap structural match first. This covers the
-    // dominant drift case where summarize_turn emits a slight re-wording of a
-    // topic the system already knows about (either as the canonical label or
-    // as a previously-seen alias). Only fall through to the LLM when no exact
-    // structural hit exists.
-    //
-    // Keeping this matcher narrow (case/whitespace/trailing-punct only) is
-    // intentional: it must never produce false positives. Anything semantic
-    // — synonyms, translations, inclusion — still goes through the LLM path
-    // with aliases surfaced in the prompt.
-    const existingParsed = existingTopics.map((t) => {
-      let aliases: string[] = [];
-      try {
-        const p = JSON.parse(t.aliases_json || '[]');
-        if (Array.isArray(p)) aliases = p.filter((x): x is string => typeof x === 'string');
-      } catch { /* ignore malformed aliases_json */ }
-      return { id: t.id, canonical_label: t.canonical_label, aliases };
-    });
-
-    const normalizeForMatch = (s: string): string =>
-      s.trim().replace(/\s+/g, ' ').replace(/[\s。.!?！？,，、;；:：]+$/u, '').toLowerCase();
-
-    const candNorm = normalizeForMatch(candidate);
-    let result: { canonical_label: string; aliases: string[] } | null = null;
-    if (candNorm) {
-      for (const t of existingParsed) {
-        if (normalizeForMatch(t.canonical_label) === candNorm) {
-          result = { canonical_label: t.canonical_label, aliases: [] };
-          break;
-        }
-        if (t.aliases.some((a) => normalizeForMatch(a) === candNorm)) {
-          result = { canonical_label: t.canonical_label, aliases: [candidate] };
-          break;
-        }
-      }
-    }
-
-    if (!result) {
-      const llmResult = await compressor.normalizeTopic({
-        candidate,
-        existing_topics: existingParsed.map((t) => ({
-          canonical_label: t.canonical_label,
-          aliases: t.aliases,
-        })),
-        memory_title: memory.title,
-      });
+      // ACP infra failure (timeout / contamination / process death). Retry
+      // with backoff while attempts remain; on the final attempt degrade to a
+      // fallback Observation so the closed turn still yields a retrievable
+      // record. The Truth Layer is untouched either way.
+      const isFinalAttempt = job.attempts + 1 >= job.max_attempts;
+      if (!isFinalAttempt) throw err;
       result = {
-        canonical_label: llmResult.canonical_label,
-        aliases: llmResult.aliases,
+        title: '', summary: '', request: '', outcome: '', learned: '',
+        next_steps: '', memory_type: 'change', files_touched: [], concepts: [],
+        evidence: [], importance_score: 0, confidence_score: 0, unresolved_score: 0,
       };
     }
 
-    // Atomic upsert + link + alias union. All three happen in one SQLite
-    // transaction; aliases are merged via a pure-SQL DISTINCT UNION so
-    // concurrent writes to the same topic never lose entries.
-    const { topic_id, linked } = db.upsertTopicAndLinkMemory({
-      memory_id,
-      scope_key: scopeKey,
-      repo: memory.repo,
-      canonical_label: result.canonical_label,
-      aliases: result.aliases,
-    });
-
-    // Check if topic has enough memories to trigger merge.
-    const topic = db.getTopic(topic_id);
-
-    // --- Enqueue summarize_topic at threshold boundaries (Fix 3.1) ---
-    //
-    // Only fire when this call actually incremented memory_count (`linked`).
-    // Dedupe on the concrete threshold so each boundary fires at most once
-    // per topic, even if normalize_topic runs many times at the same count
-    // due to retries or concurrent work.
-    if (linked && topic) {
-      const SUMMARY_THRESHOLDS = [3, 5, 10, 20];
-      if (SUMMARY_THRESHOLDS.includes(topic.memory_count)) {
-        db.enqueueJob({
-          job_type: 'summarize_topic',
-          dedupe_key: `summary:topic:${topic_id}:count:${topic.memory_count}`,
-          entity_type: 'topic',
-          entity_id: String(topic_id),
-          payload_json: JSON.stringify({ topic_id }),
-        });
-      }
-    }
-
-    if (topic && topic.memory_count >= 3) {
-      const candidates = db.raw.query(
-        `SELECT id FROM memories WHERE topic_id = ? AND state = 'active' AND memory_kind = 'turn' ORDER BY first_turn_at LIMIT 6`,
-      ).all(topic_id) as { id: number }[];
-      if (candidates.length >= 3) {
-        const ids = candidates.map(c => c.id);
-        const dedupeKey = `merge:topic:${topic_id}:${ids.join(',')}`;
-        db.enqueueJob({
-          job_type: 'merge_cluster_to_memory',
-          dedupe_key: dedupeKey,
-          entity_type: 'topic',
-          entity_id: String(topic_id),
-          payload_json: JSON.stringify({ memory_ids: ids, topic_id }),
-        });
-      }
-    }
-  });
-
-  // --- summarize_topic job (Fix 3.1) ---
-  //
-  // Produces a compact topic-level narrative that context-builder's
-  // Active Topics renderer already expects (`topics.unresolved_summary`).
-  // Pulls the current active memories under the topic — this means the
-  // summary always reflects the latest state, whether the topic has been
-  // through a merge or not.
-  jobRunner.register('summarize_topic', async (job) => {
-    const { topic_id } = JSON.parse(job.payload_json) as { topic_id: number };
-    const topic = db.getTopic(topic_id);
-    if (!topic || topic.status === 'archived') return;
-
-    const rows = db.raw.query(
-      `SELECT title, summary, learned, next_steps
-         FROM memories
-        WHERE topic_id = ? AND state = 'active'
-        ORDER BY last_turn_at DESC
-        LIMIT 20`,
-    ).all(topic_id) as Array<{
-      title: string;
-      summary: string;
-      learned: string | null;
-      next_steps: string | null;
-    }>;
-
-    // Nothing to summarize — bail silently. This can happen if all memories
-    // under the topic have been superseded/archived between enqueue and run.
-    if (!rows.length) return;
-
-    const result = await compressor.summarizeTopic({
-      topic_label: topic.canonical_label,
-      memories: rows.map((r) => ({
-        title: r.title,
-        summary: r.summary,
-        learned: r.learned || undefined,
-        next_steps: r.next_steps || undefined,
-      })),
-    });
-
-    // Guard: when BOTH fields are empty, this is almost certainly a
-    // parseJSON fallback (LLM returned unparseable output). Skip the update
-    // entirely so we don't erase a previously-valid unresolved_summary.
-    const summaryVal = (result.summary || '').trim();
-    const unresolvedVal = (result.unresolved_summary || '').trim();
-    if (!summaryVal && !unresolvedVal) return;
-
-    const patch: {
-      summary?: string;
-      unresolved_summary?: string;
-    } = {};
-    if (summaryVal) {
-      patch.summary = summaryVal;
-    }
-    // Unresolved explicitly supports empty string (means: nothing outstanding).
-    // We only write it when summary is also non-empty (i.e. a real LLM response).
-    patch.unresolved_summary = unresolvedVal;
-    db.updateTopic(topic_id, patch);
-  });
-
-  // --- merge_cluster_to_memory job ---
-  jobRunner.register('merge_cluster_to_memory', async (job) => {
-    const { memory_ids, topic_id } = JSON.parse(job.payload_json) as { memory_ids: number[]; topic_id: number };
-    if (memory_ids.length < 2) return;
-
-    const memories = db.getMemoriesByIds(memory_ids).filter(m => m.state === 'active' && m.memory_kind === 'turn');
-    if (memories.length < 2) return;
-
-    const topic = db.getTopic(topic_id);
-    const topicLabel = topic?.canonical_label || 'unknown';
-
-    const result = await compressor.mergeTurnMemories({
-      memories: memories.map(m => ({ title: m.title, summary: m.summary, learned: m.learned || undefined, next_steps: m.next_steps || undefined })),
-      topic_label: topicLabel,
-    });
-
     const validTypes = ['decision', 'bugfix', 'feature', 'refactor', 'discovery', 'change'];
-    const memoryType = (validTypes.includes(result.memory_type) ? result.memory_type : 'change') as MemoryType;
+    // Empty title AND summary => the model produced nothing usable (parse
+    // repair exhausted, or the ACP-final-attempt degrade above).
+    const isFallback = !result.title.trim() && !result.summary.trim();
 
-    const firstTurnAt = memories.reduce((min, m) => m.first_turn_at < min ? m.first_turn_at : min, memories[0]!.first_turn_at);
-    const lastTurnAt = memories.reduce((max, m) => m.last_turn_at > max ? m.last_turn_at : max, memories[0]!.last_turn_at);
+    let fields: {
+      title: string; summary: string; request: string | null; outcome: string | null;
+      learned: string | null; next_steps: string | null; memory_type: MemoryType;
+      files_touched: string[]; concepts: string[]; evidence: string[];
+      importance_score: number; confidence_score: number; unresolved_score: number;
+    };
 
-    const mergedId = db.insertMemory({
-      memory_kind: 'merged',
-      repo: memories[0]!.repo,
-      cwd_scope: memories[0]!.cwd_scope,
-      topic_id: topic_id,
-      title: result.title || 'Merged memory',
-      summary: result.summary || '',
-      request: result.request || null,
-      investigated: result.investigated || null,
-      learned: result.learned || null,
-      completed: result.completed || null,
-      next_steps: result.next_steps || null,
-      memory_type: memoryType,
-      importance_score: result.importance_score ?? 0.7,
-      confidence_score: result.confidence_score ?? 0.8,
-      unresolved_score: result.unresolved_score ?? 0,
-      files_touched: result.files_touched ?? [],
-      concepts: result.concepts ?? [],
-      topic_candidate: (result.topic_candidate || topicLabel || '').trim() || null,
-      source_turn_count: memories.length,
-      first_turn_at: firstTurnAt,
-      last_turn_at: lastTurnAt,
-    });
-
-    // Link merged memory to all source turns in true turn timeline order.
-    // Source memory order can differ from source turn order after retries or
-    // future multi-turn inputs, so ordinal must be global across turns.
-    const sourceTurnIds = memories.flatMap((m) =>
-      db.listMemoryTurnLinks(m.id).map((link) => link.turn_id),
-    );
-    const sourceTurns = db.listTurnsByIdsOrdered(sourceTurnIds);
-    sourceTurns.forEach((turn, idx) => {
-      db.linkMemoryToTurn({ memory_id: mergedId, turn_id: turn.id, ordinal: idx + 1 });
-    });
-
-    // Supersede source turn memories
-    for (const m of memories) {
-      db.setMemoryState(m.id, 'superseded');
+    if (isFallback) {
+      const promptText = (turn.prompt_text || '').replace(/\s+/g, ' ').trim();
+      const evidence = [
+        ...artifacts.error_signals,
+        ...artifacts.test_signals,
+        ...artifacts.commands.slice(0, 5),
+      ].slice(0, 10);
+      fields = {
+        title: promptText.slice(0, 40) || `Turn ${turn.seq}`,
+        summary: 'Compression unavailable; deterministic evidence only.',
+        request: promptText || null,
+        outcome: null, // never fabricate a completion state
+        learned: null,
+        next_steps: null,
+        memory_type: 'change',
+        files_touched: artifacts.files_touched,
+        concepts: [],
+        evidence,
+        importance_score: 0,
+        confidence_score: 0,
+        unresolved_score: 0,
+      };
+    } else {
+      const memoryType = (validTypes.includes(result.memory_type) ? result.memory_type : 'change') as MemoryType;
+      fields = {
+        title: result.title || `Turn ${turn.seq}`,
+        summary: result.summary || '',
+        request: result.request || null,
+        outcome: result.outcome || null,
+        learned: result.learned || null,
+        next_steps: result.next_steps || null,
+        memory_type: memoryType,
+        files_touched: result.files_touched ?? [],
+        concepts: result.concepts ?? [],
+        evidence: result.evidence ?? [],
+        importance_score: result.importance_score ?? 0.5,
+        confidence_score: result.confidence_score ?? 0.5,
+        unresolved_score: result.unresolved_score ?? 0,
+      };
     }
 
-    // A merge materially changes the active memory set under this topic.
-    // Threshold-based summary jobs cover count=3/5/10/20, but repeated merges
-    // can happen at counts like 6/9/12. Refresh after every successful merge so
-    // Active Topics does not keep narrating superseded turn memories.
-    db.enqueueJob({
-      job_type: 'summarize_topic',
-      dedupe_key: `summary:topic:${topic_id}:merge:${mergedId}`,
-      entity_type: 'topic',
-      entity_id: String(topic_id),
-      payload_json: JSON.stringify({ topic_id }),
+    const observationId = db.insertObservation({
+      turn_id,
+      session_id: turn.session_id,
+      turn_seq: turn.seq,
+      repo: turn.repo,
+      cwd_scope: turn.cwd,
+      ...fields,
+      quality: isFallback ? 'fallback' : 'normal',
+      turn_started_at: turn.started_at,
+      turn_stopped_at: turnStoppedAt,
     });
+
+    // null => a concurrent run already created the Observation for this turn.
+    if (observationId == null) return;
+
+    // Embedding runs as its own job (§5.7). Gate the enqueue on embeddings
+    // being enabled so tests don't accrue no-op jobs.
+    if (enableEmbeddings) {
+      db.enqueueJob({
+        job_type: 'embed_observation',
+        dedupe_key: `embed:obs:${observationId}`,
+        entity_type: 'observation',
+        entity_id: String(observationId),
+        payload_json: JSON.stringify({ observation_id: observationId }),
+      });
+    }
+  });
+
+  // --- embed_observation job ---
+  //
+  // Generates the local semantic vector for an Observation. Embedding input is
+  // the structured search text (§5.5) — never the full assistant_response or
+  // raw tool output, to keep the vector space clean and free of noise/PII.
+  jobRunner.register('embed_observation', async (job) => {
+    if (!enableEmbeddings) return;
+    const { observation_id } = JSON.parse(job.payload_json) as { observation_id: number };
+    const obs = db.getObservation(observation_id);
+    if (!obs) return;
+    if (db.getObservationEmbedding(observation_id)) return; // idempotent
+
+    const parseArr = (json: string): string[] => {
+      try {
+        const p = JSON.parse(json);
+        return Array.isArray(p) ? p.filter((x): x is string => typeof x === 'string') : [];
+      } catch { return []; }
+    };
+    const concepts = parseArr(obs.concepts_json);
+    const files = parseArr(obs.files_touched_json);
+    const searchText = [
+      obs.title, obs.summary, obs.outcome, obs.learned,
+      concepts.join(', '), files.join(', '),
+    ].filter(Boolean).join('\n');
+    if (!searchText.trim()) return;
+
+    const embedding = await generateEmbedding(searchText);
+    db.upsertObservationEmbedding(observation_id, 'all-MiniLM-L6-v2', DIMENSIONS, embeddingToBlob(embedding));
   });
 
   // --- Hono app ---
@@ -481,17 +305,33 @@ export function createApp(deps: AppDeps) {
     return c.json({ ok: false, error: 'internal error' }, 500);
   });
 
-  app.get('/health', (c) =>
-    c.json({ status: 'ok', version: PKG_VERSION, jobs: jobRunner.stats }),
-  );
+  app.get('/health', (c) => {
+    const stats = db.getObservabilityStats();
+    return c.json({
+      status: 'ok',
+      version: PKG_VERSION,
+      jobs: jobRunner.stats,
+      jobs_24h: stats.jobs24h,
+      search_24h: stats.search24h,
+      observations: stats.observations,
+      embeddings: stats.embeddings,
+      // Live cumulative pool/compressor state (since worker start).
+      acp: compressor.stats ?? null,
+      // Windowed repair / contamination counts over the last 24h.
+      acp_24h: stats.acp24h,
+    });
+  });
 
-  app.get('/context', async (c) => {
+  // --- AgentSpawn bootstrap index (§7.3) ---
+  // Compact atomic-Observation menu for the current scope. Deterministic:
+  // no ACP, no embedding, no LLM synthesis. This is the sole context route.
+  app.get('/context/bootstrap', async (c) => {
     const cwd = c.req.query('cwd') || '';
-    const text = buildContext(db, cwd, config.context, config.language);
+    const text = buildBootstrapContext(db, cwd, config.context, config.language);
     return c.text(text);
   });
 
-  // --- V2 Ingest Routes ---
+  // --- Ingest Routes ---
 
   app.post('/events/prompt', async (c) => {
     const body = await c.req.json();
@@ -621,6 +461,8 @@ const compressor: MemoryCompressor = new ACPCompressor({
   concurrency: config.compression.concurrency,
   timeoutMs: config.compression.timeoutMs,
   maxRetries: config.compression.maxRetries,
+  // Persist ACP repair / contamination events for the 24h observability window.
+  onMetric: (kind) => db.recordAcpEvent(kind),
 });
 const { app, jobRunner } = createApp({ db, compressor, config });
 

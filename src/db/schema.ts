@@ -1,9 +1,12 @@
-/** SQLite schema for kiro-mem (V2 Turn+). */
+/** SQLite schema for kiro-mem. */
 
 // -------------------------------------------------------------
+// Core layer — session isolation, the append-only turn truth layer,
+// deterministic artifacts, and the persistent job queue. This is the
+// ground truth that observations are projected from.
 // -------------------------------------------------------------
 
-export const V2_SCHEMA = `
+export const CORE_SCHEMA = `
 -- Isolation metadata. Not a memory container.
 CREATE TABLE IF NOT EXISTS session_refs (
   session_id      TEXT PRIMARY KEY,
@@ -31,15 +34,12 @@ CREATE TABLE IF NOT EXISTS turns (
   repo                  TEXT,
   branch                TEXT,
   state                 TEXT NOT NULL,
-  summarization_state   TEXT NOT NULL,
-  memory_id             INTEGER REFERENCES memories(id),
   prompt_text           TEXT,
   prompt_hash           TEXT,
   started_at            TEXT NOT NULL,
   stopped_at            TEXT,
   last_event_at         TEXT NOT NULL,
   tool_event_count      INTEGER NOT NULL DEFAULT 0,
-  legacy_trust          TEXT NOT NULL DEFAULT 'trusted',
   created_at            TEXT NOT NULL,
   updated_at            TEXT NOT NULL,
   UNIQUE(session_id, seq)
@@ -47,7 +47,6 @@ CREATE TABLE IF NOT EXISTS turns (
 
 CREATE INDEX IF NOT EXISTS idx_turns_repo_time ON turns(repo, started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_turns_session_seq ON turns(session_id, seq DESC);
-CREATE INDEX IF NOT EXISTS idx_turns_summary_state ON turns(summarization_state, stopped_at);
 CREATE INDEX IF NOT EXISTS idx_turns_state ON turns(state, last_event_at);
 
 -- Append-only raw hook events. Truth layer.
@@ -82,88 +81,6 @@ CREATE TABLE IF NOT EXISTS turn_artifacts (
   updated_at           TEXT NOT NULL
 );
 
--- Canonical topics: aggregation + dedup + context injection anchor.
--- scope_key is the uniqueness key and is derived from (repo, cwd) via
--- computeScopeKey so that non-git workspaces still get a stable per-workspace
--- namespace. repo is kept as optional metadata for display / filtering.
-CREATE TABLE IF NOT EXISTS topics (
-  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-  scope_key           TEXT NOT NULL,
-  repo                TEXT,
-  canonical_label     TEXT NOT NULL,
-  aliases_json        TEXT NOT NULL DEFAULT '[]',
-  summary             TEXT,
-  unresolved_summary  TEXT,
-  status              TEXT NOT NULL DEFAULT 'active',
-  last_active_at      TEXT NOT NULL,
-  memory_count        INTEGER NOT NULL DEFAULT 0,
-  created_at          TEXT NOT NULL,
-  updated_at          TEXT NOT NULL
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_topics_scope_label
-  ON topics(scope_key, canonical_label);
-CREATE INDEX IF NOT EXISTS idx_topics_last_active
-  ON topics(last_active_at DESC);
-CREATE INDEX IF NOT EXISTS idx_topics_repo ON topics(repo);
-
--- User-facing primary memory unit.
--- object returned by MCP \`search\`.
-CREATE TABLE IF NOT EXISTS memories (
-  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-  memory_kind         TEXT NOT NULL,
-  repo                TEXT,
-  cwd_scope           TEXT,
-  topic_id            INTEGER REFERENCES topics(id),
-  topic_candidate     TEXT,
-  title               TEXT NOT NULL,
-  summary             TEXT NOT NULL,
-  request             TEXT,
-  investigated        TEXT,
-  learned             TEXT,
-  completed           TEXT,
-  next_steps          TEXT,
-  memory_type         TEXT NOT NULL,
-  importance_score    REAL NOT NULL DEFAULT 0,
-  confidence_score    REAL NOT NULL DEFAULT 0,
-  unresolved_score    REAL NOT NULL DEFAULT 0,
-  files_touched_json  TEXT NOT NULL DEFAULT '[]',
-  concepts_json       TEXT NOT NULL DEFAULT '[]',
-  source_turn_count   INTEGER NOT NULL DEFAULT 1,
-  is_pinned           INTEGER NOT NULL DEFAULT 0,
-  state               TEXT NOT NULL DEFAULT 'active',
-  first_turn_at       TEXT NOT NULL,
-  last_turn_at        TEXT NOT NULL,
-  created_at          TEXT NOT NULL,
-  updated_at          TEXT NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_memories_repo_time ON memories(repo, last_turn_at DESC);
-CREATE INDEX IF NOT EXISTS idx_memories_topic_time ON memories(topic_id, last_turn_at DESC);
-CREATE INDEX IF NOT EXISTS idx_memories_state ON memories(state, is_pinned, last_turn_at DESC);
-CREATE INDEX IF NOT EXISTS idx_memories_kind ON memories(memory_kind);
-
--- Memory → source turn traceability.
-CREATE TABLE IF NOT EXISTS memory_turn_links (
-  memory_id           INTEGER NOT NULL REFERENCES memories(id),
-  turn_id             INTEGER NOT NULL REFERENCES turns(id),
-  ordinal             INTEGER NOT NULL,
-  role                TEXT NOT NULL DEFAULT 'source',
-  PRIMARY KEY(memory_id, turn_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_memory_turn_links_turn ON memory_turn_links(turn_id);
-
--- Vector index scoped to memories.
-CREATE TABLE IF NOT EXISTS memory_embeddings (
-  memory_id          INTEGER PRIMARY KEY REFERENCES memories(id),
-  model              TEXT NOT NULL,
-  dimensions         INTEGER NOT NULL,
-  embedding          BLOB NOT NULL,
-  created_at         TEXT NOT NULL,
-  updated_at         TEXT NOT NULL
-);
-
 -- Persistent job queue.
 CREATE TABLE IF NOT EXISTS jobs (
   id                 INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -189,49 +106,141 @@ CREATE INDEX IF NOT EXISTS idx_jobs_fetch
 CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_dedupe
   ON jobs(job_type, dedupe_key)
   WHERE dedupe_key IS NOT NULL;
+
+-- Lightweight operational metrics for runtime observability (§12.4). This is
+-- NOT memory — it holds append-only, time-windowed counters written by BOTH
+-- the worker (ACP repair/contamination) and the MCP server (search requests,
+-- FTS-only degradation, latency). Aggregated over a trailing 24h window and
+-- opportunistically pruned; it never stores observation text.
+CREATE TABLE IF NOT EXISTS metric_events (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  -- 'search' | 'acp_repair' | 'acp_contamination'
+  kind         TEXT NOT NULL,
+  -- search only: 1 when the query degraded to FTS-only (embedding unavailable).
+  degraded     INTEGER NOT NULL DEFAULT 0,
+  -- search only: end-to-end latency in milliseconds.
+  latency_ms   INTEGER,
+  created_at   TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_metric_events_kind_time
+  ON metric_events(kind, created_at);
 `;
 
-export const V2_FTS_SCHEMA = `
-CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(
+// -------------------------------------------------------------
+// Observation layer — the immutable projection of a closed turn.
+// One closed turn -> at most one Observation. Text fields are never
+// updated after INSERT; the repair path is to rebuild from the core
+// truth layer into a new projection, not to overwrite a row. There is
+// deliberately no topic, no merge, and no superseded state.
+// -------------------------------------------------------------
+
+export const OBSERVATIONS_SCHEMA = `
+CREATE TABLE IF NOT EXISTS observations (
+  id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+  -- turn_id UNIQUE is the idempotency key: a job retry never produces a
+  -- second Observation for the same turn.
+  turn_id              INTEGER NOT NULL UNIQUE REFERENCES turns(id),
+  -- scope_key is frozen at write time via computeScopeKey(repo, cwd) so
+  -- retrieval never has to disambiguate NULL repo at read time.
+  scope_key            TEXT NOT NULL,
+  -- session_id + turn_seq are denormalized so timeline reads don't need an
+  -- extra join back to turns.
+  session_id           TEXT NOT NULL,
+  turn_seq             INTEGER NOT NULL,
+  repo                 TEXT,
+  cwd_scope            TEXT NOT NULL,
+
+  title                TEXT NOT NULL,
+  summary              TEXT NOT NULL,
+  request              TEXT,
+  outcome              TEXT,
+  learned              TEXT,
+  next_steps           TEXT,
+  memory_type          TEXT NOT NULL,
+
+  files_touched_json   TEXT NOT NULL DEFAULT '[]',
+  concepts_json        TEXT NOT NULL DEFAULT '[]',
+  -- Bounded, explainable evidence digest (commands, errors, test/build
+  -- results, files) — NOT a copy of full tool_response.
+  evidence_json        TEXT NOT NULL DEFAULT '[]',
+  importance_score     REAL NOT NULL DEFAULT 0,
+  confidence_score     REAL NOT NULL DEFAULT 0,
+  unresolved_score     REAL NOT NULL DEFAULT 0,
+
+  is_pinned            INTEGER NOT NULL DEFAULT 0,
+  -- 'normal' | 'fallback'. Expresses generation quality; it does NOT mean the
+  -- row may be overwritten later.
+  quality              TEXT NOT NULL,
+  turn_started_at      TEXT NOT NULL,
+  turn_stopped_at      TEXT NOT NULL,
+  created_at           TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_observations_scope_time
+  ON observations(scope_key, turn_stopped_at DESC);
+CREATE INDEX IF NOT EXISTS idx_observations_repo_time
+  ON observations(repo, turn_stopped_at DESC);
+CREATE INDEX IF NOT EXISTS idx_observations_pinned
+  ON observations(is_pinned, turn_stopped_at DESC);
+CREATE INDEX IF NOT EXISTS idx_observations_session_seq
+  ON observations(session_id, turn_seq);
+
+-- Vector index scoped to observations.
+CREATE TABLE IF NOT EXISTS observation_embeddings (
+  observation_id       INTEGER PRIMARY KEY REFERENCES observations(id),
+  model                TEXT NOT NULL,
+  dimensions           INTEGER NOT NULL,
+  embedding            BLOB NOT NULL,
+  created_at           TEXT NOT NULL
+);
+`;
+
+export const OBSERVATIONS_FTS_SCHEMA = `
+CREATE VIRTUAL TABLE IF NOT EXISTS observations_fts USING fts5(
   title,
   summary,
   request,
-  investigated,
+  outcome,
   learned,
-  completed,
   next_steps,
   concepts_json,
   files_touched_json,
-  content=memories,
+  evidence_json,
+  content=observations,
   content_rowid=id,
   tokenize='trigram'
 );
 `;
 
-export const V2_FTS_TRIGGERS = `
-CREATE TRIGGER IF NOT EXISTS memories_ai AFTER INSERT ON memories BEGIN
-  INSERT INTO memories_fts(rowid, title, summary, request, investigated,
-    learned, completed, next_steps, concepts_json, files_touched_json)
-  VALUES (new.id, new.title, new.summary, new.request, new.investigated,
-    new.learned, new.completed, new.next_steps, new.concepts_json, new.files_touched_json);
+// Observation text is immutable at the application layer (no updateObservation
+// method exists), but is_pinned is mutable. The AFTER UPDATE trigger keeps the
+// external-content FTS index consistent for any row-level UPDATE regardless of
+// which column changed.
+export const OBSERVATIONS_FTS_TRIGGERS = `
+CREATE TRIGGER IF NOT EXISTS observations_ai AFTER INSERT ON observations BEGIN
+  INSERT INTO observations_fts(rowid, title, summary, request, outcome,
+    learned, next_steps, concepts_json, files_touched_json, evidence_json)
+  VALUES (new.id, new.title, new.summary, new.request, new.outcome,
+    new.learned, new.next_steps, new.concepts_json, new.files_touched_json, new.evidence_json);
 END;
 
-CREATE TRIGGER IF NOT EXISTS memories_ad AFTER DELETE ON memories BEGIN
-  INSERT INTO memories_fts(memories_fts, rowid, title, summary, request, investigated,
-    learned, completed, next_steps, concepts_json, files_touched_json)
-  VALUES ('delete', old.id, old.title, old.summary, old.request, old.investigated,
-    old.learned, old.completed, old.next_steps, old.concepts_json, old.files_touched_json);
+CREATE TRIGGER IF NOT EXISTS observations_ad AFTER DELETE ON observations BEGIN
+  INSERT INTO observations_fts(observations_fts, rowid, title, summary, request, outcome,
+    learned, next_steps, concepts_json, files_touched_json, evidence_json)
+  VALUES ('delete', old.id, old.title, old.summary, old.request, old.outcome,
+    old.learned, old.next_steps, old.concepts_json, old.files_touched_json, old.evidence_json);
 END;
 
-CREATE TRIGGER IF NOT EXISTS memories_au AFTER UPDATE ON memories BEGIN
-  INSERT INTO memories_fts(memories_fts, rowid, title, summary, request, investigated,
-    learned, completed, next_steps, concepts_json, files_touched_json)
-  VALUES ('delete', old.id, old.title, old.summary, old.request, old.investigated,
-    old.learned, old.completed, old.next_steps, old.concepts_json, old.files_touched_json);
-  INSERT INTO memories_fts(rowid, title, summary, request, investigated,
-    learned, completed, next_steps, concepts_json, files_touched_json)
-  VALUES (new.id, new.title, new.summary, new.request, new.investigated,
-    new.learned, new.completed, new.next_steps, new.concepts_json, new.files_touched_json);
+CREATE TRIGGER IF NOT EXISTS observations_au AFTER UPDATE ON observations BEGIN
+  INSERT INTO observations_fts(observations_fts, rowid, title, summary, request, outcome,
+    learned, next_steps, concepts_json, files_touched_json, evidence_json)
+  VALUES ('delete', old.id, old.title, old.summary, old.request, old.outcome,
+    old.learned, old.next_steps, old.concepts_json, old.files_touched_json, old.evidence_json);
+  INSERT INTO observations_fts(rowid, title, summary, request, outcome,
+    learned, next_steps, concepts_json, files_touched_json, evidence_json)
+  VALUES (new.id, new.title, new.summary, new.request, new.outcome,
+    new.learned, new.next_steps, new.concepts_json, new.files_touched_json, new.evidence_json);
 END;
 `;
 
@@ -241,7 +250,8 @@ END;
  * then triggers that depend on both.
  */
 export const ALL_SCHEMA = [
-  V2_SCHEMA,
-  V2_FTS_SCHEMA,
-  V2_FTS_TRIGGERS,
+  CORE_SCHEMA,
+  OBSERVATIONS_SCHEMA,
+  OBSERVATIONS_FTS_SCHEMA,
+  OBSERVATIONS_FTS_TRIGGERS,
 ].join('\n');

@@ -21,7 +21,7 @@ const event = JSON.parse(input);
 const cwd = event.cwd || '';
 const port = readPort();
 const token = readToken();
-const url = `http://127.0.0.1:${port}/context?cwd=${encodeURIComponent(cwd)}`;
+const url = `http://127.0.0.1:${port}/context/bootstrap?cwd=${encodeURIComponent(cwd)}`;
 const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
 let response: Response | null = null;

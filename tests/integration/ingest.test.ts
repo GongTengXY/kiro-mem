@@ -115,27 +115,20 @@ describe('Integration / real createApp — full ingest cycle', () => {
     expect(jobs.find(j => j.dedupe_key === `turn:${turn1Id}`)).not.toBeUndefined();
   });
 
-  test('createTurnMemoryAtomic is idempotent — second call returns null', () => {
-    db.upsertSessionRef({ session_id: 's1', cwd: '/tmp' });
-    const turn = db.createTurn({ session_id: 's1', seq: db.allocateNextTurnSeq('s1'), cwd: '/tmp' });
-    db.markTurnClosed(turn.id);
-
-    const mid1 = db.createTurnMemoryAtomic(turn.id, {
-      memory_kind: 'turn', title: 'First', summary: 'S', memory_type: 'change',
-      first_turn_at: turn.started_at, last_turn_at: turn.started_at,
-    });
-    expect(mid1).not.toBeNull();
-    expect(db.getTurn(turn.id)!.memory_id).toBe(mid1);
-
-    // Second call — turn.memory_id already set
-    const mid2 = db.createTurnMemoryAtomic(turn.id, {
-      memory_kind: 'turn', title: 'Dup', summary: 'S', memory_type: 'change',
-      first_turn_at: turn.started_at, last_turn_at: turn.started_at,
-    });
-    expect(mid2).toBeNull();
-
-    // Only one memory exists
-    const cnt = (db.raw.query('SELECT COUNT(*) AS c FROM memories').get() as any).c;
-    expect(cnt).toBe(1);
+  test('GET /health exposes V3 observability metrics (§12.4)', async () => {
+    const r = await app.request('/health');
+    expect(r.status).toBe(200);
+    const h = (await r.json()) as any;
+    expect(h.status).toBe('ok');
+    // DB-derived V3 metrics are always present, even on an empty DB.
+    expect(h.observations).toEqual({ total: 0, normal: 0, fallback: 0, pinned: 0 });
+    expect(h.embeddings).toEqual({ ready: 0, coverage: 0 });
+    expect(h.jobs_24h).toEqual({ succeeded: 0, dead: 0 });
+    expect(h.search_24h).toEqual({ requests: 0, ftsOnly: 0, degradeRate: 0, latencyMsAvg: 0, latencyMsP95: 0 });
+    expect(h.acp_24h).toEqual({ repairs: 0, contaminations: 0 });
+    expect(h).toHaveProperty('jobs');
+    // The test provider-backed Compressor exposes no runtime stats → acp: null.
+    expect(h.acp).toBeNull();
   });
+
 });

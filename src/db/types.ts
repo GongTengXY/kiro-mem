@@ -1,14 +1,8 @@
 /** Row types for the kiro-mem SQLite layer. */
 
-// -------------------------------------------------------------
-// V2 (Turn+) types
-// -------------------------------------------------------------
-
 export type SessionRefState = 'active' | 'idle' | 'stale';
 
 export type TurnState = 'open' | 'closed' | 'archived' | 'quarantined';
-export type SummarizationState = 'pending' | 'running' | 'ready' | 'failed';
-export type LegacyTrust = 'trusted' | 'legacy' | 'quarantined';
 
 export type HookEventName =
   | 'agentSpawn'
@@ -18,7 +12,7 @@ export type HookEventName =
 
 export type RedactionState = 'raw_blocked' | 'redacted' | 'passthrough';
 
-export type MemoryKind = 'turn' | 'merged' | 'legacy_import';
+/** Deterministic classification of an observation. Not a topic. */
 export type MemoryType =
   | 'decision'
   | 'bugfix'
@@ -26,10 +20,6 @@ export type MemoryType =
   | 'refactor'
   | 'discovery'
   | 'change';
-export type MemoryState = 'active' | 'superseded' | 'archived';
-export type MemoryLinkRole = 'source' | 'anchor';
-
-export type TopicStatus = 'active' | 'cooling' | 'archived';
 
 export type JobState = 'pending' | 'leased' | 'succeeded' | 'failed' | 'dead';
 
@@ -54,9 +44,8 @@ export interface SessionRef {
 }
 
 /**
- * One Kiro turn: `userPromptSubmit` → … → `stop`.
- * `state` and `summarization_state` are independent axes so we never
- * collapse lifecycle and summary into a single overloaded enum.
+ * One Kiro turn: `userPromptSubmit` → … → `stop`. The append-only truth unit
+ * that an Observation is projected from.
  */
 export interface Turn {
   id: number;
@@ -66,22 +55,19 @@ export interface Turn {
   repo: string | null;
   branch: string | null;
   state: TurnState;
-  summarization_state: SummarizationState;
-  memory_id: number | null;
   prompt_text: string | null;
   prompt_hash: string | null;
   started_at: string;
   stopped_at: string | null;
   last_event_at: string;
   tool_event_count: number;
-  legacy_trust: LegacyTrust;
   created_at: string;
   updated_at: string;
 }
 
 /**
  * Append-only raw hook payload rows. This is the truth layer that allows future
- * re-compression, re-clustering, re-embedding without data loss.
+ * re-compression, re-embedding without data loss.
  */
 export interface TurnEvent {
   id: number;
@@ -113,81 +99,7 @@ export interface TurnArtifacts {
   updated_at: string;
 }
 
-/**
-/** User-facing memory unit. Derived from a single turn or merged from multiple turns. */
-export interface Memory {
-  id: number;
-  memory_kind: MemoryKind;
-  repo: string | null;
-  cwd_scope: string | null;
-  topic_id: number | null;
-  /**
-   * LLM-generated topic candidate from summarize_turn. Persisted so
-   * normalize_topic can use the strongest available semantic signal instead of
-   * falling back to concepts[0] / title truncation.
-   */
-  topic_candidate: string | null;
-  title: string;
-  summary: string;
-  request: string | null;
-  investigated: string | null;
-  learned: string | null;
-  completed: string | null;
-  next_steps: string | null;
-  memory_type: MemoryType;
-  importance_score: number;
-  confidence_score: number;
-  unresolved_score: number;
-  files_touched_json: string;
-  concepts_json: string;
-  source_turn_count: number;
-  is_pinned: number; // 0/1 boolean flag
-  state: MemoryState;
-  first_turn_at: string;
-  last_turn_at: string;
-  created_at: string;
-  updated_at: string;
-}
-
-/** Traceability row from a memory back to its source turn(s). */
-export interface MemoryTurnLink {
-  memory_id: number;
-  turn_id: number;
-  ordinal: number;
-  role: MemoryLinkRole;
-}
-
-/** Canonical topic used for aggregation, dedup, and context injection. */
-export interface Topic {
-  id: number;
-  /**
-   * Non-null uniqueness key, derived via `computeScopeKey(repo, cwd)`.
-   * Paired with `canonical_label` to form the real UNIQUE constraint.
-   */
-  scope_key: string;
-  repo: string | null;
-  canonical_label: string;
-  aliases_json: string;
-  summary: string | null;
-  unresolved_summary: string | null;
-  status: TopicStatus;
-  last_active_at: string;
-  memory_count: number;
-  created_at: string;
-  updated_at: string;
-}
-
-/** Vector index row, scoped to memories. */
-export interface MemoryEmbeddingRow {
-  memory_id: number;
-  model: string;
-  dimensions: number;
-  embedding: Buffer;
-  created_at: string;
-  updated_at: string;
-}
-
-/** Persistent job queue row. Replaces the in-memory `CompressionQueue`. */
+/** Persistent job queue row. */
 export interface Job {
   id: number;
   job_type: string;
@@ -205,4 +117,116 @@ export interface Job {
   last_error: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// -------------------------------------------------------------
+// Observation — the immutable projection of a single closed turn.
+// One closed turn -> at most one Observation. Text fields are immutable
+// after INSERT. There is intentionally no state, topic, or merge concept.
+// -------------------------------------------------------------
+
+/**
+ * Observation generation quality.
+ * - `normal`: produced by a successful compression.
+ * - `fallback`: compression exhausted retries; the row carries only
+ *   request / known files / explicit errors with confidence_score = 0.
+ */
+export type ObservationQuality = 'normal' | 'fallback';
+
+/**
+ * Primary memory unit: one closed turn -> at most one Observation.
+ * `memory_type` is a deterministic classification, not a topic. Text fields
+ * are never updated after INSERT.
+ */
+export interface Observation {
+  id: number;
+  /** Idempotency key. UNIQUE — a job retry never creates a second row. */
+  turn_id: number;
+  /** Frozen at write time via computeScopeKey(repo, cwd). */
+  scope_key: string;
+  /** Denormalized from the source turn for join-free timeline reads. */
+  session_id: string;
+  turn_seq: number;
+  repo: string | null;
+  cwd_scope: string;
+
+  title: string;
+  summary: string;
+  request: string | null;
+  /** What actually happened / was verified / left incomplete. */
+  outcome: string | null;
+  learned: string | null;
+  next_steps: string | null;
+  memory_type: MemoryType;
+
+  files_touched_json: string;
+  concepts_json: string;
+  /** Bounded explainable evidence digest (commands, errors, test/build, files). */
+  evidence_json: string;
+  importance_score: number;
+  confidence_score: number;
+  unresolved_score: number;
+
+  is_pinned: number; // 0/1 boolean flag
+  quality: ObservationQuality;
+  turn_started_at: string;
+  turn_stopped_at: string;
+  created_at: string;
+}
+
+/** Vector index row, scoped to observations. */
+export interface ObservationEmbeddingRow {
+  observation_id: number;
+  model: string;
+  dimensions: number;
+  embedding: Buffer;
+  created_at: string;
+}
+
+/**
+ * DB-derived observability snapshot (design §12.4). Everything here is computed
+ * from the persisted tables — no observation text is ever exposed.
+ */
+export interface ObservabilityStats {
+  observations: {
+    total: number;
+    /** quality='normal' (successful compression). */
+    normal: number;
+    /** quality='fallback' (compression degraded to deterministic evidence). */
+    fallback: number;
+    pinned: number;
+  };
+  embeddings: {
+    /** Observations that have an embedding row. */
+    ready: number;
+    /** ready / total, 0..1. A proxy for how often hybrid search can use vectors. */
+    coverage: number;
+  };
+  jobs: {
+    pending: number;
+    leased: number;
+    dead: number;
+  };
+  /** Job outcomes in the last 24h, derived from jobs.updated_at. */
+  jobs24h: {
+    succeeded: number;
+    dead: number;
+  };
+  /** MCP search activity in the last 24h, from metric_events (§12.4). */
+  search24h: {
+    requests: number;
+    /** Requests that degraded to FTS-only (embedding unavailable). */
+    ftsOnly: number;
+    /** ftsOnly / requests, 0..1. */
+    degradeRate: number;
+    /** Mean end-to-end search latency (ms). */
+    latencyMsAvg: number;
+    /** 95th-percentile search latency (ms). */
+    latencyMsP95: number;
+  };
+  /** ACP repair / contamination events in the last 24h, from metric_events (§12.4). */
+  acp24h: {
+    repairs: number;
+    contaminations: number;
+  };
 }

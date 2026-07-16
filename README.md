@@ -22,15 +22,16 @@
 
 ---
 
-kiro-mem automatically captures each turn (prompt → tool calls → stop) during Kiro sessions, compresses them into structured **memories**, organizes them by **topics**, and injects a compact memory index into later sessions. The agent scans the index first, then fetches details only when needed.
+kiro-mem automatically captures each turn (prompt → tool calls → stop) during Kiro sessions and compresses it into a single immutable **Observation** — one per closed turn. It never rewrites history or guesses topics up front. At session start it injects a compact index of prior work in the current workspace; the agent scans that menu, then searches and pulls full details on demand. Organizing relevance happens at **read time**, driven by the agent, not by fragile write-time clustering.
 
 **Key Features**
 
 - 🧠 **Persistent Memory** — Keep project context across sessions
+- 🧩 **Atomic & Immutable** — One closed turn → one Observation; text is never rewritten or merged
 - 🤖 **ACP-native** — Compression runs through Kiro CLI ACP — no LLM API key required
-- 🔍 **Hybrid Search** — FTS5 full-text search + local semantic reranking
-- 📊 **Progressive Disclosure** — Inject a small index first, fetch details on demand
-- 🔧 **MCP Tools** — `search`, `get_memories`, `trace_memory`, `topics`, `pin`
+- 🔍 **Hybrid Search** — FTS5 full-text search + local semantic reranking, hard-scoped per workspace
+- 📊 **Read-time Organization** — Inject a compact index; the agent pulls relevance on demand (`search` → `timeline` → `get_observations`)
+- 🔧 **MCP Tools** — `search`, `timeline`, `get_observations`, `pin`
 - 🔒 **Privacy Control** — Use `<private>` tags to redact sensitive content before storage
 - 🚀 **Async Processing** — Persistent job queue, no tool-call blocking
 - 🔄 **Process Keepalive** — Worker managed by `launchd` or `systemd`
@@ -71,44 +72,41 @@ curl http://127.0.0.1:37778/health
 
 ## How It Works
 
-**Architecture (V2 Turn+)**
+**Architecture**
 
-1. **Truth Layer** — `session_id` → `turns` → `turn_events` (append-only raw payloads)
-2. **Synthesis Layer** — Persistent jobs (`summarize_turn` → `normalize_topic` → `summarize_topic` / `merge_cluster_to_memory`) drive an **ACP runtime pool**: each prompt goes to a `kiro-cli acp` sub-process running an isolated `kiro-mem-compressor` sub-agent declared with `tools: []`. Any tool-call notification on that session is treated as contamination and the runtime slot is recycled. `normalize_topic` first tries a deterministic pre-match (case/whitespace/trailing-punctuation only) and falls back to the model only when no exact hit exists. `summarize_topic` fires when a topic crosses 3/5/10/20 memories or right after a merge, so Active Topics stays in sync with the current memory set.
-3. **Retrieval Layer** — `memories_fts` + semantic reranking → MCP tools → context injection
+1. **Core Truth Layer** — `session_id` → `turns` → `turn_events` (append-only raw hook payloads) + `turn_artifacts` (deterministic extraction: tools, files, commands, test/build/lint signals, errors). This layer is never rewritten and can rebuild any projection.
+2. **Synthesis Layer** — Persistent jobs (`summarize_turn` → `embed_observation`) drive an **ACP runtime pool**: each prompt goes to a `kiro-cli acp` sub-process running an isolated `kiro-mem-compressor` sub-agent declared with `tools: []`. Any tool-call notification on that session is treated as contamination and the runtime slot is recycled. `summarize_turn` consumes the user prompt, the assistant's final response (`assistant_response`), and the deterministic artifacts, then writes exactly one immutable Observation per closed turn (idempotent on `turn_id`). It never clusters, merges, or supersedes. On compression failure it degrades to a `quality=fallback` Observation carrying only deterministic evidence — never a fabricated result.
+3. **Retrieval Layer** — `observations_fts` (FTS5) + local semantic reranking, fused with RRF and hard-scoped by workspace → MCP tools → context injection.
 
-At session start, kiro-mem injects a compact memory index organized by **Pinned Memories**, **Active Topics**, and **Recent Memories**. The agent can then use MCP tools to search, inspect, and trace memories on demand.
+At session start, kiro-mem injects a compact **Observation index** for the current workspace: pinned observations, a few recent entries with a short outcome snippet, and a longer recent index where each line carries an approximate read cost. It is a menu, not the content — no LLM synthesis, no topics. The agent then pulls relevance on demand via `search` → `timeline` → `get_observations`.
 
 **Data Model**
 
 - `session_refs` — Session isolation metadata
 - `turns` + `turn_events` — Per-turn lifecycle row + append-only raw hook payloads (truth layer)
-- `turn_artifacts` — Deterministic extraction (tools, files, commands, errors)
-- `memories` + `memory_turn_links` — User-facing memory units (turn or merged) and their source-turn pointers
-- `topics` — Normalized topic labels with `summary` / `unresolved_summary`
-- `memories_fts` (FTS5 trigram) + `memory_embeddings` — Hybrid search backing tables
+- `turn_artifacts` — Deterministic extraction (tools, files, commands, test/build/lint signals, errors)
+- `observations` — Immutable per-turn memory unit: one closed turn → one Observation, text never rewritten
+- `observations_fts` (FTS5 trigram) + `observation_embeddings` — Hybrid search backing tables
 - `jobs` — Persistent async task queue
 
 ## MCP Tools
 
-| Tool           | Purpose                                                    |
-| -------------- | ---------------------------------------------------------- |
-| `search`       | Hybrid search memories with `type`, `days`, `repo` filters |
-| `get_memories` | Fetch full memory details by ID                            |
-| `trace_memory` | Show source turns and neighboring memories                 |
-| `topics`       | Browse active topics                                       |
-| `pin`          | Mark or unmark important memories                          |
+| Tool               | Purpose                                                                        |
+| ------------------ | ------------------------------------------------------------------------------ |
+| `search`           | Hybrid search observations with `type`, `days`, `repo`/`cwd` filters           |
+| `timeline`         | Show temporally adjacent observations around one, in real source-turn order    |
+| `get_observations` | Fetch full observation details by ID, with source-turn metadata                |
+| `pin`              | Mark or unmark an observation for later context                                |
 
 ```text
 @kiro-mem/search query="auth module bug" type="bugfix" limit=10
-@kiro-mem/trace_memory memory_id=42 before=3 after=3
-@kiro-mem/get_memories ids=[42,56]
-@kiro-mem/topics cwd="/path/to/non-git-project"
+@kiro-mem/timeline observation_id=42 before=3 after=3 mode="scope"
+@kiro-mem/get_observations ids=[42,56]
 ```
 
-`topics` accepts an optional `cwd` so non-git workspaces stay isolated even though they share a `NULL` repo. Pass `repo` to filter by git root, `cwd` to filter by workspace, or omit both to see everything.
+`search` is hard-scoped to the current workspace via `computeScopeKey(repo, cwd)` — pass `repo`/`cwd` to target a specific scope, or `all_scopes: true` to browse everything. `timeline` anchors on an observation's **source turn** (not its ID), so neighbors reflect the real work timeline; use `mode="session"` to stay within one conversation instead of the whole workspace.
 
-**Memory Types:** `decision` | `bugfix` | `feature` | `refactor` | `discovery` | `change`
+**Observation Types (`memory_type`):** `decision` | `bugfix` | `feature` | `refactor` | `discovery` | `change`
 
 ## Privacy
 
@@ -119,7 +117,7 @@ Use `<private>` tags to redact sensitive content before storage:
 Help me configure the connection
 ```
 
-Content inside `<private>` tags is replaced with `[REDACTED]` before it is written to memory.
+Content inside `<private>` tags is replaced with `[REDACTED]` before it is written to storage — this covers the user prompt, tool payloads, and the assistant's final response, so private text never reaches an Observation or the injected index.
 
 ## Configuration
 
@@ -134,10 +132,7 @@ Edit `~/.kiro-mem/config.json`, or run `kiro-mem config` for interactive setup:
     "maxRetries": 2
   },
   "context": {
-    "maxMemories": 50,
-    "maxOutputBytes": 8192,
-    "includePinned": true,
-    "includeSummary": false
+    "maxOutputBytes": 8192
   },
   "filter": {
     "skipTools": ["introspect", "todo_list", "@kiro-mem/*"]
@@ -150,9 +145,9 @@ Edit `~/.kiro-mem/config.json`, or run `kiro-mem config` for interactive setup:
 
 - `compression.concurrency`: number of parallel `kiro-cli acp` runtime processes (default `3`).
 - `compression.timeoutMs`: per-prompt timeout in milliseconds, clamped to `[5000, 60000]` when set via `kiro-mem config` (default `30000`).
-- `compression.maxRetries`: how many JSON-repair retries to attempt before falling back to a stub memory (default `2`).
+- `compression.maxRetries`: how many JSON-repair retries to attempt before degrading to a `quality=fallback` Observation (default `2`).
 - `runtime.kiroHome`: isolated `KIRO_HOME` for the compressor sub-agent. Empty falls back to `<dataDir>/kiro-runtime`, which is the layout `kiro-mem install` lays down.
-- `context.includeSummary`: when `true`, each Recent Memories entry carries a short summary line in the injected context. Each entry becomes ~3× the size, so kiro-mem automatically caps the list at 20 entries to stay within the agentSpawn byte budget.
+- `context.maxOutputBytes`: byte budget for the injected Observation index, kept below the `agentSpawn` 10KB limit (default `8192`).
 
 ## CLI
 
@@ -184,7 +179,6 @@ kiro-mem uninstall --purge
 | Install step                        | Copies the bundled embedding model (~23 MB) into `~/.kiro-mem/models` | Local-only — no network needed once installed |
 | No Web Viewer UI yet                | Memory inspected through CLI/MCP/DB                                   | Planned separately                            |
 | Local only                          | No built-in cross-machine sync                                        | Future: git sync or cloud storage             |
-| Topic normalization                 | LLM-dependent, may drift                                              | Periodic re-normalization will be added later |
 
 ## License
 

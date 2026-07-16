@@ -1,4 +1,4 @@
-/** kiro-mem database layer (V2 Turn+). */
+/** kiro-mem database layer. */
 
 import { Database } from 'bun:sqlite';
 import { join, dirname } from 'path';
@@ -11,23 +11,17 @@ import type {
   SessionRefState,
   Turn,
   TurnState,
-  SummarizationState,
-  LegacyTrust,
   TurnEvent,
   HookEventName,
   RedactionState,
   TurnArtifacts,
-  Memory,
-  MemoryKind,
   MemoryType,
-  MemoryState,
-  MemoryTurnLink,
-  MemoryLinkRole,
-  Topic,
-  TopicStatus,
-  MemoryEmbeddingRow,
   Job,
   JobState,
+  Observation,
+  ObservationQuality,
+  ObservationEmbeddingRow,
+  ObservabilityStats,
 } from './types';
 
 // Re-export types
@@ -190,22 +184,18 @@ export class MemoryDB {
     prompt_text?: string | null;
     prompt_hash?: string | null;
     started_at?: string;
-    legacy_trust?: LegacyTrust;
   }): Turn {
     const now = nowISO();
     const startedAt = input.started_at ?? now;
     const result = this.db.run(
       `INSERT INTO turns (
          session_id, seq, cwd, repo, branch,
-         state, summarization_state, memory_id,
-         prompt_text, prompt_hash,
+         state, prompt_text, prompt_hash,
          started_at, stopped_at, last_event_at,
-         tool_event_count,
-         legacy_trust, created_at, updated_at
-       ) VALUES (?, ?, ?, ?, ?, 'open', 'pending', NULL,
+         tool_event_count, created_at, updated_at
+       ) VALUES (?, ?, ?, ?, ?, 'open',
                  ?, ?, ?, NULL, ?,
-                 0,
-                 ?, ?, ?)`,
+                 0, ?, ?)`,
       [
         input.session_id,
         input.seq,
@@ -216,7 +206,6 @@ export class MemoryDB {
         input.prompt_hash ?? null,
         startedAt,
         startedAt,
-        input.legacy_trust ?? 'trusted',
         now,
         now,
       ],
@@ -275,7 +264,6 @@ export class MemoryDB {
     this.db.run(
       `UPDATE turns
          SET state = 'quarantined',
-             legacy_trust = 'quarantined',
              updated_at = ?
          WHERE id = ?`,
       [now, turn_id],
@@ -290,14 +278,6 @@ export class MemoryDB {
     const now = nowISO();
     this.db.run(
       'UPDATE turns SET state = ?, updated_at = ? WHERE id = ?',
-      [state, now, turn_id],
-    );
-  }
-
-  setTurnSummarizationState(turn_id: number, state: SummarizationState) {
-    const now = nowISO();
-    this.db.run(
-      'UPDATE turns SET summarization_state = ?, updated_at = ? WHERE id = ?',
       [state, now, turn_id],
     );
   }
@@ -432,591 +412,285 @@ export class MemoryDB {
   }
 
   // ===========================================================
-  // topics
+  // observations (immutable atomic projection)
   // ===========================================================
 
   /**
-   * Look up a topic by its real uniqueness key. `scope_key` is derived from
-   * `(repo, cwd)` via {@link computeScopeKey} — for a git project that will
-   * be the repo path, for a non-git workspace it will be `cwd:<cwd>`.
-   */
-  findTopicByScope(scope_key: string, canonical_label: string): Topic | null {
-    return this.db
-      .query(
-        `SELECT * FROM topics
-           WHERE scope_key = ? AND canonical_label = ?
-           LIMIT 1`,
-      )
-      .get(scope_key, canonical_label) as Topic | null;
-  }
-
-  getTopic(id: number): Topic | null {
-    return this.db
-      .query('SELECT * FROM topics WHERE id = ?')
-      .get(id) as Topic | null;
-  }
-
-  createTopic(input: {
-    repo?: string | null;
-    cwd?: string | null;
-    canonical_label: string;
-    aliases?: string[];
-    summary?: string | null;
-    unresolved_summary?: string | null;
-    status?: TopicStatus;
-  }): Topic {
-    const now = nowISO();
-    const scopeKey = computeScopeKey(input.repo ?? null, input.cwd ?? null);
-    const result = this.db.run(
-      `INSERT INTO topics (
-         scope_key, repo, canonical_label, aliases_json, summary, unresolved_summary,
-         status, last_active_at, memory_count, created_at, updated_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
-      [
-        scopeKey,
-        input.repo ?? null,
-        input.canonical_label,
-        JSON.stringify(input.aliases ?? []),
-        input.summary ?? null,
-        input.unresolved_summary ?? null,
-        input.status ?? 'active',
-        now,
-        now,
-        now,
-      ],
-    );
-    return this.getTopic(Number(result.lastInsertRowid))!;
-  }
-
-  /**
-   * Atomic "get-or-create topic and link memory".
+   * Insert the Observation for a closed turn. `turn_id` is UNIQUE, so this is
+   * the single idempotency gate: a retry or concurrent run returns `null`
+   * instead of creating a second row. `scope_key` is frozen here via
+   * {@link computeScopeKey} so retrieval never disambiguates NULL repo.
    *
-   * Inside a single transaction:
-   *   1. Idempotency guard — bail out if the memory is already linked to a
-   *      topic so crash+retry never inflates memory_count.
-   *   2. `INSERT ... ON CONFLICT(scope_key, canonical_label) DO UPDATE` —
-   *      creates the topic row or atomically increments memory_count.
-   *      On conflict, `aliases_json` is recomputed as the distinct union of
-   *      the existing aliases and the ones passed in this call; the union
-   *      happens in pure SQL so concurrent alias writes never lose entries.
-   *   3. Link `memories.topic_id → topic.id`.
+   * Text fields are write-once — there is deliberately no `updateObservation`.
    */
-  upsertTopicAndLinkMemory(input: {
-    memory_id: number;
-    scope_key: string;
-    repo: string | null;
-    canonical_label: string;
-    aliases?: string[];
-  }): { topic_id: number; linked: boolean } {
-    const aliasesJson = JSON.stringify(
-      Array.from(
-        new Set(
-          (input.aliases ?? []).filter(
-            (a): a is string => typeof a === 'string' && !!a,
-          ),
-        ),
-      ),
-    );
-
-    const txn = this.db.transaction(() => {
-      const memRow = this.db
-        .query('SELECT topic_id FROM memories WHERE id = ?')
-        .get(input.memory_id) as { topic_id: number | null } | null;
-      if (!memRow) {
-        throw new Error(`memory ${input.memory_id} not found`);
-      }
-      if (memRow.topic_id != null) {
-        return { topic_id: memRow.topic_id, linked: false };
-      }
-
-      const now = nowISO();
-      const row = this.db
-        .query(
-          `INSERT INTO topics (
-             scope_key, repo, canonical_label, aliases_json, status,
-             last_active_at, memory_count, created_at, updated_at
-           ) VALUES (?, ?, ?, ?, 'active', ?, 1, ?, ?)
-           ON CONFLICT(scope_key, canonical_label) DO UPDATE SET
-             memory_count = topics.memory_count + 1,
-             aliases_json = (
-               SELECT json_group_array(value) FROM (
-                 SELECT value FROM json_each(topics.aliases_json)
-                 UNION
-                 SELECT value FROM json_each(excluded.aliases_json)
-               )
-             ),
-             last_active_at = excluded.last_active_at,
-             status = CASE WHEN topics.status = 'archived'
-                           THEN 'active' ELSE topics.status END,
-             updated_at = excluded.updated_at
-           RETURNING id`,
-        )
-        .get(
-          input.scope_key,
-          input.repo ?? null,
-          input.canonical_label,
-          aliasesJson,
-          now,
-          now,
-          now,
-        ) as { id: number };
-
-      this.db.run(
-        `UPDATE memories
-           SET topic_id = ?, updated_at = ?
-         WHERE id = ? AND topic_id IS NULL`,
-        [row.id, now, input.memory_id],
-      );
-
-      return { topic_id: row.id, linked: true };
-    });
-    return txn();
-  }
-
-  updateTopic(
-    id: number,
-    patch: {
-      aliases?: string[];
-      summary?: string | null;
-      unresolved_summary?: string | null;
-      status?: TopicStatus;
-      last_active_at?: string;
-      memory_count_delta?: number;
-    },
-  ) {
-    const now = nowISO();
-    this.db.run(
-      `UPDATE topics
-         SET aliases_json = COALESCE(?, aliases_json),
-             summary = COALESCE(?, summary),
-             unresolved_summary = COALESCE(?, unresolved_summary),
-             status = COALESCE(?, status),
-             last_active_at = COALESCE(?, last_active_at),
-             memory_count = memory_count + ?,
-             updated_at = ?
-         WHERE id = ?`,
-      [
-        patch.aliases != null ? JSON.stringify(patch.aliases) : null,
-        patch.summary ?? null,
-        patch.unresolved_summary ?? null,
-        patch.status ?? null,
-        patch.last_active_at ?? null,
-        patch.memory_count_delta ?? 0,
-        now,
-        id,
-      ],
-    );
-  }
-
-  // ===========================================================
-  // memories
-  // ===========================================================
-
-  insertMemory(input: {
-    memory_kind: MemoryKind;
+  insertObservation(input: {
+    turn_id: number;
+    session_id: string;
+    turn_seq: number;
     repo?: string | null;
-    cwd_scope?: string | null;
-    topic_id?: number | null;
+    cwd_scope: string;
     title: string;
     summary: string;
     request?: string | null;
-    investigated?: string | null;
+    outcome?: string | null;
     learned?: string | null;
-    completed?: string | null;
     next_steps?: string | null;
     memory_type: MemoryType;
+    files_touched?: string[];
+    concepts?: string[];
+    evidence?: string[];
     importance_score?: number;
     confidence_score?: number;
     unresolved_score?: number;
-    files_touched?: string[];
-    concepts?: string[];
-    topic_candidate?: string | null;
-    source_turn_count?: number;
-    first_turn_at: string;
-    last_turn_at: string;
-  }): number {
+    quality: ObservationQuality;
+    turn_started_at: string;
+    turn_stopped_at: string;
+  }): number | null {
     const now = nowISO();
-    const result = this.db.run(
-      `INSERT INTO memories (
-         memory_kind, repo, cwd_scope, topic_id, topic_candidate,
-         title, summary, request, investigated, learned, completed, next_steps,
-         memory_type, importance_score, confidence_score, unresolved_score,
-         files_touched_json, concepts_json,
-         source_turn_count, is_pinned, state,
-         first_turn_at, last_turn_at, created_at, updated_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'active', ?, ?, ?, ?)`,
-      [
-        input.memory_kind,
-        input.repo ?? null,
-        input.cwd_scope ?? null,
-        input.topic_id ?? null,
-        input.topic_candidate ?? null,
-        input.title,
-        input.summary,
-        input.request ?? null,
-        input.investigated ?? null,
-        input.learned ?? null,
-        input.completed ?? null,
-        input.next_steps ?? null,
-        input.memory_type,
-        input.importance_score ?? 0,
-        input.confidence_score ?? 0,
-        input.unresolved_score ?? 0,
-        JSON.stringify(input.files_touched ?? []),
-        JSON.stringify(input.concepts ?? []),
-        input.source_turn_count ?? 1,
-        input.first_turn_at,
-        input.last_turn_at,
-        now,
-        now,
-      ],
-    );
-    return Number(result.lastInsertRowid);
+    const scopeKey = computeScopeKey(input.repo ?? null, input.cwd_scope);
+    try {
+      const result = this.db.run(
+        `INSERT INTO observations (
+           turn_id, scope_key, session_id, turn_seq, repo, cwd_scope,
+           title, summary, request, outcome, learned, next_steps, memory_type,
+           files_touched_json, concepts_json, evidence_json,
+           importance_score, confidence_score, unresolved_score,
+           is_pinned, quality, turn_started_at, turn_stopped_at, created_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`,
+        [
+          input.turn_id,
+          scopeKey,
+          input.session_id,
+          input.turn_seq,
+          input.repo ?? null,
+          input.cwd_scope,
+          input.title,
+          input.summary,
+          input.request ?? null,
+          input.outcome ?? null,
+          input.learned ?? null,
+          input.next_steps ?? null,
+          input.memory_type,
+          JSON.stringify(input.files_touched ?? []),
+          JSON.stringify(input.concepts ?? []),
+          JSON.stringify(input.evidence ?? []),
+          input.importance_score ?? 0,
+          input.confidence_score ?? 0,
+          input.unresolved_score ?? 0,
+          input.quality,
+          input.turn_started_at,
+          input.turn_stopped_at,
+          now,
+        ],
+      );
+      return Number(result.lastInsertRowid);
+    } catch (err) {
+      // UNIQUE(turn_id) collision means an Observation already exists for this
+      // turn — a concurrent run or retry won the race. That's the idempotent
+      // outcome, not an error.
+      if (String(err).includes('UNIQUE')) return null;
+      throw err;
+    }
   }
 
-  getMemory(id: number): Memory | null {
+  getObservation(id: number): Observation | null {
     return this.db
-      .query('SELECT * FROM memories WHERE id = ?')
-      .get(id) as Memory | null;
+      .query('SELECT * FROM observations WHERE id = ?')
+      .get(id) as Observation | null;
   }
 
-  getMemoriesByIds(ids: number[]): Memory[] {
+  getObservationByTurnId(turn_id: number): Observation | null {
+    return this.db
+      .query('SELECT * FROM observations WHERE turn_id = ?')
+      .get(turn_id) as Observation | null;
+  }
+
+  getObservationsByIds(ids: number[]): Observation[] {
     if (!ids.length) return [];
     const placeholders = ids.map(() => '?').join(',');
     return this.db
       .query(
-        `SELECT * FROM memories WHERE id IN (${placeholders}) ORDER BY last_turn_at DESC`,
+        `SELECT * FROM observations WHERE id IN (${placeholders}) ORDER BY turn_stopped_at DESC`,
       )
-      .all(...ids) as Memory[];
+      .all(...ids) as Observation[];
   }
 
-  pinMemory(id: number, pinned: boolean) {
-    const now = nowISO();
-    this.db.run(
-      'UPDATE memories SET is_pinned = ?, updated_at = ? WHERE id = ?',
-      [pinned ? 1 : 0, now, id],
-    );
+  pinObservation(id: number, pinned: boolean) {
+    this.db.run('UPDATE observations SET is_pinned = ? WHERE id = ?', [
+      pinned ? 1 : 0,
+      id,
+    ]);
   }
 
-  setMemoryState(id: number, state: MemoryState) {
-    const now = nowISO();
-    this.db.run(
-      'UPDATE memories SET state = ?, updated_at = ? WHERE id = ?',
-      [state, now, id],
-    );
-  }
+  // ---------- observation_embeddings ----------
 
-  // ---------- memory search ----------
-
-  /** Memory-first FTS search. Returns memories matching the query. */
-  searchMemoriesFts(
-    query: string,
-    opts?: { type?: string; repo?: string; cwd?: string; days?: number; limit?: number },
-  ): Memory[] {
-    const limit = opts?.limit ?? 20;
-    const days = opts?.days ?? 90;
-    const dateThreshold = new Date(Date.now() - days * 86400000).toISOString();
-
-    if (query.length < 3) {
-      // Short query: LIKE fallback
-      const like = `%${query}%`;
-      let sql = `SELECT * FROM memories
-        WHERE state = 'active' AND last_turn_at > ?
-          AND (title LIKE ? OR summary LIKE ? OR learned LIKE ? OR concepts_json LIKE ?)`;
-      const params: (string | number)[] = [dateThreshold, like, like, like, like];
-      if (opts?.type) { sql += ' AND memory_type = ?'; params.push(opts.type); }
-      if (opts?.repo) { sql += ' AND repo = ?'; params.push(opts.repo); }
-      else if (opts?.cwd) { sql += ' AND cwd_scope = ?'; params.push(opts.cwd); }
-      sql += ' ORDER BY is_pinned DESC, last_turn_at DESC LIMIT ?';
-      params.push(limit);
-      return this.db.query(sql).all(...params) as Memory[];
-    }
-
-    let sql = `SELECT m.* FROM memories_fts fts
-      JOIN memories m ON fts.rowid = m.id
-      WHERE memories_fts MATCH ? AND m.state = 'active' AND m.last_turn_at > ?`;
-    const params: (string | number)[] = [query, dateThreshold];
-    if (opts?.type) { sql += ' AND m.memory_type = ?'; params.push(opts.type); }
-    if (opts?.repo) { sql += ' AND m.repo = ?'; params.push(opts.repo); }
-    else if (opts?.cwd) { sql += ' AND m.cwd_scope = ?'; params.push(opts.cwd); }
-    sql += ' ORDER BY m.is_pinned DESC, fts.rank LIMIT ?';
-    params.push(limit);
-    return this.db.query(sql).all(...params) as Memory[];
-  }
-
-  /** Get recent active memories for semantic reranking candidates. */
-  getRecentMemoryIds(days: number, limit: number, repo?: string): number[] {
-    const dateThreshold = new Date(Date.now() - days * 86400000).toISOString();
-    let sql = `SELECT id FROM memories WHERE state = 'active' AND last_turn_at > ?`;
-    const params: (string | number)[] = [dateThreshold];
-    if (repo) { sql += ' AND repo = ?'; params.push(repo); }
-    sql += ' ORDER BY last_turn_at DESC LIMIT ?';
-    params.push(limit);
-    return (this.db.query(sql).all(...params) as { id: number }[]).map(r => r.id);
-  }
-
-  /** Get pinned memories. */
-  getPinnedMemories(limit = 20): Memory[] {
-    return this.db.query(
-      `SELECT * FROM memories WHERE is_pinned = 1 AND state = 'active' ORDER BY last_turn_at DESC LIMIT ?`,
-    ).all(limit) as Memory[];
-  }
-
-  /** Get active topics for a repo. */
-  /**
-   * List active topics.
-   *
-   * - With `repo` or `cwd` specified: narrows to that scope (computed via
-   *   {@link computeScopeKey}). Use this for normalize_topic and for any
-   *   "topics in my current workspace" browse case.
-   * - With neither specified: returns all active topics across every scope.
-   *   Used by the MCP `topics` tool when the user wants a global browse.
-   */
-  getActiveTopics(opts?: {
-    repo?: string | null;
-    cwd?: string | null;
-    limit?: number;
-  }): Topic[] {
-    const limit = opts?.limit ?? 20;
-    const scoped = !!(opts?.repo || opts?.cwd);
-    if (scoped) {
-      const scopeKey = computeScopeKey(opts?.repo ?? null, opts?.cwd ?? null);
-      return this.db
-        .query(
-          `SELECT * FROM topics
-             WHERE status = 'active' AND scope_key = ?
-             ORDER BY last_active_at DESC LIMIT ?`,
-        )
-        .all(scopeKey, limit) as Topic[];
-    }
-    return this.db
-      .query(
-        `SELECT * FROM topics
-           WHERE status = 'active'
-           ORDER BY last_active_at DESC LIMIT ?`,
-      )
-      .all(limit) as Topic[];
-  }
-
-  /** Trace a memory: get its source turns and neighboring memories. */
-  traceMemory(memory_id: number, opts?: { before?: number; after?: number }): {
-    memory: Memory | null;
-    source_turns: Turn[];
-    neighbors: Memory[];
-  } {
-    const memory = this.getMemory(memory_id);
-    if (!memory) return { memory: null, source_turns: [], neighbors: [] };
-
-    const links = this.listMemoryTurnLinks(memory_id);
-    const turnIds = links.map(l => l.turn_id);
-    const source_turns = turnIds.length
-      ? (this.db.query(
-          `SELECT * FROM turns WHERE id IN (${turnIds.map(() => '?').join(',')}) ORDER BY started_at`,
-        ).all(...turnIds) as Turn[])
-      : [];
-
-    const before = opts?.before ?? 3;
-    const after = opts?.after ?? 3;
-    const neighbors = this.db.query(
-      `SELECT * FROM (
-        SELECT * FROM memories WHERE state = 'active' AND id < ? AND repo IS ? ORDER BY id DESC LIMIT ?
-      ) UNION ALL
-      SELECT * FROM (
-        SELECT * FROM memories WHERE state = 'active' AND id > ? AND repo IS ? ORDER BY id ASC LIMIT ?
-      ) ORDER BY id`,
-    ).all(memory_id, memory.repo, before, memory_id, memory.repo, after) as Memory[];
-
-    return { memory, source_turns, neighbors };
-  }
-
-  // ---------- memory_turn_links ----------
-
-  linkMemoryToTurn(input: {
-    memory_id: number;
-    turn_id: number;
-    ordinal: number;
-    role?: MemoryLinkRole;
-  }) {
-    this.db.run(
-      `INSERT OR REPLACE INTO memory_turn_links (memory_id, turn_id, ordinal, role)
-       VALUES (?, ?, ?, ?)`,
-      [input.memory_id, input.turn_id, input.ordinal, input.role ?? 'source'],
-    );
-  }
-
-  /** Returns true if a turn-kind memory already exists for this turn_id. */
-  hasTurnMemory(turn_id: number): boolean {
-    const turn = this.getTurn(turn_id);
-    return turn?.memory_id != null;
-  }
-
-  /**
-   * Atomically claim the canonical turn-memory slot. Returns true if this call
-   * set it (i.e. it was NULL before). Returns false if already set — the caller
-   * should skip memory creation. This is the idempotency gate for summarize_turn.
-   */
-  claimTurnMemorySlot(turn_id: number, memory_id: number): boolean {
-    const now = nowISO();
-    const result = this.db.run(
-      `UPDATE turns SET memory_id = ?, updated_at = ?
-       WHERE id = ? AND memory_id IS NULL`,
-      [memory_id, now, turn_id],
-    );
-    return result.changes > 0;
-  }
-
-  /**
-   * Atomically create a turn's canonical memory, claim the slot on the turn,
-   * and link them. Uses a SQLite transaction so a crash between steps leaves
-   * no orphan memory rows. Returns the memory_id, or null if the turn already
-   * has a canonical memory (idempotent).
-   */
-  createTurnMemoryAtomic(turn_id: number, input: {
-    memory_kind: 'turn';
-    repo?: string | null;
-    cwd_scope?: string | null;
-    title: string;
-    summary: string;
-    request?: string | null;
-    investigated?: string | null;
-    learned?: string | null;
-    completed?: string | null;
-    next_steps?: string | null;
-    memory_type: MemoryType;
-    importance_score?: number;
-    confidence_score?: number;
-    unresolved_score?: number;
-    files_touched?: string[];
-    concepts?: string[];
-    /**
-     * LLM-generated topic candidate from summarize_turn. Persisting it here
-     * lets normalize_topic use the strongest available semantic signal
-     * instead of re-deriving from concepts[0] / title.
-     */
-    topic_candidate?: string | null;
-    first_turn_at: string;
-    last_turn_at: string;
-  }): number | null {
-    const now = nowISO();
-
-    // Use a transaction — SQLite guarantees all-or-nothing.
-    const txn = this.db.transaction(() => {
-      // Re-check inside txn (single-writer, so this is authoritative)
-      const turn = this.db.query('SELECT memory_id FROM turns WHERE id = ?').get(turn_id) as { memory_id: number | null } | null;
-      if (!turn || turn.memory_id != null) return null;
-
-      // Insert memory
-      const result = this.db.run(
-        `INSERT INTO memories (
-           memory_kind, repo, cwd_scope, topic_id, topic_candidate,
-           title, summary, request, investigated, learned, completed, next_steps,
-           memory_type, importance_score, confidence_score, unresolved_score,
-           files_touched_json, concepts_json,
-           source_turn_count, is_pinned, state,
-           first_turn_at, last_turn_at, created_at, updated_at
-         ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 'active', ?, ?, ?, ?)`,
-        [
-          input.memory_kind,
-          input.repo ?? null,
-          input.cwd_scope ?? null,
-          input.topic_candidate ?? null,
-          input.title,
-          input.summary,
-          input.request ?? null,
-          input.investigated ?? null,
-          input.learned ?? null,
-          input.completed ?? null,
-          input.next_steps ?? null,
-          input.memory_type,
-          input.importance_score ?? 0,
-          input.confidence_score ?? 0,
-          input.unresolved_score ?? 0,
-          JSON.stringify(input.files_touched ?? []),
-          JSON.stringify(input.concepts ?? []),
-          input.first_turn_at,
-          input.last_turn_at,
-          now,
-          now,
-        ],
-      );
-      const memoryId = Number(result.lastInsertRowid);
-
-      // Claim slot on turn
-      this.db.run(
-        `UPDATE turns SET memory_id = ?, updated_at = ? WHERE id = ?`,
-        [memoryId, now, turn_id],
-      );
-
-      // Link
-      this.db.run(
-        `INSERT OR REPLACE INTO memory_turn_links (memory_id, turn_id, ordinal, role)
-         VALUES (?, ?, 1, 'source')`,
-        [memoryId, turn_id],
-      );
-
-      return memoryId;
-    });
-
-    return txn();
-  }
-
-  listMemoryTurnLinks(memory_id: number): MemoryTurnLink[] {
-    return this.db
-      .query(
-        'SELECT * FROM memory_turn_links WHERE memory_id = ? ORDER BY ordinal ASC',
-      )
-      .all(memory_id) as MemoryTurnLink[];
-  }
-
-  listTurnsByIdsOrdered(turnIds: number[]): Turn[] {
-    const uniqueIds = Array.from(new Set(turnIds.filter(Number.isFinite)));
-    if (!uniqueIds.length) return [];
-    return this.db
-      .query(
-        `SELECT * FROM turns
-          WHERE id IN (${uniqueIds.map(() => '?').join(',')})
-          ORDER BY started_at ASC, id ASC`,
-      )
-      .all(...uniqueIds) as Turn[];
-  }
-
-  // ---------- memory_embeddings ----------
-
-  upsertMemoryEmbedding(
-    memory_id: number,
+  upsertObservationEmbedding(
+    observation_id: number,
     model: string,
     dimensions: number,
     embedding: Buffer,
   ) {
     const now = nowISO();
     this.db.run(
-      `INSERT INTO memory_embeddings (memory_id, model, dimensions, embedding, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?)
-       ON CONFLICT(memory_id) DO UPDATE SET
+      `INSERT INTO observation_embeddings (observation_id, model, dimensions, embedding, created_at)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(observation_id) DO UPDATE SET
          model = excluded.model,
          dimensions = excluded.dimensions,
-         embedding = excluded.embedding,
-         updated_at = ?`,
-      [memory_id, model, dimensions, embedding, now, now, now],
+         embedding = excluded.embedding`,
+      [observation_id, model, dimensions, embedding, now],
     );
   }
 
-  getMemoryEmbedding(memory_id: number): MemoryEmbeddingRow | null {
+  getObservationEmbedding(observation_id: number): ObservationEmbeddingRow | null {
     return this.db
-      .query('SELECT * FROM memory_embeddings WHERE memory_id = ?')
-      .get(memory_id) as MemoryEmbeddingRow | null;
+      .query('SELECT * FROM observation_embeddings WHERE observation_id = ?')
+      .get(observation_id) as ObservationEmbeddingRow | null;
   }
 
-  getMemoryEmbeddingsByIds(
+  getObservationEmbeddingsByIds(
     ids: number[],
-  ): { memory_id: number; embedding: Buffer }[] {
+  ): { observation_id: number; embedding: Buffer }[] {
     if (!ids.length) return [];
     const placeholders = ids.map(() => '?').join(',');
     return this.db
       .query(
-        `SELECT memory_id, embedding FROM memory_embeddings WHERE memory_id IN (${placeholders})`,
+        `SELECT observation_id, embedding FROM observation_embeddings WHERE observation_id IN (${placeholders})`,
       )
-      .all(...ids) as { memory_id: number; embedding: Buffer }[];
+      .all(...ids) as { observation_id: number; embedding: Buffer }[];
+  }
+
+  // ---------- observation search / timeline ----------
+
+  /**
+   * FTS search over Observations, hard-scoped by `scope_key` when provided.
+   *
+   * There is no `state` filter — Observations are
+   * immutable and never superseded/archived, so every row is a valid hit.
+   * Scope isolation is enforced on `scope_key` (frozen at write time), so a
+   * caller passing a scope never sees another workspace's Observations.
+   * Short queries (<3 chars, below the trigram floor) fall back to LIKE.
+   */
+  searchObservationsFts(
+    query: string,
+    opts?: { scopeKey?: string; type?: string; days?: number; limit?: number },
+  ): Observation[] {
+    const limit = opts?.limit ?? 20;
+    const days = opts?.days ?? 90;
+    const dateThreshold = new Date(Date.now() - days * 86400000).toISOString();
+
+    if (query.length < 3) {
+      const like = `%${query}%`;
+      let sql = `SELECT * FROM observations
+        WHERE turn_stopped_at > ?
+          AND (title LIKE ? OR summary LIKE ? OR outcome LIKE ? OR learned LIKE ? OR concepts_json LIKE ?)`;
+      const params: (string | number)[] = [dateThreshold, like, like, like, like, like];
+      if (opts?.scopeKey) { sql += ' AND scope_key = ?'; params.push(opts.scopeKey); }
+      if (opts?.type) { sql += ' AND memory_type = ?'; params.push(opts.type); }
+      sql += ' ORDER BY is_pinned DESC, turn_stopped_at DESC, id DESC LIMIT ?';
+      params.push(limit);
+      return this.db.query(sql).all(...params) as Observation[];
+    }
+
+    let sql = `SELECT o.* FROM observations_fts fts
+      JOIN observations o ON fts.rowid = o.id
+      WHERE observations_fts MATCH ? AND o.turn_stopped_at > ?`;
+    const params: (string | number)[] = [query, dateThreshold];
+    if (opts?.scopeKey) { sql += ' AND o.scope_key = ?'; params.push(opts.scopeKey); }
+    if (opts?.type) { sql += ' AND o.memory_type = ?'; params.push(opts.type); }
+    sql += ' ORDER BY o.is_pinned DESC, fts.rank LIMIT ?';
+    params.push(limit);
+    return this.db.query(sql).all(...params) as Observation[];
+  }
+
+  /** Recent Observation ids for the semantic candidate pool, scoped. */
+  getRecentObservationIds(opts: { scopeKey?: string; days: number; limit: number }): number[] {
+    const dateThreshold = new Date(Date.now() - opts.days * 86400000).toISOString();
+    let sql = `SELECT id FROM observations WHERE turn_stopped_at > ?`;
+    const params: (string | number)[] = [dateThreshold];
+    if (opts.scopeKey) { sql += ' AND scope_key = ?'; params.push(opts.scopeKey); }
+    sql += ' ORDER BY turn_stopped_at DESC LIMIT ?';
+    params.push(opts.limit);
+    return (this.db.query(sql).all(...params) as { id: number }[]).map((r) => r.id);
+  }
+
+  /**
+   * Timeline anchored on an Observation's SOURCE TURN, not on the Observation's
+   * auto-increment id. Ordering key is (turn_stopped_at, turn_seq, id) so the
+   * result reflects the real work timeline even when Observations were written
+   * out of turn order (retries, async compression).
+   *
+   * - mode='scope' (default): neighbors within the same workspace scope_key —
+   *   good for cross-session continuous work.
+   * - mode='session': neighbors within the same session only.
+   *
+   * `before` is returned oldest→anchor; `after` is anchor→newest.
+   */
+  observationTimeline(
+    observation_id: number,
+    opts?: { before?: number; after?: number; mode?: 'scope' | 'session' },
+  ): { anchor: Observation | null; before: Observation[]; after: Observation[] } {
+    const anchor = this.getObservation(observation_id);
+    if (!anchor) return { anchor: null, before: [], after: [] };
+
+    const before = opts?.before ?? 3;
+    const after = opts?.after ?? 3;
+    const mode = opts?.mode ?? 'scope';
+    const scopeCol = mode === 'session' ? 'session_id' : 'scope_key';
+    const scopeVal = mode === 'session' ? anchor.session_id : anchor.scope_key;
+
+    const olderDesc = this.db
+      .query(
+        `SELECT * FROM observations
+           WHERE ${scopeCol} = ?
+             AND ( turn_stopped_at < ?
+                OR (turn_stopped_at = ? AND turn_seq < ?)
+                OR (turn_stopped_at = ? AND turn_seq = ? AND id < ?) )
+           ORDER BY turn_stopped_at DESC, turn_seq DESC, id DESC
+           LIMIT ?`,
+      )
+      .all(scopeVal, anchor.turn_stopped_at, anchor.turn_stopped_at, anchor.turn_seq, anchor.turn_stopped_at, anchor.turn_seq, anchor.id, before) as Observation[];
+
+    const newerAsc = this.db
+      .query(
+        `SELECT * FROM observations
+           WHERE ${scopeCol} = ?
+             AND ( turn_stopped_at > ?
+                OR (turn_stopped_at = ? AND turn_seq > ?)
+                OR (turn_stopped_at = ? AND turn_seq = ? AND id > ?) )
+           ORDER BY turn_stopped_at ASC, turn_seq ASC, id ASC
+           LIMIT ?`,
+      )
+      .all(scopeVal, anchor.turn_stopped_at, anchor.turn_stopped_at, anchor.turn_seq, anchor.turn_stopped_at, anchor.turn_seq, anchor.id, after) as Observation[];
+
+    return { anchor, before: olderDesc.reverse(), after: newerAsc };
+  }
+
+  /**
+   * Pinned Observations for the AgentSpawn bootstrap index, hard-scoped.
+   * Ordered by recency. Independent of session.
+   */
+  getPinnedObservations(opts: { scopeKey?: string; limit: number }): Observation[] {
+    let sql = `SELECT * FROM observations WHERE is_pinned = 1`;
+    const params: (string | number)[] = [];
+    if (opts.scopeKey) { sql += ' AND scope_key = ?'; params.push(opts.scopeKey); }
+    sql += ' ORDER BY turn_stopped_at DESC, id DESC LIMIT ?';
+    params.push(opts.limit);
+    return this.db.query(sql).all(...params) as Observation[];
+  }
+
+  /**
+   * Most recent Observations in a scope, ordered by turn_stopped_at desc.
+   * "Recent N" for the bootstrap index is independent of session_id (session
+   * is only for event attribution/isolation, not index selection).
+   */
+  getRecentObservations(opts: { scopeKey?: string; limit: number }): Observation[] {
+    let sql = `SELECT * FROM observations`;
+    const params: (string | number)[] = [];
+    if (opts.scopeKey) { sql += ' WHERE scope_key = ?'; params.push(opts.scopeKey); }
+    sql += ' ORDER BY turn_stopped_at DESC, id DESC LIMIT ?';
+    params.push(opts.limit);
+    return this.db.query(sql).all(...params) as Observation[];
   }
 
   // ===========================================================
@@ -1075,5 +749,145 @@ export class MemoryDB {
         `SELECT * FROM jobs WHERE state = ? ORDER BY priority ASC, available_at ASC, id ASC LIMIT ?`,
       )
       .all(state, limit) as Job[];
+  }
+
+  // ===========================================================
+  // observability (design §12.4)
+  // ===========================================================
+
+  /**
+   * Record one MCP search request. `degraded` marks an FTS-only fallback (query
+   * embedding unavailable). Written from the MCP server process. Never throws
+   * out — metric recording must not break search.
+   */
+  recordSearchMetric(opts: { latencyMs: number; degraded: boolean }): void {
+    try {
+      const r = this.db.run(
+        `INSERT INTO metric_events (kind, degraded, latency_ms, created_at)
+         VALUES ('search', ?, ?, ?)`,
+        [opts.degraded ? 1 : 0, Math.max(0, Math.round(opts.latencyMs)), nowISO()],
+      );
+      this.maybePruneMetrics(Number(r.lastInsertRowid));
+    } catch {
+      /* metrics are best-effort */
+    }
+  }
+
+  /**
+   * Record one ACP runtime event (JSON-repair attempt or contamination recycle).
+   * Written from the worker process. Best-effort.
+   */
+  recordAcpEvent(kind: 'repair' | 'contamination'): void {
+    try {
+      const r = this.db.run(
+        `INSERT INTO metric_events (kind, created_at) VALUES (?, ?)`,
+        [`acp_${kind}`, nowISO()],
+      );
+      this.maybePruneMetrics(Number(r.lastInsertRowid));
+    } catch {
+      /* best-effort */
+    }
+  }
+
+  /**
+   * Opportunistic retention cap on metric_events (~every 256 inserts). We only
+   * ever report a trailing 24h window; 7 days of retention gives ample buffer
+   * without an unbounded ops table.
+   */
+  private maybePruneMetrics(rowid: number): void {
+    if (rowid % 256 !== 0) return;
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    this.db.run('DELETE FROM metric_events WHERE created_at < ?', [cutoff]);
+  }
+
+  /**
+   * DB-derived observability snapshot for `/health` and `kiro-mem diagnose`.
+   * Pure counts — never returns observation text. Cheap enough to call per
+   * health check on a normal-sized DB.
+   */
+  getObservabilityStats(): ObservabilityStats {
+    const scalar = (sql: string, ...params: (string | number)[]): number => {
+      const row = this.db.query(sql).get(...params) as { c: number } | null;
+      return row?.c ?? 0;
+    };
+
+    const total = scalar('SELECT COUNT(*) AS c FROM observations');
+    const fallback = scalar(
+      "SELECT COUNT(*) AS c FROM observations WHERE quality = 'fallback'",
+    );
+    const pinned = scalar('SELECT COUNT(*) AS c FROM observations WHERE is_pinned = 1');
+    const embedded = scalar('SELECT COUNT(*) AS c FROM observation_embeddings');
+    const normal = Math.max(0, total - fallback);
+    const coverage = total > 0 ? Number((embedded / total).toFixed(3)) : 0;
+
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    // --- MCP search (24h) from metric_events ---
+    const searchAgg = this.db
+      .query(
+        `SELECT COUNT(*) AS requests,
+                COALESCE(SUM(degraded), 0) AS ftsOnly,
+                COALESCE(AVG(latency_ms), 0) AS avgMs
+           FROM metric_events
+          WHERE kind = 'search' AND created_at > ?`,
+      )
+      .get(since) as { requests: number; ftsOnly: number; avgMs: number };
+
+    let latencyMsP95 = 0;
+    if (searchAgg.requests > 0) {
+      const offset = Math.min(
+        searchAgg.requests - 1,
+        Math.floor(searchAgg.requests * 0.95),
+      );
+      const p95Row = this.db
+        .query(
+          `SELECT latency_ms AS v FROM metric_events
+            WHERE kind = 'search' AND latency_ms IS NOT NULL AND created_at > ?
+            ORDER BY latency_ms ASC
+            LIMIT 1 OFFSET ?`,
+        )
+        .get(since, offset) as { v: number } | null;
+      latencyMsP95 = p95Row?.v ?? 0;
+    }
+
+    return {
+      observations: { total, normal, fallback, pinned },
+      embeddings: { ready: embedded, coverage },
+      jobs: {
+        pending: scalar("SELECT COUNT(*) AS c FROM jobs WHERE state = 'pending'"),
+        leased: scalar("SELECT COUNT(*) AS c FROM jobs WHERE state = 'leased'"),
+        dead: scalar("SELECT COUNT(*) AS c FROM jobs WHERE state = 'dead'"),
+      },
+      jobs24h: {
+        succeeded: scalar(
+          "SELECT COUNT(*) AS c FROM jobs WHERE state = 'succeeded' AND updated_at > ?",
+          since,
+        ),
+        dead: scalar(
+          "SELECT COUNT(*) AS c FROM jobs WHERE state = 'dead' AND updated_at > ?",
+          since,
+        ),
+      },
+      search24h: {
+        requests: searchAgg.requests,
+        ftsOnly: searchAgg.ftsOnly,
+        degradeRate:
+          searchAgg.requests > 0
+            ? Number((searchAgg.ftsOnly / searchAgg.requests).toFixed(3))
+            : 0,
+        latencyMsAvg: Math.round(searchAgg.avgMs),
+        latencyMsP95,
+      },
+      acp24h: {
+        repairs: scalar(
+          "SELECT COUNT(*) AS c FROM metric_events WHERE kind = 'acp_repair' AND created_at > ?",
+          since,
+        ),
+        contaminations: scalar(
+          "SELECT COUNT(*) AS c FROM metric_events WHERE kind = 'acp_contamination' AND created_at > ?",
+          since,
+        ),
+      },
+    };
   }
 }
