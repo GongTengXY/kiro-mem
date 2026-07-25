@@ -176,3 +176,69 @@ describe('MCP server tool surface', () => {
     ]);
   });
 });
+
+
+describe('MCP release-readiness behavior', () => {
+  let proc: Subprocess | null = null;
+  afterEach(() => { try { proc?.kill(); } catch {} proc = null; });
+
+  test('reports V3 version, accepts literal queries, and rejects unsafe bounds', async () => {
+    const repo = '/repo-special';
+    const db = new MemoryDB(resolve(DATA_DIR, 'kiro-mem.db'));
+    seedObservation(db, {
+      sessionId: 'session-special',
+      repo,
+      title: 'foo:bar a-b "unterminated AND C++ src/auth/token.ts 中文查询',
+    });
+    db.close();
+
+    proc = spawn({
+      cmd: ['bun', 'run', 'src/server/mcp-server.ts'],
+      cwd: PKG_ROOT,
+      stdin: 'pipe', stdout: 'pipe', stderr: 'pipe',
+      env: {
+        ...process.env,
+        KIRO_MEMORY_DATA_DIR: DATA_DIR,
+        KIRO_MEMORY_DISABLE_EMBEDDING_PREWARM: '1',
+      },
+    });
+    const reader = (proc.stdout as ReadableStream<Uint8Array>).getReader();
+    const decoder = new TextDecoder();
+    const buf = { s: '' };
+    const stdin = proc.stdin as any;
+    const send = (obj: unknown) => { stdin.write(JSON.stringify(obj) + '\n'); stdin.flush?.(); };
+
+    send({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'test', version: '1.0.0' } } });
+    const initialized = await readUntilId(reader, decoder, 1, buf);
+    expect(initialized.result?.serverInfo?.version).toBe('3.0.0');
+    send({ jsonrpc: '2.0', method: 'notifications/initialized' });
+
+    let id = 2;
+    for (const query of ['foo:bar', 'a-b', '"unterminated', 'AND', 'C++', 'src/auth/token.ts', '中文查询']) {
+      send({
+        jsonrpc: '2.0', id, method: 'tools/call',
+        params: { name: 'search', arguments: { query, repo } },
+      });
+      const response = await readUntilId(reader, decoder, id, buf);
+      expect(response.error).toBeUndefined();
+      expect(response.result?.isError).not.toBe(true);
+      const payload = JSON.parse(response.result?.content?.[0]?.text ?? '{}');
+      expect(payload.results.length).toBeGreaterThan(0);
+      id++;
+    }
+
+    const invalidCalls = [
+      { name: 'search', arguments: { query: 'x', repo, limit: -1 } },
+      { name: 'search', arguments: { query: 'x', repo, days: 3651 } },
+      { name: 'timeline', arguments: { observation_id: 1, before: 21 } },
+      { name: 'get_observations', arguments: { ids: [] } },
+      { name: 'pin', arguments: { observation_id: 999999 } },
+    ];
+    for (const call of invalidCalls) {
+      send({ jsonrpc: '2.0', id, method: 'tools/call', params: call });
+      const response = await readUntilId(reader, decoder, id, buf);
+      expect(response.error != null || response.result?.isError === true).toBe(true);
+      id++;
+    }
+  }, 20_000);
+});

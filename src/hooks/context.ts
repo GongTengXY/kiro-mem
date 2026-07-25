@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
 /**
- * agentSpawn hook: fetch context from Worker, output to STDOUT for injection.
- * Tries to restart Worker via launchd/systemd if unreachable.
+ * agentSpawn hook: fetch bootstrap context without ever managing the Worker.
+ * launchd/systemd owns process keepalive; any failure here is silent so agent
+ * startup is never blocked by memory infrastructure.
  */
 import { readFileSync } from 'fs';
 
@@ -16,31 +17,19 @@ function readPort(): string {
   try { return readFileSync(`${DATA_DIR}/.worker.port`, 'utf-8').trim(); } catch { return '37778'; }
 }
 
-const input = await Bun.stdin.text();
-const event = JSON.parse(input);
-const cwd = event.cwd || '';
-const port = readPort();
-const token = readToken();
-const url = `http://127.0.0.1:${port}/context/bootstrap?cwd=${encodeURIComponent(cwd)}`;
-const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-
-let response: Response | null = null;
 try {
-  response = await fetch(url, { headers, signal: AbortSignal.timeout(3000) });
+  const input = await Bun.stdin.text();
+  const event = JSON.parse(input) as { cwd?: unknown };
+  const cwd = typeof event.cwd === 'string' ? event.cwd : '';
+  const port = readPort();
+  const token = readToken();
+  const url = `http://127.0.0.1:${port}/context/bootstrap?cwd=${encodeURIComponent(cwd)}`;
+  const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+  const response = await fetch(url, { headers, signal: AbortSignal.timeout(700) });
+  if (response.ok) {
+    const text = await response.text();
+    if (text) process.stdout.write(text);
+  }
 } catch {
-  // Try restart and retry once
-  try {
-    if (process.platform === 'darwin') {
-      Bun.spawnSync(['launchctl', 'load', `${HOME}/Library/LaunchAgents/com.kiro-mem.worker.plist`]);
-    } else {
-      Bun.spawnSync(['systemctl', '--user', 'start', 'kiro-mem.service']);
-    }
-    await Bun.sleep(1000);
-    response = await fetch(url, { headers, signal: AbortSignal.timeout(3000) });
-  } catch { process.exit(0); }
-}
-
-if (response?.ok) {
-  const text = await response.text();
-  if (text) process.stdout.write(text);
+  // Fail open and silent: no context is safer than delaying Agent startup.
 }

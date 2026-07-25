@@ -21,17 +21,19 @@ export interface ACPCompressorOptions extends ACPPoolOptions {
   maxRetries?: number;
 }
 
+type ACPPoolLike = Pick<ACPPool, 'run' | 'close' | 'stats'>;
+
 export class ACPCompressor implements MemoryCompressor {
-  private pool: ACPPool;
+  private pool: ACPPoolLike;
   private maxRetries: number;
   private _repairCount = 0;
   private _fallbackCount = 0;
   private onMetric: (kind: 'repair' | 'contamination') => void;
 
-  constructor(opts: ACPCompressorOptions = {}) {
+  constructor(opts: ACPCompressorOptions = {}, pool?: ACPPoolLike) {
     this.maxRetries = opts.maxRetries ?? 1;
     this.onMetric = opts.onMetric ?? (() => {});
-    this.pool = new ACPPool(opts);
+    this.pool = pool ?? new ACPPool(opts);
   }
 
   get stats() {
@@ -84,16 +86,24 @@ export class ACPCompressor implements MemoryCompressor {
     const first = tryParseAndValidate<T>(raw, fallback, context);
     if (first.ok) return first.value;
 
+    let lastOutputBytes = Buffer.byteLength(raw, 'utf8');
+    let lastErrorType = first.error;
     for (let i = 0; i < this.maxRetries; i++) {
       this._repairCount++;
       this.onMetric('repair');
       const repairPrompt = buildRepairPrompt(schema, raw, first.error);
       const repairRaw = await this.runWithRetry(repairPrompt, maxBytes);
+      lastOutputBytes = Buffer.byteLength(repairRaw, 'utf8');
       const retry = tryParseAndValidate<T>(repairRaw, fallback, context);
       if (retry.ok) return retry.value;
+      lastErrorType = retry.error;
     }
 
-    logError(`acp-compressor/repair-exhausted/${context}`, raw.slice(0, 500));
+    logError(`acp-compressor/repair-exhausted/${context}`, {
+      error_type: lastErrorType,
+      repair_attempts: this.maxRetries,
+      output_bytes: lastOutputBytes,
+    });
     this._fallbackCount++;
     return fallback;
   }
@@ -123,9 +133,12 @@ function tryParseAndValidate<T>(raw: string, fallback: T, context: string): Pars
     const validated = validateSchema(parsed, fallback, context);
     return { ok: true, value: validated };
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    logError(`acp-compressor/parse/${context}`, JSON.stringify({ error: msg, raw: raw.slice(0, 500) }));
-    return { ok: false, error: msg, value: fallback };
+    const errorType = error instanceof Error ? error.name : 'UnknownError';
+    logError(`acp-compressor/parse/${context}`, {
+      error_type: errorType,
+      output_bytes: Buffer.byteLength(raw, 'utf8'),
+    });
+    return { ok: false, error: errorType, value: fallback };
   }
 }
 

@@ -41,12 +41,22 @@ kiro-mem automatically captures each turn (prompt → tool calls → stop) durin
 
 Requires [Bun](https://bun.sh) and a [Kiro CLI](https://kiro.dev) build that supports the `acp` subcommand.
 
+> **V3 is a clean break from V2.** Existing users must remove all V2 data and runtime files before installing V3. There is no database migration or compatibility mode.
+>
+> ```bash
+> kiro-mem uninstall --purge
+> npm i -g kiro-mem@3
+> kiro-mem install
+> ```
+
+For a first-time installation:
+
 ```bash
-npm i -g kiro-mem
+npm i -g kiro-mem@3
 kiro-mem install
 ```
 
-The installer checks Kiro CLI ACP availability, copies the bundled embedding model (~23 MB) into `~/.kiro-mem/models/`, lays out the isolated `kiro-runtime` (compressor sub-agent + prompt), and registers the Worker. **No API key required** — memory compression runs through `kiro-cli acp` against your existing Kiro session.
+The installer checks Kiro CLI ACP availability, creates a high-entropy local Worker token with owner-only permissions, copies the bundled embedding model (~23 MB) into `~/.kiro-mem/models/`, lays out the isolated `kiro-runtime` (compressor sub-agent + prompt), and registers the Worker. **No API key required** — memory compression runs through `kiro-cli acp` against your existing Kiro session.
 
 The Worker fails fast on startup if `kiro-runtime` is incomplete (missing agent file, missing prompt, or `tools` accidentally non-empty), so a broken layout never silently degrades compression purity. Re-run `kiro-mem install` to repair.
 

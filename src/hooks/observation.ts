@@ -24,6 +24,6 @@ if (token) headers['Authorization'] = `Bearer ${token}`;
 try {
   await fetch(`http://127.0.0.1:${port}/events/observation`, {
     method: 'POST', headers, body: input,
-    signal: AbortSignal.timeout(2000),
+    signal: AbortSignal.timeout(700),
   });
 } catch {}

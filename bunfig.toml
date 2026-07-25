@@ -1,0 +1,4 @@
+[test]
+# Redirects the data dir (and therefore worker logs) to a throwaway tmp dir so
+# `bun test` never writes into the developer's real ~/.kiro-mem.
+preload = ["./tests/support/preload.ts"]

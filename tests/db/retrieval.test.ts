@@ -83,6 +83,35 @@ describe('searchObservationsFts', () => {
     seedObs({ title: 'JWT token handling', stoppedAt: '2026-07-01T00:00:00Z' });
     expect(db.searchObservationsFts('JW').length).toBe(1);
   });
+
+  test('treats special-character queries as literal user text', () => {
+    const queries = [
+      'foo:bar',
+      'a-b',
+      '"unterminated',
+      'AND',
+      'C++',
+      'src/auth/token.ts',
+      '中文查询',
+    ];
+    queries.forEach((query, index) => {
+      seedObs({
+        title: `literal marker ${query}`,
+        stoppedAt: `2026-07-${String(index + 1).padStart(2, '0')}T00:00:00Z`,
+      });
+    });
+
+    for (const query of queries) {
+      expect(() => db.searchObservationsFts(query)).not.toThrow();
+      expect(db.searchObservationsFts(query).some((o) => o.title.includes(query))).toBe(true);
+    }
+  });
+
+  test('empty or whitespace-only query returns no results', () => {
+    seedObs({ title: 'should not become an all-record search', stoppedAt: '2026-07-01T00:00:00Z' });
+    expect(db.searchObservationsFts('')).toEqual([]);
+    expect(db.searchObservationsFts('   ')).toEqual([]);
+  });
 });
 
 describe('observationTimeline (source-turn ordering)', () => {

@@ -278,4 +278,79 @@ describe('Integration / summarize_turn -> observation', () => {
     expect(jobTypes).not.toContain('merge_cluster_to_memory');
     expect(db.listJobsByState('dead').length).toBe(0);
   });
+
+  test('repeated ACP infrastructure failures retry then produce a truthful fallback on the final attempt', async () => {
+    const localDb = openInMemoryDB();
+    let calls = 0;
+    const failingCompressor = {
+      summarizeObservation: async () => { calls++; throw new Error('ACP process exited'); },
+    };
+    const local = createApp({
+      db: localDb, compressor: failingCompressor, config: loadConfig(),
+      enableEmbeddings: false, enableAuth: false, jobPollMs: 10,
+    });
+    try {
+      const post = (path: string, body: unknown) => local.app.request(path, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      });
+      const prompt = await post('/events/prompt', { session_id: 'infra', cwd: '/proj', prompt: 'preserve this request' });
+      const turnId = ((await prompt.json()) as { turn_id: number }).turn_id;
+      await post('/events/stop', { session_id: 'infra', assistant_response: 'reported completion' });
+      localDb.raw.run("UPDATE jobs SET max_attempts = 2 WHERE job_type = 'summarize_turn' AND entity_id = ?", [String(turnId)]);
+
+      local.jobRunner.start();
+      await waitFor(() => {
+        const job = localDb.raw.query("SELECT state, attempts FROM jobs WHERE job_type = 'summarize_turn' AND entity_id = ?").get(String(turnId)) as { state: string; attempts: number };
+        return job.state === 'pending' && job.attempts === 1;
+      });
+      localDb.raw.run("UPDATE jobs SET available_at = ? WHERE job_type = 'summarize_turn' AND entity_id = ?", ['2000-01-01T00:00:00.000Z', String(turnId)]);
+      await waitFor(() => !!localDb.getObservationByTurnId(turnId));
+
+      const obs = localDb.getObservationByTurnId(turnId)!;
+      expect(calls).toBe(2);
+      expect(obs.quality).toBe('fallback');
+      expect(obs.request).toContain('preserve this request');
+      expect(obs.outcome).toBeNull();
+      expect(localDb.listTurnEvents(turnId).length).toBe(2);
+      const job = localDb.raw.query("SELECT state FROM jobs WHERE job_type = 'summarize_turn' AND entity_id = ?").get(String(turnId)) as { state: string };
+      expect(job.state).toBe('succeeded');
+    } finally {
+      local.jobRunner.stop();
+      localDb.close();
+    }
+  });
+
+  test('a hanging embed_observation job times out instead of remaining leased', async () => {
+    const localDb = openInMemoryDB();
+    const local = createApp({
+      db: localDb,
+      compressor: { summarizeObservation: async () => { throw new Error('unused'); } },
+      config: loadConfig(), enableEmbeddings: true, enableAuth: false,
+      embeddingGenerator: () => new Promise<Float32Array>(() => {}),
+      embeddingTimeoutMs: 20, jobPollMs: 10,
+    });
+    try {
+      localDb.upsertSessionRef({ session_id: 'embed', cwd: '/proj', repo: '/proj' });
+      const turn = localDb.createTurn({ session_id: 'embed', seq: 1, cwd: '/proj', repo: '/proj', prompt_text: 'embed me' });
+      localDb.markTurnClosed(turn.id);
+      const observationId = localDb.insertObservation({
+        turn_id: turn.id, session_id: 'embed', turn_seq: 1, repo: '/proj', cwd_scope: '/proj',
+        title: 'embedding timeout marker', summary: 'embedding timeout marker', memory_type: 'change', quality: 'normal',
+        turn_started_at: turn.started_at, turn_stopped_at: new Date().toISOString(),
+      })!;
+      localDb.enqueueJob({
+        job_type: 'embed_observation', dedupe_key: `embed-timeout:${observationId}`,
+        entity_type: 'observation', entity_id: String(observationId),
+        payload_json: JSON.stringify({ observation_id: observationId }), max_attempts: 1,
+      });
+
+      local.jobRunner.start();
+      await waitFor(() => localDb.listJobsByState('dead').some((job) => job.entity_id === String(observationId)));
+      expect(localDb.getObservationEmbedding(observationId)).toBeNull();
+      expect(localDb.listJobsByState('leased')).toEqual([]);
+    } finally {
+      local.jobRunner.stop();
+      localDb.close();
+    }
+  });
 });

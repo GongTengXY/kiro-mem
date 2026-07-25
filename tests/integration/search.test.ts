@@ -17,6 +17,7 @@ function seed(o: {
   title: string;
   stoppedAt: string;
   embedding?: number[];
+  type?: 'decision' | 'bugfix' | 'feature' | 'refactor' | 'discovery' | 'change';
 }): number {
   const session_id = o.session_id ?? 's1';
   const cwd = o.cwd ?? '/proj';
@@ -27,7 +28,7 @@ function seed(o: {
   db.markTurnClosed(turn.id);
   const id = db.insertObservation({
     turn_id: turn.id, session_id, turn_seq: seq, repo, cwd_scope: cwd,
-    title: o.title, summary: o.title, memory_type: 'change', quality: 'normal',
+    title: o.title, summary: o.title, memory_type: o.type ?? 'change', quality: 'normal',
     turn_started_at: o.stoppedAt, turn_stopped_at: o.stoppedAt,
   })!;
   if (o.embedding) {
@@ -93,5 +94,48 @@ describe('hybridSearchObservations', () => {
     seed({ title: 'nothing relevant', stoppedAt: '2026-07-01T00:00:00Z' });
     const results = await hybridSearchObservations(db, 'zzzznomatch', { scopeKey: computeScopeKey('/proj', '/proj') }, { generateEmbedding: async () => new Float32Array([0, 0, 0, 1]) });
     expect(results.length).toBe(0);
+  });
+
+  test('a hanging embedder times out and degrades to FTS-only exactly once', async () => {
+    const hit = seed({ title: 'timeout fallback marker', stoppedAt: '2026-07-01T00:00:00Z', embedding: [1, 0, 0, 0] });
+    let degraded = 0;
+    const never = () => new Promise<Float32Array>(() => {});
+    const started = performance.now();
+    const results = await hybridSearchObservations(
+      db,
+      'timeout fallback',
+      { scopeKey: computeScopeKey('/proj', '/proj') },
+      { generateEmbedding: never, embeddingTimeoutMs: 20, onDegrade: () => { degraded++; } },
+    );
+
+    expect(performance.now() - started).toBeLessThan(250);
+    expect(results.map((r) => r.id)).toEqual([hit]);
+    expect(results[0]!.match_source).toBe('fts');
+    expect(degraded).toBe(1);
+  });
+
+  test('a hanging embedder with no FTS hit returns an empty result after timeout', async () => {
+    seed({ title: 'unrelated content', stoppedAt: '2026-07-01T00:00:00Z', embedding: [1, 0, 0, 0] });
+    const results = await hybridSearchObservations(
+      db,
+      'missing marker',
+      { scopeKey: computeScopeKey('/proj', '/proj') },
+      { generateEmbedding: () => new Promise<Float32Array>(() => {}), embeddingTimeoutMs: 20 },
+    );
+    expect(results).toEqual([]);
+  });
+
+  test('type filter also applies to pure semantic candidates', async () => {
+    const wanted = seed({ title: 'typed alpha bug', type: 'bugfix', stoppedAt: '2026-07-01T00:00:00Z', embedding: [1, 0, 0, 0] });
+    seed({ title: 'unrelated feature', type: 'feature', stoppedAt: '2026-07-02T00:00:00Z', embedding: [1, 0, 0, 0] });
+
+    const results = await hybridSearchObservations(
+      db,
+      'typed alpha',
+      { scopeKey: computeScopeKey('/proj', '/proj'), type: 'bugfix' },
+      { generateEmbedding: queryVec },
+    );
+    expect(results.map((r) => r.id)).toEqual([wanted]);
+    expect(results.every((r) => r.memory_type === 'bugfix')).toBe(true);
   });
 });

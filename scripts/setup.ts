@@ -2,13 +2,11 @@
 /**
  * kiro-mem CLI: install, uninstall, config, status, start, stop, diagnose.
  *
- * v2.2.0 highlights:
- * - ACP-native: no LLM provider / API key prompts. Compression is handled by
- *   `kiro-cli acp` against an isolated KIRO_HOME.
- * - Embedding model ships with the npm package and is copied (not downloaded)
- *   into `~/.kiro-mem/models/` during install.
- * - i18n preserved (zh/en) for all user-visible CLI output and the compressor
- *   prompt that is written into the kiro-runtime layout.
+ * V3 highlights:
+ * - Atomic Observations with read-time organization and no V2 data migration.
+ * - ACP-native compression through an isolated KIRO_HOME.
+ * - Bundled local embedding model copied into `~/.kiro-mem/models/`.
+ * - Local Worker requests authenticated by an installer-generated token.
  */
 import {
   existsSync,
@@ -35,6 +33,8 @@ import type { Language } from '../src/config';
 import { t } from '../src/i18n';
 import { checkRuntimeHome } from '../src/acp/integrity';
 import { MemoryDB } from '../src/db';
+import { ensureLocalAuthToken } from '../src/auth-token';
+import { PACKAGE_VERSION } from '../src/version';
 
 const HOME = process.env.HOME || '~';
 const DATA_DIR = join(HOME, '.kiro-mem');
@@ -44,25 +44,6 @@ const AGENT_DIR = join(KIRO_HOME, 'agents');
 const PKG_ROOT = resolve(import.meta.dir, '..');
 const SRC_DIR = join(PKG_ROOT, 'src');
 const MODELS_DIR = join(PKG_ROOT, 'models');
-
-/**
- * Single source of truth for the package version. Reads the main
- * `package.json` at install time and is written into the runtime
- * `~/.kiro-mem/package.json` so the MCP server's `serverInfo.version`
- * (a required field in the MCP protocol) is always populated.
- */
-const PKG_VERSION: string = (() => {
-  try {
-    const pkg = JSON.parse(
-      readFileSync(join(PKG_ROOT, 'package.json'), 'utf-8'),
-    ) as { version?: unknown };
-    return typeof pkg.version === 'string' && pkg.version.trim()
-      ? pkg.version
-      : '0.0.0';
-  } catch {
-    return '0.0.0';
-  }
-})();
 
 const RUNTIME_DIR = join(DATA_DIR, 'kiro-runtime');
 const RUNTIME_AGENT_DIR = join(RUNTIME_DIR, 'agents');
@@ -155,6 +136,18 @@ function askChoice(
       resolve(idx >= 0 && idx < choices.length ? idx : 0);
     });
   });
+}
+
+async function chooseInstallLanguage(): Promise<Language> {
+  const fromEnv = process.env.KIRO_MEMORY_LANGUAGE;
+  if (fromEnv === 'en' || fromEnv === 'zh') return fromEnv;
+  const rl = createRL();
+  const choice = await askChoice(rl, t('en').chooseLanguageBootstrap, [
+    t('en').langEn,
+    t('zh').langZh,
+  ]);
+  rl.close();
+  return choice === 0 ? 'en' : 'zh';
 }
 
 interface BootstrapConfig {
@@ -272,25 +265,13 @@ async function install() {
       };
     } catch {
       // Existing config unparseable — fall back to a fresh language choice.
-      const rl = createRL();
-      const langChoice = await askChoice(rl, t('en').chooseLanguageBootstrap, [
-        t('en').langEn,
-        t('zh').langZh,
-      ]);
-      lang = langChoice === 0 ? 'en' : 'zh';
+      lang = await chooseInstallLanguage();
       m = t(lang);
-      rl.close();
       config = defaultConfig(lang);
     }
   } else {
-    const rl = createRL();
-    const langChoice = await askChoice(rl, t('en').chooseLanguageBootstrap, [
-      t('en').langEn,
-      t('zh').langZh,
-    ]);
-    lang = langChoice === 0 ? 'en' : 'zh';
+    lang = await chooseInstallLanguage();
     m = t(lang);
-    rl.close();
     config = defaultConfig(lang);
   }
 
@@ -307,6 +288,9 @@ async function install() {
     mkdirSync(dir, { recursive: true });
   }
   console.log(`\n${ansi.ok('✓')} ${m.created} ${ansi.dim(DATA_DIR)}`);
+
+  // Requests from Hooks to the loopback Worker use a local bearer token.
+  ensureLocalAuthToken(DATA_DIR);
 
   // 5. Save config
   writeFileSync(configPath, JSON.stringify(config, null, 2));
@@ -372,6 +356,7 @@ async function install() {
     'config.ts',
     'logger.ts',
     'i18n.ts',
+    'version.ts',
   ]) {
     copyFileSync(join(SRC_DIR, file), join(DATA_DIR, 'src', file));
   }
@@ -428,26 +413,24 @@ async function install() {
 
   // 12. Install runtime dependencies
   const runtimePkg = join(DATA_DIR, 'package.json');
-  if (!existsSync(runtimePkg)) {
-    writeFileSync(
-      runtimePkg,
-      JSON.stringify(
-        {
-          name: 'kiro-mem-server',
-          version: PKG_VERSION,
-          private: true,
-          type: 'module',
-          dependencies: {
-            hono: '^4.12.0',
-            '@huggingface/transformers': '^4.2.0',
-            '@modelcontextprotocol/sdk': '^1.29.0',
-          },
+  writeFileSync(
+    runtimePkg,
+    JSON.stringify(
+      {
+        name: 'kiro-mem-server',
+        version: PACKAGE_VERSION,
+        private: true,
+        type: 'module',
+        dependencies: {
+          hono: '^4.12.0',
+          '@huggingface/transformers': '^4.2.0',
+          '@modelcontextprotocol/sdk': '^1.29.0',
         },
-        null,
-        2,
-      ),
-    );
-  }
+      },
+      null,
+      2,
+    ),
+  );
   const r = spawnSync('bun', ['install'], { cwd: DATA_DIR, stdio: 'pipe' });
   if (r.status === 0) {
     console.log(`${ansi.ok('✓')} ${m.depsInstalled}`);
@@ -613,12 +596,7 @@ function diagnose() {
   console.log(ansi.bold(`│ ${' '.repeat(padL)}${title}${' '.repeat(padR)} │`));
   console.log(ansi.bold(`└${'─'.repeat(boxW + 2)}┘`));
 
-  try {
-    const pkg = JSON.parse(
-      readFileSync(resolve(import.meta.dir, '../package.json'), 'utf-8'),
-    );
-    console.log(`  version: ${ansi.cyan(pkg.version || '?')}`);
-  } catch {}
+  console.log(`  version: ${ansi.cyan(PACKAGE_VERSION)}`);
 
   const pidFile = join(DATA_DIR, '.worker.pid');
   const portFile = join(DATA_DIR, '.worker.port');

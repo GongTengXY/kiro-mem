@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { writeFileSync, readFileSync } from 'fs';
-import { join, resolve } from 'path';
+import { join } from 'path';
 import { MemoryDB } from '../db';
 import type { MemoryType } from '../db/types';
 import type { MemoryCompressor, ObservationSummaryResult } from '../compressor';
@@ -9,22 +9,14 @@ import { buildBootstrapContext } from '../bootstrap-context';
 import { loadConfig, getDataDir, type Config } from '../config';
 import { logError } from '../logger';
 import { JobRunner, extractArtifacts } from '../jobs';
-import { generateEmbedding, embeddingToBlob, DIMENSIONS } from '../embedding';
-
-// --- Version ---
-
-const PKG_VERSION: string = (() => {
-  try {
-    const pkg = JSON.parse(
-      readFileSync(resolve(import.meta.dir, '../../package.json'), 'utf-8'),
-    ) as { version?: unknown };
-    return typeof pkg.version === 'string' && pkg.version.trim()
-      ? pkg.version
-      : '0.0.0';
-  } catch {
-    return '0.0.0';
-  }
-})();
+import {
+  generateEmbedding,
+  embeddingToBlob,
+  DIMENSIONS,
+  withEmbeddingTimeout,
+  DEFAULT_JOB_EMBEDDING_TIMEOUT_MS,
+} from '../embedding';
+import { PACKAGE_VERSION } from '../version';
 
 // --- Global error handlers (only in production entry) ---
 
@@ -99,20 +91,28 @@ export interface AppDeps {
   config: Config;
   /** Set false to skip embedding generation (tests). */
   enableEmbeddings?: boolean;
-  /** Set false to disable token auth (tests). */
+  /** Override local embedding generation for deterministic failure tests. */
+  embeddingGenerator?: (text: string) => Promise<Float32Array>;
+  embeddingTimeoutMs?: number;
+  jobPollMs?: number;
+  /** Explicit token for tests; undefined reads <dataDir>/.token. Empty disables auth. */
+  authToken?: string;
+  /** Set false to disable token auth (legacy tests). */
   enableAuth?: boolean;
 }
 
 export function createApp(deps: AppDeps) {
   const { db, compressor, config } = deps;
   const enableEmbeddings = deps.enableEmbeddings ?? true;
+  const embeddingGenerator = deps.embeddingGenerator ?? generateEmbedding;
+  const embeddingTimeoutMs = deps.embeddingTimeoutMs ?? DEFAULT_JOB_EMBEDDING_TIMEOUT_MS;
   const enableAuth = deps.enableAuth ?? true;
   const skipTools = config.filter.skipTools;
 
   // --- Job Runner ---
   const jobRunner = new JobRunner(db, {
     concurrency: config.compression.concurrency,
-    pollMs: 2000,
+    pollMs: deps.jobPollMs ?? 2000,
   });
 
   // =============================================================
@@ -273,7 +273,10 @@ export function createApp(deps: AppDeps) {
     ].filter(Boolean).join('\n');
     if (!searchText.trim()) return;
 
-    const embedding = await generateEmbedding(searchText);
+    const embedding = await withEmbeddingTimeout(
+      embeddingGenerator(searchText),
+      embeddingTimeoutMs,
+    );
     db.upsertObservationEmbedding(observation_id, 'all-MiniLM-L6-v2', DIMENSIONS, embeddingToBlob(embedding));
   });
 
@@ -283,8 +286,10 @@ export function createApp(deps: AppDeps) {
   // --- Local token auth middleware ---
   if (enableAuth) {
     const tokenPath = join(getDataDir(), '.token');
-    let expectedToken = '';
-    try { expectedToken = readFileSync(tokenPath, 'utf-8').trim(); } catch {}
+    let expectedToken = deps.authToken ?? '';
+    if (deps.authToken === undefined) {
+      try { expectedToken = readFileSync(tokenPath, 'utf-8').trim(); } catch {}
+    }
 
     if (expectedToken) {
       app.use('*', async (c, next) => {
@@ -309,7 +314,7 @@ export function createApp(deps: AppDeps) {
     const stats = db.getObservabilityStats();
     return c.json({
       status: 'ok',
-      version: PKG_VERSION,
+      version: PACKAGE_VERSION,
       jobs: jobRunner.stats,
       jobs_24h: stats.jobs24h,
       search_24h: stats.search24h,

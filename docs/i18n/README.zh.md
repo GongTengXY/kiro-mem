@@ -41,12 +41,22 @@ kiro-mem 自动捕获 Kiro 会话中的每一轮对话（prompt → 工具调用
 
 需要 [Bun](https://bun.sh) 和支持 `acp` 子命令的 [Kiro CLI](https://kiro.dev)。
 
+> **V3 与 V2 完全不兼容。** 已安装旧版本的用户必须先删除全部 V2 数据和运行时；V3 不提供数据库迁移或兼容模式。
+>
+> ```bash
+> kiro-mem uninstall --purge
+> npm i -g kiro-mem@3
+> kiro-mem install
+> ```
+
+首次安装：
+
 ```bash
-npm i -g kiro-mem
+npm i -g kiro-mem@3
 kiro-mem install
 ```
 
-安装器会检查 Kiro CLI ACP 可用性，把内置的 embedding 模型（约 23 MB）复制到 `~/.kiro-mem/models/`，搭建隔离的 `kiro-runtime`（压缩子 agent + prompt），然后注册并启动 Worker。**无需任何 API Key** —— 记忆压缩通过 `kiro-cli acp` 复用 Kiro 已有的登录态完成。
+安装器会检查 Kiro CLI ACP 可用性，生成仅当前用户可读写的高熵本地 Worker token，把内置的 embedding 模型（约 23 MB）复制到 `~/.kiro-mem/models/`，搭建隔离的 `kiro-runtime`（压缩子 agent + prompt），然后注册并启动 Worker。**无需任何 API Key** —— 记忆压缩通过 `kiro-cli acp` 复用 Kiro 已有的登录态完成。
 
 如果 `kiro-runtime` 不完整（agent 文件缺失、prompt 缺失，或 `tools` 字段意外非空），Worker 启动时会立刻 fail-fast，不会带病运行而悄悄破坏压缩纯净性。重新执行 `kiro-mem install` 即可修复。
 

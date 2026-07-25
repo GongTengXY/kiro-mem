@@ -147,13 +147,10 @@ function parseJSON<T>(raw: string, fallback: T, context: string): T {
       .trim();
     return JSON.parse(cleaned) as T;
   } catch (error) {
-    logError(
-      `compressor/parseJSON/${context}`,
-      JSON.stringify({
-        error: error instanceof Error ? error.message : String(error),
-        raw: raw.slice(0, 500),
-      }),
-    );
+    logError(`compressor/parseJSON/${context}`, {
+      error_type: error instanceof Error ? error.name : 'UnknownError',
+      output_bytes: Buffer.byteLength(raw, 'utf8'),
+    });
     return fallback;
   }
 }

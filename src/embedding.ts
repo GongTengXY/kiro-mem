@@ -15,6 +15,9 @@ const MODEL_LOCAL_PATH = resolve(import.meta.dir, '../models/all-MiniLM-L6-v2');
 const MODEL_DTYPE = 'q8';
 const DIMENSIONS = 384;
 
+export const DEFAULT_QUERY_EMBEDDING_TIMEOUT_MS = 1200;
+export const DEFAULT_JOB_EMBEDDING_TIMEOUT_MS = 10000;
+
 let extractor: FeatureExtractionPipeline | null = null;
 let loading: Promise<FeatureExtractionPipeline> | null = null;
 
@@ -27,8 +30,57 @@ async function getExtractor(): Promise<FeatureExtractionPipeline> {
   }).then((ext) => {
     extractor = ext;
     return ext;
+  }).catch((error) => {
+    // A failed best-effort prewarm must not permanently poison future retries.
+    loading = null;
+    throw error;
   });
   return loading;
+}
+
+export async function prewarmEmbeddingModel(): Promise<void> {
+  await getExtractor();
+}
+
+export class EmbeddingTimeoutError extends Error {
+  constructor(timeoutMs: number) {
+    super(`Embedding operation timed out after ${timeoutMs}ms`);
+    this.name = 'EmbeddingTimeoutError';
+  }
+}
+
+/**
+ * Bound an embedding operation without leaving a late rejection unobserved.
+ * The underlying local inference cannot be cancelled, but both fulfillment and
+ * rejection remain handled after the timeout has won the race.
+ */
+export function withEmbeddingTimeout<T>(
+  operation: Promise<T>,
+  timeoutMs: number,
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new EmbeddingTimeoutError(timeoutMs));
+    }, timeoutMs);
+
+    operation.then(
+      (value) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
 }
 
 export async function generateEmbedding(text: string): Promise<Float32Array> {

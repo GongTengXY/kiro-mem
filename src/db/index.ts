@@ -575,12 +575,15 @@ export class MemoryDB {
     query: string,
     opts?: { scopeKey?: string; type?: string; days?: number; limit?: number },
   ): Observation[] {
+    const literalQuery = query.trim();
+    if (!literalQuery) return [];
+
     const limit = opts?.limit ?? 20;
     const days = opts?.days ?? 90;
     const dateThreshold = new Date(Date.now() - days * 86400000).toISOString();
 
-    if (query.length < 3) {
-      const like = `%${query}%`;
+    if (literalQuery.length < 3) {
+      const like = `%${literalQuery}%`;
       let sql = `SELECT * FROM observations
         WHERE turn_stopped_at > ?
           AND (title LIKE ? OR summary LIKE ? OR outcome LIKE ? OR learned LIKE ? OR concepts_json LIKE ?)`;
@@ -592,10 +595,15 @@ export class MemoryDB {
       return this.db.query(sql).all(...params) as Observation[];
     }
 
+    // Treat the complete user input as one FTS5 string literal. Doubling an
+    // embedded quote is FTS5's quoted-string escape; punctuation and reserved
+    // words therefore retain their literal meaning instead of becoming query
+    // operators or column selectors.
+    const ftsLiteral = `"${literalQuery.replaceAll('"', '""')}"`;
     let sql = `SELECT o.* FROM observations_fts fts
       JOIN observations o ON fts.rowid = o.id
       WHERE observations_fts MATCH ? AND o.turn_stopped_at > ?`;
-    const params: (string | number)[] = [query, dateThreshold];
+    const params: (string | number)[] = [ftsLiteral, dateThreshold];
     if (opts?.scopeKey) { sql += ' AND o.scope_key = ?'; params.push(opts.scopeKey); }
     if (opts?.type) { sql += ' AND o.memory_type = ?'; params.push(opts.type); }
     sql += ' ORDER BY o.is_pinned DESC, fts.rank LIMIT ?';
@@ -603,12 +611,13 @@ export class MemoryDB {
     return this.db.query(sql).all(...params) as Observation[];
   }
 
-  /** Recent Observation ids for the semantic candidate pool, scoped. */
-  getRecentObservationIds(opts: { scopeKey?: string; days: number; limit: number }): number[] {
+  /** Recent Observation ids for the semantic candidate pool, scoped and typed. */
+  getRecentObservationIds(opts: { scopeKey?: string; type?: string; days: number; limit: number }): number[] {
     const dateThreshold = new Date(Date.now() - opts.days * 86400000).toISOString();
     let sql = `SELECT id FROM observations WHERE turn_stopped_at > ?`;
     const params: (string | number)[] = [dateThreshold];
     if (opts.scopeKey) { sql += ' AND scope_key = ?'; params.push(opts.scopeKey); }
+    if (opts.type) { sql += ' AND memory_type = ?'; params.push(opts.type); }
     sql += ' ORDER BY turn_stopped_at DESC LIMIT ?';
     params.push(opts.limit);
     return (this.db.query(sql).all(...params) as { id: number }[]).map((r) => r.id);

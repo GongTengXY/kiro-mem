@@ -4,24 +4,14 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
 import { loadConfig } from '../config';
 import { MemoryDB, computeScopeKey } from '../db';
 import type { Observation } from '../db/types';
+import { prewarmEmbeddingModel } from '../embedding';
+import { logError } from '../logger';
+import { PACKAGE_VERSION } from '../version';
 import { hybridSearchObservations } from './observation-search';
 import { MissingSearchScopeError, resolveScopeKey } from './mcp-scope';
-
-const PKG_VERSION: string = (() => {
-  try {
-    const pkg = JSON.parse(
-      readFileSync(resolve(import.meta.dir, '../../package.json'), 'utf-8'),
-    ) as { version?: unknown };
-    return typeof pkg.version === 'string' && pkg.version.trim() ? pkg.version : '0.0.0';
-  } catch {
-    return '0.0.0';
-  }
-})();
 
 const db = new MemoryDB();
 const config = loadConfig();
@@ -44,7 +34,7 @@ function sessionScopeKey(): string | undefined {
 }
 
 const server = new Server(
-  { name: 'kiro-mem', version: PKG_VERSION },
+  { name: 'kiro-mem', version: PACKAGE_VERSION },
   { capabilities: { tools: {} } },
 );
 
@@ -124,6 +114,25 @@ function safeArr(json: string): string[] {
   }
 }
 
+function boundedInteger(
+  value: unknown,
+  fallback: number | null,
+  min: number,
+  max: number,
+): number | null {
+  if (value === undefined) return fallback;
+  return typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max
+    ? value
+    : null;
+}
+
+function toolError(message: string) {
+  return {
+    content: [{ type: 'text' as const, text: message }],
+    isError: true,
+  };
+}
+
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
@@ -136,8 +145,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           type: { type: 'string', enum: ['decision', 'bugfix', 'feature', 'refactor', 'discovery', 'change'], description: T.typeDescription },
           repo: { type: 'string', description: T.repoDescription },
           cwd: { type: 'string', description: T.cwdDescription },
-          days: { type: 'number', description: T.daysDescription, default: 90 },
-          limit: { type: 'number', description: T.limitDescription, default: 20 },
+          days: { type: 'integer', minimum: 1, maximum: 3650, description: T.daysDescription, default: 90 },
+          limit: { type: 'integer', minimum: 1, maximum: 50, description: T.limitDescription, default: 20 },
           all_scopes: { type: 'boolean', description: T.allScopesDescription, default: false },
         },
         required: ['query'],
@@ -149,9 +158,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       inputSchema: {
         type: 'object' as const,
         properties: {
-          observation_id: { type: 'number', description: T.obsIdDescription },
-          before: { type: 'number', description: T.beforeDescription, default: 3 },
-          after: { type: 'number', description: T.afterDescription, default: 3 },
+          observation_id: { type: 'integer', minimum: 1, description: T.obsIdDescription },
+          before: { type: 'integer', minimum: 0, maximum: 20, description: T.beforeDescription, default: 3 },
+          after: { type: 'integer', minimum: 0, maximum: 20, description: T.afterDescription, default: 3 },
           mode: { type: 'string', enum: ['scope', 'session'], description: T.modeDescription, default: 'scope' },
         },
         required: ['observation_id'],
@@ -163,7 +172,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       inputSchema: {
         type: 'object' as const,
         properties: {
-          ids: { type: 'array', items: { type: 'number' }, description: T.idsDescription, maxItems: 20 },
+          ids: { type: 'array', items: { type: 'integer', minimum: 1 }, description: T.idsDescription, minItems: 1, maxItems: 20 },
         },
         required: ['ids'],
       },
@@ -174,7 +183,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       inputSchema: {
         type: 'object' as const,
         properties: {
-          observation_id: { type: 'number', description: T.obsIdDescription },
+          observation_id: { type: 'integer', minimum: 1, description: T.obsIdDescription },
           pinned: { type: 'boolean', description: T.pinnedDescription, default: true },
         },
         required: ['observation_id'],
@@ -187,10 +196,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
   if (name === 'search') {
-    const a = args as { query: string; type?: string; repo?: string; cwd?: string; days?: number; limit?: number; all_scopes?: boolean };
+    const a = (args ?? {}) as { query?: unknown; type?: string; repo?: string; cwd?: string; days?: unknown; limit?: unknown; all_scopes?: boolean };
+    if (typeof a.query !== 'string') return toolError('search.query must be a string');
+    const days = boundedInteger(a.days, 90, 1, 3650);
+    const limit = boundedInteger(a.limit, 20, 1, 50);
+    if (days == null) return toolError('search.days must be an integer between 1 and 3650');
+    if (limit == null) return toolError('search.limit must be an integer between 1 and 50');
+
     let scopeKey: string | undefined;
     try {
-      scopeKey = resolveScopeKey(a, { sessionScope: sessionScopeKey });
+      scopeKey = resolveScopeKey(a as { repo?: string; cwd?: string; all_scopes?: boolean }, { sessionScope: sessionScopeKey });
     } catch (error) {
       if (error instanceof MissingSearchScopeError) {
         return {
@@ -203,7 +218,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const startedAt = Date.now();
     let degraded = false;
     const results = await hybridSearchObservations(db, a.query, {
-      scopeKey, type: a.type, days: a.days, limit: a.limit,
+      scopeKey, type: a.type, days, limit,
     }, { onDegrade: () => { degraded = true; } });
     db.recordSearchMetric({ latencyMs: Date.now() - startedAt, degraded });
     return {
@@ -219,8 +234,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   if (name === 'timeline') {
-    const a = args as { observation_id: number; before?: number; after?: number; mode?: 'scope' | 'session' };
-    const tl = db.observationTimeline(a.observation_id, { before: a.before ?? 3, after: a.after ?? 3, mode: a.mode ?? 'scope' });
+    const a = (args ?? {}) as { observation_id?: unknown; before?: unknown; after?: unknown; mode?: 'scope' | 'session' };
+    const observationId = boundedInteger(a.observation_id, null, 1, Number.MAX_SAFE_INTEGER);
+    const before = boundedInteger(a.before, 3, 0, 20);
+    const after = boundedInteger(a.after, 3, 0, 20);
+    if (observationId == null) return toolError('timeline.observation_id must be a positive integer');
+    if (before == null || after == null) return toolError('timeline.before/after must be integers between 0 and 20');
+    const tl = db.observationTimeline(observationId, { before, after, mode: a.mode ?? 'scope' });
     return {
       content: [{
         type: 'text',
@@ -235,8 +255,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   if (name === 'get_observations') {
-    const { ids } = args as { ids: number[] };
-    const observations = db.getObservationsByIds(ids);
+    const { ids } = (args ?? {}) as { ids?: unknown };
+    if (!Array.isArray(ids) || ids.length < 1 || ids.length > 20 ||
+        !ids.every((id) => typeof id === 'number' && Number.isInteger(id) && id > 0)) {
+      return toolError('get_observations.ids must contain 1 to 20 positive integer IDs');
+    }
+    const observations = db.getObservationsByIds(ids as number[]);
     return {
       content: [{
         type: 'text',
@@ -267,10 +291,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   if (name === 'pin') {
-    const { observation_id, pinned } = args as { observation_id: number; pinned?: boolean };
-    db.pinObservation(observation_id, pinned ?? true);
+    const { observation_id, pinned } = (args ?? {}) as { observation_id?: unknown; pinned?: boolean };
+    const observationId = boundedInteger(observation_id, null, 1, Number.MAX_SAFE_INTEGER);
+    if (observationId == null) return toolError('pin.observation_id must be a positive integer');
+    if (!db.getObservation(observationId)) return toolError(`Observation #${observationId} does not exist`);
+    db.pinObservation(observationId, pinned ?? true);
     return {
-      content: [{ type: 'text', text: JSON.stringify({ ok: true, observation_id, pinned: pinned ?? true }) }],
+      content: [{ type: 'text', text: JSON.stringify({ ok: true, observation_id: observationId, pinned: pinned ?? true }) }],
     };
   }
 
@@ -278,6 +305,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 
 export async function startMcpServer() {
+  if (process.env.KIRO_MEMORY_DISABLE_EMBEDDING_PREWARM !== '1') {
+    void prewarmEmbeddingModel().catch((error) => {
+      logError('embedding/prewarm', {
+        error_type: error instanceof Error ? error.name : 'UnknownError',
+      });
+    });
+  }
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }

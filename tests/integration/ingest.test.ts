@@ -120,6 +120,7 @@ describe('Integration / real createApp — full ingest cycle', () => {
     expect(r.status).toBe(200);
     const h = (await r.json()) as any;
     expect(h.status).toBe('ok');
+    expect(h.version).toBe('3.0.0');
     // DB-derived V3 metrics are always present, even on an empty DB.
     expect(h.observations).toEqual({ total: 0, normal: 0, fallback: 0, pinned: 0 });
     expect(h.embeddings).toEqual({ ready: 0, coverage: 0 });

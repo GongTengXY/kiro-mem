@@ -17,6 +17,8 @@ import {
   generateEmbedding as defaultGenerateEmbedding,
   cosineSimilarity,
   blobToEmbedding,
+  withEmbeddingTimeout,
+  DEFAULT_QUERY_EMBEDDING_TIMEOUT_MS,
 } from '../embedding';
 
 const RRF_K = 60;
@@ -34,6 +36,8 @@ export interface ObservationSearchOpts {
 export interface ObservationSearchDeps {
   /** Injectable for tests; defaults to the local MiniLM embedder. */
   generateEmbedding?: (text: string) => Promise<Float32Array>;
+  /** Query embedding deadline; defaults to the interactive MCP budget. */
+  embeddingTimeoutMs?: number;
   /**
    * Called once when the semantic step fails and the search degrades to
    * FTS-only (query embedding unavailable). Lets the caller record an
@@ -59,22 +63,34 @@ export async function hybridSearchObservations(
   opts?: ObservationSearchOpts,
   deps?: ObservationSearchDeps,
 ): Promise<ScoredObservation[]> {
+  const normalizedQuery = query.trim();
+  if (!normalizedQuery) return [];
+
   const limit = opts?.limit ?? 20;
   const days = opts?.days ?? 90;
   const scopeKey = opts?.scopeKey;
   const generateEmbedding = deps?.generateEmbedding ?? defaultGenerateEmbedding;
+  const embeddingTimeoutMs = deps?.embeddingTimeoutMs ?? DEFAULT_QUERY_EMBEDDING_TIMEOUT_MS;
 
   // --- FTS candidates ---
-  const ftsResults = db.searchObservationsFts(query, { scopeKey, type: opts?.type, days, limit: 50 });
+  const ftsResults = db.searchObservationsFts(normalizedQuery, { scopeKey, type: opts?.type, days, limit: 50 });
   const ftsRankMap = new Map<number, number>();
   ftsResults.forEach((o, idx) => ftsRankMap.set(o.id, idx + 1));
 
-  // --- Semantic candidates (best-effort; FTS-only on failure) ---
+  // --- Semantic candidates (best-effort; FTS-only on failure/timeout) ---
   const semanticRank = new Map<number, number>();
   const semanticScore = new Map<number, number>();
   try {
-    const queryEmbedding = await generateEmbedding(query);
-    const recentIds = db.getRecentObservationIds({ scopeKey, days, limit: 200 });
+    const queryEmbedding = await withEmbeddingTimeout(
+      generateEmbedding(normalizedQuery),
+      embeddingTimeoutMs,
+    );
+    const recentIds = db.getRecentObservationIds({
+      scopeKey,
+      type: opts?.type,
+      days,
+      limit: 200,
+    });
     const candidateIds = [...new Set<number>([...ftsRankMap.keys(), ...recentIds])];
     const embeddings = db.getObservationEmbeddingsByIds(candidateIds);
     const scored: { id: number; score: number }[] = [];

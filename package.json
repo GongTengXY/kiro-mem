@@ -1,6 +1,6 @@
 {
   "name": "kiro-mem",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "description": "Persistent cross-session memory system for Kiro CLI. Captures every turn, compresses via Kiro CLI ACP, and injects a compact memory index into later sessions.",
   "module": "index.ts",
   "type": "module",

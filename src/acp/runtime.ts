@@ -21,6 +21,7 @@ import type {
   TextContentBlock,
 } from './types';
 import { logError } from '../logger';
+import { PACKAGE_VERSION } from '../version';
 
 export interface PromptResult {
   text: string;
@@ -108,7 +109,7 @@ export class ACPRuntime {
     const result = await this.client.request('initialize', {
       protocolVersion: 1,
       clientCapabilities: {},
-      clientInfo: { name: 'kiro-mem', version: '2.2.0' },
+      clientInfo: { name: 'kiro-mem', version: PACKAGE_VERSION },
     }, 15000) as InitializeResult;
     this.initialized = true;
     return result;
