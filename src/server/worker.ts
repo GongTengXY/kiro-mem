@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { writeFileSync, readFileSync } from 'fs';
+import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { MemoryDB } from '../db';
 import type { MemoryType } from '../db/types';
@@ -7,6 +7,7 @@ import type { MemoryCompressor, ObservationSummaryResult } from '../compressor';
 import { ACPCompressor, checkRuntimeHome, formatIssues } from '../acp';
 import { buildBootstrapContext } from '../bootstrap-context';
 import { loadConfig, getDataDir, type Config } from '../config';
+import { ensureLocalAuthToken, readLocalAuthToken } from '../auth-token';
 import { logError } from '../logger';
 import { JobRunner, extractArtifacts } from '../jobs';
 import {
@@ -284,25 +285,80 @@ export function createApp(deps: AppDeps) {
   const app = new Hono();
 
   // --- Local token auth middleware ---
-  if (enableAuth) {
-    const tokenPath = join(getDataDir(), '.token');
-    let expectedToken = deps.authToken ?? '';
-    if (deps.authToken === undefined) {
-      try { expectedToken = readFileSync(tokenPath, 'utf-8').trim(); } catch {}
-    }
+  //
+  // The expected token is resolved PER REQUEST, not captured at startup: a
+  // repair install regenerates `<dataDir>/.token` while the Worker keeps
+  // running, and a startup-only snapshot would then reject every Hook forever.
+  //
+  // A missing or blank token file is regenerated instead of disabling auth.
+  // Silently running unauthenticated would mean anyone able to delete one file
+  // can bypass the credential; regenerating keeps auth always-on and lets the
+  // Hooks pick the new value up on their next event, so the user sees nothing.
+  //
+  // `authToken: ''` still disables auth explicitly for legacy tests.
+  if (enableAuth && deps.authToken !== '') {
+    const dataDir = getDataDir();
+    const fixedToken = deps.authToken;
+    let lastKnownToken = '';
+    const lastLoggedAt = new Map<string, number>();
 
-    if (expectedToken) {
-      app.use('*', async (c, next) => {
-        // /health is public
-        if (c.req.path === '/health') return next();
-        const auth = c.req.header('Authorization') || '';
-        const provided = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-        if (provided !== expectedToken) {
-          return c.json({ ok: false, error: 'unauthorized' }, 401);
-        }
-        return next();
-      });
-    }
+    const resolveExpectedToken = (): string => {
+      if (fixedToken !== undefined) return fixedToken;
+
+      const onDisk = readLocalAuthToken(dataDir);
+      if (onDisk) {
+        lastKnownToken = onDisk;
+        return onDisk;
+      }
+
+      try {
+        lastKnownToken = ensureLocalAuthToken(dataDir);
+        logError('auth/token-regenerated', { reason: 'missing-or-empty' });
+      } catch (err) {
+        logError('auth/token-unreadable', {
+          error_type: err instanceof Error ? err.name : 'unknown',
+        });
+      }
+      return lastKnownToken;
+    };
+
+    // Hooks are fire-and-forget, so a rejected event is invisible to the user
+    // and to `app.onError`. Count every rejection for /health and log the
+    // reason, throttled per reason so a persistent mismatch (one 401 per tool
+    // event) cannot grow the log without bound. Never log token values.
+    const reject = (path: string, reason: string) => {
+      db.recordAuthEvent('unauthorized');
+      const now = Date.now();
+      if (now - (lastLoggedAt.get(reason) ?? 0) > 60_000) {
+        lastLoggedAt.set(reason, now);
+        logError('auth/unauthorized', { reason, path });
+      }
+    };
+
+    app.use('*', async (c, next) => {
+      // /health is public
+      if (c.req.path === '/health') return next();
+
+      const expected = resolveExpectedToken();
+      const auth = c.req.header('Authorization') || '';
+      const provided = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+
+      // No server-side credential (regeneration failed) must fail CLOSED —
+      // comparing two empty strings would otherwise authenticate everyone.
+      if (!expected) {
+        reject(c.req.path, 'no-server-token');
+        return c.json({ ok: false, error: 'unauthorized' }, 401);
+      }
+      if (!provided) {
+        reject(c.req.path, 'no-credential');
+        return c.json({ ok: false, error: 'unauthorized' }, 401);
+      }
+      if (provided !== expected) {
+        reject(c.req.path, 'token-mismatch');
+        return c.json({ ok: false, error: 'unauthorized' }, 401);
+      }
+      return next();
+    });
   }
 
   app.onError((err, c) => {
@@ -324,6 +380,8 @@ export function createApp(deps: AppDeps) {
       acp: compressor.stats ?? null,
       // Windowed repair / contamination counts over the last 24h.
       acp_24h: stats.acp24h,
+      // Rejected Hook requests over the last 24h (silent-failure detector).
+      auth_24h: stats.auth24h,
     });
   });
 

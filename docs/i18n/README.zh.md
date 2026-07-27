@@ -186,7 +186,7 @@ kiro-mem uninstall --purge
 | 依赖 Kiro CLI ACP | `kiro-cli acp` 不可用时无法压缩 | `kiro-mem diagnose` 会跑 ACP smoke 测试 |
 | `agentSpawn` 输出限制 10KB | 注入索引必须紧凑 | 预算控制的 context builder |
 | 搜索词短于 3 字符 | 回退到 `LIKE`，精度较低 | 尽量使用较长搜索词 |
-| 安装阶段 | 把内置 embedding 模型（约 23 MB）复制到 `~/.kiro-mem/models` | 完全本地，安装后无需联网 |
+| 安装阶段 | 把内置 embedding 模型（约 23 MB）复制到 `~/.kiro-mem/models` | 模型随包分发，无需下载模型 |
 | 暂无 Web 查看器 | 通过 CLI/MCP/DB 查看记忆 | 单独规划中 |
 | 仅本地 | 无内置跨机器同步 | 未来：git sync 或云存储 |
 

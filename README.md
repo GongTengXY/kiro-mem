@@ -56,7 +56,7 @@ npm i -g kiro-mem@3
 kiro-mem install
 ```
 
-The installer checks Kiro CLI ACP availability, creates a high-entropy local Worker token with owner-only permissions, copies the bundled embedding model (~23 MB) into `~/.kiro-mem/models/`, lays out the isolated `kiro-runtime` (compressor sub-agent + prompt), and registers the Worker. **No API key required** — memory compression runs through `kiro-cli acp` against your existing Kiro session.
+The installer checks Kiro CLI ACP availability, creates a high-entropy local Worker token with owner-only permissions, copies the bundled embedding model (~23 MB) into `~/.kiro-mem/models/`, lays out the isolated `kiro-runtime` (compressor sub-agent + prompt), then registers and starts the Worker under `launchd`/`systemd`. **No API key required** — memory compression runs through `kiro-cli acp` against your existing Kiro session.
 
 The Worker fails fast on startup if `kiro-runtime` is incomplete (missing agent file, missing prompt, or `tools` accidentally non-empty), so a broken layout never silently degrades compression purity. Re-run `kiro-mem install` to repair.
 
@@ -186,7 +186,7 @@ kiro-mem uninstall --purge
 | Requires Kiro CLI ACP               | Compression cannot run without a working `kiro-cli acp` subcommand    | `kiro-mem diagnose` runs an ACP smoke test    |
 | `agentSpawn` output limit 10KB      | Injected index must stay compact                                      | Budget-controlled context builder             |
 | Search queries shorter than 3 chars | Falls back to `LIKE`, less precise                                    | Use longer terms when possible                |
-| Install step                        | Copies the bundled embedding model (~23 MB) into `~/.kiro-mem/models` | Local-only — no network needed once installed |
+| Install step                        | Copies the bundled embedding model (~23 MB) into `~/.kiro-mem/models` | Model ships in the package — no model download |
 | No Web Viewer UI yet                | Memory inspected through CLI/MCP/DB                                   | Planned separately                            |
 | Local only                          | No built-in cross-machine sync                                        | Future: git sync or cloud storage             |
 

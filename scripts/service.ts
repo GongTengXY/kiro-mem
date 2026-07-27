@@ -179,6 +179,31 @@ export function start(lang: Language = 'zh') {
   }
 }
 
+/**
+ * Restart the Worker so freshly copied source actually takes effect.
+ *
+ * `start()` is deliberately a no-op when the Worker is already running, which
+ * is right for `kiro-mem start` but wrong right after an install: the install
+ * overwrites `<dataDir>/src/**`, while the running process keeps executing the
+ * code it loaded at boot. Without this, a repair install reports success and
+ * silently leaves the old build live.
+ */
+export function restart(lang: Language = 'zh') {
+  const m = t(lang);
+  const pidFile = join(DATA_DIR, '.worker.pid');
+  let wasRunning = false;
+  if (existsSync(pidFile)) {
+    const pid = readFileSync(pidFile, 'utf-8').trim();
+    wasRunning = spawnSync('kill', ['-0', pid]).status === 0;
+  }
+
+  // Only stop when something is actually running — otherwise a first install
+  // would print a misleading "worker stopped" line.
+  if (wasRunning) stop(lang);
+  start(lang);
+  if (wasRunning) console.log(`${ansi.ok('✓')} ${m.workerRestarted}`);
+}
+
 export function stop(lang: Language = 'zh') {
   const m = t(lang);
   const platform = getPlatform();

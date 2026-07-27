@@ -26,6 +26,40 @@ function tool(turnId: number, toolName: string, input: unknown, response: unknow
 }
 
 describe('extractArtifacts — facts (file mutations, §6.2)', () => {
+  // Regression: error detection used to keyword-match the whole tool_response
+  // JSON, so a green test run ("0 fail") and a file whose contents merely
+  // mention "error" both produced bogus error signals — and the bogus signal
+  // then suppressed the file-mutation fact. See benchmark/README.md D2.
+  test('a green test run is not an error signal', () => {
+    const t = newTurn();
+    tool(t, 'shell', { command: 'bun test' }, { exit_status: 0, stdout: '138 pass, 0 fail' });
+    const a = extractArtifacts(db, t);
+    expect(a.test_signals).toEqual(['test PASS: 138 pass, 0 fail']);
+    expect(a.error_signals).toEqual([]);
+  });
+
+  test('exit 0 stops keyword guessing over the payload', () => {
+    const t = newTurn();
+    tool(t, 'shell', { command: 'grep -rn error src' }, { exit_status: 0, stdout: 'src/a.ts: error handling' });
+    expect(extractArtifacts(db, t).error_signals).toEqual([]);
+  });
+
+  test('a successful write whose response mentions no failures still yields a fact', () => {
+    const t = newTurn();
+    tool(t, 'write', { command: 'create', path: 'bunfig.toml' }, { success: true, note: 'no errors' });
+    expect(extractArtifacts(db, t).facts).toContain('created bunfig.toml');
+  });
+
+  test('real failures are still reported', () => {
+    const t = newTurn();
+    tool(t, 'shell', { command: 'bun run typecheck' }, { exit_status: 2, stderr: 'TS2345: not assignable' });
+    tool(t, 'shell', { command: 'bun test' }, { exit_status: 1, stdout: '3 pass, 2 fail' });
+    const a = extractArtifacts(db, t);
+    expect(a.error_signals.length).toBe(2);
+    expect(a.error_signals[0]).toContain('TS2345');
+    expect(a.test_signals).toContain('test FAIL: 3 pass, 2 fail');
+  });
+
   test('write-tool commands map to created / modified facts', () => {
     const t = newTurn();
     tool(t, 'write', { command: 'create', path: 'src/a.ts' }, 'File created');

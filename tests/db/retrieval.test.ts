@@ -1,5 +1,5 @@
 import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
-import { MemoryDB, computeScopeKey } from '../../src/db';
+import { MemoryDB, computeScopeKey, extractFtsSearchUnits } from '../../src/db';
 import { openInMemoryDB } from '../support/tmp-db';
 
 let db: MemoryDB;
@@ -111,6 +111,48 @@ describe('searchObservationsFts', () => {
     seedObs({ title: 'should not become an all-record search', stoppedAt: '2026-07-01T00:00:00Z' });
     expect(db.searchObservationsFts('')).toEqual([]);
     expect(db.searchObservationsFts('   ')).toEqual([]);
+  });
+
+  // Regression: literal-quoting the WHOLE query turned every search into an
+  // exact-substring (phrase) match under the trigram tokenizer, so multi-word
+  // and natural-language queries recalled nothing at all and hybrid search
+  // silently degraded to semantic-only. See benchmark/README.md D1.
+  test('multi-word and natural-language queries still recall (not phrase-only)', () => {
+    seedObs({
+      title: '测试数据目录隔离到临时目录',
+      summary: 'bunfig.toml 的 preload 把 KIRO_MEMORY_DATA_DIR 指向临时目录。',
+      stoppedAt: '2026-07-01T00:00:00Z',
+    });
+    seedObs({
+      title: 'Refresh token rotation on reuse',
+      summary: 'Rotate refresh tokens so a replayed token is rejected.',
+      stoppedAt: '2026-07-02T00:00:00Z',
+    });
+
+    // Space-separated terms that never appear as one contiguous substring.
+    expect(db.searchObservationsFts('测试 数据目录').length).toBe(1);
+    // A whole natural-language question.
+    expect(db.searchObservationsFts('跑测试会不会污染我真实的数据目录').length).toBe(1);
+    expect(db.searchObservationsFts('rotation reuse token').length).toBe(1);
+    // Still no false positives for an unrelated query.
+    expect(db.searchObservationsFts('完全无关的图表渲染性能').length).toBe(0);
+  });
+
+  test('search units keep whole whitespace-delimited segments', () => {
+    // A path must be matched as a whole segment, not split on punctuation.
+    expect(extractFtsSearchUnits('src/db/index.ts 的 FTS')).toEqual(['src/db/index.ts', 'FTS']);
+    // Reserved words / code symbols stay single units, so quoting keeps them literal.
+    expect(extractFtsSearchUnits('AND C++ foo:bar')).toEqual(['AND', 'C++', 'foo:bar']);
+    // Below the trigram floor there is no usable unit -> caller falls back to LIKE.
+    expect(extractFtsSearchUnits('ab')).toEqual([]);
+    // A CJK run is additionally sliced so sub-terms can match.
+    expect(extractFtsSearchUnits('数据目录隔离')).toEqual([
+      '数据目录隔离',
+      '数据目',
+      '据目录',
+      '目录隔',
+      '录隔离',
+    ]);
   });
 });
 

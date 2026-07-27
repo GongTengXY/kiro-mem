@@ -114,7 +114,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_dedupe
 -- opportunistically pruned; it never stores observation text.
 CREATE TABLE IF NOT EXISTS metric_events (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  -- 'search' | 'acp_repair' | 'acp_contamination'
+  -- 'search' | 'acp_repair' | 'acp_contamination' | 'auth_unauthorized'
   kind         TEXT NOT NULL,
   -- search only: 1 when the query degraded to FTS-only (embedding unavailable).
   degraded     INTEGER NOT NULL DEFAULT 0,

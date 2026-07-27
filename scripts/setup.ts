@@ -26,6 +26,7 @@ import {
   removeService,
   start,
   stop,
+  restart,
   status,
   ansi,
 } from './service';
@@ -33,7 +34,7 @@ import type { Language } from '../src/config';
 import { t } from '../src/i18n';
 import { checkRuntimeHome } from '../src/acp/integrity';
 import { MemoryDB } from '../src/db';
-import { ensureLocalAuthToken } from '../src/auth-token';
+import { ensureLocalAuthToken, inspectLocalAuthToken, readLocalAuthToken } from '../src/auth-token';
 import { PACKAGE_VERSION } from '../src/version';
 
 const HOME = process.env.HOME || '~';
@@ -95,7 +96,7 @@ switch (command) {
     stop(lang);
     break;
   case 'diagnose':
-    diagnose();
+    await diagnose();
     break;
   default:
     help();
@@ -354,6 +355,7 @@ async function install() {
     'embedding.ts',
     'bootstrap-context.ts',
     'config.ts',
+    'auth-token.ts',
     'logger.ts',
     'i18n.ts',
     'version.ts',
@@ -441,10 +443,13 @@ async function install() {
     process.exit(1);
   }
 
-  // 13. Register system service & start worker
+  // 13. Register system service & (re)start worker
+  //
+  // restart(), not start(): step 7 just overwrote the runtime source, and a
+  // Worker left running from before the copy would keep serving the old build.
   const msg = registerService(lang);
   console.log(`${ansi.ok('✓')} ${msg}`);
-  start(lang);
+  restart(lang);
 
   console.log(`\n${ansi.ok('✅')} ${ansi.bold(m.installed)}`);
   console.log(
@@ -580,7 +585,7 @@ async function configCmd() {
   console.log(`${ansi.ok('✓')} ${m.workerRestarted}`);
 }
 
-function diagnose() {
+async function diagnose() {
   const cjkWidth = (s: string) =>
     [...s].reduce((w, c) => w + (c.charCodeAt(0) > 0x7f ? 2 : 1), 0);
   const padLabel = (s: string, width: number) =>
@@ -646,6 +651,20 @@ function diagnose() {
         console.log(
           `  ${ansi.ok('✓')} ${padLabel(m.diagHealth, 10)}v${h.version || '?'}, ${m.diagJobsLabel}: ${jobsInfo}`,
         );
+        // The running Worker holds the code it loaded at boot. If it predates
+        // the installed files, everything else here still looks healthy while
+        // the deployed fix is not actually live.
+        let installedVersion = '';
+        try {
+          installedVersion = JSON.parse(
+            readFileSync(join(DATA_DIR, 'package.json'), 'utf-8'),
+          ).version;
+        } catch {}
+        if (installedVersion && h.version && h.version !== installedVersion) {
+          console.log(
+            `  ${ansi.err('✗')} ${padLabel(m.diagVersionMatch, 10)}${m.versionMismatch} ${ansi.dim(`(worker v${h.version} / installed v${installedVersion})`)}`,
+          );
+        }
       } catch {
         console.log(
           `  ${ansi.warn('⚠')} ${padLabel(m.diagHealth, 10)}${m.diagUnparseable}`,
@@ -654,6 +673,52 @@ function diagnose() {
     } else {
       console.log(
         `  ${ansi.err('✗')} ${padLabel(m.diagHealth, 10)}${m.diagUnreachable}`,
+      );
+    }
+  }
+
+  // 2b. Local auth token + Hook -> Worker auth chain
+  //
+  // A rejected Hook request is invisible during normal use (Hooks are
+  // fire-and-forget), so diagnose is where a broken credential must surface.
+  const tokenInfo = inspectLocalAuthToken(DATA_DIR);
+  const tokenProblem: Record<string, string> = {
+    missing: m.authTokenMissing,
+    empty: m.authTokenEmpty,
+    weak: m.authTokenWeak,
+    insecure: m.authTokenInsecure,
+  };
+  console.log(
+    tokenInfo.ok
+      ? `  ${ansi.ok('✓')} ${padLabel(m.diagAuth, 10)}${ansi.cyan(m.authTokenOk)}`
+      : `  ${ansi.err('✗')} ${padLabel(m.diagAuth, 10)}${tokenProblem[tokenInfo.state] ?? tokenInfo.state}`,
+  );
+
+  if (workerOk && tokenInfo.state !== 'missing') {
+    // Probe a read-only authenticated route the same way a Hook would. Sent via
+    // fetch, not curl, so the token never lands in the process list.
+    const probeUrl = `http://127.0.0.1:${port}/context/bootstrap?cwd=${encodeURIComponent(process.cwd())}`;
+    let probeStatus = 0;
+    try {
+      const res = await fetch(probeUrl, {
+        headers: { Authorization: `Bearer ${readLocalAuthToken(DATA_DIR)}` },
+        signal: AbortSignal.timeout(2000),
+      });
+      probeStatus = res.status;
+    } catch {
+      probeStatus = 0;
+    }
+    if (probeStatus === 200) {
+      console.log(
+        `  ${ansi.ok('✓')} ${padLabel(m.diagAuthChain, 10)}${ansi.cyan(m.authChainOk)}`,
+      );
+    } else if (probeStatus === 401) {
+      console.log(
+        `  ${ansi.err('✗')} ${padLabel(m.diagAuthChain, 10)}${m.authChainRejected}`,
+      );
+    } else {
+      console.log(
+        `  ${ansi.warn('⚠')} ${padLabel(m.diagAuthChain, 10)}${m.authChainUnreachable}`,
       );
     }
   }
@@ -861,6 +926,13 @@ try {
       console.log(
         `  ${padLabel(m.diagAcpWindow, 14)}${m.diagRepairs}: ${ansi.cyan(String(s.acp24h.repairs))} / ${m.diagContam}: ${ansi.cyan(String(s.acp24h.contaminations))}`,
       );
+      // Only surfaced when non-zero: a silent Hook rejection is worth a line,
+      // a healthy install should stay quiet.
+      if (s.auth24h.unauthorized > 0) {
+        console.log(
+          `  ${ansi.warn('⚠')} ${padLabel(m.diagAuthRejected, 12)}${ansi.cyan(String(s.auth24h.unauthorized))} ${m.diagAuthRejectedHint}`,
+        );
+      }
       const stat = Bun.file(dbPath);
       console.log(
         `  ${padLabel(m.diagSize, 14)}${ansi.cyan((stat.size / 1024 / 1024).toFixed(1) + ' MB')}`,

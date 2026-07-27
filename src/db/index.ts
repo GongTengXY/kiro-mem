@@ -35,6 +35,56 @@ function nowISO(): string {
   return new Date().toISOString();
 }
 
+/** Trigram is the FTS5 tokenizer, so anything shorter can never be indexed. */
+const FTS_MIN_UNIT_LEN = 3;
+/** Sliding window over an unsegmented CJK run, matching trigram granularity. */
+const FTS_CJK_WINDOW = 3;
+/** Bounds the OR expression so a pathological query can't explode the scan. */
+const FTS_MAX_UNITS = 32;
+/** CJK / Japanese / Korean runs, which carry no whitespace word boundaries. */
+const CJK_RUN_RE = /[\u3400-\u4dbf\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]{3,}/g;
+
+/**
+ * Split a user query into the units that get matched against the trigram FTS
+ * index. Each unit is later wrapped in its own FTS5 string literal, so the
+ * user's punctuation, code symbols and reserved words stay literal.
+ *
+ * Two shapes are handled:
+ *   - whitespace-delimited segments (identifiers, paths, versions, words) are
+ *     kept whole, because a full `src/db/index.ts` match is far more precise
+ *     than its fragments;
+ *   - unsegmented CJK runs longer than the window are additionally sliced into
+ *     overlapping sub-strings, because Chinese queries carry no word
+ *     boundaries and a whole-sentence substring match never succeeds.
+ *
+ * Exported for tests.
+ */
+export function extractFtsSearchUnits(query: string): string[] {
+  const units: string[] = [];
+  const push = (raw: string): void => {
+    const unit = raw.trim();
+    if (unit.length < FTS_MIN_UNIT_LEN) return;
+    if (units.includes(unit)) return;
+    units.push(unit);
+  };
+
+  for (const segment of query.trim().split(/\s+/)) {
+    if (!segment) continue;
+    push(segment);
+    for (const run of segment.match(CJK_RUN_RE) ?? []) {
+      push(run);
+      for (let i = 0; i + FTS_CJK_WINDOW <= run.length; i++) {
+        push(run.slice(i, i + FTS_CJK_WINDOW));
+        if (units.length >= FTS_MAX_UNITS) break;
+      }
+      if (units.length >= FTS_MAX_UNITS) break;
+    }
+    if (units.length >= FTS_MAX_UNITS) break;
+  }
+
+  return units.slice(0, FTS_MAX_UNITS);
+}
+
 /**
  * Resolve the on-disk path for the DB file. When a caller passes an explicit
  * `dbPath` we create just its parent directory; when not, we fall back to the
@@ -569,7 +619,8 @@ export class MemoryDB {
    * immutable and never superseded/archived, so every row is a valid hit.
    * Scope isolation is enforced on `scope_key` (frozen at write time), so a
    * caller passing a scope never sees another workspace's Observations.
-   * Short queries (<3 chars, below the trigram floor) fall back to LIKE.
+   * Queries with no usable search unit (e.g. shorter than the trigram floor)
+   * fall back to LIKE.
    */
   searchObservationsFts(
     query: string,
@@ -582,7 +633,9 @@ export class MemoryDB {
     const days = opts?.days ?? 90;
     const dateThreshold = new Date(Date.now() - days * 86400000).toISOString();
 
-    if (literalQuery.length < 3) {
+    const units = extractFtsSearchUnits(literalQuery);
+    if (units.length === 0) {
+      // Below the trigram floor (or punctuation-only): LIKE is the only option.
       const like = `%${literalQuery}%`;
       let sql = `SELECT * FROM observations
         WHERE turn_stopped_at > ?
@@ -595,15 +648,19 @@ export class MemoryDB {
       return this.db.query(sql).all(...params) as Observation[];
     }
 
-    // Treat the complete user input as one FTS5 string literal. Doubling an
-    // embedded quote is FTS5's quoted-string escape; punctuation and reserved
-    // words therefore retain their literal meaning instead of becoming query
-    // operators or column selectors.
-    const ftsLiteral = `"${literalQuery.replaceAll('"', '""')}"`;
+    // Each search unit becomes its own FTS5 string literal, OR-joined. Doubling
+    // an embedded quote is FTS5's quoted-string escape, so punctuation and
+    // reserved words inside a unit keep their literal meaning instead of
+    // becoming query operators or column selectors. OR (not phrase) matching is
+    // what makes multi-word and natural-language queries recall anything at
+    // all: under the trigram tokenizer a single quoted string is an exact
+    // substring match, which a whole user sentence essentially never satisfies.
+    // bm25 then ranks documents matching more units higher.
+    const ftsExpr = units.map((u) => `"${u.replaceAll('"', '""')}"`).join(' OR ');
     let sql = `SELECT o.* FROM observations_fts fts
       JOIN observations o ON fts.rowid = o.id
       WHERE observations_fts MATCH ? AND o.turn_stopped_at > ?`;
-    const params: (string | number)[] = [ftsLiteral, dateThreshold];
+    const params: (string | number)[] = [ftsExpr, dateThreshold];
     if (opts?.scopeKey) { sql += ' AND o.scope_key = ?'; params.push(opts.scopeKey); }
     if (opts?.type) { sql += ' AND o.memory_type = ?'; params.push(opts.type); }
     sql += ' ORDER BY o.is_pinned DESC, fts.rank LIMIT ?';
@@ -799,6 +856,23 @@ export class MemoryDB {
   }
 
   /**
+   * Record one Worker request rejected by local token auth. Written from the
+   * worker process so an otherwise invisible failure (Hooks never surface a
+   * 401) shows up in /health and diagnose. Best-effort.
+   */
+  recordAuthEvent(kind: 'unauthorized'): void {
+    try {
+      const r = this.db.run(
+        `INSERT INTO metric_events (kind, created_at) VALUES (?, ?)`,
+        [`auth_${kind}`, nowISO()],
+      );
+      this.maybePruneMetrics(Number(r.lastInsertRowid));
+    } catch {
+      /* best-effort */
+    }
+  }
+
+  /**
    * Opportunistic retention cap on metric_events (~every 256 inserts). We only
    * ever report a trailing 24h window; 7 days of retention gives ample buffer
    * without an unbounded ops table.
@@ -894,6 +968,12 @@ export class MemoryDB {
         ),
         contaminations: scalar(
           "SELECT COUNT(*) AS c FROM metric_events WHERE kind = 'acp_contamination' AND created_at > ?",
+          since,
+        ),
+      },
+      auth24h: {
+        unauthorized: scalar(
+          "SELECT COUNT(*) AS c FROM metric_events WHERE kind = 'auth_unauthorized' AND created_at > ?",
           since,
         ),
       },

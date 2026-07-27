@@ -262,20 +262,48 @@ function extractTestCounts(response: unknown): string | null {
   return parts.length ? parts.join(', ') : null;
 }
 
-/** Extract a meaningful error string from a tool response, preferring stderr. */
+/**
+ * A negated count ("0 failures", "no errors") is evidence of success, not of an
+ * error. Strip those before looking for error words, so a fully green test run
+ * ("138 pass, 0 fail") is never mistaken for a failure.
+ */
+const NEGATED_COUNT_RE = /\b(0|no|zero)\s+(errors?|failures?|failed|failing|fails?)\b/gi;
+
+function looksLikeError(text: string): boolean {
+  return /\b(error|fail)/i.test(text.replace(NEGATED_COUNT_RE, ''));
+}
+
+/**
+ * Extract a meaningful error string from a tool response.
+ *
+ * Ordering matters: a known exit status is authoritative. Exit 0 means the call
+ * succeeded, so we must NOT go on to keyword-match the payload — that is how
+ * `{"exit_status":0,"stdout":"138 pass, 0 fail"}` used to produce a bogus error
+ * signal, and how reading a file that merely contains the word "error" used to
+ * mark a whole turn as failed. Keyword matching over the raw payload survives
+ * only as a last resort for responses that report no status at all.
+ */
 function extractErrorText(response: unknown): string | null {
   if (typeof response === 'string') {
-    if (/\b(error|fail)/i.test(response)) return response;
-    return null;
+    return looksLikeError(response) ? response : null;
   }
   if (response && typeof response === 'object') {
     const r = response as Record<string, unknown>;
-    const stderr = r.stderr;
-    if (typeof stderr === 'string' && stderr.trim() && /\b(error|fail)/i.test(stderr)) {
-      return stderr;
+    const exit = extractExitStatus(response);
+    if (exit === 0) return null;
+
+    const stderr = typeof r.stderr === 'string' ? r.stderr : '';
+    if (stderr.trim() && looksLikeError(stderr)) return stderr;
+
+    if (exit != null) {
+      // Non-zero exit with no usable stderr: the status itself is the evidence.
+      return stderr.trim() ? stderr : JSON.stringify(response).slice(0, 500);
     }
+    if (typeof r.error === 'string' && r.error.trim()) return r.error;
+    if (r.success === false) return JSON.stringify(response).slice(0, 500);
+
     const resStr = JSON.stringify(response).slice(0, 500);
-    if (/\b(error|fail)/i.test(resStr)) return resStr;
+    if (looksLikeError(resStr)) return resStr;
   }
   return null;
 }

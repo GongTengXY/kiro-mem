@@ -229,4 +229,12 @@ export interface ObservabilityStats {
     repairs: number;
     contaminations: number;
   };
+  /**
+   * Worker requests rejected by local token auth in the last 24h. Non-zero
+   * means Hooks are failing silently — usually a token rotated underneath a
+   * running Worker.
+   */
+  auth24h: {
+    unauthorized: number;
+  };
 }

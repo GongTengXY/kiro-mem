@@ -120,6 +120,24 @@ const messages = {
     embModelMissing: '本地 embedding 模型缺失：',
     embModelReady: 'Embedding 模型本地已就位',
 
+    // --- diagnose: 本地认证 ---
+    diagAuth: '本地认证',
+    diagVersionMatch: '版本',
+    versionMismatch:
+      '运行中的 Worker 不是当前已安装的版本，请执行 kiro-mem stop && kiro-mem start',
+    diagAuthChain: '鉴权链路',
+    authTokenOk: 'token 就绪（权限 0600）',
+    authTokenMissing: '缺少 .token，请重新运行 kiro-mem install',
+    authTokenEmpty: '.token 为空，请重新运行 kiro-mem install',
+    authTokenWeak: '.token 不是安装器生成的 64 位十六进制值，请重新运行 kiro-mem install',
+    authTokenInsecure: '.token 权限不是 0600，建议执行 chmod 600 ~/.kiro-mem/.token',
+    authChainOk: 'Hook → Worker 鉴权通过',
+    authChainRejected:
+      'Worker 拒绝了本地 token（401），Hook 写入会静默失败。请重启 Worker：kiro-mem stop && kiro-mem start',
+    authChainUnreachable: 'Worker 未响应鉴权探测',
+    diagAuthRejected: '鉴权拒绝',
+    diagAuthRejectedHint: '次（24 小时内）— Hook 写入曾静默失败',
+
     // --- diagnose: jobs ---
     diagJobsLabel: '任务',
     diagJobsInflight: '执行中',
@@ -256,6 +274,25 @@ const messages = {
     runtimeHomeOk: 'kiro-runtime intact',
     embModelMissing: 'Local embedding model missing:',
     embModelReady: 'Embedding model present locally',
+
+    // --- diagnose: local auth ---
+    diagAuth: 'Local auth',
+    diagVersionMatch: 'Version',
+    versionMismatch:
+      'the running Worker is not the installed build — run `kiro-mem stop && kiro-mem start`',
+    diagAuthChain: 'Auth chain',
+    authTokenOk: 'token present (mode 0600)',
+    authTokenMissing: '.token is missing — re-run `kiro-mem install`',
+    authTokenEmpty: '.token is empty — re-run `kiro-mem install`',
+    authTokenWeak:
+      '.token is not the installer-generated 64-hex value — re-run `kiro-mem install`',
+    authTokenInsecure: '.token is not mode 0600 — run `chmod 600 ~/.kiro-mem/.token`',
+    authChainOk: 'Hook → Worker authenticated',
+    authChainRejected:
+      'Worker rejected the local token (401); Hook writes fail silently. Restart it: `kiro-mem stop && kiro-mem start`',
+    authChainUnreachable: 'Worker did not answer the auth probe',
+    diagAuthRejected: 'auth 401s',
+    diagAuthRejectedHint: 'in the last 24h — Hook writes failed silently',
 
     // --- diagnose: jobs ---
     diagJobsLabel: 'jobs',
