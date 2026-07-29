@@ -19,10 +19,22 @@ import {
   blobToEmbedding,
   withEmbeddingTimeout,
   DEFAULT_QUERY_EMBEDDING_TIMEOUT_MS,
+  EMBEDDING_MODEL,
+  DIMENSIONS,
 } from '../embedding';
 
 const RRF_K = 60;
-/** Pure-semantic candidates below this cosine similarity are dropped as noise. */
+/**
+ * Pure-semantic candidates below this cosine similarity are dropped as noise.
+ *
+ * This is a noise trim, NOT a relevance guarantee, and it cannot be turned into
+ * one by raising the number. Measured on the benchmark dataset (30 turns, real
+ * MiniLM vectors): annotated true positives span cosine 0.080 … 0.607 (median
+ * 0.322), while the worst noise on a query with no relevant memory at all
+ * reaches 0.431. The two distributions overlap, so any threshold that clears
+ * the noise (≥0.45) also discards most true positives. Relevance is enforced
+ * structurally instead — see the lexical-anchor rule below.
+ */
 const SEMANTIC_FLOOR = 0.2;
 
 export interface ObservationSearchOpts {
@@ -36,6 +48,18 @@ export interface ObservationSearchOpts {
 export interface ObservationSearchDeps {
   /** Injectable for tests; defaults to the local MiniLM embedder. */
   generateEmbedding?: (text: string) => Promise<Float32Array>;
+  /**
+   * Identity of the vector space `generateEmbedding` produces. Stored vectors
+   * from any other model are skipped, because a cosine score across two
+   * different embedding spaces is meaningless but looks authoritative.
+   *
+   * These travel WITH the embedder rather than being hard-coded: a test that
+   * injects a fake embedder is describing a different vector space, and forcing
+   * it to claim the production model name would make the fixture lie about
+   * which space it is in.
+   */
+  embeddingModel?: string;
+  embeddingDimensions?: number;
   /** Query embedding deadline; defaults to the interactive MCP budget. */
   embeddingTimeoutMs?: number;
   /**
@@ -77,6 +101,28 @@ export async function hybridSearchObservations(
   const ftsRankMap = new Map<number, number>();
   ftsResults.forEach((o, idx) => ftsRankMap.set(o.id, idx + 1));
 
+  // Lexical anchor required: no FTS hit in this scope => no results.
+  //
+  // The semantic step below has two different jobs, and only one of them is
+  // trustworthy. Reranking things FTS already matched is safe — the lexical hit
+  // vouches for topical relevance. Pulling in records FTS never matched is
+  // discovery, and it has no relevance evidence behind it: the candidate pool is
+  // "the most recent 200 Observations in this scope", every one of them gets a
+  // cosine score, and anything over SEMANTIC_FLOOR earns a positive RRF score
+  // because fusion has no absolute cutoff. On a query about work that simply
+  // never happened here, that filled the entire result page with noise:
+  // benchmark expected-empty queries returned a mean of 8.4 records (worst 10 =
+  // the limit) while FTS alone correctly returned 0 for every one of them.
+  //
+  // Discovery is therefore gated on the query having at least one lexical anchor
+  // in this scope rather than on a higher cosine threshold — the calibration
+  // above shows no threshold separates signal from noise. Cost, measured: a
+  // query with zero lexical overlap now returns nothing instead of a page of
+  // plausible-looking noise. Paraphrase-only recall would need a calibration set
+  // that actually separates the two distributions, not a constant parked just
+  // above the noise we happen to have measured.
+  if (ftsResults.length === 0) return [];
+
   // --- Semantic candidates (best-effort; FTS-only on failure/timeout) ---
   const semanticRank = new Map<number, number>();
   const semanticScore = new Map<number, number>();
@@ -92,7 +138,13 @@ export async function hybridSearchObservations(
       limit: 200,
     });
     const candidateIds = [...new Set<number>([...ftsRankMap.keys(), ...recentIds])];
-    const embeddings = db.getObservationEmbeddingsByIds(candidateIds);
+    // Version-filtered: a blob written by another model (or a corrupted one) is
+    // dropped here, so it degrades to keyword-only reachability instead of
+    // producing a confident-looking but meaningless similarity score.
+    const embeddings = db.getObservationEmbeddingsByIds(candidateIds, {
+      model: deps?.embeddingModel ?? EMBEDDING_MODEL,
+      dimensions: deps?.embeddingDimensions ?? DIMENSIONS,
+    });
     const scored: { id: number; score: number }[] = [];
     for (const row of embeddings) {
       const score = cosineSimilarity(queryEmbedding, blobToEmbedding(row.embedding));

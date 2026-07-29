@@ -26,7 +26,7 @@ import type {
 
 // Re-export types
 export * from './types';
-export { computeScopeKey } from './scope';
+export { computeScopeKey, detectRepo } from './scope';
 
 // ---------- Helpers ----------
 
@@ -43,46 +43,206 @@ const FTS_CJK_WINDOW = 3;
 const FTS_MAX_UNITS = 32;
 /** CJK / Japanese / Korean runs, which carry no whitespace word boundaries. */
 const CJK_RUN_RE = /[\u3400-\u4dbf\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]{3,}/g;
+/** Any CJK character, used only to detect a mixed-script segment. */
+const CJK_CHAR_RE = /[\u3400-\u4dbf\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]/;
+/** Latin/digit runs, extracted only out of mixed-script segments (see below). */
+const LATIN_RUN_RE = /[A-Za-z0-9_]{3,}/g;
+
+/**
+ * Pick `take` indices spread across `[0, count-1]`, always including both ends.
+ *
+ * This is what keeps the tail of a long query reachable: sampling the window
+ * positions evenly means the LAST window is always in the set, whereas walking
+ * from the head and stopping at the budget never reaches it.
+ */
+function evenIndices(count: number, take: number): number[] {
+  if (take >= count) return Array.from({ length: count }, (_, i) => i);
+  if (take <= 1) return [0];
+  const out: number[] = [];
+  for (let i = 0; i < take; i++) out.push(Math.round((i * (count - 1)) / (take - 1)));
+  return [...new Set(out)];
+}
+
+// ---------- Truth Layer size bounds (§6) ----------
+
+/**
+ * Per-string cap inside a raw event payload.
+ *
+ * The realistic overflow is ONE huge string leaf — a tool's stdout holding a
+ * full build log or test run. Capping leaves rather than the whole payload
+ * keeps the surrounding object shape intact, so `extractArtifacts` still finds
+ * `tool_input.command`, error signals and file paths.
+ */
+const MAX_PAYLOAD_STRING_BYTES = 32 * 1024;
+/** Hard per-event cap, applied after string capping. */
+const MAX_EVENT_PAYLOAD_BYTES = 256 * 1024;
+/**
+ * Cumulative per-turn cap. `turn_events` is append-only and — until a retention
+ * policy exists — never pruned, so a single pathological turn must not be able
+ * to grow the database without bound. Past this point only metadata stubs are
+ * stored for the remaining events of that turn.
+ */
+const MAX_TURN_PAYLOAD_BYTES = 4 * 1024 * 1024;
+
+/** Marker appended to any value this layer shortened. Never silent. */
+const TRUNCATION_MARK = (droppedBytes: number) =>
+  `…[kiro-mem: truncated ${droppedBytes} bytes]`;
+
+/** Cut a string to a byte budget on a character boundary. */
+function truncateUtf8(s: string, maxBytes: number): string {
+  const buf = Buffer.from(s, 'utf-8');
+  if (buf.length <= maxBytes) return s;
+  let out = buf.subarray(0, maxBytes).toString('utf-8');
+  // A cut landing mid-sequence decodes to a trailing replacement char.
+  if (out.endsWith('\uFFFD')) out = out.slice(0, -1);
+  return out;
+}
+
+/** Recursively cap every string leaf, marking the ones that were shortened. */
+function capStringLeaves(value: unknown, maxBytes: number): unknown {
+  if (typeof value === 'string') {
+    const size = Buffer.byteLength(value, 'utf-8');
+    if (size <= maxBytes) return value;
+    return truncateUtf8(value, maxBytes) + TRUNCATION_MARK(size - maxBytes);
+  }
+  if (Array.isArray(value)) return value.map((v) => capStringLeaves(v, maxBytes));
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = capStringLeaves(v, maxBytes);
+    return out;
+  }
+  return value;
+}
+
+/**
+ * Bound what one raw event can commit to the append-only Truth Layer.
+ *
+ * Anything accepted here is accepted forever: the layer is never rewritten and
+ * currently has no retention policy, so an unbounded payload is an unbounded
+ * disk and extraction cost. Returns the payload to store plus the ORIGINAL byte
+ * size, which is what `payload_size` records — the truth about how big the
+ * event really was must survive the truncation.
+ *
+ * Exported for tests.
+ */
+export function capEventPayload(
+  payloadJson: string,
+  turnBytesSoFar: number,
+): { payload: string; originalSize: number; truncated: boolean } {
+  const originalSize = Buffer.byteLength(payloadJson, 'utf-8');
+
+  // Turn budget spent: keep the event row (it is evidence that the event
+  // happened) but stop storing bodies.
+  if (turnBytesSoFar >= MAX_TURN_PAYLOAD_BYTES) {
+    return {
+      payload: JSON.stringify({
+        _kiro_mem_dropped: 'turn payload budget exceeded',
+        _kiro_mem_turn_budget_bytes: MAX_TURN_PAYLOAD_BYTES,
+        _kiro_mem_original_bytes: originalSize,
+      }),
+      originalSize,
+      truncated: true,
+    };
+  }
+
+  if (originalSize <= MAX_PAYLOAD_STRING_BYTES) {
+    return { payload: payloadJson, originalSize, truncated: false };
+  }
+
+  let capped: string;
+  try {
+    capped = JSON.stringify(capStringLeaves(JSON.parse(payloadJson), MAX_PAYLOAD_STRING_BYTES));
+  } catch {
+    // Not valid JSON (no current caller does this, but the column is TEXT).
+    capped = truncateUtf8(payloadJson, MAX_EVENT_PAYLOAD_BYTES);
+  }
+
+  // Structure-preserving capping can still leave a payload too large (many
+  // fields, or a huge object graph). Collapse to a stub rather than store it.
+  if (Buffer.byteLength(capped, 'utf-8') > MAX_EVENT_PAYLOAD_BYTES) {
+    capped = JSON.stringify({
+      _kiro_mem_dropped: 'event payload exceeded the per-event cap',
+      _kiro_mem_event_cap_bytes: MAX_EVENT_PAYLOAD_BYTES,
+      _kiro_mem_original_bytes: originalSize,
+    });
+  }
+
+  return { payload: capped, originalSize, truncated: capped !== payloadJson };
+}
 
 /**
  * Split a user query into the units that get matched against the trigram FTS
  * index. Each unit is later wrapped in its own FTS5 string literal, so the
  * user's punctuation, code symbols and reserved words stay literal.
  *
- * Two shapes are handled:
+ * Three shapes are handled:
  *   - whitespace-delimited segments (identifiers, paths, versions, words) are
  *     kept whole, because a full `src/db/index.ts` match is far more precise
  *     than its fragments;
  *   - unsegmented CJK runs longer than the window are additionally sliced into
  *     overlapping sub-strings, because Chinese queries carry no word
- *     boundaries and a whole-sentence substring match never succeeds.
+ *     boundaries and a whole-sentence substring match never succeeds;
+ *   - mixed-script segments (`修复bug`) additionally surface their latin/digit
+ *     runs, because the CJK half is usually too short to window and the whole
+ *     segment is an exact-substring match nothing satisfies.
+ *
+ * The window budget is sampled ACROSS each run rather than consumed from its
+ * head. Head-first consumption meant a long unsegmented Chinese question spent
+ * the entire budget on its opening words and silently dropped the terms that
+ * actually distinguish it — which is the whole point of asking in a sentence.
+ * When the budget is not binding the result is unchanged (head-to-tail, every
+ * window).
  *
  * Exported for tests.
  */
 export function extractFtsSearchUnits(query: string): string[] {
   const units: string[] = [];
+  const seen = new Set<string>();
   const push = (raw: string): void => {
     const unit = raw.trim();
     if (unit.length < FTS_MIN_UNIT_LEN) return;
-    if (units.includes(unit)) return;
+    if (seen.has(unit)) return;
+    if (units.length >= FTS_MAX_UNITS) return;
+    seen.add(unit);
     units.push(unit);
   };
 
+  // --- Pass 1: whole units. Most precise, so they get the budget first. ---
+  const windowRuns: string[] = [];
   for (const segment of query.trim().split(/\s+/)) {
     if (!segment) continue;
     push(segment);
     for (const run of segment.match(CJK_RUN_RE) ?? []) {
       push(run);
-      for (let i = 0; i + FTS_CJK_WINDOW <= run.length; i++) {
-        push(run.slice(i, i + FTS_CJK_WINDOW));
-        if (units.length >= FTS_MAX_UNITS) break;
-      }
-      if (units.length >= FTS_MAX_UNITS) break;
+      if (run.length > FTS_CJK_WINDOW) windowRuns.push(run);
     }
-    if (units.length >= FTS_MAX_UNITS) break;
+    // Only for mixed-script segments. Splitting a pure-latin path such as
+    // `src/db/index.ts` into `src` / `index` would OR in units that match
+    // almost every document, trading a real precision loss for no recall gain.
+    if (CJK_CHAR_RE.test(segment)) {
+      for (const run of segment.match(LATIN_RUN_RE) ?? []) push(run);
+    }
   }
 
-  return units.slice(0, FTS_MAX_UNITS);
+  // --- Pass 2: window the CJK runs with whatever budget is left. ---
+  const remaining = FTS_MAX_UNITS - units.length;
+  if (remaining > 0 && windowRuns.length > 0) {
+    const positions = windowRuns.map((r) => r.length - FTS_CJK_WINDOW + 1);
+    const totalPositions = positions.reduce((a, b) => a + b, 0);
+    windowRuns.forEach((run, i) => {
+      const count = positions[i]!;
+      // Under budget pressure every run still keeps its head and tail window.
+      const quota =
+        totalPositions <= remaining
+          ? count
+          : Math.max(2, Math.floor((count / totalPositions) * remaining));
+      for (const idx of evenIndices(count, quota)) {
+        push(run.slice(idx, idx + FTS_CJK_WINDOW));
+      }
+    });
+  }
+
+  return units;
 }
 
 /**
@@ -118,6 +278,12 @@ export class MemoryDB {
     this.db = new Database(path);
     this.db.exec('PRAGMA journal_mode=WAL');
     this.db.exec('PRAGMA foreign_keys=ON');
+    // The Worker and the MCP server are two separate writer processes (jobs +
+    // Observations vs. pin + search metrics). Without a busy timeout a
+    // concurrent write fails immediately with SQLITE_BUSY, which surfaces as a
+    // thrown MCP tool call or a silently dropped metric. This is a mitigation,
+    // not a substitute for the transactional writes in the ingest path.
+    this.db.exec('PRAGMA busy_timeout=3000');
     this.db.exec(ALL_SCHEMA);
   }
 
@@ -128,6 +294,19 @@ export class MemoryDB {
   /** Exposed for tests and ad-hoc maintenance scripts that need raw SQL. */
   get raw(): Database {
     return this.db;
+  }
+
+  /**
+   * Run `fn` inside a single SQLite transaction.
+   *
+   * Used by the ingest path where several statements express ONE fact (close a
+   * turn and enqueue its summarize job; write an Observation and enqueue its
+   * embedding). Without this, a crash or SQLITE_BUSY between statements leaves
+   * an orphan that no later step notices — see `findOrphans()` / `kiro-mem
+   * repair` for the recovery side.
+   */
+  transaction<T>(fn: () => T): T {
+    return this.db.transaction(fn)() as T;
   }
 
   // ===========================================================
@@ -232,7 +411,6 @@ export class MemoryDB {
     repo?: string | null;
     branch?: string | null;
     prompt_text?: string | null;
-    prompt_hash?: string | null;
     started_at?: string;
   }): Turn {
     const now = nowISO();
@@ -240,11 +418,11 @@ export class MemoryDB {
     const result = this.db.run(
       `INSERT INTO turns (
          session_id, seq, cwd, repo, branch,
-         state, prompt_text, prompt_hash,
+         state, prompt_text,
          started_at, stopped_at, last_event_at,
          tool_event_count, created_at, updated_at
        ) VALUES (?, ?, ?, ?, ?, 'open',
-                 ?, ?, ?, NULL, ?,
+                 ?, ?, NULL, ?,
                  0, ?, ?)`,
       [
         input.session_id,
@@ -253,7 +431,6 @@ export class MemoryDB {
         input.repo ?? null,
         input.branch ?? null,
         input.prompt_text ?? null,
-        input.prompt_hash ?? null,
         startedAt,
         startedAt,
         now,
@@ -309,21 +486,6 @@ export class MemoryDB {
     );
   }
 
-  markTurnQuarantined(turn_id: number, reason?: string) {
-    const now = nowISO();
-    this.db.run(
-      `UPDATE turns
-         SET state = 'quarantined',
-             updated_at = ?
-         WHERE id = ?`,
-      [now, turn_id],
-    );
-    // reason is currently surfaced only via logs; we do not have a dedicated
-    // column for it on `turns`. If future work needs structured quarantine
-    // reasons, add a `quarantine_reason` column to the schema.
-    void reason;
-  }
-
   markTurnState(turn_id: number, state: TurnState) {
     const now = nowISO();
     this.db.run(
@@ -372,6 +534,11 @@ export class MemoryDB {
     redaction_state?: RedactionState;
   }): TurnEvent {
     const now = nowISO();
+    // §6: bound what enters the append-only layer. `payload_size` keeps the
+    // ORIGINAL size so the truncation does not also erase the record of how big
+    // the event was.
+    const turnBytesSoFar = this.turnPayloadBytes(input.turn_id);
+    const { payload, originalSize } = capEventPayload(input.payload_json, turnBytesSoFar);
     // Compute the next event_seq inline inside the INSERT to keep it atomic
     // relative to concurrent inserts for the same turn_id.
     const result = this.db.run(
@@ -389,13 +556,21 @@ export class MemoryDB {
         input.turn_id,
         input.hook_event_name,
         input.tool_name ?? null,
-        input.payload_json,
-        Buffer.byteLength(input.payload_json, 'utf-8'),
+        payload,
+        originalSize,
         input.redaction_state ?? 'redacted',
         now,
       ],
     );
     return this.getTurnEvent(Number(result.lastInsertRowid))!;
+  }
+
+  /** Bytes already committed for this turn, used to enforce the per-turn cap. */
+  turnPayloadBytes(turn_id: number): number {
+    const row = this.db
+      .query('SELECT COALESCE(SUM(payload_size), 0) AS total FROM turn_events WHERE turn_id = ?')
+      .get(turn_id) as { total: number };
+    return row.total;
   }
 
   getTurnEvent(id: number): TurnEvent | null {
@@ -555,14 +730,23 @@ export class MemoryDB {
       .get(turn_id) as Observation | null;
   }
 
-  getObservationsByIds(ids: number[]): Observation[] {
+  /**
+   * Fetch Observations by ID.
+   *
+   * `scopeKey` is NOT optional in spirit: every ID-addressed MCP tool must pass
+   * the caller's authorized scope, otherwise knowing (or guessing) an ID leaks
+   * another workspace's Observation body. `undefined` means "no filter" and is
+   * reserved for the explicit all-scopes browse and for internal callers that
+   * already resolved authorization (e.g. bootstrap, which selects by scope).
+   */
+  getObservationsByIds(ids: number[], opts?: { scopeKey?: string }): Observation[] {
     if (!ids.length) return [];
     const placeholders = ids.map(() => '?').join(',');
-    return this.db
-      .query(
-        `SELECT * FROM observations WHERE id IN (${placeholders}) ORDER BY turn_stopped_at DESC`,
-      )
-      .all(...ids) as Observation[];
+    let sql = `SELECT * FROM observations WHERE id IN (${placeholders})`;
+    const params: (string | number)[] = [...ids];
+    if (opts?.scopeKey) { sql += ' AND scope_key = ?'; params.push(opts.scopeKey); }
+    sql += ' ORDER BY turn_stopped_at DESC';
+    return this.db.query(sql).all(...params) as Observation[];
   }
 
   pinObservation(id: number, pinned: boolean) {
@@ -598,16 +782,38 @@ export class MemoryDB {
       .get(observation_id) as ObservationEmbeddingRow | null;
   }
 
+  /**
+   * Fetch stored vectors for a candidate set.
+   *
+   * `model` / `dimensions` are filter arguments, not decoration: a stored blob
+   * from a different embedding model is not comparable to the current query
+   * vector, and comparing them anyway produces a *plausible but wrong* ranking
+   * rather than an error. Rows written by another model version are skipped so
+   * they fall back to keyword matching, which is honest, instead of being
+   * silently misranked.
+   */
   getObservationEmbeddingsByIds(
     ids: number[],
+    opts?: { model?: string; dimensions?: number },
   ): { observation_id: number; embedding: Buffer }[] {
     if (!ids.length) return [];
     const placeholders = ids.map(() => '?').join(',');
-    return this.db
-      .query(
-        `SELECT observation_id, embedding FROM observation_embeddings WHERE observation_id IN (${placeholders})`,
-      )
-      .all(...ids) as { observation_id: number; embedding: Buffer }[];
+    let sql = `SELECT observation_id, embedding, dimensions
+                 FROM observation_embeddings
+                WHERE observation_id IN (${placeholders})`;
+    const params: (string | number)[] = [...ids];
+    if (opts?.model) { sql += ' AND model = ?'; params.push(opts.model); }
+    if (opts?.dimensions) { sql += ' AND dimensions = ?'; params.push(opts.dimensions); }
+    const rows = this.db.query(sql).all(...params) as {
+      observation_id: number; embedding: Buffer; dimensions: number;
+    }[];
+
+    // Length check: `dimensions` is metadata, the blob is the payload, and a
+    // truncated or corrupted blob would otherwise be read as a shorter vector
+    // and score against a partial dot product.
+    return rows
+      .filter((r) => r.embedding.byteLength === r.dimensions * 4)
+      .map((r) => ({ observation_id: r.observation_id, embedding: r.embedding }));
   }
 
   // ---------- observation search / timeline ----------
@@ -636,14 +842,23 @@ export class MemoryDB {
     const units = extractFtsSearchUnits(literalQuery);
     if (units.length === 0) {
       // Below the trigram floor (or punctuation-only): LIKE is the only option.
+      // The column list must mirror `observations_fts` exactly — when it covered
+      // only 5 of the 9 indexed columns, a 2-char query could not reach a term
+      // that appears solely in `request` or `evidence_json`, so the same word
+      // was findable at 3 chars and invisible at 2.
       const like = `%${literalQuery}%`;
       let sql = `SELECT * FROM observations
         WHERE turn_stopped_at > ?
-          AND (title LIKE ? OR summary LIKE ? OR outcome LIKE ? OR learned LIKE ? OR concepts_json LIKE ?)`;
-      const params: (string | number)[] = [dateThreshold, like, like, like, like, like];
+          AND (title LIKE ? OR summary LIKE ? OR request LIKE ? OR outcome LIKE ?
+               OR learned LIKE ? OR next_steps LIKE ? OR concepts_json LIKE ?
+               OR evidence_json LIKE ? OR files_touched_json LIKE ?)`;
+      const params: (string | number)[] = [
+        dateThreshold, like, like, like, like, like, like, like, like, like,
+      ];
       if (opts?.scopeKey) { sql += ' AND scope_key = ?'; params.push(opts.scopeKey); }
       if (opts?.type) { sql += ' AND memory_type = ?'; params.push(opts.type); }
-      sql += ' ORDER BY is_pinned DESC, turn_stopped_at DESC, id DESC LIMIT ?';
+      // Same reasoning as the FTS branch: no pin ordering, recency only.
+      sql += ' ORDER BY turn_stopped_at DESC, id DESC LIMIT ?';
       params.push(limit);
       return this.db.query(sql).all(...params) as Observation[];
     }
@@ -663,7 +878,12 @@ export class MemoryDB {
     const params: (string | number)[] = [ftsExpr, dateThreshold];
     if (opts?.scopeKey) { sql += ' AND o.scope_key = ?'; params.push(opts.scopeKey); }
     if (opts?.type) { sql += ' AND o.memory_type = ?'; params.push(opts.type); }
-    sql += ' ORDER BY o.is_pinned DESC, fts.rank LIMIT ?';
+    // Ranking is bm25 only. `is_pinned` deliberately does NOT participate: the
+    // hybrid layer turns this row order into the FTS rank it feeds into RRF
+    // (see observation-search.ts), so ordering pinned rows first would let a
+    // weakly-matching pinned Observation steal rank 1 from a strong match. Pin
+    // affects bootstrap injection, not search relevance.
+    sql += ' ORDER BY fts.rank LIMIT ?';
     params.push(limit);
     return this.db.query(sql).all(...params) as Observation[];
   }
@@ -815,6 +1035,129 @@ export class MemoryDB {
         `SELECT * FROM jobs WHERE state = ? ORDER BY priority ASC, available_at ASC, id ASC LIMIT ?`,
       )
       .all(state, limit) as Job[];
+  }
+
+  // ---------- reconciliation (P0-5) ----------
+
+  /**
+   * Find projection work that was lost rather than merely failed.
+   *
+   * Two orphan classes, both invisible in normal operation:
+   *   - a CLOSED turn with no Observation and no active summarize job. Either
+   *     the enqueue never landed (crash between close and enqueue, pre-
+   *     transaction data) or the job reached a terminal state without producing
+   *     anything. A dropped raw event cannot be recovered, but a missing
+   *     projection can — the Truth Layer still holds the events.
+   *   - an Observation whose stored vector is missing **or unusable**: written
+   *     by a different embedding model, a different dimensionality, or with a
+   *     blob whose byte length does not match. The retrieval layer skips such
+   *     rows (§7.1), so they degrade to keyword-only reachability silently —
+   *     and the first version of this check only looked for a *missing row*,
+   *     which meant an embedding-model upgrade left every historical vector
+   *     permanently dark with no command able to rebuild it.
+   *
+   * The vector identity is a **required** argument rather than an optional
+   * filter: a lenient default is exactly how the stale-vector class went
+   * unnoticed. Callers must state which vector space they consider current.
+   *
+   * `succeeded` counts as active for turns: a succeeded summarize job that left
+   * no Observation is a real bug, but re-running it is safe (the handler
+   * short-circuits) and surfacing it is more useful than hiding it — so it is
+   * deliberately NOT filtered out here.
+   */
+  findOrphans(opts: {
+    embeddingModel: string;
+    embeddingDimensions: number;
+    limit?: number;
+  }): { turnsWithoutObservation: number[]; observationsWithoutEmbedding: number[] } {
+    const limit = opts.limit ?? 500;
+    const turnsWithoutObservation = (
+      this.db
+        .query(
+          `SELECT t.id AS id FROM turns t
+             LEFT JOIN observations o ON o.turn_id = t.id
+            WHERE t.state = 'closed'
+              AND o.id IS NULL
+              AND NOT EXISTS (
+                SELECT 1 FROM jobs j
+                 WHERE j.job_type = 'summarize_turn'
+                   AND j.dedupe_key = 'turn:' || t.id
+                   AND j.state IN ('pending', 'leased')
+              )
+            ORDER BY t.id ASC LIMIT ?`,
+        )
+        .all(limit) as { id: number }[]
+    ).map((r) => r.id);
+
+    const observationsWithoutEmbedding = (
+      this.db
+        .query(
+          `SELECT o.id AS id FROM observations o
+             LEFT JOIN observation_embeddings e
+               ON e.observation_id = o.id
+              AND e.model = ?
+              AND e.dimensions = ?
+              AND length(e.embedding) = ?
+            WHERE e.observation_id IS NULL
+              AND NOT EXISTS (
+                SELECT 1 FROM jobs j
+                 WHERE j.job_type = 'embed_observation'
+                   AND j.dedupe_key = 'embed:obs:' || o.id
+                   AND j.state IN ('pending', 'leased')
+              )
+            ORDER BY o.id ASC LIMIT ?`,
+        )
+        .all(
+          opts.embeddingModel,
+          opts.embeddingDimensions,
+          opts.embeddingDimensions * 4, // float32 blob; same check the read path makes
+          limit,
+        ) as { id: number }[]
+    ).map((r) => r.id);
+
+    return { turnsWithoutObservation, observationsWithoutEmbedding };
+  }
+
+  /**
+   * Re-enqueue the orphans found by `findOrphans()`.
+   *
+   * Idempotent by construction: the active-only dedupe index means a second run
+   * while the first is still pending is swallowed, and terminal rows are left in
+   * place so the original `last_error` stays available for diagnosis.
+   */
+  requeueOrphans(opts: {
+    embeddingModel: string;
+    embeddingDimensions: number;
+    limit?: number;
+  }): { summarize: number; embed: number } {
+    const orphans = this.findOrphans(opts);
+    let summarize = 0;
+    let embed = 0;
+
+    this.transaction(() => {
+      for (const turnId of orphans.turnsWithoutObservation) {
+        const job = this.enqueueJob({
+          job_type: 'summarize_turn',
+          dedupe_key: `turn:${turnId}`,
+          entity_type: 'turn',
+          entity_id: String(turnId),
+          payload_json: JSON.stringify({ turn_id: turnId }),
+        });
+        if (job) summarize++;
+      }
+      for (const observationId of orphans.observationsWithoutEmbedding) {
+        const job = this.enqueueJob({
+          job_type: 'embed_observation',
+          dedupe_key: `embed:obs:${observationId}`,
+          entity_type: 'observation',
+          entity_id: String(observationId),
+          payload_json: JSON.stringify({ observation_id: observationId }),
+        });
+        if (job) embed++;
+      }
+    });
+
+    return { summarize, embed };
   }
 
   // ===========================================================

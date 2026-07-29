@@ -7,9 +7,9 @@
 
 import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
 import { MemoryDB } from '../../src/db';
-import { Compressor } from '../../src/compressor';
 import { createApp } from '../../src/server/worker';
-import { FakeCompressorProvider } from '../support/fake-compressor';
+import { ACPCompressor } from '../../src/acp/compressor';
+import { FakeACPPool } from '../support/fake-acp-pool';
 import { openInMemoryDB } from '../support/tmp-db';
 import { loadConfig } from '../../src/config';
 import type { Hono } from 'hono';
@@ -27,8 +27,8 @@ function post(path: string, body: unknown) {
 
 beforeEach(() => {
   db = openInMemoryDB();
-  const fakeProvider = new FakeCompressorProvider();
-  const compressor = new Compressor(fakeProvider);
+  const fakePool = new FakeACPPool();
+  const compressor = new ACPCompressor({}, fakePool);
   const config = loadConfig();
   const result = createApp({ db, compressor, config, enableEmbeddings: false, enableAuth: false });
   app = result.app;
@@ -128,8 +128,9 @@ describe('Integration / real createApp — full ingest cycle', () => {
     expect(h.search_24h).toEqual({ requests: 0, ftsOnly: 0, degradeRate: 0, latencyMsAvg: 0, latencyMsP95: 0 });
     expect(h.acp_24h).toEqual({ repairs: 0, contaminations: 0 });
     expect(h).toHaveProperty('jobs');
-    // The test provider-backed Compressor exposes no runtime stats → acp: null.
-    expect(h.acp).toBeNull();
+    // The production compressor reports pool stats; the fake pool is a single
+    // idle slot. `null` here would mean the worker lost the stats wiring.
+    expect(h.acp).toEqual({ total: 1, busy: 0, queued: 0, restarts: 0, contaminations: 0, repairs: 0, parseFallbacks: 0 });
   });
 
 });

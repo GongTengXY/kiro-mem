@@ -12,19 +12,11 @@
  *   `all_scopes: true` opts out into a global browse.
  */
 
-import { computeScopeKey } from '../db/scope';
+import { computeScopeKey, detectRepo } from '../db/scope';
 
-/** Detect the enclosing git repo root for a directory, or null. */
-export function detectRepo(cwd: string): string | null {
-  if (!cwd) return null;
-  try {
-    const proc = Bun.spawnSync(['git', 'rev-parse', '--show-toplevel'], { cwd });
-    if (proc.exitCode === 0) return proc.stdout.toString().trim();
-  } catch {
-    // git missing / not a repo — fall through to cwd-based scope.
-  }
-  return null;
-}
+// Re-exported so existing callers/tests keep a single import site while the
+// implementation lives next to computeScopeKey (see src/db/scope.ts).
+export { detectRepo };
 
 export interface ScopeArgs {
   repo?: string;

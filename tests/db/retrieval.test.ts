@@ -15,6 +15,7 @@ function seedObs(o: {
   cwd?: string;
   title?: string;
   summary?: string;
+  request?: string;
   outcome?: string;
   learned?: string;
   evidence?: string[];
@@ -36,6 +37,7 @@ function seedObs(o: {
     cwd_scope: cwd,
     title: o.title ?? 'Title',
     summary: o.summary ?? 'Summary',
+    request: o.request,
     outcome: o.outcome,
     learned: o.learned,
     evidence: o.evidence,
@@ -191,5 +193,146 @@ describe('observationTimeline (source-turn ordering)', () => {
     expect(tl.anchor).toBeNull();
     expect(tl.before).toEqual([]);
     expect(tl.after).toEqual([]);
+  });
+});
+
+describe('P0-6: pin must not affect search ranking', () => {
+  test('a strongly matching non-pinned Observation outranks a weakly matching pinned one', () => {
+    // Weak match: the query term appears once, in the title only.
+    const weakPinned = seedObs({
+      title: 'token cleanup',
+      summary: 'unrelated maintenance work',
+      stoppedAt: '2026-07-01T00:00:00Z',
+    });
+    // Strong match: the query terms appear across title, summary and outcome.
+    const strong = seedObs({
+      title: 'Fix refresh token rotation',
+      summary: 'refresh token rotation broke on 401 retry',
+      outcome: 'token rotation now retries once with the refreshed token',
+      stoppedAt: '2026-07-02T00:00:00Z',
+    });
+    db.pinObservation(weakPinned, true);
+
+    const ids = db.searchObservationsFts('refresh token rotation').map((o) => o.id);
+    expect(ids[0]).toBe(strong);
+    expect(ids.indexOf(strong)).toBeLessThan(ids.indexOf(weakPinned));
+  });
+
+  test('the LIKE fallback branch is also recency-ordered, not pin-ordered', () => {
+    const older = seedObs({ title: 'ab handling older', stoppedAt: '2026-07-01T00:00:00Z' });
+    const newer = seedObs({ title: 'ab handling newer', stoppedAt: '2026-07-05T00:00:00Z' });
+    db.pinObservation(older, true);
+
+    // A 2-char query is below the trigram floor, so this exercises LIKE.
+    const ids = db.searchObservationsFts('ab').map((o) => o.id);
+    expect(ids[0]).toBe(newer);
+    expect(ids).toContain(older);
+  });
+
+  test('pinning does not change the result set, only bootstrap injection does', () => {
+    const a = seedObs({ title: 'alpha rotation task', stoppedAt: '2026-07-01T00:00:00Z' });
+    seedObs({ title: 'beta rotation task', stoppedAt: '2026-07-02T00:00:00Z' });
+    const before = db.searchObservationsFts('rotation task').map((o) => o.id).sort();
+    db.pinObservation(a, true);
+    const after = db.searchObservationsFts('rotation task').map((o) => o.id).sort();
+    expect(after).toEqual(before);
+  });
+});
+
+describe('P1-1: a long CJK query keeps its tail terms', () => {
+  // 44 chars, no whitespace. Under head-first windowing the budget was spent on
+  // the opening clause and everything after it was silently unsearchable.
+  const LONG_QUERY =
+    '我想找一下之前处理过的那个关于会话隔离和数据目录权限的问题最后是怎么修复的向量重排';
+
+  test('the tail window is present, not just the head', () => {
+    const units = extractFtsSearchUnits(LONG_QUERY);
+    expect(units.length).toBeLessThanOrEqual(32);
+    // The final 3-gram of the run must be reachable.
+    expect(units).toContain(LONG_QUERY.slice(-3));
+    // And so must the head, so this is not a head-vs-tail trade.
+    expect(units).toContain(LONG_QUERY.slice(0, 3));
+  });
+
+  test('units span the whole query, not only its first third', () => {
+    const units = extractFtsSearchUnits(LONG_QUERY);
+    const windows = units.filter((u) => u.length === 3);
+    const positions = windows.map((w) => LONG_QUERY.indexOf(w));
+    expect(Math.max(...positions)).toBeGreaterThan(LONG_QUERY.length * 0.7);
+  });
+
+  test('a distinctive tail term actually retrieves the right Observation', () => {
+    seedObs({ title: '会话隔离权限调整', stoppedAt: '2026-07-01T00:00:00Z' });
+    const target = seedObs({ title: '修复向量重排打分异常', stoppedAt: '2026-07-02T00:00:00Z' });
+
+    const ids = db.searchObservationsFts(LONG_QUERY).map((o) => o.id);
+    expect(ids).toContain(target);
+  });
+
+  test('when the budget is not binding the units are unchanged (head to tail)', () => {
+    expect(extractFtsSearchUnits('数据目录隔离')).toEqual([
+      '数据目录隔离', '数据目', '据目录', '目录隔', '录隔离',
+    ]);
+  });
+
+  test('a mixed CJK+latin segment surfaces its latin run', () => {
+    // `修复` is below the trigram floor and the whole segment is an exact
+    // substring match nothing satisfies, so `bug` was the only usable unit —
+    // and it used to be dropped.
+    expect(extractFtsSearchUnits('修复bug')).toContain('bug');
+  });
+
+  test('a pure-latin path is NOT split into generic fragments', () => {
+    // Splitting this would OR in `src`/`index`, which match nearly everything.
+    expect(extractFtsSearchUnits('src/db/index.ts')).toEqual(['src/db/index.ts']);
+  });
+
+  test('two CJK runs each keep their tail', () => {
+    const a = '数据目录权限隔离问题排查';
+    const b = '向量重排打分阈值调整验证';
+    const units = extractFtsSearchUnits(`${a} ${b}`);
+    expect(units).toContain(a.slice(-3));
+    expect(units).toContain(b.slice(-3));
+  });
+});
+
+describe('P1-2: the LIKE fallback covers every FTS column', () => {
+  test('a 2-char term found only in request is still retrievable', () => {
+    const target = seedObs({
+      title: 'unrelated title',
+      summary: 'unrelated summary',
+      request: 'please look at the zq handler',
+      stoppedAt: '2026-07-01T00:00:00Z',
+    });
+    // 2 chars => below the trigram floor => LIKE branch.
+    expect(extractFtsSearchUnits('zq')).toEqual([]);
+    expect(db.searchObservationsFts('zq').map((o) => o.id)).toContain(target);
+  });
+
+  test('a term found only in evidence is retrievable', () => {
+    const target = seedObs({
+      title: 'unrelated', evidence: ['exit code qw'], stoppedAt: '2026-07-02T00:00:00Z',
+    });
+    expect(db.searchObservationsFts('qw').map((o) => o.id)).toContain(target);
+  });
+
+  test('a term found only in files_touched is retrievable', () => {
+    const session_id = 'p12-files';
+    db.upsertSessionRef({ session_id, cwd: '/proj', repo: '/proj' });
+    const seq = db.allocateNextTurnSeq(session_id);
+    const turn = db.createTurn({ session_id, seq, cwd: '/proj', repo: '/proj' });
+    db.markTurnClosed(turn.id);
+    const target = db.insertObservation({
+      turn_id: turn.id, session_id, turn_seq: seq, repo: '/proj', cwd_scope: '/proj',
+      title: 'unrelated', summary: 'unrelated', files_touched: ['src/vx.ts'],
+      memory_type: 'change', quality: 'normal',
+      turn_started_at: '2026-07-03T00:00:00Z', turn_stopped_at: '2026-07-03T00:00:00Z',
+    })!;
+    expect(db.searchObservationsFts('vx').map((o) => o.id)).toContain(target);
+  });
+
+  test('a term in no column still returns nothing', () => {
+    seedObs({ title: 'alpha', stoppedAt: '2026-07-01T00:00:00Z' });
+    expect(db.searchObservationsFts('zz')).toEqual([]);
   });
 });

@@ -2,7 +2,6 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { Compressor } from '../../src/compressor';
 import { ACPCompressor } from '../../src/acp/compressor';
 
 const dirs: string[] = [];
@@ -20,7 +19,7 @@ function readLogs(dir: string): string {
 }
 
 describe('compressor log privacy', () => {
-  test('test compressor parse failure logs metadata without raw model output', async () => {
+  test('first-attempt parse failure logs metadata without raw model output', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'kiro-mem-log-'));
     dirs.push(dir);
     process.env.KIRO_MEMORY_DATA_DIR = dir;
@@ -29,7 +28,13 @@ describe('compressor log privacy', () => {
     const original = console.error;
     console.error = (...args: unknown[]) => { stderr.push(args.map(String).join(' ')); };
     try {
-      const compressor = new Compressor({ compress: async () => `${secret} invalid json` });
+      // maxRetries: 0 isolates the first-attempt parse log from the
+      // repair-exhausted log asserted by the next test.
+      const compressor = new ACPCompressor({ maxRetries: 0 }, {
+        stats: { total: 1, busy: 0, queued: 0, restarts: 0, contaminations: 0 },
+        run: async () => ({ text: `${secret} invalid json`, stopReason: 'end_turn' }),
+        close: async () => {},
+      });
       await compressor.summarizeObservation({
         user_prompt: 'request', assistant_response: 'response',
         artifacts: { files_touched: [], commands: [], test_signals: [], error_signals: [], facts: [] },

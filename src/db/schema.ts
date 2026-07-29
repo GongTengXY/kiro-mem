@@ -35,7 +35,6 @@ CREATE TABLE IF NOT EXISTS turns (
   branch                TEXT,
   state                 TEXT NOT NULL,
   prompt_text           TEXT,
-  prompt_hash           TEXT,
   started_at            TEXT NOT NULL,
   stopped_at            TEXT,
   last_event_at         TEXT NOT NULL,
@@ -103,9 +102,22 @@ CREATE TABLE IF NOT EXISTS jobs (
 
 CREATE INDEX IF NOT EXISTS idx_jobs_fetch
   ON jobs(state, priority, available_at, id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_dedupe
+
+-- Dedupe is scoped to ACTIVE jobs only.
+--
+-- A cross-state unique index (the original form) meant a terminal row held the
+-- key forever: once a summarize_turn job went dead, turn:{id} could never be
+-- enqueued again, so that turn was permanently left without an Observation and
+-- enqueueJob swallowed every retry as a duplicate. Restricting the index to
+-- pending/leased keeps in-flight dedupe intact while letting reconciliation
+-- (kiro-mem repair) re-enqueue work WITHOUT deleting the dead row, so the
+-- failure evidence stays queryable. Re-running a succeeded job is harmless: the
+-- handler short-circuits on the existing Observation and observations.turn_id
+-- is UNIQUE.
+DROP INDEX IF EXISTS idx_jobs_dedupe;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_dedupe_active
   ON jobs(job_type, dedupe_key)
-  WHERE dedupe_key IS NOT NULL;
+  WHERE dedupe_key IS NOT NULL AND state IN ('pending', 'leased');
 
 -- Lightweight operational metrics for runtime observability (§12.4). This is
 -- NOT memory — it holds append-only, time-windowed counters written by BOTH

@@ -3,9 +3,9 @@ import { mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { MemoryDB } from '../../src/db';
-import { Compressor } from '../../src/compressor';
 import { createApp } from '../../src/server/worker';
-import { FakeCompressorProvider } from '../support/fake-compressor';
+import { ACPCompressor } from '../../src/acp/compressor';
+import { FakeACPPool } from '../support/fake-acp-pool';
 import { openInMemoryDB } from '../support/tmp-db';
 import { loadConfig } from '../../src/config';
 import type { Hono } from 'hono';
@@ -18,7 +18,7 @@ beforeEach(() => {
   db = openInMemoryDB();
   const result = createApp({
     db,
-    compressor: new Compressor(new FakeCompressorProvider()),
+    compressor: new ACPCompressor({}, new FakeACPPool()),
     config: loadConfig(),
     enableEmbeddings: false,
     enableAuth: false,

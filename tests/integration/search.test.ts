@@ -37,6 +37,12 @@ function seed(o: {
   return id;
 }
 
+// The fixtures above store 4-dimensional vectors under the model name 'test'.
+// The retrieval kernel only compares vectors from the model it is querying with,
+// so every injected embedder must declare the space it belongs to — otherwise
+// the fixture would be claiming to be production MiniLM output.
+const TEST_VECTOR_SPACE = { embeddingModel: 'test', embeddingDimensions: 4 };
+
 // Deterministic embedder: query vector always [1,0,0,0]; cosine == dot product.
 const queryVec = async () => new Float32Array([1, 0, 0, 0]);
 
@@ -46,7 +52,7 @@ describe('hybridSearchObservations', () => {
     const ftsOnly = seed({ title: 'alpha task', stoppedAt: '2026-07-02T00:00:00Z' });
     const semOnly = seed({ title: 'beta thing', stoppedAt: '2026-07-03T00:00:00Z', embedding: [1, 0, 0, 0] });
 
-    const results = await hybridSearchObservations(db, 'alpha', { scopeKey: computeScopeKey('/proj', '/proj') }, { generateEmbedding: queryVec });
+    const results = await hybridSearchObservations(db, 'alpha', { scopeKey: computeScopeKey('/proj', '/proj') }, { ...TEST_VECTOR_SPACE, generateEmbedding: queryVec });
     const ids = results.map((r) => r.id);
     expect(ids).toContain(both);
     expect(ids).toContain(ftsOnly);
@@ -61,7 +67,7 @@ describe('hybridSearchObservations', () => {
     seed({ session_id: 'a', repo: '/repoA', cwd: '/repoA', title: 'shared alpha', stoppedAt: '2026-07-01T00:00:00Z', embedding: [1, 0, 0, 0] });
     const inB = seed({ session_id: 'b', repo: '/repoB', cwd: '/repoB', title: 'shared alpha', stoppedAt: '2026-07-02T00:00:00Z', embedding: [1, 0, 0, 0] });
 
-    const results = await hybridSearchObservations(db, 'alpha', { scopeKey: computeScopeKey('/repoA', '/repoA') }, { generateEmbedding: queryVec });
+    const results = await hybridSearchObservations(db, 'alpha', { scopeKey: computeScopeKey('/repoA', '/repoA') }, { ...TEST_VECTOR_SPACE, generateEmbedding: queryVec });
     expect(results.length).toBe(1);
     expect(results[0]!.repo).toBe('/repoA');
     expect(results.map((r) => r.id)).not.toContain(inB);
@@ -71,7 +77,7 @@ describe('hybridSearchObservations', () => {
     const hit = seed({ title: 'gamma work', stoppedAt: '2026-07-01T00:00:00Z', embedding: [1, 0, 0, 0] });
     const throwing = async () => { throw new Error('model unavailable'); };
 
-    const results = await hybridSearchObservations(db, 'gamma', { scopeKey: computeScopeKey('/proj', '/proj') }, { generateEmbedding: throwing });
+    const results = await hybridSearchObservations(db, 'gamma', { scopeKey: computeScopeKey('/proj', '/proj') }, { ...TEST_VECTOR_SPACE, generateEmbedding: throwing });
     expect(results.length).toBe(1);
     expect(results[0]!.id).toBe(hit);
     expect(results[0]!.match_source).toBe('fts'); // no semantic contribution
@@ -83,7 +89,7 @@ describe('hybridSearchObservations', () => {
     const older = seed({ title: 'gamma only fts', stoppedAt: '2026-07-01T00:00:00Z' });
     const newer = seed({ title: 'delta only semantic', stoppedAt: '2026-07-05T00:00:00Z', embedding: [1, 0, 0, 0] });
 
-    const results = await hybridSearchObservations(db, 'gamma', { scopeKey: computeScopeKey('/proj', '/proj') }, { generateEmbedding: queryVec });
+    const results = await hybridSearchObservations(db, 'gamma', { scopeKey: computeScopeKey('/proj', '/proj') }, { ...TEST_VECTOR_SPACE, generateEmbedding: queryVec });
     expect(results.length).toBe(2);
     // Tie broken toward the newer observation.
     expect(results[0]!.id).toBe(newer);
@@ -92,7 +98,7 @@ describe('hybridSearchObservations', () => {
 
   test('empty candidate set returns []', async () => {
     seed({ title: 'nothing relevant', stoppedAt: '2026-07-01T00:00:00Z' });
-    const results = await hybridSearchObservations(db, 'zzzznomatch', { scopeKey: computeScopeKey('/proj', '/proj') }, { generateEmbedding: async () => new Float32Array([0, 0, 0, 1]) });
+    const results = await hybridSearchObservations(db, 'zzzznomatch', { scopeKey: computeScopeKey('/proj', '/proj') }, { ...TEST_VECTOR_SPACE, generateEmbedding: async () => new Float32Array([0, 0, 0, 1]) });
     expect(results.length).toBe(0);
   });
 
@@ -105,7 +111,7 @@ describe('hybridSearchObservations', () => {
       db,
       'timeout fallback',
       { scopeKey: computeScopeKey('/proj', '/proj') },
-      { generateEmbedding: never, embeddingTimeoutMs: 20, onDegrade: () => { degraded++; } },
+      { ...TEST_VECTOR_SPACE, generateEmbedding: never, embeddingTimeoutMs: 20, onDegrade: () => { degraded++; } },
     );
 
     expect(performance.now() - started).toBeLessThan(250);
@@ -114,15 +120,56 @@ describe('hybridSearchObservations', () => {
     expect(degraded).toBe(1);
   });
 
-  test('a hanging embedder with no FTS hit returns an empty result after timeout', async () => {
+  test('no lexical anchor in scope => empty result, embedder never consulted', async () => {
+    // S4. The semantic candidate pool is "the 200 most recent Observations in
+    // scope", every one gets a cosine score, and RRF has no absolute cutoff —
+    // so a query about work that never happened here used to come back with a
+    // full page of high-similarity noise. Measured on the benchmark dataset:
+    // expected-empty queries returned a mean of 8.4 records (worst 10 = the
+    // limit) while FTS alone correctly returned 0 for every one of them.
+    for (let i = 0; i < 10; i++) {
+      seed({ title: `unrelated note ${i}`, stoppedAt: `2026-07-0${i + 1}T00:00:00Z`, embedding: [1, 0, 0, 0] });
+    }
+    let embedderCalls = 0;
+    const results = await hybridSearchObservations(
+      db,
+      'zzzznomatch',
+      { scopeKey: computeScopeKey('/proj', '/proj') },
+      { ...TEST_VECTOR_SPACE, generateEmbedding: async () => { embedderCalls++; return new Float32Array([1, 0, 0, 0]); } },
+    );
+
+    // Every stored vector is a perfect cosine match for the query vector, so
+    // without the anchor rule all 10 would rank and be returned.
+    expect(results).toEqual([]);
+    // Short-circuits before the embedding call: no lexical anchor means there is
+    // nothing to rerank and nothing we are willing to guess.
+    expect(embedderCalls).toBe(0);
+  });
+
+  test('an FTS anchor still admits semantic-only records (reranking is not disabled)', async () => {
+    const anchor = seed({ title: 'epsilon anchor', stoppedAt: '2026-07-01T00:00:00Z' });
+    const semOnly = seed({ title: 'no shared words here', stoppedAt: '2026-07-02T00:00:00Z', embedding: [1, 0, 0, 0] });
+
+    const results = await hybridSearchObservations(db, 'epsilon', { scopeKey: computeScopeKey('/proj', '/proj') }, { ...TEST_VECTOR_SPACE, generateEmbedding: queryVec });
+    const ids = results.map((r) => r.id);
+    expect(ids).toContain(anchor);
+    expect(ids).toContain(semOnly);
+    expect(results.find((r) => r.id === semOnly)!.match_source).toBe('semantic');
+  });
+
+  test('a hanging embedder with no FTS hit returns empty without waiting for the timeout', async () => {
     seed({ title: 'unrelated content', stoppedAt: '2026-07-01T00:00:00Z', embedding: [1, 0, 0, 0] });
+    const started = performance.now();
     const results = await hybridSearchObservations(
       db,
       'missing marker',
       { scopeKey: computeScopeKey('/proj', '/proj') },
-      { generateEmbedding: () => new Promise<Float32Array>(() => {}), embeddingTimeoutMs: 20 },
+      { ...TEST_VECTOR_SPACE, generateEmbedding: () => new Promise<Float32Array>(() => {}), embeddingTimeoutMs: 5000 },
     );
     expect(results).toEqual([]);
+    // The anchor rule returns before the embedder is awaited, so a 5s deadline
+    // is never paid.
+    expect(performance.now() - started).toBeLessThan(500);
   });
 
   test('type filter also applies to pure semantic candidates', async () => {
@@ -133,7 +180,7 @@ describe('hybridSearchObservations', () => {
       db,
       'typed alpha',
       { scopeKey: computeScopeKey('/proj', '/proj'), type: 'bugfix' },
-      { generateEmbedding: queryVec },
+      { ...TEST_VECTOR_SPACE, generateEmbedding: queryVec },
     );
     expect(results.map((r) => r.id)).toEqual([wanted]);
     expect(results.every((r) => r.memory_type === 'bugfix')).toBe(true);

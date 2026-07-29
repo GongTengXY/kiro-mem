@@ -63,6 +63,12 @@ const T = isEnglish
       hint: 'Use get_observations to fetch full details; timeline to see surrounding work',
       missingScope:
         'Current workspace could not be resolved. Retry with repo or cwd, or set all_scopes=true explicitly.',
+      outOfScope:
+        'belongs to another workspace. Pass repo/cwd for that workspace, or all_scopes=true, to read it.',
+      budgetExhausted:
+        'omitted to stay within the response budget. Request these IDs in a separate call.',
+      pinOutOfScope:
+        'belongs to another workspace. pin only applies to the current workspace, because a pinned observation is injected into its own workspace context.',
     }
   : {
       searchDescription:
@@ -88,6 +94,12 @@ const T = isEnglish
       hint: '用 get_observations 获取完整详情；用 timeline 查看前后工作',
       missingScope:
         '无法确定当前 workspace。请传入 repo 或 cwd；只有明确需要全局检索时才设置 all_scopes=true。',
+      outOfScope:
+        '属于其他 workspace。要读取它，请传入该 workspace 的 repo/cwd，或设置 all_scopes=true。',
+      budgetExhausted:
+        '为控制响应体积被省略。请在单独一次调用里获取这些 ID。',
+      pinOutOfScope:
+        '属于其他 workspace。pin 只作用于当前 workspace，因为置顶的观察只会注入它自身 workspace 的上下文。',
     };
 
 function compactCard(o: Observation & { match_source?: string; semantic_score?: number | null }) {
@@ -96,6 +108,11 @@ function compactCard(o: Observation & { match_source?: string; semantic_score?: 
     title: o.title,
     type: o.memory_type,
     date: o.turn_stopped_at?.slice(0, 10),
+    // Source-turn identity travels with every card, not just with
+    // get_observations: a timeline is only auditable if each entry can be traced
+    // back to the turn it was projected from.
+    turn_id: o.turn_id,
+    turn_seq: o.turn_seq,
     files: safeArr(o.files_touched_json),
     is_pinned: !!o.is_pinned,
     ...(o.match_source ? { match_source: o.match_source } : {}),
@@ -103,6 +120,53 @@ function compactCard(o: Observation & { match_source?: string; semantic_score?: 
     has_next_steps: !!(o.next_steps && o.next_steps.trim()),
     confidence: o.confidence_score,
   };
+}
+
+// --- get_observations response budget (P1-3) ---
+//
+// The injected bootstrap index is byte-budgeted, but the PULL side was not, so
+// a single `get_observations` call could put far more text into the agent's
+// context than the whole injection budget allows — which makes progressive
+// disclosure decorative rather than real. Three bounds, all reported when hit:
+// per prose field, per array field, and one total response budget.
+
+/** Per-field character cap for the long prose fields. */
+const DETAIL_FIELD_CHARS = 1500;
+/** Array fields (evidence, files, concepts): item count and per-item length. */
+const DETAIL_ARRAY_ITEMS = 20;
+const DETAIL_ARRAY_ITEM_CHARS = 300;
+/** Total serialized response budget. Kept well under a typical context slice. */
+const DETAIL_RESPONSE_BYTES = 32 * 1024;
+
+function clipDetail(s: string | null | undefined, max = DETAIL_FIELD_CHARS): string | null {
+  if (s == null) return null;
+  return s.length > max ? s.slice(0, max) + '…' : s;
+}
+
+function clipDetailArray(items: string[]): string[] {
+  return items.slice(0, DETAIL_ARRAY_ITEMS).map((s) =>
+    s.length > DETAIL_ARRAY_ITEM_CHARS ? s.slice(0, DETAIL_ARRAY_ITEM_CHARS) + '…' : s,
+  );
+}
+
+/** Names the fields that were shortened, so the agent knows it has a partial read. */
+function truncatedFields(o: Observation): string[] {
+  const cut: string[] = [];
+  for (const [name, value] of [
+    ['summary', o.summary], ['request', o.request], ['outcome', o.outcome],
+    ['learned', o.learned], ['next_steps', o.next_steps],
+  ] as const) {
+    if (value && value.length > DETAIL_FIELD_CHARS) cut.push(name);
+  }
+  for (const [name, json] of [
+    ['files', o.files_touched_json], ['concepts', o.concepts_json], ['evidence', o.evidence_json],
+  ] as const) {
+    const arr = safeArr(json);
+    if (arr.length > DETAIL_ARRAY_ITEMS || arr.some((s) => s.length > DETAIL_ARRAY_ITEM_CHARS)) {
+      cut.push(name);
+    }
+  }
+  return cut;
 }
 
 function safeArr(json: string): string[] {
@@ -162,6 +226,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           before: { type: 'integer', minimum: 0, maximum: 20, description: T.beforeDescription, default: 3 },
           after: { type: 'integer', minimum: 0, maximum: 20, description: T.afterDescription, default: 3 },
           mode: { type: 'string', enum: ['scope', 'session'], description: T.modeDescription, default: 'scope' },
+          repo: { type: 'string', description: T.repoDescription },
+          cwd: { type: 'string', description: T.cwdDescription },
+          all_scopes: { type: 'boolean', description: T.allScopesDescription, default: false },
         },
         required: ['observation_id'],
       },
@@ -173,6 +240,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         type: 'object' as const,
         properties: {
           ids: { type: 'array', items: { type: 'integer', minimum: 1 }, description: T.idsDescription, minItems: 1, maxItems: 20 },
+          repo: { type: 'string', description: T.repoDescription },
+          cwd: { type: 'string', description: T.cwdDescription },
+          all_scopes: { type: 'boolean', description: T.allScopesDescription, default: false },
         },
         required: ['ids'],
       },
@@ -192,33 +262,76 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   ],
 }));
 
+const MEMORY_TYPES = ['decision', 'bugfix', 'feature', 'refactor', 'discovery', 'change'] as const;
+
+interface ScopeInput { repo?: unknown; cwd?: unknown; all_scopes?: unknown }
+
+/**
+ * Resolve the caller's authorized scope for ANY tool, not just `search`.
+ *
+ * Every tool that reaches an Observation — by query or by ID — must go through
+ * this. `get_observations`, `timeline` and `pin` address rows by global ID, so
+ * skipping it means an ID is enough to read (or, for `pin`, mutate) another
+ * workspace's memory. `allowAllScopes: false` is used by `pin`, which has no
+ * legitimate cross-workspace use: a pinned Observation is only ever injected
+ * into its own workspace (design §14.3).
+ */
+function resolveToolScope(
+  a: ScopeInput,
+  opts?: { allowAllScopes?: boolean },
+): { ok: true; scopeKey: string | undefined } | { ok: false; error: ReturnType<typeof toolError> } {
+  if (a.repo !== undefined && typeof a.repo !== 'string') {
+    return { ok: false, error: toolError('repo must be a string') };
+  }
+  if (a.cwd !== undefined && typeof a.cwd !== 'string') {
+    return { ok: false, error: toolError('cwd must be a string') };
+  }
+  if (a.all_scopes !== undefined && typeof a.all_scopes !== 'boolean') {
+    return { ok: false, error: toolError('all_scopes must be a boolean') };
+  }
+  const allowAllScopes = opts?.allowAllScopes ?? true;
+  if (a.all_scopes === true && !allowAllScopes) {
+    return { ok: false, error: toolError('all_scopes is not supported by this tool') };
+  }
+  try {
+    const scopeKey = resolveScopeKey(
+      {
+        repo: a.repo as string | undefined,
+        cwd: a.cwd as string | undefined,
+        all_scopes: allowAllScopes ? (a.all_scopes as boolean | undefined) : false,
+      },
+      { sessionScope: sessionScopeKey },
+    );
+    return { ok: true, scopeKey };
+  } catch (error) {
+    if (error instanceof MissingSearchScopeError) {
+      return { ok: false, error: { content: [{ type: 'text', text: T.missingScope }], isError: true } };
+    }
+    throw error;
+  }
+}
+
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
   if (name === 'search') {
-    const a = (args ?? {}) as { query?: unknown; type?: string; repo?: string; cwd?: string; days?: unknown; limit?: unknown; all_scopes?: boolean };
+    const a = (args ?? {}) as { query?: unknown; type?: unknown; repo?: unknown; cwd?: unknown; days?: unknown; limit?: unknown; all_scopes?: unknown };
     if (typeof a.query !== 'string') return toolError('search.query must be a string');
+    if (a.type !== undefined && !MEMORY_TYPES.includes(a.type as (typeof MEMORY_TYPES)[number])) {
+      return toolError(`search.type must be one of: ${MEMORY_TYPES.join(', ')}`);
+    }
     const days = boundedInteger(a.days, 90, 1, 3650);
     const limit = boundedInteger(a.limit, 20, 1, 50);
     if (days == null) return toolError('search.days must be an integer between 1 and 3650');
     if (limit == null) return toolError('search.limit must be an integer between 1 and 50');
 
-    let scopeKey: string | undefined;
-    try {
-      scopeKey = resolveScopeKey(a as { repo?: string; cwd?: string; all_scopes?: boolean }, { sessionScope: sessionScopeKey });
-    } catch (error) {
-      if (error instanceof MissingSearchScopeError) {
-        return {
-          content: [{ type: 'text', text: T.missingScope }],
-          isError: true,
-        };
-      }
-      throw error;
-    }
+    const scope = resolveToolScope(a);
+    if (!scope.ok) return scope.error;
+    const scopeKey = scope.scopeKey;
     const startedAt = Date.now();
     let degraded = false;
     const results = await hybridSearchObservations(db, a.query, {
-      scopeKey, type: a.type, days, limit,
+      scopeKey, type: a.type as string | undefined, days, limit,
     }, { onDegrade: () => { degraded = true; } });
     db.recordSearchMetric({ latencyMs: Date.now() - startedAt, degraded });
     return {
@@ -234,13 +347,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   if (name === 'timeline') {
-    const a = (args ?? {}) as { observation_id?: unknown; before?: unknown; after?: unknown; mode?: 'scope' | 'session' };
+    const a = (args ?? {}) as { observation_id?: unknown; before?: unknown; after?: unknown; mode?: unknown; repo?: unknown; cwd?: unknown; all_scopes?: unknown };
     const observationId = boundedInteger(a.observation_id, null, 1, Number.MAX_SAFE_INTEGER);
     const before = boundedInteger(a.before, 3, 0, 20);
     const after = boundedInteger(a.after, 3, 0, 20);
     if (observationId == null) return toolError('timeline.observation_id must be a positive integer');
     if (before == null || after == null) return toolError('timeline.before/after must be integers between 0 and 20');
-    const tl = db.observationTimeline(observationId, { before, after, mode: a.mode ?? 'scope' });
+    if (a.mode !== undefined && a.mode !== 'scope' && a.mode !== 'session') {
+      return toolError("timeline.mode must be 'scope' or 'session'");
+    }
+    const mode = (a.mode as 'scope' | 'session' | undefined) ?? 'scope';
+
+    // The anchor is addressed by global ID, so authorize it before reading:
+    // otherwise a foreign ID leaks that Observation plus its neighbours.
+    const scope = resolveToolScope(a);
+    if (!scope.ok) return scope.error;
+    const anchor = db.getObservation(observationId);
+    if (!anchor) return toolError(`Observation #${observationId} does not exist`);
+    if (scope.scopeKey && anchor.scope_key !== scope.scopeKey) {
+      return toolError(`Observation #${observationId} ${T.outOfScope}`);
+    }
+
+    const tl = db.observationTimeline(observationId, { before, after, mode });
     return {
       content: [{
         type: 'text',
@@ -248,56 +376,100 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           anchor: tl.anchor ? compactCard(tl.anchor) : null,
           before: tl.before.map(compactCard),
           after: tl.after.map(compactCard),
-          mode: a.mode ?? 'scope',
+          mode,
         }, null, 2),
       }],
     };
   }
 
   if (name === 'get_observations') {
-    const { ids } = (args ?? {}) as { ids?: unknown };
+    const a = (args ?? {}) as { ids?: unknown; repo?: unknown; cwd?: unknown; all_scopes?: unknown };
+    const { ids } = a;
     if (!Array.isArray(ids) || ids.length < 1 || ids.length > 20 ||
         !ids.every((id) => typeof id === 'number' && Number.isInteger(id) && id > 0)) {
       return toolError('get_observations.ids must contain 1 to 20 positive integer IDs');
     }
-    const observations = db.getObservationsByIds(ids as number[]);
+    const scope = resolveToolScope(a);
+    if (!scope.ok) return scope.error;
+    const observations = db.getObservationsByIds(ids as number[], { scopeKey: scope.scopeKey });
+    // Report IDs the caller is not authorized for (or that do not exist)
+    // explicitly, so a scope denial never looks like "no such memory".
+    const returned = new Set(observations.map((o) => o.id));
+    const unavailable = (ids as number[]).filter((id) => !returned.has(id));
+
+    // Field-level caps first, then a running total: an over-budget call returns
+    // fewer FULL records rather than many silently mangled ones.
+    const details: unknown[] = [];
+    const omitted: number[] = [];
+    let usedBytes = 0;
+    for (const o of observations) {
+      const turn = db.getTurn(o.turn_id);
+      const cut = truncatedFields(o);
+      const record = {
+        id: o.id, title: o.title,
+        summary: clipDetail(o.summary),
+        request: clipDetail(o.request),
+        outcome: clipDetail(o.outcome),
+        learned: clipDetail(o.learned),
+        next_steps: clipDetail(o.next_steps),
+        type: o.memory_type, quality: o.quality,
+        files: clipDetailArray(safeArr(o.files_touched_json)),
+        concepts: clipDetailArray(safeArr(o.concepts_json)),
+        evidence: clipDetailArray(safeArr(o.evidence_json)),
+        is_pinned: !!o.is_pinned,
+        importance: o.importance_score, confidence: o.confidence_score, unresolved: o.unresolved_score,
+        turn_started_at: o.turn_started_at, turn_stopped_at: o.turn_stopped_at,
+        source_turn: turn ? {
+          turn_id: turn.id, seq: turn.seq,
+          prompt: turn.prompt_text?.slice(0, 200) ?? null,
+          started_at: turn.started_at, stopped_at: turn.stopped_at,
+          tool_event_count: turn.tool_event_count,
+        } : null,
+        ...(cut.length ? { truncated_fields: cut } : {}),
+      };
+      const size = Buffer.byteLength(JSON.stringify(record), 'utf-8');
+      // Always return at least one record, otherwise a single oversized
+      // Observation would make the tool useless rather than merely bounded.
+      if (details.length > 0 && usedBytes + size > DETAIL_RESPONSE_BYTES) {
+        omitted.push(o.id);
+        continue;
+      }
+      usedBytes += size;
+      details.push(record);
+    }
+
     return {
       content: [{
         type: 'text',
         text: JSON.stringify({
-          observations: observations.map((o) => {
-            const turn = db.getTurn(o.turn_id);
-            return {
-              id: o.id, title: o.title, summary: o.summary,
-              request: o.request, outcome: o.outcome, learned: o.learned, next_steps: o.next_steps,
-              type: o.memory_type, quality: o.quality,
-              files: safeArr(o.files_touched_json),
-              concepts: safeArr(o.concepts_json),
-              evidence: safeArr(o.evidence_json),
-              is_pinned: !!o.is_pinned,
-              importance: o.importance_score, confidence: o.confidence_score, unresolved: o.unresolved_score,
-              turn_started_at: o.turn_started_at, turn_stopped_at: o.turn_stopped_at,
-              source_turn: turn ? {
-                turn_id: turn.id, seq: turn.seq,
-                prompt: turn.prompt_text?.slice(0, 200) ?? null,
-                started_at: turn.started_at, stopped_at: turn.stopped_at,
-                tool_event_count: turn.tool_event_count,
-              } : null,
-            };
-          }),
+          observations: details,
+          ...(unavailable.length ? { unavailable, unavailable_reason: T.outOfScope } : {}),
+          ...(omitted.length ? { omitted, omitted_reason: T.budgetExhausted } : {}),
         }, null, 2),
       }],
     };
   }
 
   if (name === 'pin') {
-    const { observation_id, pinned } = (args ?? {}) as { observation_id?: unknown; pinned?: boolean };
-    const observationId = boundedInteger(observation_id, null, 1, Number.MAX_SAFE_INTEGER);
+    const a = (args ?? {}) as { observation_id?: unknown; pinned?: unknown; repo?: unknown; cwd?: unknown; all_scopes?: unknown };
+    const observationId = boundedInteger(a.observation_id, null, 1, Number.MAX_SAFE_INTEGER);
     if (observationId == null) return toolError('pin.observation_id must be a positive integer');
-    if (!db.getObservation(observationId)) return toolError(`Observation #${observationId} does not exist`);
-    db.pinObservation(observationId, pinned ?? true);
+    if (a.pinned !== undefined && typeof a.pinned !== 'boolean') {
+      return toolError('pin.pinned must be a boolean');
+    }
+    // pin MUTATES another workspace's injected context if left unscoped, so it
+    // never accepts all_scopes — the caller must be in the owning workspace.
+    const scope = resolveToolScope(a, { allowAllScopes: false });
+    if (!scope.ok) return scope.error;
+    const observation = db.getObservation(observationId);
+    if (!observation) return toolError(`Observation #${observationId} does not exist`);
+    if (scope.scopeKey && observation.scope_key !== scope.scopeKey) {
+      return toolError(`Observation #${observationId} ${T.pinOutOfScope}`);
+    }
+    const pinned = (a.pinned as boolean | undefined) ?? true;
+    db.pinObservation(observationId, pinned);
     return {
-      content: [{ type: 'text', text: JSON.stringify({ ok: true, observation_id: observationId, pinned: pinned ?? true }) }],
+      content: [{ type: 'text', text: JSON.stringify({ ok: true, observation_id: observationId, pinned }) }],
     };
   }
 

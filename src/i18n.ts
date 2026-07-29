@@ -137,6 +137,16 @@ const messages = {
     authChainUnreachable: 'Worker 未响应鉴权探测',
     diagAuthRejected: '鉴权拒绝',
     diagAuthRejectedHint: '次（24 小时内）— Hook 写入曾静默失败',
+    diagCaptureMissed: '采集丢失',
+    diagCaptureMissedHint: '次（24 小时内）— 这些原始事件未进入记忆，且无法事后恢复',
+    helpRepair: '扫描并重排丢失的记忆投影（不删除失败记录）',
+    repairNoDb: '数据库不存在，请先运行 kiro-mem install：',
+    repairNothing: '无需修复：所有已结束的 turn 都有 Observation，所有 Observation 都有当前模型的可用向量',
+    repairFound: '发现丢失的投影：',
+    repairTurns: '缺 Observation 的 turn',
+    repairEmbeddings: '向量缺失或需重建的 Observation',
+    repairQueued: '已重新入队：',
+    repairHint: 'Worker 会在后台处理；失败任务的原始记录已保留，便于排查。',
 
     // --- diagnose: jobs ---
     diagJobsLabel: '任务',
@@ -293,6 +303,16 @@ const messages = {
     authChainUnreachable: 'Worker did not answer the auth probe',
     diagAuthRejected: 'auth 401s',
     diagAuthRejectedHint: 'in the last 24h — Hook writes failed silently',
+    diagCaptureMissed: 'capture misses',
+    diagCaptureMissedHint: 'in the last 24h — these raw events never reached memory and cannot be recovered',
+    helpRepair: 'Find and re-queue lost memory projections (keeps failure records)',
+    repairNoDb: 'No database found — run `kiro-mem install` first:',
+    repairNothing: 'Nothing to repair: every closed turn has an Observation, every Observation has a usable vector for the current model',
+    repairFound: 'Lost projections found:',
+    repairTurns: 'turns missing an Observation',
+    repairEmbeddings: 'Observations whose vector is missing or needs a rebuild',
+    repairQueued: 'Re-queued:',
+    repairHint: 'The Worker picks these up in the background; failed job rows are kept for diagnosis.',
 
     // --- diagnose: jobs ---
     diagJobsLabel: 'jobs',

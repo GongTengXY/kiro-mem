@@ -169,6 +169,7 @@ kiro-mem stop
 kiro-mem config
 kiro-mem config --show
 kiro-mem diagnose
+kiro-mem repair
 kiro-mem uninstall
 kiro-mem uninstall --purge
 ```
@@ -183,9 +184,14 @@ kiro-mem uninstall --purge
 
 | 限制 | 影响 | 缓解 |
 |------|------|------|
+| 采集是 best-effort | Hook 只给 Worker 约 700ms，且从不阻塞你的对话。Worker 重启或临时错误会丢掉原始事件，**丢掉的输入事后无法重建——记忆不保证完整** | 按 Hook 与原因计数；见 `/health` 的 `capture_misses_24h` 与 `kiro-mem diagnose` 的告警行 |
+| 无细粒度删除 | 采集到的 turn 会无限期保留。`kiro-mem uninstall --purge` 清除**全部**数据；3.x **没有**按 Observation、按 scope、按时间段的删除，也没有导出与保留期策略 | 用 `<private>` 标签从源头阻止敏感内容入库 |
+| 原始事件 payload 有上限 | 单个字符串字段超过 32KB 会被截断，单个 turn 最多存 4MB 原始 payload。截断会就地标记，但丢掉的字节不可恢复 | `payload_size` 仍记录原始大小；artifacts 提取在截断后的 payload 上继续工作 |
 | 依赖 Kiro CLI ACP | `kiro-cli acp` 不可用时无法压缩 | `kiro-mem diagnose` 会跑 ACP smoke 测试 |
 | `agentSpawn` 输出限制 10KB | 注入索引必须紧凑 | 预算控制的 context builder |
 | 搜索词短于 3 字符 | 回退到 `LIKE`，精度较低 | 尽量使用较长搜索词 |
+| 搜索需要关键词锚点 | 语义相似度只负责重排与扩展关键词命中，不会自己浮出记录。当前 workspace 里 FTS 一条都没命中时，搜索返回空——即使存在换一种说法的同义记忆 | 至少带一个在目标工作里**字面出现过**的词 |
+| 语义召回窗口有界 | 重排只考虑 FTS 命中加上该 scope 内最近约 200 条 Observation，更早的记录能靠关键词命中，但可能落在语义排序之外 | 查旧工作时用有区分度的关键词；`days` 可放宽时间过滤 |
 | 安装阶段 | 把内置 embedding 模型（约 23 MB）复制到 `~/.kiro-mem/models` | 模型随包分发，无需下载模型 |
 | 暂无 Web 查看器 | 通过 CLI/MCP/DB 查看记忆 | 单独规划中 |
 | 仅本地 | 无内置跨机器同步 | 未来：git sync 或云存储 |

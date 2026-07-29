@@ -1,19 +1,21 @@
 import { Hono } from 'hono';
 import { writeFileSync } from 'fs';
 import { join } from 'path';
-import { MemoryDB } from '../db';
+import { MemoryDB, detectRepo } from '../db';
 import type { MemoryType } from '../db/types';
 import type { MemoryCompressor, ObservationSummaryResult } from '../compressor';
 import { ACPCompressor, checkRuntimeHome, formatIssues } from '../acp';
 import { buildBootstrapContext } from '../bootstrap-context';
-import { loadConfig, getDataDir, type Config } from '../config';
+import { loadConfig, getDataDir, resolveRuntimeHome, type Config } from '../config';
 import { ensureLocalAuthToken, readLocalAuthToken } from '../auth-token';
+import { readCaptureMisses } from '../hooks/capture-log';
 import { logError } from '../logger';
 import { JobRunner, extractArtifacts } from '../jobs';
 import {
   generateEmbedding,
   embeddingToBlob,
   DIMENSIONS,
+  EMBEDDING_MODEL,
   withEmbeddingTimeout,
   DEFAULT_JOB_EMBEDDING_TIMEOUT_MS,
 } from '../embedding';
@@ -28,10 +30,57 @@ if (typeof process !== 'undefined') {
 
 // --- Shared utilities ---
 
-const PRIVATE_RE = /<private>[\s\S]*?<\/private>/gi;
+const PRIVATE_OPEN = '<private>';
+const PRIVATE_CLOSE = '</private>';
+const REDACTED = '[REDACTED]';
+
+/**
+ * Fail-closed `<private>` redaction.
+ *
+ * A regex like /<private>[\s\S]*?<\/private>/ only redacts well-formed pairs,
+ * so a user who forgets the closing tag gets their secret written verbatim into
+ * the append-only Truth Layer — the one place we cannot retract it from. This
+ * scanner instead treats an *unterminated* `<private>` as "redact to the end of
+ * the string", and counts nesting depth so an inner `</private>` cannot end the
+ * outer block early.
+ *
+ * Exported for tests.
+ */
+export function redactPrivate(text: string): string {
+  const lower = text.toLowerCase();
+  let out = '';
+  let i = 0;
+  let depth = 0;
+
+  while (i < text.length) {
+    if (lower.startsWith(PRIVATE_OPEN, i)) {
+      depth++;
+      i += PRIVATE_OPEN.length;
+      continue;
+    }
+    if (lower.startsWith(PRIVATE_CLOSE, i)) {
+      if (depth > 0) {
+        depth--;
+        i += PRIVATE_CLOSE.length;
+        if (depth === 0) out += REDACTED;
+        continue;
+      }
+      // A stray closing tag never opened a block; it carries no secret.
+      out += text.slice(i, i + PRIVATE_CLOSE.length);
+      i += PRIVATE_CLOSE.length;
+      continue;
+    }
+    if (depth === 0) out += text[i];
+    i++;
+  }
+
+  // Unterminated block: everything after the opening tag stays redacted.
+  if (depth > 0) out += REDACTED;
+  return out;
+}
 
 function stripPrivateTags(val: unknown): unknown {
-  if (typeof val === 'string') return val.replace(PRIVATE_RE, '[REDACTED]');
+  if (typeof val === 'string') return redactPrivate(val);
   if (Array.isArray(val)) return val.map(stripPrivateTags);
   if (val && typeof val === 'object') {
     const out: Record<string, unknown> = {};
@@ -46,15 +95,6 @@ function shouldSkip(toolName: string, skipTools: string[]): boolean {
     if (pattern.endsWith('*')) return toolName.startsWith(pattern.slice(0, -1));
     return toolName === pattern;
   });
-}
-
-function detectRepo(cwd: string): string | null {
-  if (!cwd) return null;
-  try {
-    const proc = Bun.spawnSync(['git', 'rev-parse', '--show-toplevel'], { cwd });
-    if (proc.exitCode === 0) return proc.stdout.toString().trim();
-  } catch {}
-  return null;
 }
 
 /**
@@ -220,32 +260,38 @@ export function createApp(deps: AppDeps) {
       };
     }
 
-    const observationId = db.insertObservation({
-      turn_id,
-      session_id: turn.session_id,
-      turn_seq: turn.seq,
-      repo: turn.repo,
-      cwd_scope: turn.cwd,
-      ...fields,
-      quality: isFallback ? 'fallback' : 'normal',
-      turn_started_at: turn.started_at,
-      turn_stopped_at: turnStoppedAt,
-    });
-
-    // null => a concurrent run already created the Observation for this turn.
-    if (observationId == null) return;
-
-    // Embedding runs as its own job (§5.7). Gate the enqueue on embeddings
-    // being enabled so tests don't accrue no-op jobs.
-    if (enableEmbeddings) {
-      db.enqueueJob({
-        job_type: 'embed_observation',
-        dedupe_key: `embed:obs:${observationId}`,
-        entity_type: 'observation',
-        entity_id: String(observationId),
-        payload_json: JSON.stringify({ observation_id: observationId }),
+    // Observation + its embedding job are one unit of work: an Observation with
+    // no embed job is silently semantic-search-invisible, and only shows up as a
+    // slightly lower coverage percentage.
+    let observationId: number | null = null;
+    db.transaction(() => {
+      observationId = db.insertObservation({
+        turn_id,
+        session_id: turn.session_id,
+        turn_seq: turn.seq,
+        repo: turn.repo,
+        cwd_scope: turn.cwd,
+        ...fields,
+        quality: isFallback ? 'fallback' : 'normal',
+        turn_started_at: turn.started_at,
+        turn_stopped_at: turnStoppedAt,
       });
-    }
+
+      // null => a concurrent run already created the Observation for this turn.
+      if (observationId == null) return;
+
+      // Embedding runs as its own job (§5.7). Gate the enqueue on embeddings
+      // being enabled so tests don't accrue no-op jobs.
+      if (enableEmbeddings) {
+        db.enqueueJob({
+          job_type: 'embed_observation',
+          dedupe_key: `embed:obs:${observationId}`,
+          entity_type: 'observation',
+          entity_id: String(observationId),
+          payload_json: JSON.stringify({ observation_id: observationId }),
+        });
+      }
+    });
   });
 
   // --- embed_observation job ---
@@ -258,7 +304,13 @@ export function createApp(deps: AppDeps) {
     const { observation_id } = JSON.parse(job.payload_json) as { observation_id: number };
     const obs = db.getObservation(observation_id);
     if (!obs) return;
-    if (db.getObservationEmbedding(observation_id)) return; // idempotent
+    // Idempotent, but only against a vector in the CURRENT space: a row written
+    // by an older model must be REPLACED, not treated as "already done", or
+    // `kiro-mem repair` would requeue jobs that no-op forever.
+    if (db.getObservationEmbeddingsByIds([observation_id], {
+      model: EMBEDDING_MODEL,
+      dimensions: DIMENSIONS,
+    }).length) return;
 
     const parseArr = (json: string): string[] => {
       try {
@@ -278,7 +330,7 @@ export function createApp(deps: AppDeps) {
       embeddingGenerator(searchText),
       embeddingTimeoutMs,
     );
-    db.upsertObservationEmbedding(observation_id, 'all-MiniLM-L6-v2', DIMENSIONS, embeddingToBlob(embedding));
+    db.upsertObservationEmbedding(observation_id, EMBEDDING_MODEL, DIMENSIONS, embeddingToBlob(embedding));
   });
 
   // --- Hono app ---
@@ -382,6 +434,10 @@ export function createApp(deps: AppDeps) {
       acp_24h: stats.acp24h,
       // Rejected Hook requests over the last 24h (silent-failure detector).
       auth_24h: stats.auth24h,
+      // Capture is best-effort (P0-3): raw events the hooks could NOT deliver.
+      // Non-zero means some turns are permanently missing input, which no
+      // projection repair can undo — surfaced so the gap is never silent.
+      capture_misses_24h: readCaptureMisses(getDataDir()),
     });
   });
 
@@ -482,21 +538,27 @@ export function createApp(deps: AppDeps) {
     const turn = db.getOpenTurnBySession(sessionId);
     if (!turn) return c.json({ ok: true, no_open_turn: true });
 
-    db.appendTurnEvent({
-      turn_id: turn.id,
-      session_id: sessionId,
-      hook_event_name: 'stop',
-      payload_json: JSON.stringify(stripPrivateTags(body)),
-    });
+    // Close-out is one transaction. These three writes are a single fact
+    // ("this turn ended and needs summarizing"); interleaving a crash or a
+    // SQLITE_BUSY between them leaves an orphan — a closed turn with no job, or
+    // a stop event on a still-open turn — that nothing later would notice.
+    db.transaction(() => {
+      db.appendTurnEvent({
+        turn_id: turn.id,
+        session_id: sessionId,
+        hook_event_name: 'stop',
+        payload_json: JSON.stringify(stripPrivateTags(body)),
+      });
 
-    db.markTurnClosed(turn.id);
+      db.markTurnClosed(turn.id);
 
-    db.enqueueJob({
-      job_type: 'summarize_turn',
-      dedupe_key: `turn:${turn.id}`,
-      entity_type: 'turn',
-      entity_id: String(turn.id),
-      payload_json: JSON.stringify({ turn_id: turn.id }),
+      db.enqueueJob({
+        job_type: 'summarize_turn',
+        dedupe_key: `turn:${turn.id}`,
+        entity_type: 'turn',
+        entity_id: String(turn.id),
+        payload_json: JSON.stringify({ turn_id: turn.id }),
+      });
     });
 
     return c.json({ ok: true, session_id: sessionId, turn_id: turn.id });
@@ -515,7 +577,7 @@ const db = new MemoryDB();
 // kiroHome holds the isolated KIRO_HOME for the ACP compressor sub-agent.
 // Empty config falls back to the layout `kiro-mem install` lays down at
 // <dataDir>/kiro-runtime.
-const KIRO_RUNTIME_HOME = config.runtime.kiroHome || join(getDataDir(), 'kiro-runtime');
+const KIRO_RUNTIME_HOME = resolveRuntimeHome(config.runtime.kiroHome);
 const COMPRESSOR_AGENT_NAME = 'kiro-mem-compressor';
 
 const compressor: MemoryCompressor = new ACPCompressor({

@@ -31,7 +31,10 @@ export class ACPCompressor implements MemoryCompressor {
   private onMetric: (kind: 'repair' | 'contamination') => void;
 
   constructor(opts: ACPCompressorOptions = {}, pool?: ACPPoolLike) {
-    this.maxRetries = opts.maxRetries ?? 1;
+    // Matches the documented `compression.maxRetries` default in config.json.
+    // Diverging here meant a direct `new ACPCompressor()` retried once while the
+    // README and the config file both promised two.
+    this.maxRetries = opts.maxRetries ?? 2;
     this.onMetric = opts.onMetric ?? (() => {});
     this.pool = pool ?? new ACPPool(opts);
   }
@@ -153,38 +156,69 @@ Validation error: ${error}`;
 
 const OBSERVATION_SUMMARY_SCHEMA = '{"title":"string","summary":"string","request":"string","outcome":"string","learned":"string","next_steps":"string","memory_type":"decision|bugfix|feature|refactor|discovery|change","files_touched":["string"],"concepts":["string"],"evidence":["string"],"importance_score":0-1,"confidence_score":0-1,"unresolved_score":0-1}';
 
-/** Validate and coerce parsed JSON to match the Observation schema. */
-function validateSchema<T>(parsed: any, fallback: T, context: string): T {
+// --- Output size bounds (S2) ---
+//
+// The only limit on compressor output used to be the 16KB ACP read cap, so a
+// single verbose Observation could carry multi-KB prose and dozens of evidence
+// items straight into storage. That is not just a disk cost: it inflates the FTS
+// trigram index, skews the read-cost estimate shown in the injected index, and
+// eats the pull-side response budget. Bound it at the boundary, before it
+// becomes immutable.
+
+/** Per-field character cap for the prose fields. */
+const FIELD_MAX_CHARS = 2000;
+/** `title` is rendered in the injected index, so it is far tighter. */
+const TITLE_MAX_CHARS = 200;
+/** Array fields: item count and per-item length. */
+const ARRAY_MAX_ITEMS = 30;
+const ARRAY_ITEM_MAX_CHARS = 400;
+
+function boundedString(val: unknown, max: number): string {
+  const s = typeof val === 'string' ? val : '';
+  return s.length > max ? s.slice(0, max) : s;
+}
+
+function boundedStringArray(val: unknown): string[] {
+  if (!Array.isArray(val)) return [];
+  return val
+    .filter((x): x is string => typeof x === 'string')
+    .slice(0, ARRAY_MAX_ITEMS)
+    .map((s) => (s.length > ARRAY_ITEM_MAX_CHARS ? s.slice(0, ARRAY_ITEM_MAX_CHARS) : s));
+}
+
+/**
+ * Validate and coerce parsed JSON to match the Observation schema.
+ *
+ * Exported for tests: the unknown-context branch is unreachable through the
+ * public API today, and an invariant that cannot be observed is an invariant
+ * that quietly rots.
+ */
+export function validateSchema<T>(parsed: any, fallback: T, context: string): T {
   if (!parsed || typeof parsed !== 'object') return fallback;
 
   if (context === 'summarizeObservation') {
     return {
-      title: ensureString(parsed.title, ''),
-      summary: ensureString(parsed.summary, ''),
-      request: ensureString(parsed.request, ''),
-      outcome: ensureString(parsed.outcome, ''),
-      learned: ensureString(parsed.learned, ''),
-      next_steps: ensureString(parsed.next_steps, ''),
+      title: boundedString(parsed.title, TITLE_MAX_CHARS),
+      summary: boundedString(parsed.summary, FIELD_MAX_CHARS),
+      request: boundedString(parsed.request, FIELD_MAX_CHARS),
+      outcome: boundedString(parsed.outcome, FIELD_MAX_CHARS),
+      learned: boundedString(parsed.learned, FIELD_MAX_CHARS),
+      next_steps: boundedString(parsed.next_steps, FIELD_MAX_CHARS),
       memory_type: ensureEnum(parsed.memory_type, ['decision', 'bugfix', 'feature', 'refactor', 'discovery', 'change'], 'change'),
-      files_touched: ensureStringArray(parsed.files_touched),
-      concepts: ensureStringArray(parsed.concepts),
-      evidence: ensureStringArray(parsed.evidence),
+      files_touched: boundedStringArray(parsed.files_touched),
+      concepts: boundedStringArray(parsed.concepts),
+      evidence: boundedStringArray(parsed.evidence),
       importance_score: clampScore(parsed.importance_score),
       confidence_score: clampScore(parsed.confidence_score),
       unresolved_score: clampScore(parsed.unresolved_score),
     } as T;
   }
 
-  return parsed as T;
-}
-
-function ensureString(val: unknown, fallback: string): string {
-  return typeof val === 'string' ? val : fallback;
-}
-
-function ensureStringArray(val: unknown): string[] {
-  if (!Array.isArray(val)) return [];
-  return val.filter((x): x is string => typeof x === 'string');
+  // S8: an unrecognized context used to `return parsed as T` — i.e. the one
+  // path that skips validation entirely was also the silent one. There is
+  // exactly one caller today, so reaching here means a new call site forgot to
+  // add its branch; fall back rather than let unvalidated model output through.
+  return fallback;
 }
 
 function ensureEnum<T extends string>(val: unknown, allowed: T[], fallback: T): T {
@@ -210,8 +244,9 @@ function clampText(s: string, max: number): string {
   return `${s.slice(0, head)}\n…\n${s.slice(s.length - tail)}`;
 }
 
-// Kept byte-for-byte in sync with the test-only copy in src/compressor.ts
-// (distinctive "本轮事实来源" marker for test scripting).
+// Single implementation. Tests reach it through `ACPCompressor` with a fake pool
+// (`tests/support/fake-acp-pool.ts`) and script responses by the distinctive
+// "本轮事实来源" marker; there is no second copy of this builder to keep in sync.
 function buildObservationSummaryPrompt(input: {
   user_prompt: string;
   assistant_response: string;

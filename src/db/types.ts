@@ -2,7 +2,13 @@
 
 export type SessionRefState = 'active' | 'idle' | 'stale';
 
-export type TurnState = 'open' | 'closed' | 'archived' | 'quarantined';
+/**
+ * `quarantined` was removed: nothing ever assigned it. Events that fail
+ * validation are rejected at the HTTP boundary (the `quarantined: true`
+ * response flag) and never create a turn, so a turn could not reach that state
+ * — keeping it in the union advertised an isolation mechanism that did not run.
+ */
+export type TurnState = 'open' | 'closed' | 'archived';
 
 export type HookEventName =
   | 'agentSpawn'
@@ -56,7 +62,6 @@ export interface Turn {
   branch: string | null;
   state: TurnState;
   prompt_text: string | null;
-  prompt_hash: string | null;
   started_at: string;
   stopped_at: string | null;
   last_event_at: string;

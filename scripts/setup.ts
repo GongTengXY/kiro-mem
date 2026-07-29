@@ -35,6 +35,8 @@ import { t } from '../src/i18n';
 import { checkRuntimeHome } from '../src/acp/integrity';
 import { MemoryDB } from '../src/db';
 import { ensureLocalAuthToken, inspectLocalAuthToken, readLocalAuthToken } from '../src/auth-token';
+import { readCaptureMisses } from '../src/hooks/capture-log';
+import { resolveRuntimeHome } from '../src/config';
 import { PACKAGE_VERSION } from '../src/version';
 
 const HOME = process.env.HOME || '~';
@@ -46,7 +48,25 @@ const PKG_ROOT = resolve(import.meta.dir, '..');
 const SRC_DIR = join(PKG_ROOT, 'src');
 const MODELS_DIR = join(PKG_ROOT, 'models');
 
-const RUNTIME_DIR = join(DATA_DIR, 'kiro-runtime');
+/**
+ * Where the compressor runtime actually lives for THIS installation.
+ *
+ * Read from config so install / config / diagnose / smoke all inspect the same
+ * directory the Worker will use. Previously these were three independent
+ * expressions, so a custom `runtime.kiroHome` produced a runtime that worked but
+ * that `diagnose` reported as broken, and a re-install silently discarded the
+ * setting.
+ */
+function runtimeHomeFromDisk(): string {
+  try {
+    const raw = JSON.parse(readFileSync(join(DATA_DIR, 'config.json'), 'utf-8'));
+    return resolveRuntimeHome(raw?.runtime?.kiroHome, DATA_DIR);
+  } catch {
+    return resolveRuntimeHome(undefined, DATA_DIR);
+  }
+}
+
+const RUNTIME_DIR = runtimeHomeFromDisk();
 const RUNTIME_AGENT_DIR = join(RUNTIME_DIR, 'agents');
 const COMPRESSOR_AGENT_NAME = 'kiro-mem-compressor';
 
@@ -97,6 +117,9 @@ switch (command) {
     break;
   case 'diagnose':
     await diagnose();
+    break;
+  case 'repair':
+    await repair();
     break;
   default:
     help();
@@ -171,7 +194,10 @@ function defaultConfig(language: Language): BootstrapConfig {
       maxOutputBytes: 8192,
     },
     filter: { skipTools: ['introspect', 'todo_list', '@kiro-mem/*'] },
-    runtime: { kiroHome: RUNTIME_DIR },
+    // Empty means "use the default under dataDir" (see resolveRuntimeHome).
+    // Writing the resolved absolute path here instead would freeze the data dir
+    // into the config file and make the setting look user-chosen when it isn't.
+    runtime: { kiroHome: '' },
   };
 }
 
@@ -262,7 +288,10 @@ async function install() {
           ...defaultConfig(lang).compression,
           ...(existing.compression || {}),
         },
-        runtime: { kiroHome: RUNTIME_DIR },
+        // Preserve a user-chosen runtime home. Overwriting it here meant a
+        // re-install silently moved the compressor runtime back to the default
+        // directory while the user's config still said otherwise.
+        runtime: { kiroHome: existing.runtime?.kiroHome ?? '' },
       };
     } catch {
       // Existing config unparseable — fall back to a fresh language choice.
@@ -304,6 +333,7 @@ async function install() {
     'observation.ts',
     'stop.ts',
     'session.ts',
+    'capture-log.ts',
   ]) {
     copyFileSync(join(SRC_DIR, 'hooks', hook), join(DATA_DIR, 'hooks', hook));
     chmodSync(join(DATA_DIR, 'hooks', hook), 0o755);
@@ -316,6 +346,16 @@ async function install() {
   mkdirSync(join(DATA_DIR, 'src', 'jobs'), { recursive: true });
   mkdirSync(join(DATA_DIR, 'src', 'acp'), { recursive: true });
   mkdirSync(join(DATA_DIR, 'src', 'types'), { recursive: true });
+  mkdirSync(join(DATA_DIR, 'src', 'hooks'), { recursive: true });
+
+  // The installed layout puts hooks at <dataDir>/hooks but server code at
+  // <dataDir>/src/server, so no single relative path reaches capture-log from
+  // both. Ship the same source file to both trees rather than forking it: the
+  // hooks append misses, the Worker's /health reads them back.
+  copyFileSync(
+    join(SRC_DIR, 'hooks', 'capture-log.ts'),
+    join(DATA_DIR, 'src', 'hooks', 'capture-log.ts'),
+  );
 
   for (const file of ['worker.ts', 'mcp-server.ts', 'mcp-scope.ts', 'observation-search.ts']) {
     copyFileSync(
@@ -543,7 +583,7 @@ async function configCmd() {
     );
     console.log(`  ${m.maxRetriesLabel}     ${ansi.cyan(String(c.maxRetries ?? 2))}`);
     console.log(
-      `  ${m.runtimeHomeLabel}      ${ansi.cyan(r.kiroHome || RUNTIME_DIR)}`,
+      `  ${m.runtimeHomeLabel}      ${ansi.cyan(resolveRuntimeHome(r.kiroHome, DATA_DIR))}`,
     );
     return;
   }
@@ -564,7 +604,9 @@ async function configCmd() {
     ...current,
     language: newLang,
     compression: newCfg.compression,
-    runtime: { kiroHome: r.kiroHome || RUNTIME_DIR },
+    // Kept verbatim: `kiro-mem config` edits language and compression only, so
+    // it must not turn an unset (default) runtime home into a hard-coded path.
+    runtime: { kiroHome: r.kiroHome ?? '' },
   };
   writeFileSync(configPath, JSON.stringify(merged, null, 2));
   console.log(`\n${ansi.ok('✓')} ${m.configUpdated}`);
@@ -575,8 +617,9 @@ async function configCmd() {
     'acp',
     newLang === 'en' ? 'compressor-prompt.en.md' : 'compressor-prompt.zh.md',
   );
-  const promptDest = join(RUNTIME_DIR, `${COMPRESSOR_AGENT_NAME}-prompt.md`);
-  if (existsSync(promptSrc) && existsSync(RUNTIME_DIR)) {
+  const runtimeHome = resolveRuntimeHome(r.kiroHome, DATA_DIR);
+  const promptDest = join(runtimeHome, `${COMPRESSOR_AGENT_NAME}-prompt.md`);
+  if (existsSync(promptSrc) && existsSync(runtimeHome)) {
     copyFileSync(promptSrc, promptDest);
   }
 
@@ -885,7 +928,7 @@ try {
         `  ${padLabel(m.maxRetriesLabel, 14)}${ansi.cyan(String(cc.maxRetries ?? 2))}`,
       );
       console.log(
-        `  ${padLabel(m.runtimeHomeLabel, 14)}${ansi.cyan(rr.kiroHome || RUNTIME_DIR)}`,
+        `  ${padLabel(m.runtimeHomeLabel, 14)}${ansi.cyan(resolveRuntimeHome(rr.kiroHome, DATA_DIR))}`,
       );
     } catch {
       console.log(`  ${ansi.err('✗')} ${m.diagParseError}`);
@@ -933,6 +976,17 @@ try {
           `  ${ansi.warn('⚠')} ${padLabel(m.diagAuthRejected, 12)}${ansi.cyan(String(s.auth24h.unauthorized))} ${m.diagAuthRejectedHint}`,
         );
       }
+      // Capture is best-effort: a dropped raw event is unrecoverable, so make
+      // the gap visible instead of letting it look like an idle period.
+      const misses = readCaptureMisses(DATA_DIR);
+      if (misses.total > 0) {
+        const detail = Object.entries(misses.byReason)
+          .map(([reason, count]) => `${reason}:${count}`)
+          .join(' ');
+        console.log(
+          `  ${ansi.warn('⚠')} ${padLabel(m.diagCaptureMissed, 12)}${ansi.cyan(String(misses.total))} ${ansi.dim(detail)} ${m.diagCaptureMissedHint}`,
+        );
+      }
       const stat = Bun.file(dbPath);
       console.log(
         `  ${padLabel(m.diagSize, 14)}${ansi.cyan((stat.size / 1024 / 1024).toFixed(1) + ' MB')}`,
@@ -973,6 +1027,54 @@ try {
   console.log('');
 }
 
+/**
+ * Reconcile the Truth Layer against its projections (P0-5).
+ *
+ * A dropped raw event is gone for good, but a MISSING PROJECTION is recoverable:
+ * the turn and its events are still there. Before this command existed, a
+ * summarize job that reached `dead` left that turn permanently without an
+ * Observation, and the cross-state dedupe index made re-enqueueing silently
+ * impossible — the memory gap had no repair path at all.
+ *
+ * This never deletes a terminal job row: the original `last_error` is the only
+ * record of why the projection failed, and repair must not destroy evidence.
+ */
+async function repair() {
+  const dbPath = join(DATA_DIR, 'kiro-mem.db');
+  if (!existsSync(dbPath)) {
+    console.error(`${ansi.err('✗')} ${m.repairNoDb} ${ansi.dim(dbPath)}`);
+    process.exit(1);
+  }
+
+  const mdb = new MemoryDB(dbPath);
+  try {
+    // 动态引入：`src/embedding.ts` 会静态拉入 transformers，其它 CLI 子命令不该为它付启动成本。
+    const { EMBEDDING_MODEL, DIMENSIONS } = await import('../src/embedding');
+    const vector = { embeddingModel: EMBEDDING_MODEL, embeddingDimensions: DIMENSIONS };
+    const found = mdb.findOrphans(vector);
+    const turns = found.turnsWithoutObservation.length;
+    const observations = found.observationsWithoutEmbedding.length;
+
+    if (turns === 0 && observations === 0) {
+      console.log(`${ansi.ok('✓')} ${m.repairNothing}`);
+      return;
+    }
+
+    console.log(`${m.repairFound}`);
+    const pad = (s: string) => s.padEnd(30, ' ');
+    if (turns > 0) console.log(`  ${pad(m.repairTurns)}${ansi.cyan(String(turns))}`);
+    if (observations > 0) console.log(`  ${pad(m.repairEmbeddings)}${ansi.cyan(String(observations))}`);
+
+    const queued = mdb.requeueOrphans(vector);
+    console.log(
+      `${ansi.ok('✓')} ${m.repairQueued} ${ansi.cyan(String(queued.summarize))} summarize_turn / ${ansi.cyan(String(queued.embed))} embed_observation`,
+    );
+    console.log(`  ${ansi.dim(m.repairHint)}`);
+  } finally {
+    mdb.close();
+  }
+}
+
 function help() {
   console.log(`kiro-mem <command>
 
@@ -985,5 +1087,6 @@ Commands:
   status               ${m.helpStatus}
   start                ${m.helpStart}
   stop                 ${m.helpStop}
-  diagnose             ${m.helpDiagnose}`);
+  diagnose             ${m.helpDiagnose}
+  repair               ${m.helpRepair}`);
 }

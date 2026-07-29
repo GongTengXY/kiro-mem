@@ -57,6 +57,28 @@ export function getDataDir(): string {
   );
 }
 
+/** Directory name of the bundled compressor runtime under the data dir. */
+export const DEFAULT_RUNTIME_DIRNAME = 'kiro-runtime';
+
+/**
+ * The single answer to "where does the compressor sub-agent's KIRO_HOME live?".
+ *
+ * Five places need this path — install (lay the files down), config (display
+ * and preserve), diagnose (integrity check), the ACP smoke test, and the Worker
+ * (actually run it) — and they used to compute it three different ways. The
+ * failure mode was quiet and confusing: a user with a custom `kiroHome` had a
+ * working runtime that `diagnose` declared broken because it inspected the
+ * default directory instead, and a re-install silently overwrote their setting.
+ *
+ * An empty / whitespace-only value means "use the default", matching the
+ * documented `"kiroHome": ""` in config.json.
+ */
+export function resolveRuntimeHome(kiroHome?: string | null, dataDir?: string): string {
+  const explicit = kiroHome?.trim();
+  if (explicit) return explicit;
+  return join(dataDir ?? getDataDir(), DEFAULT_RUNTIME_DIRNAME);
+}
+
 export function loadConfig(): Config {
   const configPath = join(getDataDir(), 'config.json');
   if (!existsSync(configPath)) return defaults;

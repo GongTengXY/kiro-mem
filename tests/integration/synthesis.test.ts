@@ -1,24 +1,24 @@
 import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
 import { MemoryDB } from '../../src/db';
-import { Compressor } from '../../src/compressor';
 import { createApp } from '../../src/server/worker';
-import { FakeCompressorProvider } from '../support/fake-compressor';
+import { ACPCompressor } from '../../src/acp/compressor';
+import { FakeACPPool } from '../support/fake-acp-pool';
 import { openInMemoryDB } from '../support/tmp-db';
 import { loadConfig } from '../../src/config';
 import type { Hono } from 'hono';
 
 let db: MemoryDB;
-let fakeProvider: FakeCompressorProvider;
+let fakePool: FakeACPPool;
 let jobRunner: { start: () => void; stop: () => void };
 let app: Hono;
 
 beforeEach(() => {
   db = openInMemoryDB();
-  fakeProvider = new FakeCompressorProvider();
+  fakePool = new FakeACPPool();
   const config = loadConfig();
   const result = createApp({
     db,
-    compressor: new Compressor(fakeProvider),
+    compressor: new ACPCompressor({}, fakePool),
     config,
     enableEmbeddings: false,
     enableAuth: false,
@@ -94,7 +94,7 @@ function enqueueSummarize(turnId: number, key = `sum:${turnId}`) {
 
 describe('Integration / summarize_turn -> observation', () => {
   test('one closed turn -> one Observation; consumes assistant_response + test signal; no topic/merge jobs', async () => {
-    fakeProvider.script({
+    fakePool.script({
       match: '本轮事实来源',
       respondWith: JSON.stringify({
         title: 'Fixed auth token refresh',
@@ -134,7 +134,7 @@ describe('Integration / summarize_turn -> observation', () => {
 
     // The compression prompt actually consumed the assistant_response AND the
     // deterministic test signal derived from the shell command.
-    const v3Call = fakeProvider.calls.find((c) => c.prompt.includes('本轮事实来源'))!;
+    const v3Call = fakePool.calls.find((c) => c.prompt.includes('本轮事实来源'))!;
     expect(v3Call).toBeDefined();
     expect(v3Call.prompt).toContain('I made refresh tokens rotate');
     expect(v3Call.prompt).toContain('test PASS');
@@ -150,7 +150,7 @@ describe('Integration / summarize_turn -> observation', () => {
   });
 
   test('idempotent: re-enqueuing summarize_turn for the same turn keeps exactly one Observation', async () => {
-    fakeProvider.script({
+    fakePool.script({
       match: '本轮事实来源',
       respondWith: JSON.stringify({
         title: 'T', summary: 'S', request: 'r', outcome: 'o', learned: 'l',
@@ -176,8 +176,12 @@ describe('Integration / summarize_turn -> observation', () => {
   });
 
   test('fallback: unparseable compression -> quality=fallback with request/files/evidence, no fabricated outcome', async () => {
-    // Unparseable output -> parse fails -> empty result -> fallback path.
-    fakeProvider.script({ match: '本轮事实来源', respondWith: 'Sorry, I cannot output JSON here.' });
+    // Every attempt is unparseable — the first prompt AND both JSON-repair
+    // retries — so repair exhausts and the production compressor returns its
+    // empty result, which the job turns into a quality=fallback Observation.
+    // Scripting only the first prompt would let a repair attempt succeed, which
+    // is a different (and also correct) production behavior.
+    fakePool.setFallback('Sorry, I cannot output JSON here.');
 
     const turn = seedTurn({
       prompt: 'Investigate the failing build',
@@ -205,7 +209,7 @@ describe('Integration / summarize_turn -> observation', () => {
   });
 
   test('assistant_response is redacted through /events/stop before reaching the compressor', async () => {
-    fakeProvider.script({
+    fakePool.script({
       match: '本轮事实来源',
       respondWith: JSON.stringify({
         title: 'T', summary: 'S', request: 'r', outcome: 'o', learned: 'l',
@@ -232,7 +236,7 @@ describe('Integration / summarize_turn -> observation', () => {
     jobRunner.start();
     await waitFor(() => !!db.getObservationByTurnId(turnId));
 
-    const v3Call = fakeProvider.calls.find((c) => c.prompt.includes('本轮事实来源'))!;
+    const v3Call = fakePool.calls.find((c) => c.prompt.includes('本轮事实来源'))!;
     expect(v3Call).toBeDefined();
     expect(v3Call.prompt).toContain('[REDACTED]');
     expect(v3Call.prompt).not.toContain('SUPER_SECRET_TOKEN');
@@ -244,7 +248,7 @@ describe('Integration / summarize_turn -> observation', () => {
   });
 
   test('production ingest path: prompt → observation → stop auto-produces an Observation, no V2 jobs', async () => {
-    fakeProvider.script({
+    fakePool.script({
       match: '本轮事实来源',
       respondWith: JSON.stringify({
         title: 'Prod path obs', summary: 'built end to end', request: 'do it',

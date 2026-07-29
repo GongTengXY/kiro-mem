@@ -169,6 +169,7 @@ kiro-mem stop
 kiro-mem config
 kiro-mem config --show
 kiro-mem diagnose
+kiro-mem repair
 kiro-mem uninstall
 kiro-mem uninstall --purge
 ```
@@ -183,9 +184,14 @@ kiro-mem uninstall --purge
 
 | Limitation                          | Impact                                                                | Mitigation                                    |
 | ----------------------------------- | --------------------------------------------------------------------- | --------------------------------------------- |
+| Capture is best-effort              | Hooks give the Worker ~700ms and never block your turn, so a Worker restart or transient error can drop a raw event. Dropped input cannot be reconstructed later — memory is not guaranteed to be complete | Misses are counted per hook and reason; see `capture_misses_24h` in `/health` and the warning line in `kiro-mem diagnose` |
+| No fine-grained deletion            | Captured turns are kept indefinitely. `kiro-mem uninstall --purge` wipes **everything**; there is no per-observation, per-scope or per-time-range delete, no export, and no retention policy in 3.x | Use `<private>` tags to keep sensitive content out of storage in the first place |
+| Raw event payloads are capped        | A tool response over 32KB per string field is truncated, and a single turn stores at most 4MB of raw payload. Truncation is marked inline, but the dropped bytes are not recoverable | `payload_size` still records the original size; artifacts extraction keeps working on the capped payload |
 | Requires Kiro CLI ACP               | Compression cannot run without a working `kiro-cli acp` subcommand    | `kiro-mem diagnose` runs an ACP smoke test    |
 | `agentSpawn` output limit 10KB      | Injected index must stay compact                                      | Budget-controlled context builder             |
 | Search queries shorter than 3 chars | Falls back to `LIKE`, less precise                                    | Use longer terms when possible                |
+| Search needs a keyword anchor        | Semantic similarity only reranks and extends keyword hits — it never surfaces records on its own. A query with no FTS match in the current workspace returns nothing, even if a paraphrase of it exists | Include at least one term that literally appears in the work you are looking for |
+| Semantic recall window is bounded   | Reranking considers the FTS hits plus the ~200 most recent observations in scope, so older entries are reachable by keyword but may drop out of semantic ranking | Use distinctive keywords for old work; `days` widens the time filter |
 | Install step                        | Copies the bundled embedding model (~23 MB) into `~/.kiro-mem/models` | Model ships in the package — no model download |
 | No Web Viewer UI yet                | Memory inspected through CLI/MCP/DB                                   | Planned separately                            |
 | Local only                          | No built-in cross-machine sync                                        | Future: git sync or cloud storage             |

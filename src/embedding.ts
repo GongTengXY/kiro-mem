@@ -15,6 +15,14 @@ const MODEL_LOCAL_PATH = resolve(import.meta.dir, '../models/all-MiniLM-L6-v2');
 const MODEL_DTYPE = 'q8';
 const DIMENSIONS = 384;
 
+/**
+ * Identity of the vector space, written alongside every stored blob AND used as
+ * a read filter. Vectors from different models are not comparable, so changing
+ * this constant must invalidate the old rows rather than silently mix them into
+ * the same cosine ranking.
+ */
+export const EMBEDDING_MODEL = 'all-MiniLM-L6-v2';
+
 export const DEFAULT_QUERY_EMBEDDING_TIMEOUT_MS = 1200;
 export const DEFAULT_JOB_EMBEDDING_TIMEOUT_MS = 10000;
 
@@ -104,30 +112,6 @@ export function embeddingToBlob(embedding: Float32Array): Buffer {
 
 export function blobToEmbedding(blob: Buffer): Float32Array {
   return new Float32Array(blob.buffer, blob.byteOffset, blob.byteLength / 4);
-}
-
-export function buildSearchText(obs: {
-  title?: string | null;
-  narrative?: string | null;
-  facts?: string | null;
-  concepts?: string | null;
-}): string {
-  const parts: string[] = [];
-  if (obs.title) parts.push(obs.title);
-  if (obs.narrative) parts.push(obs.narrative);
-  if (obs.facts) {
-    try {
-      const arr = JSON.parse(obs.facts);
-      if (Array.isArray(arr)) parts.push(arr.join('; '));
-    } catch {}
-  }
-  if (obs.concepts) {
-    try {
-      const arr = JSON.parse(obs.concepts);
-      if (Array.isArray(arr)) parts.push(arr.join(', '));
-    } catch {}
-  }
-  return parts.join('\n');
 }
 
 export { DIMENSIONS };
