@@ -11,7 +11,19 @@ import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { MemoryDB } from '../../src/db';
 import { openInMemoryDB } from '../support/tmp-db';
 import { hybridSearchObservations } from '../../src/server/observation-search';
-import { EMBEDDING_MODEL, DIMENSIONS, embeddingToBlob } from '../../src/embedding';
+import { DIMENSIONS, embeddingToBlob } from '../../src/embedding';
+import { RAW_PROTOCOL, embeddingSpaceKey } from '../../src/semantic-en';
+
+/**
+ * The name a stored vector must carry to be readable today.
+ *
+ * Not `EMBEDDING_MODEL`: since phase 1b the key also names the text
+ * normalization protocol, because `raw-v1` and `semantic-en-v1` are both 384
+ * dimensions of this same model and are NOT comparable. A row written under the
+ * bare model name is therefore an old row, and the tests below treat it exactly
+ * like a foreign-model row — unreadable, keyword-reachable only.
+ */
+const RAW_SPACE_KEY = embeddingSpaceKey(RAW_PROTOCOL);
 
 let db: MemoryDB;
 let seq = 0;
@@ -44,9 +56,9 @@ afterEach(() => { db.close(); });
 describe('getObservationEmbeddingsByIds — version filter', () => {
   test('returns rows written by the current model', () => {
     const id = seedObs('current model');
-    db.upsertObservationEmbedding(id, EMBEDDING_MODEL, DIMENSIONS, embeddingToBlob(unitVector(DIMENSIONS, 1)));
+    db.upsertObservationEmbedding(id, RAW_SPACE_KEY, DIMENSIONS, embeddingToBlob(unitVector(DIMENSIONS, 1)));
 
-    const rows = db.getObservationEmbeddingsByIds([id], { model: EMBEDDING_MODEL, dimensions: DIMENSIONS });
+    const rows = db.getObservationEmbeddingsByIds([id], { model: RAW_SPACE_KEY, dimensions: DIMENSIONS });
     expect(rows.length).toBe(1);
     expect(rows[0]!.observation_id).toBe(id);
   });
@@ -55,22 +67,22 @@ describe('getObservationEmbeddingsByIds — version filter', () => {
     const id = seedObs('other model');
     db.upsertObservationEmbedding(id, 'some-future-model-v9', DIMENSIONS, embeddingToBlob(unitVector(DIMENSIONS, 1)));
 
-    expect(db.getObservationEmbeddingsByIds([id], { model: EMBEDDING_MODEL, dimensions: DIMENSIONS })).toEqual([]);
+    expect(db.getObservationEmbeddingsByIds([id], { model: RAW_SPACE_KEY, dimensions: DIMENSIONS })).toEqual([]);
     // …and is still visible without the filter, so nothing was deleted.
     expect(db.getObservationEmbeddingsByIds([id]).length).toBe(1);
   });
 
   test('skips a row with a different dimensionality', () => {
     const id = seedObs('other dims');
-    db.upsertObservationEmbedding(id, EMBEDDING_MODEL, 768, embeddingToBlob(unitVector(768, 1)));
-    expect(db.getObservationEmbeddingsByIds([id], { model: EMBEDDING_MODEL, dimensions: DIMENSIONS })).toEqual([]);
+    db.upsertObservationEmbedding(id, RAW_SPACE_KEY, 768, embeddingToBlob(unitVector(768, 1)));
+    expect(db.getObservationEmbeddingsByIds([id], { model: RAW_SPACE_KEY, dimensions: DIMENSIONS })).toEqual([]);
   });
 
   test('drops a blob whose length contradicts its declared dimensions', () => {
     const id = seedObs('corrupt blob');
     // Claims 384 dims but stores only 100 floats — a truncated write.
-    db.upsertObservationEmbedding(id, EMBEDDING_MODEL, DIMENSIONS, embeddingToBlob(new Float32Array(100)));
-    expect(db.getObservationEmbeddingsByIds([id], { model: EMBEDDING_MODEL, dimensions: DIMENSIONS })).toEqual([]);
+    db.upsertObservationEmbedding(id, RAW_SPACE_KEY, DIMENSIONS, embeddingToBlob(new Float32Array(100)));
+    expect(db.getObservationEmbeddingsByIds([id], { model: RAW_SPACE_KEY, dimensions: DIMENSIONS })).toEqual([]);
     // The length check applies even with no explicit filter: a partial vector
     // must never reach cosineSimilarity.
     expect(db.getObservationEmbeddingsByIds([id])).toEqual([]);
@@ -103,7 +115,7 @@ describe('hybrid search with an incomparable stored vector', () => {
 
   test('a current-model row IS semantically ranked', async () => {
     const current = seedObs('vector rotation handling');
-    db.upsertObservationEmbedding(current, EMBEDDING_MODEL, DIMENSIONS, embeddingToBlob(unitVector(DIMENSIONS, 5)));
+    db.upsertObservationEmbedding(current, RAW_SPACE_KEY, DIMENSIONS, embeddingToBlob(unitVector(DIMENSIONS, 5)));
 
     const results = await hybridSearchObservations(
       db,

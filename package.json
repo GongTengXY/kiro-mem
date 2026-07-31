@@ -38,6 +38,9 @@
     "test": "bun test",
     "bench": "bun run benchmark/run.ts --compressor=gold",
     "bench:acp": "bun run benchmark/run.ts --compressor=acp",
+    "probe:rank": "bun run benchmark/probe-semantic-rank.ts",
+    "probe:dist": "bun run benchmark/probe-similarity-dist.ts",
+    "probe:profile": "bun run benchmark/probe-encoder-profile.ts",
     "typecheck": "bun node_modules/typescript/bin/tsc --noEmit"
   },
   "devDependencies": {

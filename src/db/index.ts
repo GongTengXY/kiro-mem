@@ -4,7 +4,12 @@ import { Database } from 'bun:sqlite';
 import { join, dirname } from 'path';
 import { mkdirSync, existsSync } from 'fs';
 import { getDataDir } from '../config';
-import { ALL_SCHEMA } from './schema';
+import { ALL_SCHEMA, migrateSchema } from './schema';
+import {
+  NORMALIZATION_PROTOCOLS,
+  SEMANTIC_EN_PROTOCOL,
+  embeddingSpaceKey,
+} from '../semantic-en';
 import { computeScopeKey } from './scope';
 import type {
   SessionRef,
@@ -21,6 +26,9 @@ import type {
   Observation,
   ObservationQuality,
   ObservationEmbeddingRow,
+  ObservationSemanticTextRow,
+  SemanticEnPayload,
+  SemanticTextStatus,
   ObservabilityStats,
 } from './types';
 
@@ -285,6 +293,9 @@ export class MemoryDB {
     // not a substitute for the transactional writes in the ingest path.
     this.db.exec('PRAGMA busy_timeout=3000');
     this.db.exec(ALL_SCHEMA);
+    // Shape changes that `CREATE TABLE IF NOT EXISTS` cannot express. Runs after
+    // the declarative schema so a fresh database short-circuits.
+    migrateSchema(this.db);
   }
 
   close() {
@@ -758,6 +769,14 @@ export class MemoryDB {
 
   // ---------- observation_embeddings ----------
 
+  /**
+   * Store one vector for one (observation, vector space) pair.
+   *
+   * `model` is the full space key from `embeddingSpaceKey()`, so the same
+   * Observation can carry a `raw-v1` and a `semantic-en-v1` vector at once. The
+   * conflict target is the composite key: re-embedding under one protocol must
+   * not touch the other protocol's row.
+   */
   upsertObservationEmbedding(
     observation_id: number,
     model: string,
@@ -768,17 +787,24 @@ export class MemoryDB {
     this.db.run(
       `INSERT INTO observation_embeddings (observation_id, model, dimensions, embedding, created_at)
        VALUES (?, ?, ?, ?, ?)
-       ON CONFLICT(observation_id) DO UPDATE SET
-         model = excluded.model,
+       ON CONFLICT(observation_id, model) DO UPDATE SET
          dimensions = excluded.dimensions,
          embedding = excluded.embedding`,
       [observation_id, model, dimensions, embedding, now],
     );
   }
 
-  getObservationEmbedding(observation_id: number): ObservationEmbeddingRow | null {
+  getObservationEmbedding(
+    observation_id: number,
+    model?: string,
+  ): ObservationEmbeddingRow | null {
+    if (model) {
+      return this.db
+        .query('SELECT * FROM observation_embeddings WHERE observation_id = ? AND model = ?')
+        .get(observation_id, model) as ObservationEmbeddingRow | null;
+    }
     return this.db
-      .query('SELECT * FROM observation_embeddings WHERE observation_id = ?')
+      .query('SELECT * FROM observation_embeddings WHERE observation_id = ? ORDER BY model')
       .get(observation_id) as ObservationEmbeddingRow | null;
   }
 
@@ -816,8 +842,166 @@ export class MemoryDB {
       .map((r) => ({ observation_id: r.observation_id, embedding: r.embedding }));
   }
 
-  // ---------- observation search / timeline ----------
+  // ---------- observation_semantic_texts ----------
 
+  /**
+   * Record (or update) the English derived value for one Observation under one
+   * protocol.
+   *
+   * By default the conflict clause refuses to downgrade a `ready` row: a later
+   * attempt that fails must not erase a translation that already validated, or a
+   * transient translator hiccup would silently remove an Observation from the
+   * `semantic-en-v1` space and the only symptom would be slightly lower coverage.
+   *
+   * `allowDowngrade` is the one exception, and it exists because the two rules
+   * collide: the embed-time gate re-validates the stored payload, so when it
+   * refuses one it holds proof that `ready` is wrong — leaving the row alone
+   * would make the table claim a compliant value that the current guardrails
+   * reject. Only a caller that just re-ran the guardrails may pass it.
+   */
+  upsertObservationSemanticText(input: {
+    observation_id: number;
+    protocol: string;
+    status: SemanticTextStatus;
+    /** Derived value; must be null unless `status === 'ready'`. */
+    payload?: SemanticEnPayload | null;
+    translator: string;
+    translator_version?: string | null;
+    attempts?: number;
+    failure_reason?: string | null;
+    /** Permit overwriting a `ready` row with a non-ready status. */
+    allowDowngrade?: boolean;
+  }): void {
+    const now = nowISO();
+    const payloadJson =
+      input.status === 'ready' && input.payload ? JSON.stringify(input.payload) : null;
+    const guard = input.allowDowngrade
+      ? ''
+      : `\n       WHERE excluded.status = 'ready' OR observation_semantic_texts.status <> 'ready'`;
+    this.db.run(
+      `INSERT INTO observation_semantic_texts (
+         observation_id, protocol, status, payload_json, translator,
+         translator_version, attempts, failure_reason, created_at, updated_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(observation_id, protocol) DO UPDATE SET
+         status = excluded.status,
+         payload_json = excluded.payload_json,
+         translator = excluded.translator,
+         translator_version = excluded.translator_version,
+         attempts = excluded.attempts,
+         failure_reason = excluded.failure_reason,
+         updated_at = excluded.updated_at${guard}`,
+      [
+        input.observation_id,
+        input.protocol,
+        input.status,
+        payloadJson,
+        input.translator,
+        input.translator_version ?? null,
+        input.attempts ?? 0,
+        input.failure_reason ?? null,
+        now,
+        now,
+      ],
+    );
+  }
+
+  getObservationSemanticText(
+    observation_id: number,
+    protocol: string,
+  ): ObservationSemanticTextRow | null {
+    return this.db
+      .query(
+        `SELECT * FROM observation_semantic_texts
+          WHERE observation_id = ? AND protocol = ?`,
+      )
+      .get(observation_id, protocol) as ObservationSemanticTextRow | null;
+  }
+
+  /** Status histogram for one protocol — the rebuild-progress read (§5.8). */
+  countObservationSemanticTexts(protocol: string): {
+    ready: number;
+    pending: number;
+    failed: number;
+  } {    const rows = this.db
+      .query(
+        `SELECT status AS status, COUNT(*) AS c
+           FROM observation_semantic_texts
+          WHERE protocol = ?
+          GROUP BY status`,
+      )
+      .all(protocol) as { status: string; c: number }[];
+    const out = { ready: 0, pending: 0, failed: 0 };
+    for (const row of rows) {
+      if (row.status === 'ready') out.ready = row.c;
+      else if (row.status === 'pending') out.pending = row.c;
+      else if (row.status === 'failed') out.failed = row.c;
+    }
+    return out;
+  }
+
+  /**
+   * Observations that still owe a `ready` derived value under `protocol`.
+   *
+   * This is the entry point a protocol or translator upgrade needs: without it,
+   * "we changed the normalization protocol" has no path to "the corpus was
+   * rebuilt", and the only symptom would be a permanently partial
+   * `semantic-en-v1` coverage that looks like a queue backlog.
+   *
+   * Excluded on purpose:
+   *   - `quality = 'fallback'` Observations — their prose is a generated
+   *     placeholder, so there is nothing faithful to mirror.
+   *   - rows already `failed` — the guardrails refused that content twice; a
+   *     third identical attempt costs an ACP call and changes nothing. They are
+   *     visible in `countObservationSemanticTexts()` and need a protocol/prompt
+   *     change, not a retry.
+   *   - anything with an in-flight job, so a second call is idempotent.
+   */
+  findObservationsMissingSemanticText(opts: {
+    protocol: string;
+    limit?: number;
+  }): number[] {
+    const limit = opts.limit ?? 500;
+    return (
+      this.db
+        .query(
+          `SELECT o.id AS id FROM observations o
+             LEFT JOIN observation_semantic_texts s
+               ON s.observation_id = o.id AND s.protocol = ?
+            WHERE o.quality = 'normal'
+              AND (s.observation_id IS NULL OR s.status = 'pending')
+              AND NOT EXISTS (
+                SELECT 1 FROM jobs j
+                 WHERE j.job_type = 'renormalize_observation'
+                   AND j.dedupe_key = 'renorm:obs:' || o.id
+                   AND j.state IN ('pending', 'leased')
+              )
+            ORDER BY o.id ASC LIMIT ?`,
+        )
+        .all(opts.protocol, limit) as { id: number }[]
+    ).map((r) => r.id);
+  }
+
+  /** Enqueue the rebuild jobs found by {@link findObservationsMissingSemanticText}. */
+  requeueSemanticTextRebuild(opts: { protocol: string; limit?: number }): number {
+    const ids = this.findObservationsMissingSemanticText(opts);
+    let queued = 0;
+    this.transaction(() => {
+      for (const id of ids) {
+        const job = this.enqueueJob({
+          job_type: 'renormalize_observation',
+          dedupe_key: `renorm:obs:${id}`,
+          entity_type: 'observation',
+          entity_id: String(id),
+          payload_json: JSON.stringify({ observation_id: id }),
+        });
+        if (job) queued++;
+      }
+    });
+    return queued;
+  }
+
+  // ---------- observation search / timeline ----------
   /**
    * FTS search over Observations, hard-scoped by `scope_key` when provided.
    *
@@ -1242,7 +1426,32 @@ export class MemoryDB {
       "SELECT COUNT(*) AS c FROM observations WHERE quality = 'fallback'",
     );
     const pinned = scalar('SELECT COUNT(*) AS c FROM observations WHERE is_pinned = 1');
-    const embedded = scalar('SELECT COUNT(*) AS c FROM observation_embeddings');
+    // Per-space counts. `model` is the full space key, so a row written under an
+    // older key (or a bare model name from before protocol isolation) counts for
+    // no protocol — which is the honest reading: it cannot be compared against
+    // anything the current code produces.
+    const spaceKeys = NORMALIZATION_PROTOCOLS.map((protocol) => ({
+      protocol,
+      spaceKey: embeddingSpaceKey(protocol),
+    }));
+    const byProtocol = spaceKeys.map(({ protocol, spaceKey }) => {
+      const ready = scalar(
+        'SELECT COUNT(*) AS c FROM observation_embeddings WHERE model = ?',
+        spaceKey,
+      );
+      return {
+        protocol: protocol as string,
+        spaceKey,
+        ready,
+        coverage: total > 0 ? Number((ready / total).toFixed(3)) : 0,
+      };
+    });
+    const placeholders = spaceKeys.map(() => '?').join(',');
+    const embedded = scalar(
+      `SELECT COUNT(DISTINCT observation_id) AS c FROM observation_embeddings
+        WHERE model IN (${placeholders})`,
+      ...spaceKeys.map((s) => s.spaceKey),
+    );
     const normal = Math.max(0, total - fallback);
     const coverage = total > 0 ? Number((embedded / total).toFixed(3)) : 0;
 
@@ -1278,7 +1487,12 @@ export class MemoryDB {
 
     return {
       observations: { total, normal, fallback, pinned },
-      embeddings: { ready: embedded, coverage },
+      embeddings: {
+        ready: embedded,
+        coverage,
+        byProtocol,
+        semanticEn: this.countObservationSemanticTexts(SEMANTIC_EN_PROTOCOL),
+      },
       jobs: {
         pending: scalar("SELECT COUNT(*) AS c FROM jobs WHERE state = 'pending'"),
         leased: scalar("SELECT COUNT(*) AS c FROM jobs WHERE state = 'leased'"),

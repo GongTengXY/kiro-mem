@@ -6,6 +6,11 @@
 import { ACPPool } from './pool';
 import type { ACPPoolOptions } from './types';
 import type { MemoryCompressor, ObservationSummaryResult } from '../compressor';
+import {
+  coerceSemanticEnRecord,
+  type SemanticEnRecord,
+  type SemanticEnRecordSource,
+} from '../semantic-en';
 import { logError } from '../logger';
 
 // An empty Observation result. When the model exhausts repair retries the job
@@ -15,6 +20,7 @@ const OBSERVATION_SUMMARY_FALLBACK: ObservationSummaryResult = {
   title: '', summary: '', request: '', outcome: '', learned: '',
   next_steps: '', memory_type: 'change', files_touched: [], concepts: [],
   evidence: [], importance_score: 0, confidence_score: 0, unresolved_score: 0,
+  semantic_en: null,
 };
 
 export interface ACPCompressorOptions extends ACPPoolOptions {
@@ -64,6 +70,27 @@ export class ACPCompressor implements MemoryCompressor {
 
   async close(): Promise<void> {
     await this.pool.close();
+  }
+
+  /**
+   * Second attempt at the English derived value, translation only.
+   *
+   * Returns null rather than throwing on any failure: by the time this runs the
+   * Observation is already being written, and the caller's contract is "no
+   * English vector" — never "fail the whole turn because a derived value could
+   * not be produced".
+   */
+  async normalizeSemanticEn(source: SemanticEnRecordSource): Promise<SemanticEnRecord | null> {
+    try {
+      const raw = await this.runWithRetry(buildSemanticEnPrompt(source), 8192);
+      const cleaned = raw.replace(/^```json?\n?/m, '').replace(/\n?```$/m, '').trim();
+      return boundedSemanticEn(JSON.parse(cleaned));
+    } catch (error) {
+      logError('acp-compressor/semantic-en', {
+        error_type: error instanceof Error ? error.name : 'UnknownError',
+      });
+      return null;
+    }
   }
 
   // --- Internal ---
@@ -154,7 +181,10 @@ Invalid output: ${invalidOutput.slice(0, 1000)}
 Validation error: ${error}`;
 }
 
-const OBSERVATION_SUMMARY_SCHEMA = '{"title":"string","summary":"string","request":"string","outcome":"string","learned":"string","next_steps":"string","memory_type":"decision|bugfix|feature|refactor|discovery|change","files_touched":["string"],"concepts":["string"],"evidence":["string"],"importance_score":0-1,"confidence_score":0-1,"unresolved_score":0-1}';
+const OBSERVATION_SUMMARY_SCHEMA = '{"title":"string","summary":"string","request":"string","outcome":"string","learned":"string","next_steps":"string","memory_type":"decision|bugfix|feature|refactor|discovery|change","files_touched":["string"],"concepts":["string"],"evidence":["string"],"importance_score":0-1,"confidence_score":0-1,"unresolved_score":0-1,"semantic_en":{"title":"string","summary":"string","outcome":"string","learned":"string","concepts":["string"]}}';
+
+/** Translation-only schema for the second (and last) derived-value attempt. */
+const SEMANTIC_EN_SCHEMA = '{"title":"string","summary":"string","outcome":"string","learned":"string","concepts":["string"]}';
 
 // --- Output size bounds (S2) ---
 //
@@ -187,6 +217,24 @@ function boundedStringArray(val: unknown): string[] {
 }
 
 /**
+ * Bound the English derived value with the same caps as the fields it mirrors.
+ * Returns null for a missing/unusable shape — an absent derived value costs one
+ * Observation its English vector, while an unbounded one would carry model prose
+ * straight into storage.
+ */
+function boundedSemanticEn(val: unknown): SemanticEnRecord | null {
+  const coerced = coerceSemanticEnRecord(val);
+  if (!coerced) return null;
+  return {
+    title: boundedString(coerced.title, TITLE_MAX_CHARS),
+    summary: boundedString(coerced.summary, FIELD_MAX_CHARS),
+    outcome: boundedString(coerced.outcome, FIELD_MAX_CHARS),
+    learned: boundedString(coerced.learned, FIELD_MAX_CHARS),
+    concepts: boundedStringArray(coerced.concepts),
+  };
+}
+
+/**
  * Validate and coerce parsed JSON to match the Observation schema.
  *
  * Exported for tests: the unknown-context branch is unreachable through the
@@ -211,6 +259,12 @@ export function validateSchema<T>(parsed: any, fallback: T, context: string): T 
       importance_score: clampScore(parsed.importance_score),
       confidence_score: clampScore(parsed.confidence_score),
       unresolved_score: clampScore(parsed.unresolved_score),
+      // Shape coercion only. Whether this value may enter the
+      // `semantic-en-v1` vector space is decided later, by
+      // `checkSemanticEnRecord()` against the fields actually stored — the
+      // caller is the only place that knows those (it applies its own
+      // defaults and fallbacks first).
+      semantic_en: boundedSemanticEn(parsed.semantic_en),
     } as T;
   }
 
@@ -283,6 +337,48 @@ function buildObservationSummaryPrompt(input: {
 - concepts 是可检索标签(中英文都要)，可重复可变化，不需要规范命名。
 - evidence 是少量可解释证据(命令、错误、测试结果、关键文件)，不要复制完整输出。
 
+## semantic_en（英文语义归一化，同一次响应内产出，不要另起解释）
+- 把 title / summary / outcome / learned / concepts **忠实翻译成英文**，逐句对应。
+- 不要摘要、不要补充背景、不要合并或拆分句子；原文该字段为空则英文也留空。
+- 文件路径、标识符、函数名、命令、配置键、数字、错误码一律原样保留，不要翻译。
+- concepts 逐项翻译，数量与顺序必须与上面的 concepts 完全一致。
+- 原文本来就是英文时，照抄或仅规范措辞即可，不要改写标识符。
+- 不允许输出 "..."、"N/A"、"unknown" 这类占位内容；写不出就说明上面的字段本身是空的。
+
 ## 输出（只返回 JSON）
-{"title":"一句话工作标题(<40字)","summary":"2-4句紧凑事实摘要","request":"用户想完成什么","outcome":"实际完成/验证结果/未完成状态","learned":"可复用的技术事实或取舍","next_steps":"明确未完成项，没有则空串","memory_type":"decision|bugfix|feature|refactor|discovery|change","files_touched":["文件路径"],"concepts":["标签"],"evidence":["证据"],"importance_score":0.0-1.0,"confidence_score":0.0-1.0,"unresolved_score":0.0-1.0}`;
+{"title":"一句话工作标题(<40字)","summary":"2-4句紧凑事实摘要","request":"用户想完成什么","outcome":"实际完成/验证结果/未完成状态","learned":"可复用的技术事实或取舍","next_steps":"明确未完成项，没有则空串","memory_type":"decision|bugfix|feature|refactor|discovery|change","files_touched":["文件路径"],"concepts":["标签"],"evidence":["证据"],"importance_score":0.0-1.0,"confidence_score":0.0-1.0,"unresolved_score":0.0-1.0,"semantic_en":{"title":"English title","summary":"English summary","outcome":"English outcome","learned":"English learned","concepts":["English tag"]}}`;
+}
+
+// ---------------------------------------------------------------------------
+// Translation-only prompt (second and last derived-value attempt)
+// ---------------------------------------------------------------------------
+//
+// Separate from the summary prompt on purpose: when the derived value that came
+// back with the summary fails the guardrails, re-running the whole compression
+// would also re-roll the Observation text — which is immutable by then, so the
+// two would disagree. This prompt sees only the fields it must mirror.
+
+function buildSemanticEnPrompt(source: SemanticEnRecordSource): string {
+  const input = {
+    title: source.title,
+    summary: source.summary,
+    outcome: source.outcome ?? '',
+    learned: source.learned ?? '',
+    concepts: source.concepts,
+  };
+  return `把下面这条开发记忆的字段忠实翻译成英文。
+
+规则：
+- 逐句对应。不要摘要、不要补充、不要合并或拆分句子。
+- 输入为空的字段，输出也必须为空字符串。
+- 文件路径、标识符、函数名、命令、配置键、数字、错误码一律原样保留。
+- concepts 逐项翻译，数量与顺序必须与输入完全一致。
+- 不允许输出 "..."、"N/A"、"unknown" 这类占位内容。
+- 只输出 JSON，不要 markdown 代码块，不要解释。
+
+schema：
+${SEMANTIC_EN_SCHEMA}
+
+待翻译：
+${JSON.stringify(input, null, 2)}`;
 }

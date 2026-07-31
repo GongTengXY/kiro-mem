@@ -182,10 +182,45 @@ export interface Observation {
 /** Vector index row, scoped to observations. */
 export interface ObservationEmbeddingRow {
   observation_id: number;
+  /** Full vector-space key: model:dtype:dims:protocol (see semantic-en.ts). */
   model: string;
   dimensions: number;
   embedding: Buffer;
   created_at: string;
+}
+
+/**
+ * Lifecycle of an English derived value.
+ *
+ * `pending` and `failed` both mean "this Observation has no `semantic-en-v1`
+ * vector". They are distinct because the first is retryable and the second
+ * records a translation the guardrails refused — losing that distinction would
+ * make a permanent protocol violation look like a queue backlog.
+ */
+export type SemanticTextStatus = 'ready' | 'pending' | 'failed';
+
+/** The English derived value payload, mirroring the embedded fields. */
+export interface SemanticEnPayload {
+  title: string;
+  summary: string;
+  outcome: string;
+  learned: string;
+  concepts: string[];
+}
+
+/** One derived value for one Observation under one normalization protocol. */
+export interface ObservationSemanticTextRow {
+  observation_id: number;
+  protocol: string;
+  status: SemanticTextStatus;
+  /** JSON-encoded {@link SemanticEnPayload}; NULL unless status is `ready`. */
+  payload_json: string | null;
+  translator: string;
+  translator_version: string | null;
+  attempts: number;
+  failure_reason: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 /**
@@ -202,10 +237,19 @@ export interface ObservabilityStats {
     pinned: number;
   };
   embeddings: {
-    /** Observations that have an embedding row. */
+    /** Observations with a vector in at least one CURRENT vector space. */
     ready: number;
     /** ready / total, 0..1. A proxy for how often hybrid search can use vectors. */
     coverage: number;
+    /**
+     * Per-protocol breakdown. `ready` alone cannot answer the question phase 1b
+     * actually asks — "is the `semantic-en-v1` rebuild finished for this
+     * dataDir?" — because an Observation with only a `raw-v1` vector is fully
+     * `ready` and completely invisible to an English query.
+     */
+    byProtocol: { protocol: string; spaceKey: string; ready: number; coverage: number }[];
+    /** Derived-value lifecycle for `semantic-en-v1` (rebuild progress). */
+    semanticEn: { ready: number; pending: number; failed: number };
   };
   jobs: {
     pending: number;

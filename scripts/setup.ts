@@ -40,7 +40,18 @@ import { resolveRuntimeHome } from '../src/config';
 import { PACKAGE_VERSION } from '../src/version';
 
 const HOME = process.env.HOME || '~';
-const DATA_DIR = join(HOME, '.kiro-mem');
+/**
+ * Where this installation's state lives.
+ *
+ * `KIRO_MEMORY_DATA_DIR` first, matching `getDataDir()` in `src/config.ts` —
+ * the Worker, the MCP server and every hook resolve it that way. This file used
+ * to look only at `HOME`, so the override silently isolated two of the three
+ * entry points: a command run with `KIRO_MEMORY_DATA_DIR=<tmp> kiro-mem repair`
+ * looked isolated and actually read, migrated and enqueued jobs into the
+ * developer's real database. Tests isolate by overriding `HOME`, so nothing
+ * caught it.
+ */
+const DATA_DIR = process.env.KIRO_MEMORY_DATA_DIR || join(HOME, '.kiro-mem');
 const KIRO_HOME = process.env.KIRO_HOME || join(HOME, '.kiro');
 const AGENT_DIR = join(KIRO_HOME, 'agents');
 
@@ -393,6 +404,11 @@ async function install() {
   for (const file of [
     'compressor.ts',
     'embedding.ts',
+    // Split out of embedding.ts so the MCP server can resolve the vector-space
+    // identity without pulling the inference runtime into every session.
+    'embedding-space.ts',
+    'semantic-en.ts',
+    'worker-embedder.ts',
     'bootstrap-context.ts',
     'config.ts',
     'auth-token.ts',
@@ -1049,14 +1065,34 @@ async function repair() {
   const mdb = new MemoryDB(dbPath);
   try {
     // 动态引入：`src/embedding.ts` 会静态拉入 transformers，其它 CLI 子命令不该为它付启动成本。
-    const { EMBEDDING_MODEL, DIMENSIONS } = await import('../src/embedding');
-    const vector = { embeddingModel: EMBEDDING_MODEL, embeddingDimensions: DIMENSIONS };
+    // `embedding-space.ts` / `semantic-en.ts` 本身不含推理运行时，但保持同一处引入更好读。
+    const { DIMENSIONS } = await import('../src/embedding-space');
+    const { embeddingSpaceKey, RAW_PROTOCOL, SEMANTIC_EN_PROTOCOL } = await import('../src/semantic-en');
+    // 向量孤儿只认 raw-v1：它是本地可重算的那一腿（不需要 ACP 翻译）。
+    // semantic-en-v1 的向量不靠这里补——它依赖英文派生值先 ready，所以下面单独找
+    // "缺派生值"的 observation 并排 renormalize_observation，由 Worker 走 ACP 补译，
+    // 补完后那条 job 自己会排 embed。
+    const vector = {
+      embeddingModel: embeddingSpaceKey(RAW_PROTOCOL),
+      embeddingDimensions: DIMENSIONS,
+    };
     const found = mdb.findOrphans(vector);
     const turns = found.turnsWithoutObservation.length;
     const observations = found.observationsWithoutEmbedding.length;
+    const missingSemantic = mdb.findObservationsMissingSemanticText({
+      protocol: SEMANTIC_EN_PROTOCOL,
+    }).length;
+    // `failed` 不进重建队列（护栏两次拒绝过同一份内容），但必须显示出来，否则它就是
+    // 一个永远不会自愈、也没人知道的黑洞。
+    const semanticStatus = mdb.countObservationSemanticTexts(SEMANTIC_EN_PROTOCOL);
 
-    if (turns === 0 && observations === 0) {
+    if (turns === 0 && observations === 0 && missingSemantic === 0) {
       console.log(`${ansi.ok('✓')} ${m.repairNothing}`);
+      if (semanticStatus.failed > 0) {
+        console.log(
+          `  ${ansi.dim(`${m.repairSemanticFailed} ${semanticStatus.failed}`)}`,
+        );
+      }
       return;
     }
 
@@ -1064,11 +1100,16 @@ async function repair() {
     const pad = (s: string) => s.padEnd(30, ' ');
     if (turns > 0) console.log(`  ${pad(m.repairTurns)}${ansi.cyan(String(turns))}`);
     if (observations > 0) console.log(`  ${pad(m.repairEmbeddings)}${ansi.cyan(String(observations))}`);
+    if (missingSemantic > 0) console.log(`  ${pad(m.repairSemanticTexts)}${ansi.cyan(String(missingSemantic))}`);
 
     const queued = mdb.requeueOrphans(vector);
+    const queuedSemantic = mdb.requeueSemanticTextRebuild({ protocol: SEMANTIC_EN_PROTOCOL });
     console.log(
-      `${ansi.ok('✓')} ${m.repairQueued} ${ansi.cyan(String(queued.summarize))} summarize_turn / ${ansi.cyan(String(queued.embed))} embed_observation`,
+      `${ansi.ok('✓')} ${m.repairQueued} ${ansi.cyan(String(queued.summarize))} summarize_turn / ${ansi.cyan(String(queued.embed))} embed_observation / ${ansi.cyan(String(queuedSemantic))} renormalize_observation`,
     );
+    if (semanticStatus.failed > 0) {
+      console.log(`  ${ansi.dim(`${m.repairSemanticFailed} ${semanticStatus.failed}`)}`);
+    }
     console.log(`  ${ansi.dim(m.repairHint)}`);
   } finally {
     mdb.close();

@@ -123,7 +123,19 @@ describe('Integration / real createApp — full ingest cycle', () => {
     expect(h.version).toBe('3.0.0');
     // DB-derived V3 metrics are always present, even on an empty DB.
     expect(h.observations).toEqual({ total: 0, normal: 0, fallback: 0, pinned: 0 });
-    expect(h.embeddings).toEqual({ ready: 0, coverage: 0 });
+    expect(h.embeddings.ready).toBe(0);
+    expect(h.embeddings.coverage).toBe(0);
+    // Per-protocol coverage is what answers "is the semantic-en-v1 rebuild
+    // done?" — a single `ready` count cannot, since a raw-only Observation is
+    // fully ready and invisible to an English query.
+    expect(h.embeddings.byProtocol.map((p: { protocol: string }) => p.protocol)).toEqual([
+      'raw-v1',
+      'semantic-en-v1',
+    ]);
+    expect(h.embeddings.semanticEn).toEqual({ ready: 0, pending: 0, failed: 0 });
+    // One model instance per dataDir is a claim only if it is observable.
+    expect(h.embedding_runtime.model_instances).toBe(0);
+    expect(h.embedding_runtime.queue_limit).toBeGreaterThan(0);
     expect(h.jobs_24h).toEqual({ succeeded: 0, dead: 0 });
     expect(h.search_24h).toEqual({ requests: 0, ftsOnly: 0, degradeRate: 0, latencyMsAvg: 0, latencyMsP95: 0 });
     expect(h.acp_24h).toEqual({ repairs: 0, contaminations: 0 });

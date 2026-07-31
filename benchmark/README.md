@@ -121,7 +121,17 @@ bun run benchmark/run.ts --compressor=acp --concurrency=2 --report=/tmp/r.md --n
 - **`memory_type` 与标注一致率**：粗分类，`feature`/`bugfix`/`refactor` 之间存在合理分歧。
 - **`next_steps` 过度生成率**：标注无未完成项但模型仍写了 `next_steps`。§12.3 关心的是「缺失率」，即有未完成项却没写出来；反向的过度生成危害小得多，单独统计。
 
-### 两条口径说明
+### 排序敏感指标与分路明细
+
+两项都是**只报告、不设门槛**的观测，加入原因是原来的仪表盘读不出该读的东西。
+
+- **分层 MRR（`tunedMrr` / `heldoutMrr`）**。hit@5 是阶跃函数：期望记录从第 4 位升到第 1 位它一动不动。而在词汇锚点门还在的前提下，换编码器**唯一**能改变的就是排序——只看 hit@5，一个真正更好的编码器会显示为「没变化」，然后一个正确的改动被回退。MRR 仍不是连续量（它是离散 rank 的函数），但细得多；单条 query 对它的**最大**贡献是 1/n（未命中升到第 1 位），不是每条固定 1/n。phase0 基线：tuned 0.769 / heldout 0.403。
+- **逐 query 分路明细**（报告里的「逐 query 分路明细」表）。一次 miss 有四种成因，在原来那张表里长得完全一样：FTS 没召回 / 语义没召回 / 两路都召回但 RRF 排坏 / 被结果上限截掉。新增列 `ftsCount`（FTS 候选数，**不是**返回数）、`semanticCount`、`semanticOnlyReturned`、`ftsRank`、`semRank`、逐条 `degraded`。
+
+  数据来源是 `hybridSearchObservations` 新增的 `deps.onCandidates` 观测出口。选它而不是在 harness 里另调一次 `searchObservationsFts`：后者要复制一份 `limit: 50` 和 opts，等于给同一件事造第二个事实来源。该出口只读，不回流进排序。
+
+- **`heldoutZeroFtsAnchor`**：与 `heldoutNoAnchor` 同一件事的**不依赖返回结果**的口径（FTS 候选数为 0 的 heldout 条数）。今天两者必然相等（都是 9），所以此刻只是对照读数；但一旦拆掉词汇锚点门，`heldoutNoAnchor` 会自动掉到 0——不是因为找到了锚点，而是因为「返回条数为 0」不再测量它名字所指的东西。主口径届时切到这一列。
+
 
 **事实标记按 token 边界匹配，不是整串子串。** 详见上面 `annotation.key_facts` 一行与 `benchmark/scoring.ts`。旧的「去掉空白后做 substring」在两个方向上都会错：把 `coverage 是 1.0` 判成丢了 `coverage 1.0`（惩罚正确输出），又让 `en` 在 `content` 里意外命中（虚高）。
 
@@ -156,6 +166,76 @@ bun run benchmark/run.ts --compressor=acp --runs=3
 结论只有一个诚实的写法：**单次 acp 运行跑绿不构成「质量已验证」**，它有约三分之一的概率只是运气。要让这条门槛真正稳定，需要扩大 relevance query 规模（把单条 query 的权重压到远小于门槛余量），而不是调低阈值。在那之前，对外引用 acp 数字必须带上运行次数与 `min`。
 
 统计局限：目前 30 条 turn 里只有 5 条带未完成项，`next_steps` 召回的分母因此只有 5，单条漏报就是 20 个百分点，分辨力不足。后续扩充数据集时应优先提高这个分母。
+
+## 离线探针（不进门槛）
+
+两个脚本，都不测产品行为、都不进 CI，但每个检索优化阶段的报告要各附一次读数。它们与 `run.ts` 共用 `benchmark/dataset.ts`——数据集类型、标注自检、以及「一条标注对应什么样的 Observation」只有一份定义，probe 里手抄一份就是给同一个概念造第二个事实来源。嵌入文本也不自己拼，走生产的 `buildObservationSearchText()`。
+
+```bash
+bun run probe:rank            # 离线语义排名
+bun run probe:rank --subset=tuned
+bun run probe:dist            # 相似度分布 + 候选 floor 扫描
+```
+
+### `probe-semantic-rank.ts` — 语义腿单独的排序能力
+
+纯 cosine 在同 scope **全部记录**上排序，不查 FTS、不做 RRF、不截断。
+
+它存在的理由是一个结构问题：词汇锚点门（`if (ftsResults.length === 0) return []`）在语义步骤**之前**，所以零锚点 query 连查询向量都不会算。换编码器对那批 query 的端到端读数因此**结构上就是不动的**——拿「heldout hit@5 上升」当换编码器的验收指标，会把正确的改动判成失败。这个探针绕开那道门，直接测「语义腿单独能不能把对的记录排上来」，也就是拆门之后所依赖的能力。
+
+`--subset` 是强制的纪律，不是方便开关：被用于选择的样本不再是该选择的泛化证据。选编码器只能读 `tuned`（校准集），`heldout`（验证集）每阶段只读一次。报告里那行命令本身就是「heldout 没被烧掉」的凭据。
+
+`zeroAnchor` 子集由脚本**当场**按 FTS 候选数为 0 算出，绝不硬编码 query 名单——名单会随 FTS 侧改动变化，硬编码会让子读数悄悄测错对象。
+
+#### `--lang`：中文 / 英文 / 跨语言
+
+`--lang=zh|en|cross`（默认 `zh`）。非 `zh` 时强制 `--subset=tuned`，因为英文镜像只覆盖 `tuned` + `empty`。
+
+| 模式 | 记录 | query | 对应场景 |
+| --- | --- | --- | --- |
+| `zh` | 中文 | 中文 | 中文用户 |
+| `en` | 英文镜像 | 英文 | 英文用户。Observation 的语言跟随用户 prompt 语言，所以英文用户的**语料本身**也是英文——EN→EN 才是他们的真实场景 |
+| `cross` | 中文 | 英文 | 双语开发者，以及「中文叙述 + 英文标识符」这个常态 |
+
+数据在 `dataset/mirror-en.json`：26 条 primary 记录参与嵌入的字段（title / summary / outcome / learned / concepts）加 18 tuned + 5 empty 的 query，**机械 1:1 翻译**；`expect` 标注、dataset id、scope、文件路径一字不改（路径与标识符语言中立，翻译它们会让检索任务变成另一个任务）。`scope: other` 的 4 条与 18 条 `heldout` 故意不镜像。
+
+**举证能力必须带着引用**：它是 `tuned` + `empty` 的派生物，所以是**校准证据，永远不能当泛化证据**；翻译由本仓库自撰，绝对读数带译者偏差，但**相对比较成立**——每个候选看的是同一份镜像。
+
+非 `zh` 模式下 FTS 播种被跳过、`zeroAnchor` 标为不适用：镜像只翻译了参与嵌入的字段，`request` / `next_steps` / `evidence` 仍是中文，那样建出来的索引是半中半英的，命中数不代表任何真实配置。
+
+phase0 基线（`reports/probe-semantic-rank-phase0.md`）：
+
+| 子集 | n | MRR | 名次中位数 | p90 | Top-5 |
+| --- | --- | --- | --- | --- | --- |
+| tuned | 18 | 0.529 | 2 | 16 | 12/18 |
+| heldout | 18 | 0.365 | 10 | 24 | 7/18 |
+| zeroAnchor | 10 | 0.162 | 14 | 24 | **1/10** |
+
+### `probe-similarity-dist.ts` — 分布与候选 floor
+
+**它不产出结论，只产出候选。** 三个池、p95/p99、扫描表全是 query-record pair 层面的读数，而验收的是产品行为；中间隔着语义排名 → FTS 排名 → RRF → limit → semantic-only 限额，且同一条 empty query 可能有多条记录同时越过 floor。pair 通过率 5% 完全可以变成「每条 empty query 平均返回 1.3 条」。最终 floor 必须由每个候选各跑一次完整 `bun run bench` 的产品指标决定。
+
+三个池的举证能力不同，脚本会在池大小与写死口径不符时直接退出：
+
+| 池 | 对数 | 举证能力 |
+| --- | --- | --- |
+| 正例 | 38 | 标注支撑。**不是 36**——q03→`[t03,t19]`、q04→`[t04,t19]` 各有两个 expected |
+| 标注真负例 | 130 | 5 条 `empty` × 26 条 primary。唯一有标注支撑的负例，**候选 floor 以它的 p99 为准** |
+| 未标注非目标对 | 898 | 36 × 26 − 38。**不是已知负例**：标注集不完备（R-precision 只是下界就是同一个原因），里面必然混有真正相关的记录，负例分布被系统性抬高，据此定 floor 会压掉真实召回。只用于观察形状 |
+
+统计量用 p95/p99 而非 max：max 在 n=130 上极不稳定，样本一多只会往上走，据此校准的 floor 会系统性偏低。
+
+phase0 基线（`reports/probe-similarity-dist-phase0.md`）：
+
+| 池 | 中位数 | p95 | p99 | max |
+| --- | --- | --- | --- | --- |
+| 正例（38） | 0.289 | 0.487 | 0.607 | 0.607 |
+| 真负例（130） | 0.179 | 0.286 | 0.392 | 0.431 |
+| 未标注（898） | 0.202 | 0.372 | 0.427 | 0.506 |
+
+真负例 p99（0.392）高于正例中位数（0.289）。扫描表把代价写成了数字：把真负例通过率压到 7.7% 需要 t=0.28，而那会丢掉 45% 的正例。**当前编码器下不存在可用工作点**——这不是混合检索的固有性质，只是这个编码器的性质，换编码器后必须重测。
+
+不做「正例 p5 > 真负例 p99」这类二元分离检验：那要求近乎完美分离，真实语料上基本不可能过，写成判据等于预先把「删门」分支判死。
 
 ## 已修复的缺陷
 

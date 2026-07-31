@@ -13,12 +13,23 @@ import { logError } from '../logger';
 import { JobRunner, extractArtifacts } from '../jobs';
 import {
   generateEmbedding,
+  embeddingModelInitCount,
+  prewarmEmbeddingModel,
   embeddingToBlob,
+  buildObservationSearchText,
   DIMENSIONS,
-  EMBEDDING_MODEL,
   withEmbeddingTimeout,
   DEFAULT_JOB_EMBEDDING_TIMEOUT_MS,
 } from '../embedding';
+import {
+  RAW_PROTOCOL,
+  SEMANTIC_EN_PROTOCOL,
+  checkSemanticEnRecord,
+  embeddingSpaceKey,
+  semanticEnSearchTextFields,
+  type SemanticEnRecord,
+  type SemanticEnRecordSource,
+} from '../semantic-en';
 import { PACKAGE_VERSION } from '../version';
 
 // --- Global error handlers (only in production entry) ---
@@ -122,10 +133,99 @@ function extractAssistantResponse(db: MemoryDB, turn_id: number): string {
   }
 }
 
+/** Recorded on every derived value so a translator change can invalidate rows. */
+const SEMANTIC_EN_TRANSLATOR = 'acp:kiro-mem-compressor';
+
+/**
+ * Concurrent query embeddings allowed before the Worker sheds load.
+ *
+ * A local MiniLM query embedding is ~2-5ms warm, so this is a burst allowance,
+ * not a throughput knob: with three repos searching at once the queue never
+ * approaches it, and if it does the caller is better off with FTS-only than
+ * with a search that misses its 1.2s deadline.
+ */
+const EMBED_QUEUE_LIMIT = 8;
+/** Longest query text accepted for embedding (a query, not a document). */
+const EMBED_TEXT_MAX_CHARS = 4000;
+
+interface ResolvedSemanticEn {
+  status: 'ready' | 'pending' | 'failed';
+  payload: SemanticEnRecord | null;
+  attempts: number;
+  reason: string | null;
+}
+
+/**
+ * Decide the `semantic-en-v1` derived value for one Observation, at most two
+ * attempts.
+ *
+ * Attempt 1 rode along with the compression response (no extra call — that is
+ * the whole point of the design). Attempt 2 is a translation-only ACP call, and
+ * only happens because attempt 1 produced something the guardrails refused.
+ *
+ * The three outcomes are deliberately distinguishable:
+ *   ready   — validated, gets an English vector.
+ *   failed  — the guardrails refused it twice. A content problem: retrying the
+ *             same translator with the same input will refuse it again, so it
+ *             needs a protocol/prompt change, not a queue.
+ *   pending — no usable attempt happened (translator unavailable, ACP error, or
+ *             a fallback-quality Observation with nothing to translate). Fixable
+ *             by re-running later.
+ *
+ * Neither non-ready outcome writes a vector. A wrong translation is worse than a
+ * missing one: at read time it is indistinguishable from a good one, and the
+ * phase 1a `zh query → en record` measurement (MRR 0.437 vs 0.529 raw) is what a
+ * silently mismatched pair actually costs.
+ */
+async function resolveSemanticEn(
+  compressor: MemoryCompressor,
+  fromSummary: SemanticEnRecord | null,
+  source: SemanticEnRecordSource,
+): Promise<ResolvedSemanticEn> {
+  const first = checkSemanticEnRecord(fromSummary, source);
+  if (first.ok) {
+    return { status: 'ready', payload: fromSummary, attempts: 1, reason: null };
+  }
+
+  if (!compressor.normalizeSemanticEn) {
+    return {
+      status: 'pending',
+      payload: null,
+      attempts: 1,
+      reason: `translator_unavailable:${first.reason}`,
+    };
+  }
+
+  let retried: SemanticEnRecord | null = null;
+  try {
+    retried = await compressor.normalizeSemanticEn(source);
+  } catch (error) {
+    return {
+      status: 'pending',
+      payload: null,
+      attempts: 2,
+      reason: `retry_error:${error instanceof Error ? error.name : 'unknown'}`,
+    };
+  }
+
+  const second = checkSemanticEnRecord(retried, source);
+  if (second.ok) return { status: 'ready', payload: retried, attempts: 2, reason: null };
+
+  // No retry produced anything at all => infra, not content.
+  if (retried === null) {
+    return { status: 'pending', payload: null, attempts: 2, reason: `retry_empty:${second.reason}` };
+  }
+  return {
+    status: 'failed',
+    payload: null,
+    attempts: 2,
+    reason: `${first.reason}|${second.reason}:${second.detail}`.slice(0, 200),
+  };
+}
+
 // =============================================================
 // createApp — testable factory. Tests inject their own DB/compressor.
 // =============================================================
-
 export interface AppDeps {
   db: MemoryDB;
   compressor: MemoryCompressor;
@@ -263,6 +363,21 @@ export function createApp(deps: AppDeps) {
     // Observation + its embedding job are one unit of work: an Observation with
     // no embed job is silently semantic-search-invisible, and only shows up as a
     // slightly lower coverage percentage.
+    //
+    // The English derived value joins that unit for the same reason: written in
+    // the same transaction, it is either visible to the embed job or absent, but
+    // never half-applied.
+    const semanticSource: SemanticEnRecordSource = {
+      title: fields.title,
+      summary: fields.summary,
+      outcome: fields.outcome,
+      learned: fields.learned,
+      concepts: fields.concepts,
+    };
+    const derived = isFallback
+      ? { status: 'pending' as const, payload: null, attempts: 0, reason: 'source_quality_fallback' }
+      : await resolveSemanticEn(compressor, result.semantic_en ?? null, semanticSource);
+
     let observationId: number | null = null;
     db.transaction(() => {
       observationId = db.insertObservation({
@@ -280,6 +395,17 @@ export function createApp(deps: AppDeps) {
       // null => a concurrent run already created the Observation for this turn.
       if (observationId == null) return;
 
+      db.upsertObservationSemanticText({
+        observation_id: observationId,
+        protocol: SEMANTIC_EN_PROTOCOL,
+        status: derived.status,
+        payload: derived.payload,
+        translator: SEMANTIC_EN_TRANSLATOR,
+        translator_version: PACKAGE_VERSION,
+        attempts: derived.attempts,
+        failure_reason: derived.reason,
+      });
+
       // Embedding runs as its own job (§5.7). Gate the enqueue on embeddings
       // being enabled so tests don't accrue no-op jobs.
       if (enableEmbeddings) {
@@ -290,27 +416,43 @@ export function createApp(deps: AppDeps) {
           entity_id: String(observationId),
           payload_json: JSON.stringify({ observation_id: observationId }),
         });
+
+        // `pending` means "no usable attempt happened", which is retryable — so
+        // it must not sit there waiting for someone to run `kiro-mem repair`.
+        // `failed` is deliberately NOT requeued: the guardrails refused the
+        // content twice already, and a third identical attempt is just cost.
+        if (derived.status === 'pending' && compressor.normalizeSemanticEn) {
+          db.enqueueJob({
+            job_type: 'renormalize_observation',
+            dedupe_key: `renorm:obs:${observationId}`,
+            entity_type: 'observation',
+            entity_id: String(observationId),
+            payload_json: JSON.stringify({ observation_id: observationId }),
+          });
+        }
       }
     });
   });
 
   // --- embed_observation job ---
   //
-  // Generates the local semantic vector for an Observation. Embedding input is
+  // Generates the local semantic vectors for an Observation. Embedding input is
   // the structured search text (§5.5) — never the full assistant_response or
   // raw tool output, to keep the vector space clean and free of noise/PII.
+  //
+  // Writes one vector per PROTOCOL, not one per Observation:
+  //   raw-v1          — always, from the stored fields. This is the leg that
+  //                     still works when a caller cannot supply an English query.
+  //   semantic-en-v1  — only when the English derived value is `ready` AND still
+  //                     passes the guardrails here. The second check is not
+  //                     redundant: a row written by an older, looser build must
+  //                     not slip a non-compliant value into the space just
+  //                     because it was accepted once.
   jobRunner.register('embed_observation', async (job) => {
     if (!enableEmbeddings) return;
     const { observation_id } = JSON.parse(job.payload_json) as { observation_id: number };
     const obs = db.getObservation(observation_id);
     if (!obs) return;
-    // Idempotent, but only against a vector in the CURRENT space: a row written
-    // by an older model must be REPLACED, not treated as "already done", or
-    // `kiro-mem repair` would requeue jobs that no-op forever.
-    if (db.getObservationEmbeddingsByIds([observation_id], {
-      model: EMBEDDING_MODEL,
-      dimensions: DIMENSIONS,
-    }).length) return;
 
     const parseArr = (json: string): string[] => {
       try {
@@ -320,17 +462,175 @@ export function createApp(deps: AppDeps) {
     };
     const concepts = parseArr(obs.concepts_json);
     const files = parseArr(obs.files_touched_json);
-    const searchText = [
-      obs.title, obs.summary, obs.outcome, obs.learned,
-      concepts.join(', '), files.join(', '),
-    ].filter(Boolean).join('\n');
-    if (!searchText.trim()) return;
 
-    const embedding = await withEmbeddingTimeout(
-      embeddingGenerator(searchText),
-      embeddingTimeoutMs,
+    // Idempotent, but only against a vector in the CURRENT space: a row written
+    // by an older model (or an older protocol) must be REPLACED, not treated as
+    // "already done", or `kiro-mem repair` would requeue jobs that no-op forever.
+    const has = (spaceKey: string): boolean =>
+      db.getObservationEmbeddingsByIds([observation_id], {
+        model: spaceKey,
+        dimensions: DIMENSIONS,
+      }).length > 0;
+
+    const embedInto = async (spaceKey: string, text: string): Promise<void> => {
+      if (!text.trim() || has(spaceKey)) return;
+      const embedding = await withEmbeddingTimeout(
+        embeddingGenerator(text),
+        embeddingTimeoutMs,
+      );
+      db.upsertObservationEmbedding(observation_id, spaceKey, DIMENSIONS, embeddingToBlob(embedding));
+    };
+
+    await embedInto(
+      embeddingSpaceKey(RAW_PROTOCOL),
+      buildObservationSearchText({
+        title: obs.title,
+        summary: obs.summary,
+        outcome: obs.outcome,
+        learned: obs.learned,
+        concepts,
+        files,
+      }),
     );
-    db.upsertObservationEmbedding(observation_id, EMBEDDING_MODEL, DIMENSIONS, embeddingToBlob(embedding));
+
+    const derivedRow = db.getObservationSemanticText(observation_id, SEMANTIC_EN_PROTOCOL);
+    if (derivedRow?.status !== 'ready' || !derivedRow.payload_json) return;
+    let payload: SemanticEnRecord | null = null;
+    try {
+      payload = JSON.parse(derivedRow.payload_json) as SemanticEnRecord;
+    } catch {
+      payload = null;
+    }
+    const check = checkSemanticEnRecord(payload, {
+      title: obs.title,
+      summary: obs.summary,
+      outcome: obs.outcome,
+      learned: obs.learned,
+      concepts,
+    });
+    if (!check.ok || !payload) {
+      // Demote the row instead of embedding it: the protocol table must not
+      // claim `ready` for a value the current guardrails reject. This is the one
+      // permitted downgrade — it carries proof, having just re-run the check.
+      db.upsertObservationSemanticText({
+        observation_id,
+        protocol: SEMANTIC_EN_PROTOCOL,
+        status: 'failed',
+        payload: null,
+        translator: derivedRow.translator,
+        translator_version: derivedRow.translator_version,
+        attempts: derivedRow.attempts,
+        failure_reason: `embed_gate:${check.ok ? 'unparsable' : check.reason}`,
+        allowDowngrade: true,
+      });
+      return;
+    }
+
+    await embedInto(
+      embeddingSpaceKey(SEMANTIC_EN_PROTOCOL),
+      buildObservationSearchText(semanticEnSearchTextFields(payload, files)),
+    );
+  });
+
+  // --- renormalize_observation job ---
+  //
+  // Second chance for an English derived value that is not `ready`: the one that
+  // came with the compression response failed the guardrails, or no attempt
+  // happened at all (translator unavailable, ACP error, an older build).
+  //
+  // Two reasons this exists as its own job rather than more retries inside
+  // `summarize_turn`:
+  //   1. By then the Observation is already written and immutable, so re-running
+  //      the whole compression would produce text that disagrees with it.
+  //   2. A protocol or translator upgrade invalidates derived values for
+  //      Observations that were compressed months ago. Without a job there is no
+  //      path from "we changed the protocol" to "the corpus is rebuilt".
+  //
+  // Retryable vs not is the whole design here. Measured (phase 1b verification):
+  // a standalone translation call succeeds 11/20 on the first pass but 9/9 on a
+  // targeted retry — so an unparsable/absent answer must go back on the queue
+  // with backoff. A value the guardrails REFUSED is different: the same input
+  // through the same translator will be refused again, so it is recorded as
+  // `failed` and left alone rather than burning five attempts.
+  jobRunner.register('renormalize_observation', async (job) => {
+    if (!enableEmbeddings) return;
+    const { observation_id } = JSON.parse(job.payload_json) as { observation_id: number };
+    const obs = db.getObservation(observation_id);
+    if (!obs) return;
+
+    const existing = db.getObservationSemanticText(observation_id, SEMANTIC_EN_PROTOCOL);
+    // Idempotent: a concurrent run (or the original summarize) already got one.
+    if (existing?.status === 'ready') return;
+    // A fallback Observation has no compressed prose to mirror — translating
+    // "Compression unavailable; deterministic evidence only." buys nothing.
+    if (obs.quality === 'fallback') return;
+    if (!compressor.normalizeSemanticEn) return;
+
+    const parseArr = (json: string): string[] => {
+      try {
+        const p = JSON.parse(json);
+        return Array.isArray(p) ? p.filter((x): x is string => typeof x === 'string') : [];
+      } catch { return []; }
+    };
+    const source: SemanticEnRecordSource = {
+      title: obs.title,
+      summary: obs.summary,
+      outcome: obs.outcome,
+      learned: obs.learned,
+      concepts: parseArr(obs.concepts_json),
+    };
+    const attempts = (existing?.attempts ?? 0) + 1;
+    const record = (
+      status: 'ready' | 'pending' | 'failed',
+      payload: SemanticEnRecord | null,
+      reason: string | null,
+    ) => {
+      db.upsertObservationSemanticText({
+        observation_id,
+        protocol: SEMANTIC_EN_PROTOCOL,
+        status,
+        payload,
+        translator: SEMANTIC_EN_TRANSLATOR,
+        translator_version: PACKAGE_VERSION,
+        attempts,
+        failure_reason: reason,
+      });
+    };
+
+    let candidate: SemanticEnRecord | null = null;
+    try {
+      candidate = await compressor.normalizeSemanticEn(source);
+    } catch (error) {
+      // Infrastructure, not content: stay `pending` and let the queue retry with
+      // backoff. Recording the attempt first means the count survives the throw.
+      record('pending', null, `retry_error:${error instanceof Error ? error.name : 'unknown'}`);
+      throw error;
+    }
+
+    const check = checkSemanticEnRecord(candidate, source);
+    if (check.ok && candidate) {
+      record('ready', candidate, null);
+      // The vector is a separate job on purpose: this one owns the translation,
+      // that one owns the embedding, and either can fail without the other.
+      db.enqueueJob({
+        job_type: 'embed_observation',
+        dedupe_key: `embed:obs:${observation_id}:renorm`,
+        entity_type: 'observation',
+        entity_id: String(observation_id),
+        payload_json: JSON.stringify({ observation_id }),
+      });
+      return;
+    }
+
+    if (!candidate) {
+      record('pending', null, `retry_empty:${check.ok ? 'null' : check.reason}`);
+      // Retryable: the measured failure mode here is a non-JSON answer, and a
+      // targeted retry recovered 9/9 of those.
+      throw new Error(`semantic-en renormalize produced nothing for #${observation_id}`);
+    }
+    // Refused content. Retrying the same input through the same translator will
+    // be refused again, so stop here instead of consuming the retry budget.
+    record('failed', null, `renorm:${check.ok ? 'unknown' : `${check.reason}:${check.detail}`}`);
   });
 
   // --- Hono app ---
@@ -428,6 +728,14 @@ export function createApp(deps: AppDeps) {
       search_24h: stats.search24h,
       observations: stats.observations,
       embeddings: stats.embeddings,
+      // Phase 1b's lightweight claim is "one model instance per dataDir, not one
+      // per repo/session". It is only a claim if nobody can read the number.
+      embedding_runtime: {
+        model_instances: embeddingModelInitCount(),
+        in_flight: embedInFlight,
+        queue_limit: EMBED_QUEUE_LIMIT,
+        rejected: embedRejected,
+      },
       // Live cumulative pool/compressor state (since worker start).
       acp: compressor.stats ?? null,
       // Windowed repair / contamination counts over the last 24h.
@@ -439,6 +747,67 @@ export function createApp(deps: AppDeps) {
       // projection repair can undo — surfaced so the gap is never silent.
       capture_misses_24h: readCaptureMisses(getDataDir()),
     });
+  });
+
+  // --- Query embedding (§5.4: one model instance per dataDir) ---
+  //
+  // The MCP server used to embed queries in its own process, which meant one
+  // model per kiro-cli session: three repos open => three copies of the same
+  // weights, three cold starts. Centralizing it here makes the Worker the only
+  // holder of the model, and `scope_key` keeps the repos isolated at the data
+  // layer where isolation actually belongs.
+  //
+  // Bounded on purpose. Inference is CPU-bound and cannot be cancelled midway,
+  // so an unbounded queue would let one repo's burst push another repo's
+  // interactive search past its deadline. Over the limit we reject immediately
+  // (429) instead of queueing: the caller degrades to FTS-only in single-digit
+  // milliseconds, which is a better answer than a slow correct one.
+  let embedInFlight = 0;
+  let embedRejected = 0;
+  app.post('/embed/query', async (c) => {
+    if (!enableEmbeddings) return c.json({ ok: false, error: 'embeddings disabled' }, 503);
+    // Reserve the slot BEFORE the first await. Checking the counter and then
+    // yielding on `req.json()` let an entire concurrent burst pass the check
+    // while the counter was still 0 — the limit existed and admitted everyone.
+    if (embedInFlight >= EMBED_QUEUE_LIMIT) {
+      embedRejected++;
+      return c.json({ ok: false, error: 'busy', in_flight: embedInFlight }, 429);
+    }
+    embedInFlight++;
+    try {
+      let text = '';
+      try {
+        const body = await c.req.json();
+        text = typeof body?.text === 'string' ? body.text : '';
+      } catch {
+        return c.json({ ok: false, error: 'invalid body' }, 400);
+      }
+      if (!text.trim()) return c.json({ ok: false, error: 'text required' }, 400);
+      // Bound the input the same way the embed job does implicitly: a caller must
+      // not be able to turn one search into an arbitrarily long inference.
+      if (text.length > EMBED_TEXT_MAX_CHARS) {
+        return c.json({ ok: false, error: 'text too long' }, 413);
+      }
+
+      const vector = await withEmbeddingTimeout(
+        embeddingGenerator(text),
+        embeddingTimeoutMs,
+      );
+      return c.json({
+        ok: true,
+        dimensions: vector.length,
+        // base64 of the raw float32 buffer: same wire shape as the stored blob,
+        // and ~3x smaller than a JSON number array.
+        embedding: embeddingToBlob(vector).toString('base64'),
+      });
+    } catch (error) {
+      logError('embed/query', {
+        error_type: error instanceof Error ? error.name : 'UnknownError',
+      });
+      return c.json({ ok: false, error: 'embedding unavailable' }, 503);
+    } finally {
+      embedInFlight--;
+    }
   });
 
   // --- AgentSpawn bootstrap index (§7.3) ---
@@ -613,6 +982,14 @@ export function startWorker() {
   writeFileSync(join(dataDir, '.worker.port'), String(port));
 
   console.log(`[kiro-mem] Worker starting on ${host}:${port}`);
+  // The Worker is now the only process that holds the model (§5.4), so the cold
+  // start belongs here rather than in each MCP session. Best-effort: a failed
+  // prewarm must not stop the ingest path, and the first real embed retries it.
+  void prewarmEmbeddingModel().catch((error) => {
+    logError('embedding/prewarm', {
+      error_type: error instanceof Error ? error.name : 'UnknownError',
+    });
+  });
   jobRunner.start();
   Bun.serve({ fetch: app.fetch, port, hostname: host });
 }

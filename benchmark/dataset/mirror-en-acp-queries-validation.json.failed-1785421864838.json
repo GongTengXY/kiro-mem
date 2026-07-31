@@ -1,0 +1,71 @@
+{
+  "provenance": {
+    "source": "acp",
+    "agent": "kiro-mem-compressor",
+    "kiroCli": "kiro-cli (see report)",
+    "target": "queries",
+    "querySet": "validation",
+    "generatedAt": "2026-07-30T14:31:04.838Z",
+    "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+    "items": 11,
+    "failures": 9,
+    "retries": 18,
+    "wallTimeMs": 37514,
+    "itemLatencyMs": {
+      "p50": 33476,
+      "p95": 37184,
+      "max": 37509
+    }
+  },
+  "queries": {
+    "v12": "what happens to search when the embedding model is unavailable",
+    "v09": "Are there any type errors that haven't been fixed yet?",
+    "v15": "do the tests ever write into the developer's real data directory",
+    "v05": "How big is that index injected at the start of the session, actually?",
+    "v01": "What happens to search if the vector model hasn't warmed up yet",
+    "v14": "which MCP arguments get validated before they reach SQLite",
+    "v11": "does a search containing a quote or a bracket still throw",
+    "v02": "If one of the sub-process pool used for compression breaks, will it get stuck forever?",
+    "v06": "why does timeline sort by turn order instead of by ID",
+    "v16": "why does a repair install have to restart the service",
+    "v07": "Is there any possibility that memory from other projects could leak into the current project?"
+  },
+  "failuresDetail": [
+    {
+      "id": "v03",
+      "reason": "ACP request timeout: initialize (15000ms)"
+    },
+    {
+      "id": "v04",
+      "reason": "ACP request timeout: initialize (15000ms)"
+    },
+    {
+      "id": "v08",
+      "reason": "ACP request timeout: initialize (15000ms)"
+    },
+    {
+      "id": "v13",
+      "reason": "ACP request timeout: initialize (15000ms)"
+    },
+    {
+      "id": "v20",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "v19",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "v10",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "v18",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "v17",
+      "reason": "schema 不符（字段空或 concepts 数量不一致）"
+    }
+  ]
+}

@@ -1,0 +1,760 @@
+{
+  "encoder": {
+    "model": "/Users/lixinjie/LXJSpace/kiro-memory/models/all-MiniLM-L6-v2",
+    "label": "all-MiniLM-L6-v2（生产基线）",
+    "queryPrefix": "",
+    "docPrefix": ""
+  },
+  "dimensions": 384,
+  "provenance": {
+    "records": {
+      "source": "merged-acp-runs",
+      "target": "records",
+      "inputs": [
+        {
+          "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-records.json.failed-1785395733110.json",
+          "provenance": {
+            "source": "acp",
+            "agent": "kiro-mem-compressor",
+            "kiroCli": "kiro-cli (see report)",
+            "target": "records",
+            "generatedAt": "2026-07-30T07:15:33.110Z",
+            "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+            "items": 24,
+            "failures": 2,
+            "retries": 17,
+            "wallTimeMs": 97767,
+            "itemLatencyMs": {
+              "p50": 29573,
+              "p95": 89406,
+              "max": 97728
+            }
+          }
+        },
+        {
+          "path": "/tmp/acp-records-retry.json",
+          "provenance": {
+            "source": "acp",
+            "agent": "kiro-mem-compressor",
+            "kiroCli": "kiro-cli (see report)",
+            "target": "records",
+            "generatedAt": "2026-07-30T07:17:43.114Z",
+            "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+            "items": 2,
+            "failures": 0,
+            "retries": 0,
+            "wallTimeMs": 56338,
+            "itemLatencyMs": {
+              "p50": 22108,
+              "p95": 56338,
+              "max": 56338
+            }
+          }
+        }
+      ]
+    },
+    "tuned": {
+      "source": "merged-acp-runs",
+      "target": "queries",
+      "querySet": "tuned",
+      "inputs": [
+        {
+          "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-queries.json",
+          "provenance": {
+            "source": "merged-acp-runs",
+            "target": "queries",
+            "querySet": "tuned",
+            "inputs": [
+              {
+                "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-queries.json.failed-1785396008865.json",
+                "provenance": {
+                  "source": "acp",
+                  "agent": "kiro-mem-compressor",
+                  "kiroCli": "kiro-cli (see report)",
+                  "target": "queries",
+                  "querySet": "tuned",
+                  "generatedAt": "2026-07-30T07:20:08.864Z",
+                  "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+                  "items": 15,
+                  "failures": 3,
+                  "retries": 12,
+                  "wallTimeMs": 90059,
+                  "itemLatencyMs": {
+                    "p50": 26501,
+                    "p95": 90038,
+                    "max": 90038
+                  }
+                }
+              },
+              {
+                "path": "/tmp/acp-tuned-retry.json",
+                "provenance": {
+                  "source": "acp",
+                  "agent": "kiro-mem-compressor",
+                  "kiroCli": "kiro-cli (see report)",
+                  "target": "queries",
+                  "querySet": "tuned",
+                  "generatedAt": "2026-07-30T07:21:07.824Z",
+                  "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+                  "items": 3,
+                  "failures": 0,
+                  "retries": 1,
+                  "wallTimeMs": 22451,
+                  "itemLatencyMs": {
+                    "p50": 20383,
+                    "p95": 22451,
+                    "max": 22451
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "path": "/tmp/acp-q16-retry.json",
+          "provenance": {
+            "source": "acp",
+            "agent": "kiro-mem-compressor",
+            "kiroCli": "kiro-cli (see report)",
+            "target": "queries",
+            "querySet": "tuned",
+            "generatedAt": "2026-07-30T07:25:06.923Z",
+            "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+            "items": 1,
+            "failures": 0,
+            "retries": 0,
+            "wallTimeMs": 28928,
+            "itemLatencyMs": {
+              "p50": 28927,
+              "p95": 28927,
+              "max": 28927
+            }
+          }
+        }
+      ]
+    },
+    "heldout": {
+      "source": "merged-acp-runs",
+      "target": "queries",
+      "querySet": "heldout",
+      "inputs": [
+        {
+          "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-queries-heldout.json.failed-1785396481412.json",
+          "provenance": {
+            "source": "acp",
+            "agent": "kiro-mem-compressor",
+            "kiroCli": "kiro-cli (see report)",
+            "target": "queries",
+            "querySet": "heldout",
+            "generatedAt": "2026-07-30T07:28:01.411Z",
+            "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+            "items": 16,
+            "failures": 2,
+            "retries": 13,
+            "wallTimeMs": 113038,
+            "itemLatencyMs": {
+              "p50": 26013,
+              "p95": 113029,
+              "max": 113029
+            }
+          }
+        },
+        {
+          "path": "/tmp/acp-heldout-retry.json",
+          "provenance": {
+            "source": "acp",
+            "agent": "kiro-mem-compressor",
+            "kiroCli": "kiro-cli (see report)",
+            "target": "queries",
+            "querySet": "heldout",
+            "generatedAt": "2026-07-30T07:28:57.043Z",
+            "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+            "items": 2,
+            "failures": 0,
+            "retries": 1,
+            "wallTimeMs": 42282,
+            "itemLatencyMs": {
+              "p50": 14463,
+              "p95": 42282,
+              "max": 42282
+            }
+          }
+        }
+      ]
+    },
+    "empty": {
+      "source": "acp",
+      "agent": "kiro-mem-compressor",
+      "kiroCli": "kiro-cli (see report)",
+      "target": "queries",
+      "querySet": "empty",
+      "generatedAt": "2026-07-30T07:30:31.665Z",
+      "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+      "items": 5,
+      "failures": 0,
+      "retries": 3,
+      "wallTimeMs": 31144,
+      "itemLatencyMs": {
+        "p50": 28475,
+        "p95": 31142,
+        "max": 31142
+      }
+    }
+  },
+  "ranks": {
+    "tuned": {
+      "queries": 18,
+      "mrr": 0.9722222222222222,
+      "medianRank": 1,
+      "p90Rank": 1,
+      "top5": 18,
+      "top10": 18,
+      "changes": {
+        "improved": 10,
+        "degraded": 0,
+        "unchanged": 8,
+        "maxRegression": 0
+      },
+      "rows": [
+        {
+          "id": "q01",
+          "origin": "tuned",
+          "rank": 1,
+          "baselineRank": 1,
+          "reciprocalRank": 1,
+          "expectedScore": 0.7118455456715675
+        },
+        {
+          "id": "q02",
+          "origin": "tuned",
+          "rank": 2,
+          "baselineRank": 2,
+          "reciprocalRank": 0.5,
+          "expectedScore": 0.4187134329634497
+        },
+        {
+          "id": "q03",
+          "origin": "tuned",
+          "rank": 1,
+          "baselineRank": 2,
+          "reciprocalRank": 1,
+          "expectedScore": 0.4016166289093797
+        },
+        {
+          "id": "q04",
+          "origin": "tuned",
+          "rank": 1,
+          "baselineRank": 2,
+          "reciprocalRank": 1,
+          "expectedScore": 0.35045033471097164
+        },
+        {
+          "id": "q05",
+          "origin": "tuned",
+          "rank": 1,
+          "baselineRank": 1,
+          "reciprocalRank": 1,
+          "expectedScore": 0.46142357391816713
+        },
+        {
+          "id": "q06",
+          "origin": "tuned",
+          "rank": 1,
+          "baselineRank": 1,
+          "reciprocalRank": 1,
+          "expectedScore": 0.5852935534192143
+        },
+        {
+          "id": "q07",
+          "origin": "tuned",
+          "rank": 1,
+          "baselineRank": 6,
+          "reciprocalRank": 1,
+          "expectedScore": 0.6730976424046649
+        },
+        {
+          "id": "q08",
+          "origin": "tuned",
+          "rank": 1,
+          "baselineRank": 11,
+          "reciprocalRank": 1,
+          "expectedScore": 0.4537260592503384
+        },
+        {
+          "id": "q09",
+          "origin": "tuned",
+          "rank": 1,
+          "baselineRank": 1,
+          "reciprocalRank": 1,
+          "expectedScore": 0.555715115526283
+        },
+        {
+          "id": "q10",
+          "origin": "tuned",
+          "rank": 1,
+          "baselineRank": 15,
+          "reciprocalRank": 1,
+          "expectedScore": 0.5899112685097763
+        },
+        {
+          "id": "q11",
+          "origin": "tuned",
+          "rank": 1,
+          "baselineRank": 1,
+          "reciprocalRank": 1,
+          "expectedScore": 0.5071331409807944
+        },
+        {
+          "id": "q12",
+          "origin": "tuned",
+          "rank": 1,
+          "baselineRank": 16,
+          "reciprocalRank": 1,
+          "expectedScore": 0.4176402383344914
+        },
+        {
+          "id": "q13",
+          "origin": "tuned",
+          "rank": 1,
+          "baselineRank": 3,
+          "reciprocalRank": 1,
+          "expectedScore": 0.45475219109564435
+        },
+        {
+          "id": "q14",
+          "origin": "tuned",
+          "rank": 1,
+          "baselineRank": 17,
+          "reciprocalRank": 1,
+          "expectedScore": 0.4078981489375789
+        },
+        {
+          "id": "q15",
+          "origin": "tuned",
+          "rank": 1,
+          "baselineRank": 1,
+          "reciprocalRank": 1,
+          "expectedScore": 0.569783456311694
+        },
+        {
+          "id": "q16",
+          "origin": "tuned",
+          "rank": 1,
+          "baselineRank": 1,
+          "reciprocalRank": 1,
+          "expectedScore": 0.5474991193240413
+        },
+        {
+          "id": "q17",
+          "origin": "tuned",
+          "rank": 1,
+          "baselineRank": 25,
+          "reciprocalRank": 1,
+          "expectedScore": 0.29233720062395974
+        },
+        {
+          "id": "q18",
+          "origin": "tuned",
+          "rank": 1,
+          "baselineRank": 5,
+          "reciprocalRank": 1,
+          "expectedScore": 0.5619755612442496
+        }
+      ]
+    },
+    "heldout": {
+      "queries": 18,
+      "mrr": 0.8333333333333334,
+      "medianRank": 1,
+      "p90Rank": 3,
+      "top5": 18,
+      "top10": 18,
+      "changes": {
+        "improved": 12,
+        "degraded": 2,
+        "unchanged": 4,
+        "maxRegression": 1
+      },
+      "rows": [
+        {
+          "id": "q25",
+          "origin": "heldout",
+          "rank": 1,
+          "baselineRank": 1,
+          "reciprocalRank": 1,
+          "expectedScore": 0.3883090938395154
+        },
+        {
+          "id": "q26",
+          "origin": "heldout",
+          "rank": 1,
+          "baselineRank": 1,
+          "reciprocalRank": 1,
+          "expectedScore": 0.4959246551208907
+        },
+        {
+          "id": "q27",
+          "origin": "heldout",
+          "rank": 2,
+          "baselineRank": 1,
+          "reciprocalRank": 0.5,
+          "expectedScore": 0.38780242964498973
+        },
+        {
+          "id": "q28",
+          "origin": "heldout",
+          "rank": 2,
+          "baselineRank": 1,
+          "reciprocalRank": 0.5,
+          "expectedScore": 0.2147795364586168
+        },
+        {
+          "id": "q29",
+          "origin": "heldout",
+          "rank": 1,
+          "baselineRank": 10,
+          "reciprocalRank": 1,
+          "expectedScore": 0.3836132658178557
+        },
+        {
+          "id": "q30",
+          "origin": "heldout",
+          "rank": 1,
+          "baselineRank": 8,
+          "reciprocalRank": 1,
+          "expectedScore": 0.4576666503850061
+        },
+        {
+          "id": "q31",
+          "origin": "heldout",
+          "rank": 1,
+          "baselineRank": 13,
+          "reciprocalRank": 1,
+          "expectedScore": 0.41337563271723116
+        },
+        {
+          "id": "q32",
+          "origin": "heldout",
+          "rank": 1,
+          "baselineRank": 14,
+          "reciprocalRank": 1,
+          "expectedScore": 0.478692812973605
+        },
+        {
+          "id": "q33",
+          "origin": "heldout",
+          "rank": 3,
+          "baselineRank": 24,
+          "reciprocalRank": 0.3333333333333333,
+          "expectedScore": 0.2495753430065159
+        },
+        {
+          "id": "q34",
+          "origin": "heldout",
+          "rank": 1,
+          "baselineRank": 2,
+          "reciprocalRank": 1,
+          "expectedScore": 0.5026208961174707
+        },
+        {
+          "id": "q35",
+          "origin": "heldout",
+          "rank": 1,
+          "baselineRank": 1,
+          "reciprocalRank": 1,
+          "expectedScore": 0.4016094854997078
+        },
+        {
+          "id": "q36",
+          "origin": "heldout",
+          "rank": 1,
+          "baselineRank": 24,
+          "reciprocalRank": 1,
+          "expectedScore": 0.5159093660475198
+        },
+        {
+          "id": "q37",
+          "origin": "heldout",
+          "rank": 3,
+          "baselineRank": 19,
+          "reciprocalRank": 0.3333333333333333,
+          "expectedScore": 0.2248825793253052
+        },
+        {
+          "id": "q38",
+          "origin": "heldout",
+          "rank": 1,
+          "baselineRank": 11,
+          "reciprocalRank": 1,
+          "expectedScore": 0.40526572196621635
+        },
+        {
+          "id": "q39",
+          "origin": "heldout",
+          "rank": 3,
+          "baselineRank": 3,
+          "reciprocalRank": 0.3333333333333333,
+          "expectedScore": 0.2730809539202066
+        },
+        {
+          "id": "q40",
+          "origin": "heldout",
+          "rank": 1,
+          "baselineRank": 21,
+          "reciprocalRank": 1,
+          "expectedScore": 0.45149251119190237
+        },
+        {
+          "id": "q41",
+          "origin": "heldout",
+          "rank": 1,
+          "baselineRank": 26,
+          "reciprocalRank": 1,
+          "expectedScore": 0.3396539499350349
+        },
+        {
+          "id": "q42",
+          "origin": "heldout",
+          "rank": 1,
+          "baselineRank": 21,
+          "reciprocalRank": 1,
+          "expectedScore": 0.3796137333776528
+        }
+      ]
+    }
+  },
+  "distributions": {
+    "tunedPositives": {
+      "n": 20,
+      "min": 0.22271179496351323,
+      "p5": 0.22271179496351323,
+      "median": 0.45475219109564435,
+      "p95": 0.6730976424046649,
+      "p99": 0.7118455456715675,
+      "max": 0.7118455456715675
+    },
+    "heldoutPositives": {
+      "n": 18,
+      "min": 0.2147795364586168,
+      "p5": 0.2147795364586168,
+      "median": 0.3883090938395154,
+      "p95": 0.5159093660475198,
+      "p99": 0.5159093660475198,
+      "max": 0.5159093660475198
+    },
+    "trueNegatives": {
+      "n": 130,
+      "min": -0.15766860883254646,
+      "p5": -0.07134563244163192,
+      "median": 0.0478086824219774,
+      "p95": 0.20184135105606776,
+      "p99": 0.25448836916082296,
+      "max": 0.2671905713530618
+    }
+  },
+  "auc": {
+    "tunedVsTrueNegative": 0.9984615384615385,
+    "heldoutVsTrueNegative": 0.9952991452991453
+  },
+  "scan": [
+    {
+      "t": 0.04,
+      "positiveRecall": 1,
+      "trueNegRate": 0.5461538461538461,
+      "unlabeledRate": 0.7388392857142857
+    },
+    {
+      "t": 0.066,
+      "positiveRecall": 1,
+      "trueNegRate": 0.43846153846153846,
+      "unlabeledRate": 0.6361607142857143
+    },
+    {
+      "t": 0.092,
+      "positiveRecall": 1,
+      "trueNegRate": 0.3923076923076923,
+      "unlabeledRate": 0.5357142857142857
+    },
+    {
+      "t": 0.118,
+      "positiveRecall": 1,
+      "trueNegRate": 0.3,
+      "unlabeledRate": 0.421875
+    },
+    {
+      "t": 0.145,
+      "positiveRecall": 1,
+      "trueNegRate": 0.19230769230769232,
+      "unlabeledRate": 0.31919642857142855
+    },
+    {
+      "t": 0.171,
+      "positiveRecall": 1,
+      "trueNegRate": 0.1076923076923077,
+      "unlabeledRate": 0.24553571428571427
+    },
+    {
+      "t": 0.197,
+      "positiveRecall": 1,
+      "trueNegRate": 0.05384615384615385,
+      "unlabeledRate": 0.17633928571428573
+    },
+    {
+      "t": 0.223,
+      "positiveRecall": 0.95,
+      "trueNegRate": 0.03076923076923077,
+      "unlabeledRate": 0.11607142857142858
+    },
+    {
+      "t": 0.249,
+      "positiveRecall": 0.95,
+      "trueNegRate": 0.015384615384615385,
+      "unlabeledRate": 0.08928571428571429
+    },
+    {
+      "t": 0.275,
+      "positiveRecall": 0.9,
+      "trueNegRate": 0,
+      "unlabeledRate": 0.06696428571428571
+    },
+    {
+      "t": 0.302,
+      "positiveRecall": 0.85,
+      "trueNegRate": 0,
+      "unlabeledRate": 0.04017857142857143
+    },
+    {
+      "t": 0.328,
+      "positiveRecall": 0.85,
+      "trueNegRate": 0,
+      "unlabeledRate": 0.029017857142857144
+    },
+    {
+      "t": 0.354,
+      "positiveRecall": 0.8,
+      "trueNegRate": 0,
+      "unlabeledRate": 0.013392857142857142
+    },
+    {
+      "t": 0.38,
+      "positiveRecall": 0.8,
+      "trueNegRate": 0,
+      "unlabeledRate": 0.004464285714285714
+    },
+    {
+      "t": 0.406,
+      "positiveRecall": 0.75,
+      "trueNegRate": 0,
+      "unlabeledRate": 0.004464285714285714
+    },
+    {
+      "t": 0.432,
+      "positiveRecall": 0.6,
+      "trueNegRate": 0,
+      "unlabeledRate": 0.002232142857142857
+    },
+    {
+      "t": 0.458,
+      "positiveRecall": 0.5,
+      "trueNegRate": 0,
+      "unlabeledRate": 0.002232142857142857
+    },
+    {
+      "t": 0.485,
+      "positiveRecall": 0.45,
+      "trueNegRate": 0,
+      "unlabeledRate": 0.002232142857142857
+    },
+    {
+      "t": 0.511,
+      "positiveRecall": 0.4,
+      "trueNegRate": 0,
+      "unlabeledRate": 0.002232142857142857
+    },
+    {
+      "t": 0.537,
+      "positiveRecall": 0.4,
+      "trueNegRate": 0,
+      "unlabeledRate": 0.002232142857142857
+    },
+    {
+      "t": 0.563,
+      "positiveRecall": 0.25,
+      "trueNegRate": 0,
+      "unlabeledRate": 0
+    },
+    {
+      "t": 0.589,
+      "positiveRecall": 0.15,
+      "trueNegRate": 0,
+      "unlabeledRate": 0
+    },
+    {
+      "t": 0.615,
+      "positiveRecall": 0.1,
+      "trueNegRate": 0,
+      "unlabeledRate": 0
+    },
+    {
+      "t": 0.642,
+      "positiveRecall": 0.1,
+      "trueNegRate": 0,
+      "unlabeledRate": 0
+    },
+    {
+      "t": 0.668,
+      "positiveRecall": 0.1,
+      "trueNegRate": 0,
+      "unlabeledRate": 0
+    },
+    {
+      "t": 0.694,
+      "positiveRecall": 0.05,
+      "trueNegRate": 0,
+      "unlabeledRate": 0
+    },
+    {
+      "t": 0.72,
+      "positiveRecall": 0,
+      "trueNegRate": 0,
+      "unlabeledRate": 0
+    }
+  ],
+  "candidates": [
+    {
+      "level": 0.5,
+      "t": 0.066,
+      "positiveRecall": 1,
+      "trueNegRate": 0.43846153846153846,
+      "unlabeledRate": 0.6361607142857143
+    },
+    {
+      "level": 0.25,
+      "t": 0.145,
+      "positiveRecall": 1,
+      "trueNegRate": 0.19230769230769232,
+      "unlabeledRate": 0.31919642857142855
+    },
+    {
+      "level": 0.1,
+      "t": 0.197,
+      "positiveRecall": 1,
+      "trueNegRate": 0.05384615384615385,
+      "unlabeledRate": 0.17633928571428573
+    },
+    {
+      "level": 0.05,
+      "t": 0.223,
+      "positiveRecall": 0.95,
+      "trueNegRate": 0.03076923076923077,
+      "unlabeledRate": 0.11607142857142858
+    },
+    {
+      "level": 0.01,
+      "t": 0.275,
+      "positiveRecall": 0.9,
+      "trueNegRate": 0,
+      "unlabeledRate": 0.06696428571428571
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "provenance": {
+    "source": "acp",
+    "agent": "kiro-mem-compressor",
+    "kiroCli": "kiro-cli (see report)",
+    "target": "queries",
+    "querySet": "validation",
+    "generatedAt": "2026-07-30T14:32:41.775Z",
+    "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+    "items": 9,
+    "failures": 0,
+    "retries": 4,
+    "wallTimeMs": 24050,
+    "itemLatencyMs": {
+      "p50": 16961,
+      "p95": 24041,
+      "max": 24041
+    }
+  },
+  "queries": {
+    "v10": "If I do a full clean and reinstall, will the old version's tables still be left behind?",
+    "v04": "After installing, the Worker failed to start once — what was the reason at that time?",
+    "v18": "what floor does the RRF fusion apply to semantic-only candidates",
+    "v08": "What precision does the local sentence embedding model use?",
+    "v13": "are ACP failures logged without leaking the prompt content",
+    "v03": "How does the local token work in a way that's completely unnoticeable to the user",
+    "v19": "are the MCP tool descriptions available in more than one language",
+    "v17": "how does diagnose notice that the installed version drifted",
+    "v20": "..."
+  }
+}

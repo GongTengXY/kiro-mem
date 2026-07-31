@@ -145,6 +145,12 @@ const messages = {
     repairFound: '发现丢失的投影：',
     repairTurns: '缺 Observation 的 turn',
     repairEmbeddings: '向量缺失或需重建的 Observation',
+    // 英文派生值（semantic-en-v1）缺失或待补的 Observation。它们只能靠 ACP 补译，
+    // 所以与"本地可重算"的向量孤儿分开显示。
+    repairSemanticTexts: '英文语义派生值待补的 Observation',
+    // 护栏两次拒绝过的派生值不进重建队列，但必须显示——否则它是个永不自愈、
+    // 也没人知道的黑洞。
+    repairSemanticFailed: '英文派生值被护栏拒绝（需改协议/prompt，不会自动重试）：',
     repairQueued: '已重新入队：',
     repairHint: 'Worker 会在后台处理；失败任务的原始记录已保留，便于排查。',
 
@@ -311,6 +317,9 @@ const messages = {
     repairFound: 'Lost projections found:',
     repairTurns: 'turns missing an Observation',
     repairEmbeddings: 'Observations whose vector is missing or needs a rebuild',
+    repairSemanticTexts: 'Observations awaiting their English semantic derived value',
+    repairSemanticFailed:
+      'English derived values refused by the guardrails (needs a protocol/prompt change, never retried automatically):',
     repairQueued: 'Re-queued:',
     repairHint: 'The Worker picks these up in the background; failed job rows are kept for diagnosis.',
 

@@ -1,0 +1,385 @@
+{
+  "provenance": {
+    "source": "merged-acp-runs",
+    "target": "records",
+    "inputs": [
+      {
+        "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-records.json.failed-1785395733110.json",
+        "provenance": {
+          "source": "acp",
+          "agent": "kiro-mem-compressor",
+          "kiroCli": "kiro-cli (see report)",
+          "target": "records",
+          "generatedAt": "2026-07-30T07:15:33.110Z",
+          "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+          "items": 24,
+          "failures": 2,
+          "retries": 17,
+          "wallTimeMs": 97767,
+          "itemLatencyMs": {
+            "p50": 29573,
+            "p95": 89406,
+            "max": 97728
+          }
+        }
+      },
+      {
+        "path": "/tmp/acp-records-retry.json",
+        "provenance": {
+          "source": "acp",
+          "agent": "kiro-mem-compressor",
+          "kiroCli": "kiro-cli (see report)",
+          "target": "records",
+          "generatedAt": "2026-07-30T07:17:43.114Z",
+          "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+          "items": 2,
+          "failures": 0,
+          "retries": 0,
+          "wallTimeMs": 56338,
+          "itemLatencyMs": {
+            "p50": 22108,
+            "p95": 56338,
+            "max": 56338
+          }
+        }
+      }
+    ]
+  },
+  "records": {
+    "t20": {
+      "title": "timeline anchors on source turn rather than Observation ID",
+      "summary": "Retries and concurrency in asynchronous compression cause the Observation auto-increment ID to diverge from the real work order, so timeline sorts by (turn_stopped_at, turn_seq, id) to anchor the source turn, and provides two neighbor modes: scope and session.",
+      "outcome": "Retrieval tests 8 pass 0 fail, Observations written out of order are still returned in real turn order.",
+      "learned": "The projection layer's auto-increment ID is not a reliable proxy for temporal order; the timeline should use timestamps from the truth layer.",
+      "concepts": [
+        "timeline",
+        "source turn",
+        "sorting",
+        "asynchronous compression",
+        "mode=scope"
+      ]
+    },
+    "t02": {
+      "title": "Embedding Timeout and FTS-only Degradation",
+      "summary": "Added a 1200ms default timeout for query embedding; timeout/load failure/inference failure are uniformly degraded to FTS-only and counted into the search_24h degradation rate via onDegrade. The embed_observation job uses an independent 10s timeout, to avoid a hung embedding permanently occupying a JobRunner concurrency slot.",
+      "outcome": "After injecting an embedder that never resolves, search returns FTS results on time with match_source=fts, and the degradation is recorded once; bun test 131 pass 0 fail.",
+      "learned": "Local model cold start is an uncontrollable latency source; embedding on the interactive path must have an independent deadline, and degradation must be observable.",
+      "concepts": [
+        "embedding",
+        "timeout degradation",
+        "FTS-only",
+        "cold start",
+        "observability"
+      ]
+    },
+    "t06": {
+      "title": "MCP Parameter Boundary Validation and pin Error Return",
+      "summary": "search.limit 1-50, search.days 1-3650, timeline.before/after 0-20, get_observations.ids at most 20 items, dual validation with schema and handler. pin on a non-existent Observation returns an explicit error instead of a false success.",
+      "outcome": "Negative numbers, NaN, and oversized values no longer form unbounded queries; mcp-server tests 14 pass 0 fail.",
+      "learned": "SQLite's negative LIMIT is equivalent to unbounded, MCP input parameters cannot rely on type declarations alone.",
+      "concepts": [
+        "MCP",
+        "parameter validation",
+        "boundary values",
+        "pin",
+        "SQLite LIMIT"
+      ]
+    },
+    "t15": {
+      "title": "diagnose adds version drift check",
+      "summary": "diagnose compares Worker /health.version against <dataDir>/package.json version, and prompts a restart when they mismatch, covering the general case where the running process is not the currently installed version.",
+      "outcome": "diagnose integration tests 6 pass 0 fail, covering three token states and the version drift prompt.",
+      "learned": "Version drift must be detected by comparing the runtime-reported value against the on-disk installed value, it cannot be self-attested by the install flow.",
+      "concepts": [
+        "diagnose",
+        "version drift",
+        "health",
+        "observability"
+      ]
+    },
+    "t07": {
+      "title": "ACPPool recycle failure removes dead slot",
+      "summary": "When recycleSlot fails to start a new runtime, the dead slot is removed from slots and waiters are rejected, preventing acquire from hanging permanently when concurrency is full.",
+      "outcome": "In the concurrency=1 scenario, after a recycle failure the next task fails explicitly and the slot can be rebuilt, no longer hanging on timeout; pool tests 1 pass 0 fail.",
+      "learned": "The recycling path of a resource pool must assume that rebuilding can fail, otherwise a failure degrades into a deadlock.",
+      "concepts": [
+        "ACPPool",
+        "resource pool",
+        "deadlock",
+        "recycle",
+        "concurrency"
+      ]
+    },
+    "t19": {
+      "title": "Failure Path Verification: Keepalive, Silent Failure, and Zero Privacy Leakage",
+      "summary": "Five special-character queries produced no FTS exceptions; after kill -9, launchd spawned a new process within 2 seconds; when the Worker stopped, all four hooks exited 0 within 734ms with empty stdout; private tags had 0 hits across the entire database and logs, with prompt_text as REDACTED.",
+      "outcome": "All failure paths degraded as designed, with no data leakage and no blocking.",
+      "learned": "Privacy verification must scan both the database dump and the logs; silent failure of hooks must be confirmed with actual elapsed time rather than code review.",
+      "concepts": [
+        "failure path",
+        "launchd keepalive",
+        "silent failure",
+        "privacy redaction",
+        "REDACTED"
+      ]
+    },
+    "t13": {
+      "title": "The installer's copy manifest missed src/auth-token.ts, causing the Worker to fail to start",
+      "summary": "worker.ts relatively imports src/auth-token.ts, but the installer's copy manifest did not include this file, causing the installed Worker to fail to start due to a missing module. Added the file to the manifest and added a relative-import integrity regression test.",
+      "outcome": "setup integration tests 7 pass 0 fail, all relative imports in the installed artifact resolve.",
+      "learned": "A manually maintained file copy manifest will inevitably miss files; integrity should be turned into a testable assertion using import-graph scanning.",
+      "concepts": [
+        "installer",
+        "copy manifest",
+        "relative import",
+        "regression test",
+        "Worker startup"
+      ]
+    },
+    "t18": {
+      "title": "bootstrap index 487 bytes, only 227 bytes across workspace",
+      "summary": "GET /context/bootstrap returns 487 bytes in the current workspace, well below the 8192 budget and the agentSpawn 10KB limit; after switching workspace, only a 227-byte usage note, containing no Observation at all.",
+      "outcome": "Both the byte budget and the scope hard filter work as expected.",
+      "learned": "The actual size of the compact index is far smaller than the budget, indicating the budget is not the current bottleneck; scope filtering can be directly observed via cross-workspace byte counts.",
+      "concepts": [
+        "bootstrap",
+        "byte budget",
+        "agentSpawn",
+        "scope filter",
+        "context injection"
+      ]
+    },
+    "t16": {
+      "title": "Real environment clean install acceptance passed",
+      "summary": "Completed uninstall --purge → install → diagnose on macOS + Bun 1.2.20 + kiro-cli 2.13.0, all checks passed. /health.version and MCP serverInfo are both 3.0.0, the new database only contains V3 tables, .token is 64-bit hexadecimal with permission 0600.",
+      "outcome": "diagnose all green, version consistent, no V2 table remnants; but the dependency download at install step 12 was manually bypassed, not verified in a clean network environment.",
+      "learned": "Clean install acceptance must simultaneously check the runtime-reported version, the database table list, and credential permissions in three places, missing any one could miss a half-installed state.",
+      "concepts": [
+        "clean install",
+        "acceptance",
+        "diagnose",
+        "launchd",
+        "V3 tables"
+      ]
+    },
+    "t10": {
+      "title": "Job naming keeps summarize_turn / embed_observation",
+      "summary": "Under the premise of mandatory purge and a fully fresh database creation, the _v3 suffix has no compatibility value; decided to keep the concise naming from the implementation and change the technical design to match the implementation.",
+      "outcome": "Technical design has been synced; grep summarize_turn_v3 under src and scripts returns 0 hits.",
+      "learned": "Under a breaking upgrade, version-suffix naming only adds noise; documentation should align with the implementation rather than the other way around.",
+      "concepts": [
+        "naming decision",
+        "job",
+        "technical design",
+        "breaking upgrade"
+      ]
+    },
+    "t26": {
+      "title": "Quality Baseline Set: Not Blocking for Internal Testing, Required Before Public Release",
+      "summary": "Confirmed that the quality baseline set does not block the team's internal testing but does block the public stable release, because unit tests only cover code contracts, not summary quality or retrieval precision. This turn only made the priority decision.",
+      "outcome": "Not completed: only the priority was determined; neither the dataset nor the evaluation scripts exist yet.",
+      "learned": "Quality gates should be tied to release scope, not to development stage; otherwise they get postponed indefinitely.",
+      "concepts": [
+        "quality baseline set",
+        "P2",
+        "release gate",
+        "evaluation",
+        "not completed"
+      ]
+    },
+    "t17": {
+      "title": "End-to-end single-turn acceptance: Observation and embedding correct",
+      "summary": "Drove one turn using the installed hooks, obtaining 1 closed turn, 4 turn_events, 1 quality=normal Observation, outcome strictly citing tool evidence, embed_observation generating a 384-dimensional vector with coverage 1.0.",
+      "outcome": "The pipeline is complete and the outcome is not fabricated; but this round directly invoked the installed hooks, and triggering under a real interactive session has not yet been covered.",
+      "learned": "Directly invoking the installed hooks can equivalently verify Worker-side and data-side behavior, but cannot substitute for hook trigger verification in a real Kiro session.",
+      "concepts": [
+        "end-to-end",
+        "turn_events",
+        "embedding",
+        "coverage",
+        "acceptance"
+      ]
+    },
+    "t09": {
+      "title": "purge → clean install closed-loop test",
+      "summary": "Verified in an isolated temporary HOME/KIRO_HOME that uninstall --purge clears the data directory, Agent configuration, and service files, and that the subsequent install only creates V3 tables and the runtime layout. The installer was changed to accept injectable paths, so the test does not touch real system services.",
+      "outcome": "setup integration tests: 5 pass 0 fail, confirmed no V2 table residue.",
+      "learned": "For the installer to be testable, the data directory, KIRO_HOME, and the service controller must be made into injectable dependencies.",
+      "concepts": [
+        "installer",
+        "purge",
+        "clean install",
+        "test isolation",
+        "KIRO_HOME"
+      ]
+    },
+    "t08": {
+      "title": "Integration test for writing fallback Observation on ACP final failure",
+      "summary": "Covers the path where the compressor keeps throwing infrastructure errors: after retries are exhausted, a quality=fallback Observation is written, outcome is empty, carrying only deterministic evidence, job final state is succeeded, Truth Layer is unaffected.",
+      "outcome": "synthesis integration tests 9 pass 0 fail, confirms fallback does not fabricate outcome.",
+      "learned": "The correct degradation for compression failure is a trustworthy empty conclusion, not a guessed completion state.",
+      "concepts": [
+        "fallback",
+        "quality",
+        "job retry",
+        "integration test",
+        "ACP failure"
+      ]
+    },
+    "t22": {
+      "title": "scope_key hard isolation: cross-workspace recall is 0",
+      "summary": "scope_key is frozen at write time by computeScopeKey(repo, cwd) and used as a hard filter condition for retrieval; the four cases of git/non-git/relative path/symlink produce consistent results. Both cross-workspace search and bootstrap injection are 0, and only explicit all_scopes crosses scope.",
+      "outcome": "Isolation tests 11 pass 0 fail, cross-workspace automatic recall is 0.",
+      "learned": "scope must be frozen at write time; recomputing it at read time causes drift and leakage due to cwd changes.",
+      "concepts": [
+        "scope_key",
+        "workspace isolation",
+        "computeScopeKey",
+        "all_scopes",
+        "leakage"
+      ]
+    },
+    "t12": {
+      "title": "Isolate test data directory to a temporary directory",
+      "summary": "bunfig.toml's preload points KIRO_MEMORY_DATA_DIR to a temporary directory when the test process starts and cleans it up on exit, so logError no longer writes to the real ~/.kiro-mem/logs.",
+      "outcome": "bun test 138 pass 0 fail, the real data directory is no longer written to by tests.",
+      "learned": "Any path resolution that falls back to the real HOME must be rewritten at the test preload stage, rather than relying on each test to be conscientious.",
+      "concepts": [
+        "test isolation",
+        "KIRO_MEMORY_DATA_DIR",
+        "bunfig",
+        "preload",
+        "logging"
+      ]
+    },
+    "t03": {
+      "title": "AgentSpawn hook no longer restarts the Worker",
+      "summary": "The launchctl load / systemctl start and the 1-second sleep inside the hook were removed, and the HTTP timeout was lowered to 700ms. When the Worker is unreachable, the hook exits silently with code 0 and outputs no context; process keepalive is now solely the responsibility of launchd/systemd.",
+      "outcome": "When the Worker is unreachable, the hook finishes within 1 second, stdout is empty, and the exit code is 0; tests/hooks 6 pass 0 fail.",
+      "learned": "The hook is a synchronous blocking point on the interactive path, and no process management action should be placed inside the hook; the total budget must be smaller than the hook timeout configured by the Agent.",
+      "concepts": [
+        "hook",
+        "AgentSpawn",
+        "launchd",
+        "failure strategy",
+        "silent failure"
+      ]
+    },
+    "t23": {
+      "title": "Embedding model adopts q8 quantization, 384 dimensions",
+      "summary": "The dtype of all-MiniLM-L6-v2 is switched from fp32 to q8, dimensions remain at 384, the size is about 23MB distributed with the npm package and copied to the data directory during installation, local_files_only ensures no network access.",
+      "outcome": "The model directory measured 23M, no model download needed during installation.",
+      "learned": "Quantizing to q8 makes bundled distribution feasible, and bundled distribution eliminates the network dependency during installation.",
+      "concepts": [
+        "embedding",
+        "q8 quantization",
+        "all-MiniLM-L6-v2",
+        "384 dimensions",
+        "offline installation"
+      ]
+    },
+    "t24": {
+      "title": "MCP descriptions and context injection support zh/en",
+      "summary": "i18n covers MCP tool descriptions, the context builder's usage note, and CLI output, with the language determined by config.language; the compression prompt also selects the corresponding file by language.",
+      "outcome": "bun test 138 pass 0 fail.",
+      "learned": "Agent-facing tool descriptions also need localization, otherwise the model's tool selection in Chinese conversations will be affected by wording.",
+      "concepts": [
+        "i18n",
+        "zh",
+        "en",
+        "MCP tool descriptions",
+        "localization"
+      ]
+    },
+    "t01": {
+      "title": "FTS5 queries treated as literals, fixing special character errors",
+      "summary": "searchObservationsFts previously passed user input directly to FTS5 MATCH, causing ordinary text like foo:bar, a-b, unclosed quotes to be parsed as query syntax and throw errors. Changed to wrap the whole thing as an FTS5 string literal and double-escape embedded double quotes, empty query returns empty directly.",
+      "outcome": "All five special character queries no longer throw exceptions, bun test 131 pass 0 fail.",
+      "learned": "FTS5's MATCH parameter must be treated as a query expression, the user's original text must be literalized first; doubling double quotes is FTS5's string escaping method.",
+      "concepts": [
+        "FTS5",
+        "full-text search",
+        "special character escaping",
+        "search",
+        "SQLite"
+      ]
+    },
+    "t04": {
+      "title": "ACP error log redaction, keeping only error type and byte count",
+      "summary": "Logs for parse failures and exhausted repairs no longer record the model's raw output, keeping only non-sensitive fields such as error_type, repair_attempts, output_bytes. Added a log-privacy regression test that uses a secret marker to verify neither logs nor stderr leak.",
+      "outcome": "The secret marker had 0 hits in both Worker logs and stderr, and the four failure types remain distinguishable; tests/acp 12 pass 0 fail.",
+      "learned": "The model's raw output is equivalent to user body text and must not go into logs; observability relies on error type and byte count rather than content.",
+      "concepts": [
+        "log redaction",
+        "privacy",
+        "ACP",
+        "observability",
+        "privacy"
+      ]
+    },
+    "t05": {
+      "title": "Version number converged to a single source 3.0.0",
+      "summary": "Added PACKAGE_VERSION in src/version.ts read from package.json, uniformly referenced by ACP clientInfo, MCP serverInfo, Worker /health, diagnose. package.json bumped to 3.0.0.",
+      "outcome": "grep 2.2.0 has 0 hits under src and scripts, npm pack --dry-run produces kiro-mem-3.0.0.tgz.",
+      "learned": "Version numbers at the protocol layer must have a single source; hardcoding produces invisible drift at release time.",
+      "concepts": [
+        "version management",
+        "release",
+        "PACKAGE_VERSION",
+        "npm pack"
+      ]
+    },
+    "t14": {
+      "title": "install now uses restart() to fix still running old process after overwriting source",
+      "summary": "Step 13 of install originally called start(), and start() returns directly when the Worker is already running, causing the old process to keep running after the source code was overwritten, with the output all showing success. Switched to restart(), which stops first then starts if already running.",
+      "outcome": "setup integration test 8 pass 0 fail, repair install now indeed loads the new code.",
+      "learned": "Idempotent start semantics are wrong in the 'repair install' scenario; must force a restart after overwriting runtime source code.",
+      "concepts": [
+        "install",
+        "restart",
+        "launchd",
+        "repair install",
+        "idempotency trap"
+      ]
+    },
+    "t11": {
+      "title": "Preserve local token authentication while keeping it invisible to the user",
+      "summary": "The installer generates a 256-bit token and sets 0600 permissions, which the Hook reads automatically. The Worker parses the token per request to support hot rotation; when the token is missing it rebuilds rather than fail-open, 401s are counted in the auth_unauthorized metric, and diagnose uses the on-disk token to actually probe the authentication route.",
+      "outcome": "Regression tests for auth and diagnose have landed, bun test 138 pass 0 fail.",
+      "learned": "Even local loopback needs credentials, but when the credential is missing it must refuse rather than fall back to no authentication; otherwise the security assumption is false.",
+      "concepts": [
+        "token authentication",
+        "0600",
+        "fail-open",
+        "401",
+        "invisible to the user"
+      ]
+    },
+    "t25": {
+      "title": "typecheck reported 3 type errors, not yet fixed",
+      "summary": "bun run typecheck exited with code 2, reporting 3 errors, concentrated in the auth middleware of worker.ts: a token of type string | null was passed to a parameter requiring string. Code has not yet been modified.",
+      "outcome": "Not completed: the error has been located but not fixed, need to first confirm the expected behavior when the token is missing.",
+      "learned": "The token type in the auth middleware must explicitly express 'possibly missing', otherwise a policy problem will be disguised as a type problem.",
+      "concepts": [
+        "typecheck",
+        "TS2345",
+        "auth middleware",
+        "type error",
+        "not completed"
+      ]
+    },
+    "t21": {
+      "title": "RRF Fusion and 0.2 Semantic Floor Line",
+      "summary": "The retrieval kernel uses RRF (K=60) to fuse the top 50 FTS results with 200 recent semantic candidates in the same scope, pure semantic candidates below 0.2 cosine similarity are discarded, ties are stably sorted by more recent turn_stopped_at then by smaller ID.",
+      "outcome": "search integration tests 7 pass 0 fail, fusion and floor line work as expected.",
+      "learned": "RRF output is a rank fusion value, not an absolute relevance score, pure semantic candidates must have a floor line or they will flood in noise.",
+      "concepts": [
+        "RRF",
+        "hybrid search",
+        "semantic floor line",
+        "cosine similarity",
+        "sort stability"
+      ]
+    }
+  }
+}

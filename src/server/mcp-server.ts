@@ -7,7 +7,8 @@ import {
 import { loadConfig } from '../config';
 import { MemoryDB, computeScopeKey } from '../db';
 import type { Observation } from '../db/types';
-import { prewarmEmbeddingModel } from '../embedding';
+import { createWorkerEmbedder } from '../worker-embedder';
+import { checkSemanticEnQuery, QUERY_MAX_CHARS } from '../semantic-en';
 import { logError } from '../logger';
 import { PACKAGE_VERSION } from '../version';
 import { hybridSearchObservations } from './observation-search';
@@ -16,6 +17,12 @@ import { MissingSearchScopeError, resolveScopeKey } from './mcp-scope';
 const db = new MemoryDB();
 const config = loadConfig();
 const isEnglish = config.language === 'en';
+
+/**
+ * The single query-vector source for this process. Holds no model — it posts to
+ * the Worker, which is the one place a model lives per dataDir (§5.4).
+ */
+const workerEmbedder = createWorkerEmbedder();
 
 /**
  * Resolve the default search scope from the active Kiro session. Kiro injects
@@ -43,6 +50,8 @@ const T = isEnglish
       searchDescription:
         'Search prior atomic observations (one per closed turn). Returns a compact index; scoped to the current workspace unless repo/cwd is given.',
       queryDescription: 'Search keywords',
+      semanticQueryEnDescription:
+        'ALWAYS pass this. A faithful English rendering of `query` — same meaning, no expansion, keep identifiers/paths/commands/numbers verbatim. Semantic recall runs in an English vector space; omitting it silently weakens ranking. If `query` is already English, repeat it.',
       typeDescription: 'Filter by memory type',
       repoDescription: 'Filter by git repo root (explicit scope)',
       cwdDescription: 'Current working directory — scopes results to this workspace when no repo is given',
@@ -74,6 +83,8 @@ const T = isEnglish
       searchDescription:
         '搜索历史原子观察（每个 closed turn 一条）。返回紧凑索引；未传 repo/cwd 时按当前 workspace 隔离。',
       queryDescription: '搜索关键词',
+      semanticQueryEnDescription:
+        '必须传。把 query 忠实译成英文：同义不扩写，标识符/路径/命令/数字原样保留。语义召回在英文向量空间里做，不传会静默削弱排序。query 本身是英文时照抄即可。',
       typeDescription: '按类型过滤',
       repoDescription: '按 git repo 根过滤（显式 scope）',
       cwdDescription: '当前工作目录——未传 repo 时按此 workspace 隔离结果',
@@ -206,6 +217,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         type: 'object' as const,
         properties: {
           query: { type: 'string', description: T.queryDescription },
+          semantic_query_en: { type: 'string', maxLength: QUERY_MAX_CHARS, description: T.semanticQueryEnDescription },
           type: { type: 'string', enum: ['decision', 'bugfix', 'feature', 'refactor', 'discovery', 'change'], description: T.typeDescription },
           repo: { type: 'string', description: T.repoDescription },
           cwd: { type: 'string', description: T.cwdDescription },
@@ -315,8 +327,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
   if (name === 'search') {
-    const a = (args ?? {}) as { query?: unknown; type?: unknown; repo?: unknown; cwd?: unknown; days?: unknown; limit?: unknown; all_scopes?: unknown };
+    const a = (args ?? {}) as { query?: unknown; semantic_query_en?: unknown; type?: unknown; repo?: unknown; cwd?: unknown; days?: unknown; limit?: unknown; all_scopes?: unknown };
     if (typeof a.query !== 'string') return toolError('search.query must be a string');
+    if (a.semantic_query_en !== undefined && typeof a.semantic_query_en !== 'string') {
+      return toolError('search.semantic_query_en must be a string');
+    }
     if (a.type !== undefined && !MEMORY_TYPES.includes(a.type as (typeof MEMORY_TYPES)[number])) {
       return toolError(`search.type must be one of: ${MEMORY_TYPES.join(', ')}`);
     }
@@ -328,11 +343,34 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const scope = resolveToolScope(a);
     if (!scope.ok) return scope.error;
     const scopeKey = scope.scopeKey;
+
+    // A missing or refused English form is NOT a tool error: the search still
+    // runs, in the raw-v1 space (or FTS-only). Failing the call would turn a
+    // ranking-quality degradation into a broken feature. It is logged, because
+    // the alternative is a silent quality loss nobody can attribute.
+    const semanticQueryEn = typeof a.semantic_query_en === 'string' ? a.semantic_query_en : '';
+    if (semanticQueryEn.trim()) {
+      const check = checkSemanticEnQuery(semanticQueryEn, a.query);
+      if (!check.ok) {
+        logError('search/semantic-query-rejected', {
+          reason: check.reason,
+          detail: check.detail,
+        });
+      }
+    } else {
+      logError('search/semantic-query-missing', { protocol: 'raw-v1' });
+    }
+
     const startedAt = Date.now();
     let degraded = false;
     const results = await hybridSearchObservations(db, a.query, {
       scopeKey, type: a.type as string | undefined, days, limit,
-    }, { onDegrade: () => { degraded = true; } });
+      semanticQueryEn: semanticQueryEn || undefined,
+    }, {
+      // The Worker owns the only model instance; this process must not load one.
+      generateEmbedding: workerEmbedder,
+      onDegrade: () => { degraded = true; },
+    });
     db.recordSearchMetric({ latencyMs: Date.now() - startedAt, degraded });
     return {
       content: [{
@@ -477,13 +515,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 
 export async function startMcpServer() {
-  if (process.env.KIRO_MEMORY_DISABLE_EMBEDDING_PREWARM !== '1') {
-    void prewarmEmbeddingModel().catch((error) => {
-      logError('embedding/prewarm', {
-        error_type: error instanceof Error ? error.name : 'UnknownError',
-      });
-    });
-  }
+  // No model prewarm here any more. Query vectors come from the Worker
+  // (`createWorkerEmbedder`), which is a per-dataDir singleton — prewarming in
+  // this process would recreate exactly the per-session model duplication that
+  // phase 1b removed. The first search after a Worker restart pays that cold
+  // start once, for all sessions, instead of once per session.
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }

@@ -28,84 +28,19 @@ import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { loadConfig, getDataDir, resolveRuntimeHome, type Config } from '../src/config';
 import type { MemoryCompressor, ObservationSummaryResult } from '../src/compressor';
-import { indexBody, factMatches, factLabel, type KeyFact } from './scoring';
+import { indexBody, factMatches, factLabel } from './scoring';
+import {
+  DATASET_DIR,
+  loadDataset,
+  validateQueries,
+  annotationToResult,
+  loadAcpEnFixture,
+  assertAcpEnFixtureComplete,
+  type DatasetTurn,
+} from './dataset';
 
-// ---------------------------------------------------------------------------
-// 数据集类型
-// ---------------------------------------------------------------------------
-
-interface DatasetEvent {
-  tool: string;
-  input: Record<string, unknown>;
-  response: Record<string, unknown>;
-}
-
-interface Annotation {
-  request: string;
-  completed: boolean;
-  memory_type: string;
-  /** 关键文件：应出现在 Observation.files_touched 中 */
-  key_files: string[];
-  /**
-   * 可核对事实标记：应保留在 Observation 正文中。按 token 边界匹配，语序与
-   * 中间插入的词不影响判定；需要接受中英/同义表达时写成 `{ any: [...] }`，
-   * 让"什么算同一个事实"留在可审阅的数据里，而不是藏在打分器的启发式里。
-   */
-  key_facts: KeyFact[];
-  /** 未完成项：非空时 next_steps 必须非空 */
-  unfinished: string[];
-  /** 不允许出现的断言（虚构完成状态检测） */
-  forbidden_claims?: string[];
-  title: string;
-  summary: string;
-  outcome: string;
-  learned: string;
-  concepts: string[];
-}
-
-interface DatasetTurn {
-  id: string;
-  scope: 'primary' | 'other';
-  session: string;
-  prompt: string;
-  assistant_response: string;
-  events: DatasetEvent[];
-  annotation: Annotation;
-}
-
-interface DatasetQuery {
-  id: string;
-  /**
-   * relevance — 有应命中的标注 Observation，度量召回与排序。
-   * leakage   — 只检验跨 scope 硬隔离；**可以**有本 scope 的合法命中。
-   * empty     — 本 scope 内既无相关记忆也无合法词汇重叠，理想返回空。
-   *
-   * `empty` 必须显式声明，不能用 `expect.length === 0` 推断：leakage 类的
-   * `expect` 也是空的，但它空的含义是"不该返回**别的 scope**的记录"，不是
-   * "什么都不该返回"。q20 就是反例——它故意与本 scope 的 401/token 词汇重叠，
-   * 按 `expect: []` 推断会把正确的关键词命中记成误召回，指标于是惩罚了正确
-   * 行为（与 B6 打分器缺陷同一类错误）。
-   */
-  kind: 'relevance' | 'leakage' | 'empty';
-  /**
-   * 仅 relevance 有意义：这条 query 是否参与过检索实现的调优。
-   *
-   * `tuned`   — 最初的 18 条。D1（FTS 召回恒为 0）就是靠它们发现并修的，
-   *             `benchmark/README.md` 自述那次修复让 gold hit@5 从 66.7% 升到
-   *             94.4%，所以检索实现确实是在这批 query 上调过的。
-   * `heldout` — 后补的 18 条，写完直接测、不据此改任何检索参数。它们才是泛化
-   *             证据：两个子集的 hit@5 若明显分叉，就是 B4 说的过拟合从"风险"
-   *             变成"事实"。
-   *
-   * 这个划分不完美——同一个人写的标注、同一份 turn 语料——但它比"完全没有
-   * heldout"强，而且成本只是多标一个字段。
-   */
-  origin?: 'tuned' | 'heldout';
-  scope: 'primary' | 'other';
-  query: string;
-  expect: string[];
-  note?: string;
-}
+// 数据集类型、标注自检与"标注 → gold Observation"的映射都在 `./dataset.ts`：
+// 两个离线 probe 需要同一份，手抄一份就是给同一个概念造第二个事实来源。
 
 // ---------------------------------------------------------------------------
 // CLI 参数
@@ -117,10 +52,42 @@ function flag(name: string, fallback?: string): string | undefined {
   return hit ? hit.slice(name.length + 3) : fallback;
 }
 const compressorKind = flag('compressor', 'gold') as 'gold' | 'acp';
+/**
+ * 阶段 1b 的 A/B 自变量，也是**唯一**自变量。
+ *
+ * `raw`         —— 当前项目行为：原文直接向量化（对照组 A，与 phase 0 口径一致）。
+ * `semantic-en` —— 双侧英文归一化（arm B）：记录侧派生值与 query 侧英文形式都取
+ *                  ACP 固定输入，模型/dtype/维度/字段拼接/候选池/FTS/RRF/limit 全部不变。
+ *
+ * 不做成"自动检测有没有固定输入"：那会让一次缺文件的运行静默变成 arm A，然后被
+ * 当成 arm B 的读数。
+ */
+const protocolArg = flag('protocol', 'raw') as 'raw' | 'semantic-en';
+if (protocolArg !== 'raw' && protocolArg !== 'semantic-en') {
+  console.error(`unknown --protocol=${protocolArg} (expected raw|semantic-en)`);
+  process.exit(2);
+}
+const useSemanticEn = protocolArg === 'semantic-en';
+/**
+ * 读一次新增验证集（20 条，中英文各 10）。
+ *
+ * 显式开关而不是默认加载：这批样本的全部价值就在于"没参与过任何选择"，而默认
+ * 加载会让它在每次调参跑 bench 时被消耗掉，几轮之后它和 tuned 就没区别了。
+ * 它也不进任何门槛——门槛数值是在 phase 0 之后写死的，事后为新样本补一个阈值
+ * 等于没有阈值（§9 纪律 3）。
+ */
+const withValidation = args.includes('--validation');
 const enableEmbeddings = !args.includes('--no-embeddings');
 const concurrencyOverride = flag('concurrency') ? Number(flag('concurrency')) : undefined;
 const reportPath = resolve(
-  flag('report', join(import.meta.dir, 'reports', `${compressorKind}-latest.md`))!,
+  flag(
+    'report',
+    join(
+      import.meta.dir,
+      'reports',
+      `${compressorKind}-latest${useSemanticEn ? '-semantic-en' : ''}.md`,
+    ),
+  )!,
 );
 /** 机器可读指标输出路径（`--runs=N` 的子进程用它回传数字）。 */
 const jsonPath = flag('json') ? resolve(flag('json')!) : undefined;
@@ -166,6 +133,8 @@ if (runs > 1) {
       hitAt5: m.retrievalMetrics.hitAt5,
       hitAt10: m.retrievalMetrics.hitAt10,
       mrr: m.retrievalMetrics.mrr,
+      tunedMrr: m.retrievalMetrics.tunedMrr,
+      heldoutMrr: m.retrievalMetrics.heldoutMrr,
       recallAt10: m.retrievalMetrics.recallAt10,
       rPrecision: m.retrievalMetrics.rPrecision,
       expectedEmptyReturned: m.retrievalMetrics.expectedEmptyReturned,
@@ -174,6 +143,14 @@ if (runs > 1) {
       memoryTypeAccuracy: m.summaryMetrics.memoryTypeAccuracy,
       outcomePresentRate: m.summaryMetrics.outcomePresentRate,
       fallback: m.summaryMetrics.fallback,
+      // 阶段 1b 新增：压缩 prompt 变长的两个代价面。
+      // `jsonRepairs` 上升说明输出变长后更容易返回坏 JSON；`derivedReady` 是生产形态
+      // 下记录侧英文归一化的首轮成功条数（30 为满分）。两者在 gold 模式下恒定。
+      jsonRepairs: m.compressorStats?.repairs ?? 0,
+      parseFallbacks: m.compressorStats?.parseFallbacks ?? 0,
+      derivedReady: m.protocolStats?.derived?.ready ?? 0,
+      derivedPending: m.protocolStats?.derived?.pending ?? 0,
+      derivedFailed: m.protocolStats?.derived?.failed ?? 0,
       gatesOk: m.allGatesOk ? 1 : 0,
     });
   }
@@ -232,28 +209,28 @@ const { hybridSearchObservations } = await import('../src/server/observation-sea
 const { buildBootstrapContext } = await import('../src/bootstrap-context');
 const { extractArtifacts } = await import('../src/jobs/artifacts');
 
-const turns: DatasetTurn[] = JSON.parse(
-  readFileSync(join(import.meta.dir, 'dataset/turns.json'), 'utf-8'),
-);
-const queries: DatasetQuery[] = JSON.parse(
-  readFileSync(join(import.meta.dir, 'dataset/queries.json'), 'utf-8'),
-);
+const { turns, queries } = loadDataset(DATASET_DIR, { withValidation });
 
-// 标注自相矛盾会静默产出错误指标——expected-empty 就是这么被算错过一次。
-for (const q of queries) {
-  const wantsHits = q.kind === 'relevance';
-  if (wantsHits !== q.expect.length > 0) {
-    console.error(
-      `[benchmark] ${q.id}: kind=${q.kind} 与 expect(${q.expect.length} 条) 矛盾` +
-        `（relevance 必须有应命中项，leakage/empty 必须没有）`,
-    );
+const datasetErrors = validateQueries(queries);
+if (datasetErrors.length) {
+  for (const e of datasetErrors) console.error(`[benchmark] ${e}`);
+  process.exit(2);
+}
+
+// arm B 的固定输入。缺任何一条都直接退出：静默回落成 raw 协议的那一条 query 会
+// 被算进"英文归一化"的读数里，而那是两个 arm 混算。
+const enFixture = useSemanticEn ? loadAcpEnFixture(DATASET_DIR, { withValidation }) : null;
+if (enFixture) {
+  const missing = assertAcpEnFixtureComplete(enFixture, { turns, queries });
+  if (missing.length) {
+    console.error('[benchmark] semantic-en 固定输入不完整：');
+    for (const m of missing) console.error(`  ${m}`);
+    console.error('[benchmark] 用 benchmark/probe-acp-translate.ts 补齐后再跑。');
     process.exit(2);
   }
-  // origin 决定这条 query 算不算泛化证据，缺省就等于把 heldout 混进 tuned。
-  if (wantsHits && q.origin !== 'tuned' && q.origin !== 'heldout') {
-    console.error(`[benchmark] ${q.id}: relevance query 必须声明 origin: "tuned" | "heldout"`);
-    process.exit(2);
-  }
+  console.log(
+    `[benchmark] protocol=semantic-en，固定输入：记录 ${Object.keys(enFixture.records).length} 条 / query ${Object.keys(enFixture.queries).length} 条`,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -287,10 +264,13 @@ const provenance = (() => {
   return {
     commit: git(['rev-parse', '--short', 'HEAD']),
     dirty: git(['status', '--porcelain']) !== '',
-    turnsHash: hashFile(join(import.meta.dir, 'dataset/turns.json')),
-    queriesHash: hashFile(join(import.meta.dir, 'dataset/queries.json')),
+    turnsHash: hashFile(join(DATASET_DIR, 'turns.json')),
+    queriesHash: hashFile(join(DATASET_DIR, 'queries.json')),
     runHash: hashFile(join(import.meta.dir, 'run.ts')),
     scoringHash: hashFile(join(import.meta.dir, 'scoring.ts')),
+    // 数据集契约与"标注 → gold Observation"映射搬到了 dataset.ts。不把它纳入
+    // provenance，那份映射一改数字就变、报告却自称同一份脚本。
+    datasetHash: hashFile(join(import.meta.dir, 'dataset.ts')),
     bunVersion: Bun.version,
     platform: process.platform,
     arch: process.arch,
@@ -329,23 +309,12 @@ class GoldCompressor implements MemoryCompressor {
   }): Promise<ObservationSummaryResult> {
     const turn = this.byPrompt.get(input.user_prompt.trim());
     if (!turn) throw new Error('gold compressor: prompt not found in dataset');
-    const a = turn.annotation;
-    return {
-      title: a.title,
-      summary: a.summary,
-      request: a.request,
-      outcome: a.outcome,
-      learned: a.learned,
-      next_steps: a.unfinished.join('；'),
-      memory_type: a.memory_type,
-      files_touched: a.key_files,
-      concepts: a.concepts,
-      // key_facts 可能带变体声明；gold 取第一个写法作为 evidence 文本。
-      evidence: a.key_facts.map((f) => (typeof f === 'string' ? f : f.any[0] ?? '')),
-      importance_score: 0.6,
-      confidence_score: a.completed ? 0.9 : 0.5,
-      unresolved_score: a.unfinished.length ? 0.7 : 0,
-    };
+    const result = annotationToResult(turn.annotation);
+    // arm B: the derived value rides along with the summary, exactly as the ACP
+    // compressor's own response does in production — so `summarize_turn` takes
+    // the same code path in both arms, with no second translator call.
+    if (enFixture) result.semantic_en = enFixture.records[turn.id];
+    return result;
   }
 }
 
@@ -456,6 +425,19 @@ if (enableEmbeddings) {
     10 * 60_000,
     'embed_observation 未在预算内全部完成',
   );
+  // arm B 还要等英文那条腿建完：`ready` 只要求"至少一个当前空间里有向量"，
+  // 一条只有 raw 向量的记录同样满足它，于是 arm B 可能在英文空间只建了一半时
+  // 就开始跑检索——读数会偏低，而原因看不出来。
+  if (useSemanticEn) {
+    await waitFor(
+      () =>
+        (db.getObservabilityStats().embeddings.byProtocol.find(
+          (p) => p.protocol === 'semantic-en-v1',
+        )?.ready ?? 0) >= turns.length,
+      10 * 60_000,
+      'semantic-en-v1 向量未在预算内全部建完',
+    );
+  }
 }
 jobRunner.stop();
 const compressorStats = compressor.stats ? { ...compressor.stats } : null;
@@ -628,7 +610,7 @@ const otherScopeObsIds = new Set(
 interface QueryRow {
   id: string;
   kind: string;
-  origin?: 'tuned' | 'heldout';
+  origin?: 'tuned' | 'heldout' | 'validation';
   query: string;
   expect: string[];
   ranks: number[];
@@ -641,20 +623,65 @@ interface QueryRow {
   matchSources: string[];
   latencyMs: number;
   returned: number;
+  // --- 分路明细（方案 §4.4）---
+  //
+  // 没有这些字段，一次 miss 的四种成因在最终结果里长得一模一样：FTS 没召回 /
+  // 语义没召回 / 两路都召回但 RRF 排坏 / 被结果上限截掉。`matchSources` 也不够
+  // ——它只是对**已返回**结果去重，看不到候选层。
+  /** FTS 候选数（不是返回数）。`heldoutZeroFtsAnchor` 靠它，且拆门后无法从结果反推。 */
+  ftsCount: number;
+  /** 越过 SEMANTIC_FLOOR 的语义候选数。 */
+  semanticCount: number;
+  /** 最终结果里 match_source === 'semantic' 的条数（阶段 2 限额的读数）。 */
+  semanticOnlyReturned: number;
+  /** 这条 query 是否降级为 FTS-only（原先只有全局计数）。 */
+  degraded: boolean;
+  /** 最靠前的 expected 名次（= ranks 取 min，显式落一列）。 */
+  firstExpectedRank: number;
+  /** expected 记录在 FTS 名次表里的位次；未进该路则 0。 */
+  ftsRank: number;
+  /** expected 记录在语义名次表里的位次；未进该路则 0。 */
+  semanticRank: number;
+  // --- 协议明细（阶段 1b）---
+  /** 这条 query 实际用的向量空间协议。 */
+  protocol: string;
+  /** 提供的英文形式被护栏拒绝的原因；未拒绝为空。 */
+  semanticQueryRejected: string | null;
 }
 
 const queryRows: QueryRow[] = [];
-let degradeCount = 0;
+
+/** 候选层观测（§4.4）。行为中立：只读，不回流进排序。 */
+type Candidates = {
+  ftsCount: number;
+  semanticCount: number;
+  ftsRank: ReadonlyMap<number, number>;
+  semanticRank: ReadonlyMap<number, number>;
+  protocol: string;
+  semanticQueryRejected: string | null;
+};
 
 for (const q of queries) {
+  let captured: Candidates | null = null;
+  let degraded = false;
   const t0 = performance.now();
   const results = await hybridSearchObservations(
     db,
     q.query,
-    { scopeKey: scopeKeyOf(q.scope), limit: 10 },
-    { onDegrade: () => degradeCount++ },
+    {
+      scopeKey: scopeKeyOf(q.scope),
+      limit: 10,
+      // arm B：调用方（生产里是发起 search 的 Agent）随参数给出英文形式，
+      // 不在检索路径里另起一次翻译。
+      ...(enFixture ? { semanticQueryEn: enFixture.queries[q.id] } : {}),
+    },
+    {
+      onDegrade: () => { degraded = true; },
+      onCandidates: (info) => { captured = info; },
+    },
   );
   const latencyMs = performance.now() - t0;
+  const cand = captured as Candidates | null;
 
   const ranks = q.expect
     .map((e) => results.findIndex((r) => r.id === obsIdOf.get(e)) + 1)
@@ -664,12 +691,19 @@ for (const q of queries) {
     .filter((r) => otherScopeObsIds.has(r.id))
     .map((r) => datasetIdOfObs.get(r.id)!);
 
+  // 两路名次按 §4.2 的排名口径：多 expected 取最靠前的那个，一个都没进则 0。
+  const expectedObsIds = q.expect.map((e) => obsIdOf.get(e)!);
+  const bestRankIn = (m: ReadonlyMap<number, number> | undefined): number => {
+    const rs = expectedObsIds.map((id) => m?.get(id) ?? 0).filter((r) => r > 0);
+    return rs.length ? Math.min(...rs) : 0;
+  };
+
   // R-precision：在 R = |expect| 这个截断点上的精度。
   //
   // 不用 precision@5：标注集里 expect 通常只有 1 条，那么 precision@5 的**上限**
   // 就是 20%，测出来的 21% 只是 hit@5 的另一种写法，不是精度。R-precision 的
   // 截断点跟着标注规模走，1.0 表示"前 R 条正好就是标注的 R 条"，可解释也可比较。
-  const expectedIds = new Set(q.expect.map((e) => obsIdOf.get(e)));
+  const expectedIds = new Set(expectedObsIds);
   const r = q.expect.length;
   const rPrecision = r
     ? results.slice(0, r).filter((x) => expectedIds.has(x.id)).length / r
@@ -691,12 +725,30 @@ for (const q of queries) {
     matchSources: [...new Set(results.map((r) => r.match_source))],
     latencyMs,
     returned: results.length,
+    ftsCount: cand?.ftsCount ?? 0,
+    semanticCount: cand?.semanticCount ?? 0,
+    semanticOnlyReturned: results.filter((x) => x.match_source === 'semantic').length,
+    degraded,
+    firstExpectedRank: best,
+    ftsRank: bestRankIn(cand?.ftsRank),
+    semanticRank: bestRankIn(cand?.semanticRank),
+    protocol: cand?.protocol ?? 'unknown',
+    semanticQueryRejected: cand?.semanticQueryRejected ?? null,
   });
 }
 
-const relevanceRows = queryRows.filter((r) => r.kind === 'relevance');
+const relevanceRows = queryRows.filter(
+  // validation 单独统计：把它混进 relevanceRows 会改动全局 hitAt5 / mrr，
+  // 而那些数字要和 phase 0 / arm A 逐项对比。
+  (r) => r.kind === 'relevance' && r.origin !== 'validation',
+);
 const tunedRows = relevanceRows.filter((r) => r.origin === 'tuned');
 const heldoutRows = relevanceRows.filter((r) => r.origin === 'heldout');
+/** 新增验证集（§5.6）。空数组表示这次没跑 `--validation`。 */
+const validationRows = queryRows.filter((r) => r.origin === 'validation');
+/** 中文 / 英文两半分开报：它们测的不是同一件事。 */
+const validationZhRows = validationRows.filter((r) => /[\u4e00-\u9fff]/.test(r.query));
+const validationEnRows = validationRows.filter((r) => !/[\u4e00-\u9fff]/.test(r.query));
 /**
  * expected-empty query：本 scope 内既无相关记忆，也无合法词汇重叠，理想返回空。
  *
@@ -732,22 +784,81 @@ const retrievalMetrics = {
    */
   tunedQueries: tunedRows.length,
   tunedHitAt5: rate(tunedRows.filter((r) => r.hitAt5).length, tunedRows.length),
+  /**
+   * 分层 MRR（§4.1）。
+   *
+   * hit@5 是阶跃函数：期望记录从第 4 位升到第 1 位它一动不动。而"门关着"的阶段
+   * 里，换编码器**唯一**能改变的就是排序——只看 hit@5，一个真正更好的编码器会
+   * 显示为"没变化"，然后一个正确的改动被回退。MRR 仍不是连续量（它是离散 rank
+   * 的函数），但比 hit@5 细得多：单条 query 对它的**最大**贡献是 1/n（未命中升到
+   * 第 1 位），不是每条固定 1/n。
+   */
+  tunedMrr: mean(tunedRows.map((r) => r.reciprocalRank)),
   tunedRPrecision: mean(tunedRows.map((r) => r.rPrecision)),
   heldoutQueries: heldoutRows.length,
   heldoutHitAt5: rate(heldoutRows.filter((r) => r.hitAt5).length, heldoutRows.length),
+  heldoutMrr: mean(heldoutRows.map((r) => r.reciprocalRank)),
   heldoutRPrecision: mean(heldoutRows.map((r) => r.rPrecision)),
   /** heldout 里因为一个字面词都没命中而直接返回空的条数（词汇锚点规则的代价）。 */
   heldoutNoAnchor: heldoutRows.filter((r) => r.returned === 0).length,
+  /**
+   * 同一件事的**不依赖返回结果**的口径：FTS 候选数为 0 的 heldout 条数。
+   *
+   * 今天两者必然相等（有 FTS 命中就一定会进 RRF、一定会返回），所以此刻它只是
+   * 一个对照读数。但 `heldoutNoAnchor` 在阶段 2 拆门后会自动掉到 0——不是因为
+   * 找到了锚点，而是因为"返回条数为 0"不再测量它名字所指的东西。届时主口径切到
+   * 这一列，那个信号才不会被静默弄丢。
+   */
+  heldoutZeroFtsAnchor: heldoutRows.filter((r) => r.ftsCount === 0).length,
   expectedEmptyQueries: expectedEmptyRows.length,
   /** expected-empty query 平均返回条数；理想为 0。 */
   expectedEmptyReturned: mean(expectedEmptyRows.map((r) => r.returned)),
   /** 返回最多的那条 expected-empty query，用于看最坏情况。 */
   expectedEmptyWorst: expectedEmptyRows.reduce((max, r) => Math.max(max, r.returned), 0),
   leakTotal: queryRows.reduce((s, r) => s + r.leaked.length, 0),
-  degrades: degradeCount,
+  degrades: queryRows.filter((r) => r.degraded).length,
+  /** semantic-only 返回总条数（阶段 2 的限额护栏要读它，现在恒为两路都命中之外的残量）。 */
+  semanticOnlyTotal: queryRows.reduce((s, r) => s + r.semanticOnlyReturned, 0),
   latencyP50: pct(50),
   latencyP95: pct(95),
+  // --- 协议指标（阶段 1b）---
+  /** 配置的协议（自变量），与下面实际用到的协议分开报。 */
+  protocol: protocolArg,
+  /** 实际在 semantic-en-v1 空间里跑的 query 数。 */
+  semanticEnQueries: queryRows.filter((r) => r.protocol === 'semantic-en-v1').length,
+  /** 实际落回 raw-v1 的 query 数。arm B 里这应当为 0。 */
+  rawProtocolQueries: queryRows.filter((r) => r.protocol === 'raw-v1').length,
+  /** 英文形式被护栏拒绝的 query 数（含拒绝原因分布，见逐条明细）。 */
+  semanticQueryRejects: queryRows.filter((r) => r.semanticQueryRejected != null).length,
+  // --- 新增验证集（§5.6，只读一次，不设门槛）---
+  validationQueries: validationRows.length,
+  validationHitAt5: rate(validationRows.filter((r) => r.hitAt5).length, validationRows.length),
+  validationMrr: mean(validationRows.map((r) => r.reciprocalRank)),
+  validationRPrecision: mean(validationRows.map((r) => r.rPrecision)),
+  validationZhHitAt5: rate(validationZhRows.filter((r) => r.hitAt5).length, validationZhRows.length),
+  validationZhMrr: mean(validationZhRows.map((r) => r.reciprocalRank)),
+  validationEnHitAt5: rate(validationEnRows.filter((r) => r.hitAt5).length, validationEnRows.length),
+  validationEnMrr: mean(validationEnRows.map((r) => r.reciprocalRank)),
+  /** 一个字面词都没命中的验证集条数——上限就是词汇锚点门，不是协议。 */
+  validationZeroFtsAnchor: validationRows.filter((r) => r.ftsCount === 0).length,
 };
+
+// --- 协议侧的库内读数（阶段 1b）---
+//
+// 单独取一次 stats：检索指标看不见"有几条记录压根没有英文向量"，而那正是
+// "英文归一化到底覆盖了多少语料"这个问题的答案。
+const protocolStats = (() => {
+  const s = db.getObservabilityStats();
+  const en = s.embeddings.byProtocol.find((p) => p.protocol === 'semantic-en-v1');
+  const raw = s.embeddings.byProtocol.find((p) => p.protocol === 'raw-v1');
+  return {
+    rawReady: raw?.ready ?? 0,
+    rawCoverage: raw?.coverage ?? 0,
+    semanticEnReady: en?.ready ?? 0,
+    semanticEnCoverage: en?.coverage ?? 0,
+    derived: s.embeddings.semanticEn,
+  };
+})();
 
 // bootstrap 注入：字节数与构建延迟
 function measureBootstrap(scope: 'primary' | 'other') {
@@ -855,6 +966,41 @@ const gates: Gate[] = [
   { kind: 'performance', name: 'search p95 延迟 < 300ms', value: `${fmt(retrievalMetrics.latencyP95, 1)}ms`, ok: retrievalMetrics.latencyP95 < 300 },
   { kind: 'performance', name: 'bootstrap 构建 < 100ms 且在预算内', value: `${fmt(bootstrapPrimary.ms, 1)}ms / ${bootstrapPrimary.bytes}B`, ok: bootstrapPrimary.ms < 100 && bootstrapPrimary.bytes <= config.context.maxOutputBytes },
 ];
+
+// 阶段 1b 的协议门槛。只在 arm B 有意义——在 arm A 下它们全部恒真，列出来只会
+// 让"全部通过"看起来更厚。
+if (useSemanticEn) {
+  gates.push(
+    {
+      kind: 'discriminating',
+      name: `英文派生值 ready 覆盖（${protocolStats.derived.ready}/${turns.length}，pending ${protocolStats.derived.pending} / failed ${protocolStats.derived.failed}）`,
+      value: fmt(protocolStats.semanticEnCoverage, 2),
+      ok: protocolStats.semanticEnCoverage === 1,
+    },
+    {
+      // §5.5 协议门槛：非法/缺失派生值进入 semantic-en-v1 向量表 = 0 条。
+      // 等价可测形式：该空间的向量条数正好等于 ready 的派生值条数。
+      kind: 'structural',
+      name: 'semantic-en-v1 向量数 == ready 派生值数（非法值入表为 0）',
+      value: `${protocolStats.semanticEnReady} == ${protocolStats.derived.ready}`,
+      ok: protocolStats.semanticEnReady === protocolStats.derived.ready,
+    },
+    {
+      kind: 'discriminating',
+      name: `query 侧协议一致（${retrievalMetrics.semanticEnQueries}/${queryRows.length} 走 semantic-en-v1，护栏拒绝 ${retrievalMetrics.semanticQueryRejects}）`,
+      value: String(retrievalMetrics.rawProtocolQueries),
+      ok: retrievalMetrics.rawProtocolQueries === 0 && retrievalMetrics.semanticQueryRejects === 0,
+    },
+    {
+      // 迁移期的硬约束：raw 那条腿必须继续存在，否则调用方一旦不给英文形式就
+      // 只剩 FTS，而这不是"降级"，是把功能删了。
+      kind: 'structural',
+      name: 'raw-v1 腿仍然完整（降级路径可用）',
+      value: fmt(protocolStats.rawCoverage, 2),
+      ok: protocolStats.rawCoverage === 1,
+    },
+  );
+}
 const allGatesOk = gates.every((g) => g.ok);
 const gatesOfKind = (kind: GateKind) => gates.filter((g) => g.kind === kind);
 
@@ -880,8 +1026,14 @@ lines.push(`| commit | \`${provenance.commit}\`${provenance.dirty ? ' **（工�
 lines.push(`| 命令行 | \`bun run benchmark/run.ts ${args.join(' ')}\` |`);
 lines.push(`| 数据集 turns.json | \`${provenance.turnsHash}\`（${turns.length} turn） |`);
 lines.push(`| 数据集 queries.json | \`${provenance.queriesHash}\`（${queries.length} query） |`);
-lines.push(`| 脚本 run.ts / scoring.ts | \`${provenance.runHash}\` / \`${provenance.scoringHash}\` |`);
+lines.push(`| 脚本 run.ts / scoring.ts / dataset.ts | \`${provenance.runHash}\` / \`${provenance.scoringHash}\` / \`${provenance.datasetHash}\` |`);
 lines.push(`| embedding 模型 | ${enableEmbeddings ? `${EMBEDDING_MODEL} (${DIMENSIONS}d)` : '关闭'} |`);
+lines.push(`| 归一化协议 | \`${protocolArg}\`${useSemanticEn ? '（双侧英文归一化，arm B）' : '（原文直接向量化，对照组 A）'} |`);
+if (enFixture) {
+  lines.push(
+    `| 英文固定输入 | ${enFixture.sources.map((s) => `\`${s}\``).join(' + ')}（记录 ${Object.keys(enFixture.records).length} / query ${Object.keys(enFixture.queries).length}，由生产 ACP 产出） |`,
+  );
+}
 lines.push(`| 运行环境 | Bun ${provenance.bunVersion} / ${provenance.platform} ${provenance.arch} |`);
 lines.push(`| 运行次数 | 1（多次运行与方差见 \`--runs=N\`） |`);
 lines.push('');
@@ -1000,11 +1152,14 @@ lines.push(`| ├ hit@5（tuned ${retrievalMetrics.tunedQueries} 条，检索曾
 lines.push(`| └ hit@5（heldout ${retrievalMetrics.heldoutQueries} 条，未据此调参） | **${pctStr(retrievalMetrics.heldoutHitAt5)}** |`);
 lines.push(`| hit@10 | ${pctStr(retrievalMetrics.hitAt10)} |`);
 lines.push(`| MRR@10 | ${fmt(retrievalMetrics.mrr)} |`);
+lines.push(`| ├ MRR@10（tuned；排序敏感，阶段 1 主读数） | ${fmt(retrievalMetrics.tunedMrr)} |`);
+lines.push(`| └ MRR@10（heldout；排序敏感，泛化读数） | ${fmt(retrievalMetrics.heldoutMrr)} |`);
 lines.push(`| recall@10 | ${pctStr(retrievalMetrics.recallAt10)} |`);
 lines.push(`| R-precision（下界） | ${pctStr(retrievalMetrics.rPrecision)} |`);
 lines.push(`| ├ R-precision（tuned） | ${pctStr(retrievalMetrics.tunedRPrecision)} |`);
 lines.push(`| └ R-precision（heldout） | ${pctStr(retrievalMetrics.heldoutRPrecision)} |`);
 lines.push(`| heldout 中因零词汇锚点返回空的条数 | ${retrievalMetrics.heldoutNoAnchor} / ${retrievalMetrics.heldoutQueries} |`);
+lines.push(`| └ 同上，按 FTS 候选数为 0 计（拆门后的主口径） | ${retrievalMetrics.heldoutZeroFtsAnchor} / ${retrievalMetrics.heldoutQueries} |`);
 lines.push(`| expected-empty query 平均返回（${retrievalMetrics.expectedEmptyQueries} 条） | ${fmt(retrievalMetrics.expectedEmptyReturned, 2)}（最坏 ${retrievalMetrics.expectedEmptyWorst}） |`);
 lines.push(`| 跨 workspace 泄漏条数 | ${retrievalMetrics.leakTotal} |`);
 lines.push(`| FTS-only 降级次数 | ${retrievalMetrics.degrades} / ${retrievalMetrics.queries} |`);
@@ -1023,10 +1178,61 @@ for (const r of queryRows) {
   );
 }
 lines.push('');
+lines.push('### 逐 query 分路明细（§4.4）');
+lines.push('');
+lines.push('一次 miss 有四种成因，在上面那张表里长得一模一样：FTS 没召回 / 语义没召回 /');
+lines.push('两路都召回但 RRF 排坏 / 被结果上限截掉。这张表把它们拆开。`ftsRank`、');
+lines.push('`semRank` 是期望记录在**各自那一路的候选名次表**里的位次，0 = 没进该路。');
+lines.push('');
+lines.push('| query | 类型 | 协议 | fts候选 | 语义候选 | 返回 | 仅语义 | ftsRank | semRank | 最终名次 | 降级 |');
+lines.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+for (const r of queryRows) {
+  const rank0 = (n: number) => (n > 0 ? String(n) : '—');
+  const proto = r.protocol === 'semantic-en-v1' ? 'en' : 'raw';
+  lines.push(
+    `| ${r.id} | ${r.kind}${r.origin ? `/${r.origin}` : ''} | ${proto}${r.semanticQueryRejected ? `(拒:${r.semanticQueryRejected})` : ''} | ${r.ftsCount} | ${r.semanticCount} | ${r.returned} | ${r.semanticOnlyReturned} | ${rank0(r.ftsRank)} | ${rank0(r.semanticRank)} | ${rank0(r.firstExpectedRank)} | ${r.degraded ? '是' : '否'} |`,
+  );
+}
+lines.push('');
+if (validationRows.length) {
+  lines.push('## 新增验证集（§5.6，只读一次，不设门槛）');
+  lines.push('');
+  lines.push(`共 ${validationRows.length} 条（中文 ${validationZhRows.length} / 英文 ${validationEnRows.length}），`);
+  lines.push('在实现冻结之后才标注，未参与协议选择、prompt 调整、护栏规则或 floor 取值。');
+  lines.push('');
+  lines.push('**诚实边界**：它由实现者本人依据 `turns.json` 的标注写成，写的时候已经看过');
+  lines.push('tuned / heldout 的结果，所以它弱于独立第三方标注。它唯一强的地方是：这些具体');
+  lines.push('问法从未参与任何选择。引用它时必须带上这句限定。');
+  lines.push('');
+  lines.push('| 子集 | 条数 | hit@5 | MRR | R-precision |');
+  lines.push('| --- | --- | --- | --- | --- |');
+  lines.push(`| 全部 | ${validationRows.length} | ${pctStr(retrievalMetrics.validationHitAt5)} | ${fmt(retrievalMetrics.validationMrr)} | ${pctStr(retrievalMetrics.validationRPrecision)} |`);
+  lines.push(`| 中文 | ${validationZhRows.length} | ${pctStr(retrievalMetrics.validationZhHitAt5)} | ${fmt(retrievalMetrics.validationZhMrr)} | — |`);
+  lines.push(`| 英文 | ${validationEnRows.length} | ${pctStr(retrievalMetrics.validationEnHitAt5)} | ${fmt(retrievalMetrics.validationEnMrr)} | — |`);
+  lines.push('');
+  lines.push(`其中 ${retrievalMetrics.validationZeroFtsAnchor} 条一个字面词都没命中（FTS 候选为 0）。`);
+  lines.push('这批 query 的上限由词汇锚点门决定，不由归一化协议决定——门在阶段 2 才拆。');
+  lines.push('');
+}
+lines.push('## 协议明细（阶段 1b）');
+lines.push('| 项 | 值 |');
+lines.push('| --- | --- |');
+lines.push(`| 配置协议 | \`${protocolArg}\` |`);
+lines.push(`| raw-v1 向量覆盖 | ${protocolStats.rawReady}/${turns.length}（${fmt(protocolStats.rawCoverage, 2)}） |`);
+lines.push(`| semantic-en-v1 向量覆盖 | ${protocolStats.semanticEnReady}/${turns.length}（${fmt(protocolStats.semanticEnCoverage, 2)}） |`);
+lines.push(`| 英文派生值 ready / pending / failed | ${protocolStats.derived.ready} / ${protocolStats.derived.pending} / ${protocolStats.derived.failed} |`);
+lines.push(`| query 走 semantic-en-v1 / raw-v1 | ${retrievalMetrics.semanticEnQueries} / ${retrievalMetrics.rawProtocolQueries} |`);
+lines.push(`| 英文形式被护栏拒绝 | ${retrievalMetrics.semanticQueryRejects} |`);
+lines.push('');
+lines.push('两个空间同时存在且互不排序：读取时按 `model:dtype:dims:protocol` 过滤，所以');
+lines.push('`raw-v1` 与 `semantic-en-v1` 虽同为 384 维同一模型，也不会被放进同一次 cosine');
+lines.push('比较。arm B 里 raw 那条腿仍然建满，是为了让"调用方没给英文形式"时有降级路径，');
+lines.push('而不是只剩 FTS。');
+lines.push('');
 lines.push('## 复现');
 lines.push('');
 lines.push('```bash');
-lines.push(`bun run benchmark/run.ts --compressor=${compressorKind}${enableEmbeddings ? '' : ' --no-embeddings'}`);
+lines.push(`bun run benchmark/run.ts --compressor=${compressorKind} --protocol=${protocolArg}${enableEmbeddings ? '' : ' --no-embeddings'}`);
 lines.push('```');
 lines.push('');
 lines.push('评估全程使用临时数据目录与临时 SQLite，不读写开发者真实 `~/.kiro-mem`（ACP 模式仅只读引用真实 `kiro-runtime` 以复用已安装的压缩子 Agent）。');
@@ -1039,7 +1245,25 @@ writeFileSync(reportPath, lines.join('\n'), 'utf-8');
 if (jsonPath) {
   writeFileSync(
     jsonPath,
-    JSON.stringify({ provenance, compressorKind, enableEmbeddings, summaryMetrics, retrievalMetrics, allGatesOk }, null, 2),
+    JSON.stringify(
+      {
+        provenance,
+        compressorKind,
+        protocol: protocolArg,
+        enableEmbeddings,
+        summaryMetrics,
+        retrievalMetrics,
+        protocolStats,
+        // ACP 模式下这两组是本阶段唯一能回答"压缩 prompt 变长有没有代价"的读数：
+        // repair 次数上升 = 输出变长后 JSON 更容易坏；派生值 ready 率 = 生产形态下
+        // 记录侧英文归一化的首轮成功率。gold 模式下它们恒定，没有信息。
+        compressorStats,
+        queryRows,
+        allGatesOk,
+      },
+      null,
+      2,
+    ),
     'utf-8',
   );
 }

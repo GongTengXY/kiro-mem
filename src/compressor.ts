@@ -16,6 +16,8 @@
  * invariants the shipping one does.
  */
 
+import type { SemanticEnRecord, SemanticEnRecordSource } from './semantic-en';
+
 /** Observation summary output — maps directly to an `observations` row. */
 export interface ObservationSummaryResult {
   title: string;
@@ -33,6 +35,20 @@ export interface ObservationSummaryResult {
   importance_score: number;
   confidence_score: number;
   unresolved_score: number;
+  /**
+   * English derived value for the embedded fields (`semantic-en-v1`).
+   *
+   * Produced by the SAME compression response, not a second call: the encoder
+   * only reads English well, and phase 1b's hot-path rule forbids adding an LLM
+   * round trip anywhere. Optional because a compressor may not implement the
+   * protocol (test doubles, the gold benchmark's raw arm) — `null`/absent means
+   * "no English vector for this Observation", never "embed the Chinese text into
+   * the English space".
+   *
+   * Shape only. Whether it may enter the vector space is decided by
+   * `checkSemanticEnRecord()` against the fields actually stored.
+   */
+  semantic_en?: SemanticEnRecord | null;
 }
 
 /**
@@ -72,6 +88,17 @@ export interface MemoryCompressor {
       facts: string[];
     };
   }): Promise<ObservationSummaryResult>;
+
+  /**
+   * Second and final attempt at the English derived value, used only when the
+   * one that came back with the summary failed the guardrails.
+   *
+   * Off the interactive path (it runs inside the `summarize_turn` job), so an
+   * extra ACP call here does not violate the hot-path rule. Optional: a
+   * compressor that does not implement it makes the derived value `pending`
+   * instead, which is a retryable state rather than a wrong vector.
+   */
+  normalizeSemanticEn?(source: SemanticEnRecordSource): Promise<SemanticEnRecord | null>;
 
   /** Observability counters. Optional so test doubles need not track them. */
   readonly stats?: CompressorStats;

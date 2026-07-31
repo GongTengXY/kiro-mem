@@ -7,13 +7,14 @@
 
 | 项 | 值 |
 | --- | --- |
-| 生成时间 | 2026-07-29T03:07:27.174Z |
-| commit | `a47b9d6` **（工作区有未提交改动）** |
+| 生成时间 | 2026-07-30T15:15:09.530Z |
+| commit | `07f8c50` **（工作区有未提交改动）** |
 | 命令行 | `bun run benchmark/run.ts --compressor=gold` |
 | 数据集 turns.json | `aa8f9beda2a4`（30 turn） |
 | 数据集 queries.json | `95ee03d880a9`（42 query） |
-| 脚本 run.ts / scoring.ts | `3e0df6d13f4b` / `bb8e48403d71` |
+| 脚本 run.ts / scoring.ts / dataset.ts | `339716582eff` / `bb8e48403d71` / `283d29ddba69` |
 | embedding 模型 | all-MiniLM-L6-v2 (384d) |
+| 归一化协议 | `raw`（原文直接向量化，对照组 A） |
 | 运行环境 | Bun 1.2.20 / darwin arm64 |
 | 运行次数 | 1（多次运行与方差见 `--runs=N`） |
 
@@ -84,8 +85,8 @@ gold 压缩器把人工标注逐字搬进结果，而打分器读的是同一份
 
 | 门槛 | 实测 | 结果 |
 | --- | --- | --- |
-| search p95 延迟 < 300ms | 13.5ms | ✅ |
-| bootstrap 构建 < 100ms 且在预算内 | 9.7ms / 3096B | ✅ |
+| search p95 延迟 < 300ms | 13.8ms | ✅ |
+| bootstrap 构建 < 100ms 且在预算内 | 10.0ms / 3096B | ✅ |
 
 ## 摘要质量（§12.3 Summary 完整性 / 事实准确性）
 
@@ -113,16 +114,19 @@ gold 压缩器把人工标注逐字搬进结果，而打分器读的是同一份
 | └ hit@5（heldout 18 条，未据此调参） | **44.4%** |
 | hit@10 | 69.4% |
 | MRR@10 | 0.586 |
+| ├ MRR@10（tuned；排序敏感，阶段 1 主读数） | 0.769 |
+| └ MRR@10（heldout；排序敏感，泛化读数） | 0.403 |
 | recall@10 | 69.4% |
 | R-precision（下界） | 50.0% |
 | ├ R-precision（tuned） | 61.1% |
 | └ R-precision（heldout） | 38.9% |
 | heldout 中因零词汇锚点返回空的条数 | 9 / 18 |
+| └ 同上，按 FTS 候选数为 0 计（拆门后的主口径） | 9 / 18 |
 | expected-empty query 平均返回（5 条） | 0.00（最坏 0） |
 | 跨 workspace 泄漏条数 | 0 |
 | FTS-only 降级次数 | 0 / 42 |
-| search p50 / p95 | 8.6ms / 13.5ms |
-| bootstrap 当前 scope | 3096B / 9.7ms（预算 8192B） |
+| search p50 / p95 | 8.8ms / 13.8ms |
+| bootstrap 当前 scope | 3096B / 10.0ms（预算 8192B） |
 | bootstrap 另一 scope | 981B |
 | bootstrap 空 scope | 485B |
 
@@ -130,53 +134,119 @@ gold 压缩器把人工标注逐字搬进结果，而打分器读的是同一份
 
 | query | 类型 | 期望 | 命中名次 | match_source | 泄漏 | 延迟 |
 | --- | --- | --- | --- | --- | --- | --- |
-| q01 FTS 特殊字符查询报错是怎么修的 | relevance | t01 | 1 | hybrid+semantic | 0 | 14.9ms |
-| q02 search 为什么会降级成只用 FTS | relevance | t02 | 2 | hybrid+semantic+fts | 0 | 11.5ms |
-| q03 hook 超时会不会拖慢 Kiro 启动 | relevance | t03,t19 | 3,2 | hybrid+semantic | 0 | 7.4ms |
-| q04 日志里会不会有用户 prompt 正文 | relevance | t04,t19 | 5,1 | hybrid+semantic | 0 | 8.6ms |
-| q05 版本号是在哪里统一管理的 | relevance | t05 | 1 | hybrid+semantic | 0 | 8.0ms |
-| q06 MCP search 的 limit 最大能传多少 | relevance | t06 | 1 | hybrid+fts+semantic | 0 | 11.4ms |
-| q07 ACP 连接池回收失败会不会导致任务永久挂住 | relevance | t07 | 2 | hybrid+semantic | 0 | 12.1ms |
-| q08 压缩一直失败最后会写成什么样的记录 | relevance | t08 | 未命中 | — | 0 | 5.6ms |
-| q09 本地 token 认证是怎么做到用户无感的 | relevance | t11 | 1 | hybrid+semantic | 0 | 11.0ms |
+| q01 FTS 特殊字符查询报错是怎么修的 | relevance | t01 | 1 | hybrid+semantic | 0 | 13.8ms |
+| q02 search 为什么会降级成只用 FTS | relevance | t02 | 2 | hybrid+semantic+fts | 0 | 10.3ms |
+| q03 hook 超时会不会拖慢 Kiro 启动 | relevance | t03,t19 | 3,2 | hybrid+semantic | 0 | 8.2ms |
+| q04 日志里会不会有用户 prompt 正文 | relevance | t04,t19 | 5,1 | hybrid+semantic | 0 | 9.5ms |
+| q05 版本号是在哪里统一管理的 | relevance | t05 | 1 | hybrid+semantic | 0 | 7.2ms |
+| q06 MCP search 的 limit 最大能传多少 | relevance | t06 | 1 | hybrid+fts+semantic | 0 | 10.4ms |
+| q07 ACP 连接池回收失败会不会导致任务永久挂住 | relevance | t07 | 2 | hybrid+semantic | 0 | 12.0ms |
+| q08 压缩一直失败最后会写成什么样的记录 | relevance | t08 | 未命中 | — | 0 | 5.3ms |
+| q09 本地 token 认证是怎么做到用户无感的 | relevance | t11 | 1 | hybrid+semantic | 0 | 11.5ms |
 | q10 跑测试会不会污染我真实的数据目录 | relevance | t12 | 2 | semantic+fts | 0 | 10.8ms |
-| q11 安装完 Worker 起不来说模块找不到 | relevance | t13 | 1 | hybrid | 0 | 13.5ms |
-| q12 重新安装之后为什么还在跑旧代码 | relevance | t14 | 1 | hybrid+semantic | 0 | 8.5ms |
-| q13 怎么发现运行中的 Worker 不是当前安装的版本 | relevance | t15 | 1 | hybrid | 0 | 20.4ms |
-| q14 注入到会话里的上下文有多大 会不会超预算 | relevance | t18 | 3 | hybrid+semantic+fts | 0 | 12.3ms |
-| q15 timeline 的邻居是按什么顺序排的 | relevance | t20 | 1 | hybrid+semantic | 0 | 10.8ms |
-| q16 本地 embedding 模型是什么精度 多少维 | relevance | t23 | 1 | hybrid+semantic | 0 | 9.7ms |
-| q17 跨项目会不会看到别的仓库的记忆 | relevance | t22 | 2 | semantic+fts | 0 | 10.1ms |
-| q18 质量基准集还剩什么没做 | relevance | t26 | 1 | hybrid+semantic | 0 | 10.3ms |
-| q19 虚拟滚动 react-window 帧率优化 | empty | — | 返回 0 条 | — | 0 | 9.8ms |
-| q20 401 token 刷新重放请求 | leakage | — | 返回 10 条 | hybrid+semantic | 0 | 7.8ms |
-| q21 Kubernetes Ingress 灰度发布配置 | empty | — | 返回 0 条 | — | 0 | 4.0ms |
-| q22 支付回调 验签 对账差异 | empty | — | 返回 0 条 | — | 0 | 2.2ms |
-| q23 iOS APNs 推送证书 续期 | empty | — | 返回 0 条 | — | 0 | 3.4ms |
-| q24 Excel 导出 中文乱码 编码 | empty | — | 返回 0 条 | — | 0 | 1.5ms |
-| q25 purge 之后重装会不会残留旧表 | relevance | t09 | 1 | hybrid+semantic | 0 | 8.7ms |
-| q26 job 的类型名后来有没有改过 | relevance | t10 | 1 | hybrid+semantic | 0 | 6.5ms |
-| q27 干净机器上装完做过验收吗 | relevance | t16 | 1 | hybrid+semantic | 0 | 8.5ms |
-| q28 有没有真的跑通一整轮记忆生成 | relevance | t17 | 未命中 | — | 0 | 4.2ms |
-| q29 两路检索结果是用什么算法合并的 | relevance | t21 | 未命中 | — | 0 | 4.4ms |
+| q11 安装完 Worker 起不来说模块找不到 | relevance | t13 | 1 | hybrid | 0 | 15.3ms |
+| q12 重新安装之后为什么还在跑旧代码 | relevance | t14 | 1 | hybrid+semantic | 0 | 9.5ms |
+| q13 怎么发现运行中的 Worker 不是当前安装的版本 | relevance | t15 | 1 | hybrid | 0 | 18.8ms |
+| q14 注入到会话里的上下文有多大 会不会超预算 | relevance | t18 | 3 | hybrid+semantic+fts | 0 | 11.9ms |
+| q15 timeline 的邻居是按什么顺序排的 | relevance | t20 | 1 | hybrid+semantic | 0 | 10.3ms |
+| q16 本地 embedding 模型是什么精度 多少维 | relevance | t23 | 1 | hybrid+semantic | 0 | 10.2ms |
+| q17 跨项目会不会看到别的仓库的记忆 | relevance | t22 | 2 | semantic+fts | 0 | 10.9ms |
+| q18 质量基准集还剩什么没做 | relevance | t26 | 1 | hybrid+semantic | 0 | 9.7ms |
+| q19 虚拟滚动 react-window 帧率优化 | empty | — | 返回 0 条 | — | 0 | 9.5ms |
+| q20 401 token 刷新重放请求 | leakage | — | 返回 10 条 | hybrid+semantic | 0 | 7.4ms |
+| q21 Kubernetes Ingress 灰度发布配置 | empty | — | 返回 0 条 | — | 0 | 2.5ms |
+| q22 支付回调 验签 对账差异 | empty | — | 返回 0 条 | — | 0 | 2.0ms |
+| q23 iOS APNs 推送证书 续期 | empty | — | 返回 0 条 | — | 0 | 3.2ms |
+| q24 Excel 导出 中文乱码 编码 | empty | — | 返回 0 条 | — | 0 | 1.2ms |
+| q25 purge 之后重装会不会残留旧表 | relevance | t09 | 1 | hybrid+semantic | 0 | 9.5ms |
+| q26 job 的类型名后来有没有改过 | relevance | t10 | 1 | hybrid+semantic | 0 | 7.9ms |
+| q27 干净机器上装完做过验收吗 | relevance | t16 | 1 | hybrid+semantic | 0 | 8.8ms |
+| q28 有没有真的跑通一整轮记忆生成 | relevance | t17 | 未命中 | — | 0 | 4.3ms |
+| q29 两路检索结果是用什么算法合并的 | relevance | t21 | 未命中 | — | 0 | 4.3ms |
 | q30 中文界面和中文提示是怎么支持的 | relevance | t24 | 未命中 | — | 0 | 4.3ms |
-| q31 还有哪些类型错误没有修完 | relevance | t25 | 1 | fts+semantic | 0 | 9.1ms |
+| q31 还有哪些类型错误没有修完 | relevance | t25 | 1 | fts+semantic | 0 | 8.8ms |
 | q32 搜索词里带引号或括号会不会崩 | relevance | t01 | 未命中 | — | 0 | 4.1ms |
-| q33 向量算不出来的时候搜索还能不能用 | relevance | t02 | 未命中 | — | 0 | 4.7ms |
-| q34 报错日志会不会把模型原始输出写进去 | relevance | t04 | 1 | hybrid+semantic | 0 | 8.8ms |
-| q35 改一次版本号要动几个文件 | relevance | t05 | 1 | hybrid+semantic | 0 | 7.9ms |
-| q36 连接池里有个子进程死了会怎么处理 | relevance | t07 | 未命中 | — | 0 | 6.7ms |
-| q37 模型输出解析不了会不会把这一轮丢掉 | relevance | t08 | 未命中 | — | 0 | 5.0ms |
-| q38 单元测试用的数据库文件放在哪里 | relevance | t12 | 未命中 | hybrid+semantic | 0 | 13.3ms |
-| q39 安装时少拷了一个文件会有什么现象 | relevance | t13 | 4 | hybrid+semantic | 0 | 11.8ms |
-| q40 会话开头塞进去的索引占多少字节 | relevance | t18 | 未命中 | — | 0 | 5.4ms |
-| q41 两个不同仓库的记忆是怎么分开的 | relevance | t22 | 1 | fts+semantic | 0 | 10.7ms |
-| q42 向量是多少维 用了什么量化 | relevance | t23 | 未命中 | — | 0 | 4.1ms |
+| q33 向量算不出来的时候搜索还能不能用 | relevance | t02 | 未命中 | — | 0 | 4.6ms |
+| q34 报错日志会不会把模型原始输出写进去 | relevance | t04 | 1 | hybrid+semantic | 0 | 7.4ms |
+| q35 改一次版本号要动几个文件 | relevance | t05 | 1 | hybrid+semantic | 0 | 5.8ms |
+| q36 连接池里有个子进程死了会怎么处理 | relevance | t07 | 未命中 | — | 0 | 4.6ms |
+| q37 模型输出解析不了会不会把这一轮丢掉 | relevance | t08 | 未命中 | — | 0 | 4.8ms |
+| q38 单元测试用的数据库文件放在哪里 | relevance | t12 | 未命中 | hybrid+semantic | 0 | 13.7ms |
+| q39 安装时少拷了一个文件会有什么现象 | relevance | t13 | 4 | hybrid+semantic | 0 | 11.4ms |
+| q40 会话开头塞进去的索引占多少字节 | relevance | t18 | 未命中 | — | 0 | 4.9ms |
+| q41 两个不同仓库的记忆是怎么分开的 | relevance | t22 | 1 | fts+semantic | 0 | 9.3ms |
+| q42 向量是多少维 用了什么量化 | relevance | t23 | 未命中 | — | 0 | 3.1ms |
+
+### 逐 query 分路明细（§4.4）
+
+一次 miss 有四种成因，在上面那张表里长得一模一样：FTS 没召回 / 语义没召回 /
+两路都召回但 RRF 排坏 / 被结果上限截掉。这张表把它们拆开。`ftsRank`、
+`semRank` 是期望记录在**各自那一路的候选名次表**里的位次，0 = 没进该路。
+
+| query | 类型 | 协议 | fts候选 | 语义候选 | 返回 | 仅语义 | ftsRank | semRank | 最终名次 | 降级 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| q01 | relevance/tuned | raw | 4 | 23 | 10 | 6 | 1 | 1 | 1 | 否 |
+| q02 | relevance/tuned | raw | 6 | 23 | 10 | 4 | 2 | 2 | 2 | 否 |
+| q03 | relevance/tuned | raw | 8 | 13 | 10 | 2 | 2 | 2 | 2 | 否 |
+| q04 | relevance/tuned | raw | 3 | 11 | 10 | 7 | 2 | 2 | 1 | 否 |
+| q05 | relevance/tuned | raw | 1 | 11 | 10 | 9 | 1 | 1 | 1 | 否 |
+| q06 | relevance/tuned | raw | 8 | 12 | 10 | 2 | 1 | 1 | 1 | 否 |
+| q07 | relevance/tuned | raw | 4 | 17 | 10 | 6 | 1 | 6 | 2 | 否 |
+| q08 | relevance/tuned | raw | 0 | 0 | 0 | 0 | — | — | — | 否 |
+| q09 | relevance/tuned | raw | 5 | 20 | 10 | 5 | 1 | 1 | 1 | 否 |
+| q10 | relevance/tuned | raw | 3 | 6 | 9 | 6 | 1 | — | 2 | 否 |
+| q11 | relevance/tuned | raw | 11 | 19 | 10 | 0 | 1 | 1 | 1 | 否 |
+| q12 | relevance/tuned | raw | 1 | 20 | 10 | 9 | 1 | 16 | 1 | 否 |
+| q13 | relevance/tuned | raw | 12 | 21 | 10 | 0 | 1 | 3 | 1 | 否 |
+| q14 | relevance/tuned | raw | 3 | 12 | 10 | 7 | 2 | — | 3 | 否 |
+| q15 | relevance/tuned | raw | 2 | 10 | 10 | 8 | 1 | 1 | 1 | 否 |
+| q16 | relevance/tuned | raw | 3 | 6 | 6 | 3 | 2 | 1 | 1 | 否 |
+| q17 | relevance/tuned | raw | 1 | 8 | 9 | 8 | 1 | — | 2 | 否 |
+| q18 | relevance/tuned | raw | 1 | 9 | 9 | 8 | 1 | 5 | 1 | 否 |
+| q19 | empty | raw | 0 | 0 | 0 | 0 | — | — | — | 否 |
+| q20 | leakage | raw | 5 | 19 | 10 | 5 | — | — | — | 否 |
+| q21 | empty | raw | 0 | 0 | 0 | 0 | — | — | — | 否 |
+| q22 | empty | raw | 0 | 0 | 0 | 0 | — | — | — | 否 |
+| q23 | empty | raw | 0 | 0 | 0 | 0 | — | — | — | 否 |
+| q24 | empty | raw | 0 | 0 | 0 | 0 | — | — | — | 否 |
+| q25 | relevance/heldout | raw | 3 | 16 | 10 | 7 | 1 | 1 | 1 | 否 |
+| q26 | relevance/heldout | raw | 3 | 17 | 10 | 7 | 1 | 1 | 1 | 否 |
+| q27 | relevance/heldout | raw | 1 | 13 | 10 | 9 | 1 | 1 | 1 | 否 |
+| q28 | relevance/heldout | raw | 0 | 0 | 0 | 0 | — | — | — | 否 |
+| q29 | relevance/heldout | raw | 0 | 0 | 0 | 0 | — | — | — | 否 |
+| q30 | relevance/heldout | raw | 0 | 0 | 0 | 0 | — | — | — | 否 |
+| q31 | relevance/heldout | raw | 1 | 5 | 6 | 5 | 1 | — | 1 | 否 |
+| q32 | relevance/heldout | raw | 0 | 0 | 0 | 0 | — | — | — | 否 |
+| q33 | relevance/heldout | raw | 0 | 0 | 0 | 0 | — | — | — | 否 |
+| q34 | relevance/heldout | raw | 1 | 15 | 10 | 9 | 1 | 2 | 1 | 否 |
+| q35 | relevance/heldout | raw | 1 | 14 | 10 | 9 | 1 | 1 | 1 | 否 |
+| q36 | relevance/heldout | raw | 0 | 0 | 0 | 0 | — | — | — | 否 |
+| q37 | relevance/heldout | raw | 0 | 0 | 0 | 0 | — | — | — | 否 |
+| q38 | relevance/heldout | raw | 5 | 18 | 10 | 5 | — | 11 | — | 否 |
+| q39 | relevance/heldout | raw | 1 | 19 | 10 | 9 | — | 3 | 4 | 否 |
+| q40 | relevance/heldout | raw | 0 | 0 | 0 | 0 | — | — | — | 否 |
+| q41 | relevance/heldout | raw | 1 | 11 | 10 | 9 | 1 | — | 1 | 否 |
+| q42 | relevance/heldout | raw | 0 | 0 | 0 | 0 | — | — | — | 否 |
+
+## 协议明细（阶段 1b）
+| 项 | 值 |
+| --- | --- |
+| 配置协议 | `raw` |
+| raw-v1 向量覆盖 | 30/30（1.00） |
+| semantic-en-v1 向量覆盖 | 0/30（0.00） |
+| 英文派生值 ready / pending / failed | 0 / 30 / 0 |
+| query 走 semantic-en-v1 / raw-v1 | 0 / 42 |
+| 英文形式被护栏拒绝 | 0 |
+
+两个空间同时存在且互不排序：读取时按 `model:dtype:dims:protocol` 过滤，所以
+`raw-v1` 与 `semantic-en-v1` 虽同为 384 维同一模型，也不会被放进同一次 cosine
+比较。arm B 里 raw 那条腿仍然建满，是为了让"调用方没给英文形式"时有降级路径，
+而不是只剩 FTS。
 
 ## 复现
 
 ```bash
-bun run benchmark/run.ts --compressor=gold
+bun run benchmark/run.ts --compressor=gold --protocol=raw
 ```
 
 评估全程使用临时数据目录与临时 SQLite，不读写开发者真实 `~/.kiro-mem`（ACP 模式仅只读引用真实 `kiro-runtime` 以复用已安装的压缩子 Agent）。

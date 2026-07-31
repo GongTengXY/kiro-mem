@@ -30,8 +30,23 @@ You have persistent cross-session memory. At session start, a compact index of p
 3. **Fetch details on demand** — `get_observations` only for what you need
 4. **Timeline when needed** — `timeline observation_id=42` to see the surrounding work in real source-turn order
 
-### Search Scope / 搜索范围
+### Always Pass `semantic_query_en` / 每次都要传 `semantic_query_en`
 
+Semantic recall runs in an **English** vector space (the bundled encoder reads English well and Chinese badly). So every `search` call must carry a faithful English rendering of `query`:
+
+语义召回在**英文**向量空间里做（打包的编码器读英文正常、读中文很差）。所以每次 `search` 都要同时给出 `query` 的忠实英文形式：
+
+- Same meaning, same scope. Do not expand, summarize, or guess background the user did not state. / 同义、同范围。不要扩写、不要摘要、不要把用户没说的背景猜进去。
+- Keep identifiers, file paths, commands, config keys, error codes and numbers **verbatim**. / 标识符、文件路径、命令、配置键、错误码、数字**原样保留**。
+- If `query` is already English, repeat it (or only regularize wording). / `query` 本身是英文时照抄，或仅规范措辞。
+
+```text
+@kiro-mem/search query="搜索词里带引号会不会崩" semantic_query_en="does a search containing quotes crash"
+```
+
+Omitting it is not an error, but the search silently falls back to a weaker ranking. / 不传不会报错，但检索会静默落回更差的排序。
+
+### Search Scope / 搜索范围
 - **Default to the current workspace**: omit `repo`, `cwd`, and `all_scopes`. / 默认只搜索当前 workspace：省略 `repo`、`cwd` 和 `all_scopes`。
 - If the user asks for memories from **other projects, across projects, all projects, or global history**, call `search` with `all_scopes: true`. The user does not need to know or mention this parameter. / 当用户表达“其他项目”“跨项目”“所有项目”“全局历史”等意图时，调用 `search` 并设置 `all_scopes: true`；用户无需知道或说出该参数。
 - If the user identifies a specific repository or project path, prefer `repo` (or `cwd` for a non-git workspace) instead of `all_scopes`. / 如果用户指定了具体仓库或项目路径，优先传 `repo`（非 Git workspace 使用 `cwd`），不要使用 `all_scopes`。

@@ -1,7 +1,8 @@
 import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
 import { MemoryDB } from '../../src/db';
 import { openInMemoryDB } from '../support/tmp-db';
-import { embeddingToBlob } from '../../src/embedding';
+import { embeddingToBlob, DIMENSIONS } from '../../src/embedding';
+import { embeddingSpaceKey, RAW_PROTOCOL } from '../../src/semantic-en';
 
 let db: MemoryDB;
 beforeEach(() => { db = openInMemoryDB(); });
@@ -22,7 +23,17 @@ function seedObs(
     turn_started_at: '2026-07-14T00:00:00Z', turn_stopped_at: '2026-07-14T00:00:00Z',
   })!;
   if (opts?.pinned) db.pinObservation(id, true);
-  if (opts?.embedded) db.upsertObservationEmbedding(id, 'test', 4, embeddingToBlob(new Float32Array([1, 0, 0, 0])));
+  if (opts?.embedded) {
+    // The stats query only counts vectors in a CURRENT space, so the fixture has
+    // to name one: a row under an arbitrary model string is exactly the
+    // uncomparable leftover that coverage is supposed to exclude.
+    db.upsertObservationEmbedding(
+      id,
+      embeddingSpaceKey(RAW_PROTOCOL),
+      DIMENSIONS,
+      embeddingToBlob(new Float32Array(DIMENSIONS)),
+    );
+  }
   return id;
 }
 
@@ -30,7 +41,9 @@ describe('getObservabilityStats (§12.4)', () => {
   test('empty DB returns zeros with coverage 0', () => {
     const s = db.getObservabilityStats();
     expect(s.observations).toEqual({ total: 0, normal: 0, fallback: 0, pinned: 0 });
-    expect(s.embeddings).toEqual({ ready: 0, coverage: 0 });
+    expect(s.embeddings.ready).toBe(0);
+    expect(s.embeddings.coverage).toBe(0);
+    expect(s.embeddings.semanticEn).toEqual({ ready: 0, pending: 0, failed: 0 });
     expect(s.jobs).toEqual({ pending: 0, leased: 0, dead: 0 });
     expect(s.jobs24h).toEqual({ succeeded: 0, dead: 0 });
   });

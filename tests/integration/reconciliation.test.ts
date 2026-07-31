@@ -244,7 +244,11 @@ describe('findOrphans / requeueOrphans', () => {
     // 光识别出来不算恢复。embed job 原来的幂等判断是"有行就返回"，那会让重排的
     // job 立刻空转——识别到了、排了队、什么也没变。
     const localDb = openInMemoryDB();
-    const { EMBEDDING_MODEL, DIMENSIONS } = await import('../../src/embedding');
+    const { DIMENSIONS } = await import('../../src/embedding');
+    const { embeddingSpaceKey, RAW_PROTOCOL } = await import('../../src/semantic-en');
+    // 重排后要检查的是**当前协议空间**里的向量，不是模型名：raw-v1 与
+    // semantic-en-v1 同为 384 维同一个模型，只按模型名判定会把两者混为一谈。
+    const rawSpaceKey = embeddingSpaceKey(RAW_PROTOCOL);
     const fresh = new Float32Array(DIMENSIONS).fill(0);
     fresh[0] = 1;
     const local = createApp({
@@ -268,7 +272,7 @@ describe('findOrphans / requeueOrphans', () => {
     })!;
     localDb.upsertObservationEmbedding(observationId, 'some-older-model', 4, Buffer.from(new Float32Array([1, 0, 0, 0]).buffer));
 
-    const vector = { embeddingModel: EMBEDDING_MODEL, embeddingDimensions: DIMENSIONS };
+    const vector = { embeddingModel: rawSpaceKey, embeddingDimensions: DIMENSIONS };
     expect(localDb.findOrphans(vector).observationsWithoutEmbedding).toEqual([observationId]);
     expect(localDb.requeueOrphans(vector).embed).toBe(1);
 
@@ -276,14 +280,14 @@ describe('findOrphans / requeueOrphans', () => {
     try {
       const deadline = Date.now() + 20000;
       while (Date.now() < deadline) {
-        if (localDb.getObservationEmbedding(observationId)?.model === EMBEDDING_MODEL) break;
+        if (localDb.getObservationEmbedding(observationId, rawSpaceKey)) break;
         await new Promise((r) => setTimeout(r, 20));
       }
     } finally {
       local.jobRunner.stop();
     }
 
-    const row = localDb.getObservationEmbedding(observationId)!;
+    const row = localDb.getObservationEmbedding(observationId, rawSpaceKey)!;
     expect(row.dimensions).toBe(DIMENSIONS);
     expect(row.embedding.byteLength).toBe(DIMENSIONS * 4);
     expect(localDb.findOrphans(vector).observationsWithoutEmbedding).toEqual([]);

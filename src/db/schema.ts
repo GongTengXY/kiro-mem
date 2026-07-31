@@ -1,5 +1,7 @@
 /** SQLite schema for kiro-mem. */
 
+import type { Database } from 'bun:sqlite';
+
 // -------------------------------------------------------------
 // Core layer — session isolation, the append-only turn truth layer,
 // deterministic artifacts, and the persistent job queue. This is the
@@ -199,13 +201,56 @@ CREATE INDEX IF NOT EXISTS idx_observations_session_seq
   ON observations(session_id, turn_seq);
 
 -- Vector index scoped to observations.
+--
+-- The primary key is (observation_id, model), NOT observation_id: "model" here
+-- is the full vector-space key (model:dtype:dims:protocol, see
+-- src/semantic-en.ts), and one Observation legitimately has one vector per
+-- protocol — raw-v1 always, semantic-en-v1 once its English derived value
+-- passes validation. A single-column key would have forced the two protocols to
+-- overwrite each other, which is how a migration window silently turns into a
+-- mixed-space ranking.
 CREATE TABLE IF NOT EXISTS observation_embeddings (
-  observation_id       INTEGER PRIMARY KEY REFERENCES observations(id),
+  observation_id       INTEGER NOT NULL REFERENCES observations(id),
   model                TEXT NOT NULL,
   dimensions           INTEGER NOT NULL,
   embedding            BLOB NOT NULL,
-  created_at           TEXT NOT NULL
+  created_at           TEXT NOT NULL,
+  PRIMARY KEY (observation_id, model)
 );
+
+-- English semantic derived value for one Observation under one normalization
+-- protocol (semantic-en-v1 today).
+--
+-- Deliberately NOT columns on "observations": that row is immutable and is the
+-- audit record of what the turn actually said, while a derived value is
+-- regenerable, versioned by protocol, and carries a lifecycle (pending → ready
+-- / failed) plus the provenance needed to rebuild it when the protocol or the
+-- translator changes. FTS, display and fallback never read this table.
+--
+-- "status" is the reason this is a table rather than a nullable column: a failed
+-- normalization must be visible as "not translated yet", because the alternative
+-- — writing a vector from a bad translation — looks identical to a good one at
+-- read time.
+CREATE TABLE IF NOT EXISTS observation_semantic_texts (
+  observation_id       INTEGER NOT NULL REFERENCES observations(id),
+  protocol             TEXT NOT NULL,
+  -- 'ready' | 'pending' | 'failed'
+  status               TEXT NOT NULL,
+  -- JSON {title, summary, outcome, learned, concepts[]}; NULL unless ready.
+  payload_json         TEXT,
+  -- Who produced it, e.g. 'acp:kiro-mem-compressor'. A protocol upgrade or a
+  -- translator change must be able to find the rows it invalidates.
+  translator           TEXT NOT NULL,
+  translator_version   TEXT,
+  attempts             INTEGER NOT NULL DEFAULT 0,
+  failure_reason       TEXT,
+  created_at           TEXT NOT NULL,
+  updated_at           TEXT NOT NULL,
+  PRIMARY KEY (observation_id, protocol)
+);
+
+CREATE INDEX IF NOT EXISTS idx_observation_semantic_status
+  ON observation_semantic_texts(protocol, status);
 `;
 
 export const OBSERVATIONS_FTS_SCHEMA = `
@@ -267,3 +312,45 @@ export const ALL_SCHEMA = [
   OBSERVATIONS_FTS_SCHEMA,
   OBSERVATIONS_FTS_TRIGGERS,
 ].join('\n');
+
+/**
+ * Rebuild `observation_embeddings` when an existing database still has the old
+ * single-column primary key.
+ *
+ * `CREATE TABLE IF NOT EXISTS` cannot change a key, so without this an upgraded
+ * install would keep a table where storing a `semantic-en-v1` vector overwrites
+ * the `raw-v1` one for the same Observation — the protocol isolation would be
+ * declared in the schema file and absent in the actual database.
+ *
+ * Existing rows are preserved rather than dropped. They were written under the
+ * bare model name, which is no longer a valid space key, so they are inert at
+ * read time; `kiro-mem repair` re-embeds them under the new key locally, with no
+ * ACP call. Dropping them would have been simpler and would have destroyed the
+ * only copy of work that a repair could still use.
+ */
+export function migrateSchema(db: Database): void {
+  const row = db
+    .query(
+      "SELECT sql AS sql FROM sqlite_master WHERE type = 'table' AND name = 'observation_embeddings'",
+    )
+    .get() as { sql: string | null } | null;
+  const sql = row?.sql ?? '';
+  if (!sql || sql.includes('PRIMARY KEY (observation_id, model)')) return;
+
+  db.exec(`
+    CREATE TABLE observation_embeddings__migrating (
+      observation_id       INTEGER NOT NULL REFERENCES observations(id),
+      model                TEXT NOT NULL,
+      dimensions           INTEGER NOT NULL,
+      embedding            BLOB NOT NULL,
+      created_at           TEXT NOT NULL,
+      PRIMARY KEY (observation_id, model)
+    );
+    INSERT INTO observation_embeddings__migrating
+      (observation_id, model, dimensions, embedding, created_at)
+      SELECT observation_id, model, dimensions, embedding, created_at
+        FROM observation_embeddings;
+    DROP TABLE observation_embeddings;
+    ALTER TABLE observation_embeddings__migrating RENAME TO observation_embeddings;
+  `);
+}
