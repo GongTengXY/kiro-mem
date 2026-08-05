@@ -1,0 +1,1594 @@
+{
+  "provenance": {
+    "commit": "b2e972f",
+    "dirty": true,
+    "turnsHash": "aa8f9beda2a4",
+    "queriesHash": "95ee03d880a9",
+    "runHash": "531b89402611",
+    "scoringHash": "bb8e48403d71",
+    "datasetHash": "e02509605c3f",
+    "retrievalPolicy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "recency"
+    },
+    "bunVersion": "1.2.20",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "compressorKind": "gold",
+  "protocol": "semantic-en",
+  "enableEmbeddings": true,
+  "summaryMetrics": {
+    "total": 30,
+    "fallback": 0,
+    "outcomePresentRate": 1,
+    "nextStepsRecall": 1,
+    "nextStepsRecallBase": 5,
+    "nextStepsExtraRate": 0,
+    "nextStepsExtraBase": 25,
+    "factRecall": 1,
+    "fileRecall": 1,
+    "memoryTypeAccuracy": 1,
+    "hallucinatedFileTurns": 0,
+    "forbiddenClaimTurns": 0
+  },
+  "retrievalMetrics": {
+    "queries": 42,
+    "relevanceQueries": 36,
+    "hitAt5": 0.9166666666666666,
+    "hitAt10": 0.9166666666666666,
+    "mrr": 0.8263888888888888,
+    "recallAt10": 0.9166666666666666,
+    "rPrecision": 0.7777777777777778,
+    "tunedQueries": 18,
+    "tunedHitAt5": 1,
+    "tunedMrr": 0.8888888888888888,
+    "tunedRPrecision": 0.8333333333333334,
+    "heldoutQueries": 18,
+    "heldoutHitAt5": 0.8333333333333334,
+    "heldoutMrr": 0.7638888888888888,
+    "heldoutRPrecision": 0.7222222222222222,
+    "heldoutNoAnchor": 9,
+    "heldoutReturnedEmpty": 0,
+    "expectedEmptyQueries": 5,
+    "expectedEmptyReturned": 1,
+    "expectedEmptyWorst": 2,
+    "leakTotal": 0,
+    "degrades": 0,
+    "zeroFtsRelevanceQueries": 10,
+    "zeroFtsHitAt5": 0.8,
+    "zeroFtsMrr": 0.75,
+    "semanticOnlyMean": 1.4523809523809523,
+    "semanticOnlyP95": 2,
+    "semanticOnlyMax": 2,
+    "semanticOnlyDroppedTotal": 69,
+    "discoveryRequestedQueries": 42,
+    "discoveryEffectiveQueries": 42,
+    "discoveryBlockedByProtocol": 0,
+    "expectedEmptySemanticCandidates": 1.4,
+    "expectedEmptySemanticCandidatesWorst": 4,
+    "phase2RelevanceQueries": 0,
+    "phase2HitAt5": 0,
+    "phase2Mrr": 0,
+    "phase2RPrecision": 0,
+    "phase2ZhQueries": 0,
+    "phase2ZhHitAt5": 0,
+    "phase2ZhMrr": 0,
+    "phase2EnQueries": 0,
+    "phase2EnHitAt5": 0,
+    "phase2EnMrr": 0,
+    "phase2EmptyQueries": 0,
+    "phase2EmptyReturned": 0,
+    "phase2EmptyWorst": 0,
+    "phase2EmptyZhReturned": 0,
+    "phase2EmptyEnReturned": 0,
+    "phase2EmptySemanticCandidates": 0,
+    "phase2EmptySemanticCandidatesWorst": 0,
+    "semanticOnlyTotal": 61,
+    "latencyP50": 7.994709000000057,
+    "latencyP95": 12.640083000000004,
+    "protocol": "semantic-en",
+    "semanticEnQueries": 42,
+    "rawProtocolQueries": 0,
+    "semanticQueryRejects": 0,
+    "validationQueries": 0,
+    "validationHitAt5": 0,
+    "validationMrr": 0,
+    "validationRPrecision": 0,
+    "validationZhHitAt5": 0,
+    "validationZhMrr": 0,
+    "validationEnHitAt5": 0,
+    "validationEnMrr": 0,
+    "validationZeroFtsAnchor": 0
+  },
+  "protocolStats": {
+    "rawReady": 30,
+    "rawCoverage": 1,
+    "semanticEnReady": 30,
+    "semanticEnCoverage": 1,
+    "derived": {
+      "ready": 30,
+      "pending": 0,
+      "failed": 0
+    }
+  },
+  "compressorStats": null,
+  "queryRows": [
+    {
+      "id": "q01",
+      "kind": "relevance",
+      "origin": "tuned",
+      "query": "FTS 特殊字符查询报错是怎么修的",
+      "expect": [
+        "t01"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "semantic"
+      ],
+      "latencyMs": 13.412082999999939,
+      "returned": 6,
+      "ftsCount": 4,
+      "semanticCount": 8,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 1,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 2,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q02",
+      "kind": "relevance",
+      "origin": "tuned",
+      "query": "search 为什么会降级成只用 FTS",
+      "expect": [
+        "t02"
+      ],
+      "ranks": [
+        2
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 0.5,
+      "recallAt10": 1,
+      "rPrecision": 0,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "semantic",
+        "fts"
+      ],
+      "latencyMs": 11.180499999999938,
+      "returned": 8,
+      "ftsCount": 6,
+      "semanticCount": 7,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 2,
+      "ftsRank": 2,
+      "semanticRank": 2,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q03",
+      "kind": "relevance",
+      "origin": "tuned",
+      "query": "hook 超时会不会拖慢 Kiro 启动",
+      "expect": [
+        "t03",
+        "t19"
+      ],
+      "ranks": [
+        2,
+        5
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 0.5,
+      "recallAt10": 1,
+      "rPrecision": 0.5,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "semantic",
+        "fts"
+      ],
+      "latencyMs": 7.275082999999995,
+      "returned": 9,
+      "ftsCount": 8,
+      "semanticCount": 7,
+      "semanticOnlyReturned": 1,
+      "degraded": false,
+      "firstExpectedRank": 2,
+      "ftsRank": 2,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q04",
+      "kind": "relevance",
+      "origin": "tuned",
+      "query": "日志里会不会有用户 prompt 正文",
+      "expect": [
+        "t04",
+        "t19"
+      ],
+      "ranks": [
+        3,
+        2
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 0.5,
+      "recallAt10": 1,
+      "rPrecision": 0.5,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "semantic",
+        "fts"
+      ],
+      "latencyMs": 8.056708999999955,
+      "returned": 5,
+      "ftsCount": 3,
+      "semanticCount": 4,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 2,
+      "ftsRank": 2,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q05",
+      "kind": "relevance",
+      "origin": "tuned",
+      "query": "版本号是在哪里统一管理的",
+      "expect": [
+        "t05"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "semantic"
+      ],
+      "latencyMs": 7.296665999999959,
+      "returned": 3,
+      "ftsCount": 1,
+      "semanticCount": 5,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 1,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 2,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q06",
+      "kind": "relevance",
+      "origin": "tuned",
+      "query": "MCP search 的 limit 最大能传多少",
+      "expect": [
+        "t06"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "fts",
+        "semantic"
+      ],
+      "latencyMs": 9.787459000000126,
+      "returned": 9,
+      "ftsCount": 8,
+      "semanticCount": 4,
+      "semanticOnlyReturned": 1,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 1,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q07",
+      "kind": "relevance",
+      "origin": "tuned",
+      "query": "ACP 连接池回收失败会不会导致任务永久挂住",
+      "expect": [
+        "t07"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "semantic",
+        "fts"
+      ],
+      "latencyMs": 9.571290999999974,
+      "returned": 6,
+      "ftsCount": 4,
+      "semanticCount": 8,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 1,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 3,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q08",
+      "kind": "relevance",
+      "origin": "tuned",
+      "query": "压缩一直失败最后会写成什么样的记录",
+      "expect": [
+        "t08"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "semantic"
+      ],
+      "latencyMs": 6.81308399999989,
+      "returned": 2,
+      "ftsCount": 0,
+      "semanticCount": 6,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 0,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 4,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q09",
+      "kind": "relevance",
+      "origin": "tuned",
+      "query": "本地 token 认证是怎么做到用户无感的",
+      "expect": [
+        "t11"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "fts"
+      ],
+      "latencyMs": 10.51179100000013,
+      "returned": 5,
+      "ftsCount": 5,
+      "semanticCount": 1,
+      "semanticOnlyReturned": 0,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 1,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q10",
+      "kind": "relevance",
+      "origin": "tuned",
+      "query": "跑测试会不会污染我真实的数据目录",
+      "expect": [
+        "t12"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "fts",
+        "semantic"
+      ],
+      "latencyMs": 10.805749999999989,
+      "returned": 5,
+      "ftsCount": 3,
+      "semanticCount": 8,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 1,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 4,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q11",
+      "kind": "relevance",
+      "origin": "tuned",
+      "query": "安装完 Worker 起不来说模块找不到",
+      "expect": [
+        "t13"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "fts"
+      ],
+      "latencyMs": 12.640083000000004,
+      "returned": 10,
+      "ftsCount": 11,
+      "semanticCount": 4,
+      "semanticOnlyReturned": 0,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 1,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q12",
+      "kind": "relevance",
+      "origin": "tuned",
+      "query": "重新安装之后为什么还在跑旧代码",
+      "expect": [
+        "t14"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "semantic"
+      ],
+      "latencyMs": 8.893416000000116,
+      "returned": 3,
+      "ftsCount": 1,
+      "semanticCount": 8,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 1,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 5,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q13",
+      "kind": "relevance",
+      "origin": "tuned",
+      "query": "怎么发现运行中的 Worker 不是当前安装的版本",
+      "expect": [
+        "t15"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "fts"
+      ],
+      "latencyMs": 20.22179200000005,
+      "returned": 10,
+      "ftsCount": 12,
+      "semanticCount": 11,
+      "semanticOnlyReturned": 0,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 1,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q14",
+      "kind": "relevance",
+      "origin": "tuned",
+      "query": "注入到会话里的上下文有多大 会不会超预算",
+      "expect": [
+        "t18"
+      ],
+      "ranks": [
+        2
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 0.5,
+      "recallAt10": 1,
+      "rPrecision": 0,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "semantic"
+      ],
+      "latencyMs": 12.50591600000007,
+      "returned": 5,
+      "ftsCount": 3,
+      "semanticCount": 5,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 2,
+      "ftsRank": 2,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q15",
+      "kind": "relevance",
+      "origin": "tuned",
+      "query": "timeline 的邻居是按什么顺序排的",
+      "expect": [
+        "t20"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "semantic",
+        "fts"
+      ],
+      "latencyMs": 10.070416000000023,
+      "returned": 3,
+      "ftsCount": 2,
+      "semanticCount": 2,
+      "semanticOnlyReturned": 1,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 1,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q16",
+      "kind": "relevance",
+      "origin": "tuned",
+      "query": "本地 embedding 模型是什么精度 多少维",
+      "expect": [
+        "t23"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "fts"
+      ],
+      "latencyMs": 9.184667000000218,
+      "returned": 3,
+      "ftsCount": 3,
+      "semanticCount": 2,
+      "semanticOnlyReturned": 0,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 2,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q17",
+      "kind": "relevance",
+      "origin": "tuned",
+      "query": "跨项目会不会看到别的仓库的记忆",
+      "expect": [
+        "t22"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid"
+      ],
+      "latencyMs": 10.9375,
+      "returned": 1,
+      "ftsCount": 1,
+      "semanticCount": 1,
+      "semanticOnlyReturned": 0,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 1,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q18",
+      "kind": "relevance",
+      "origin": "tuned",
+      "query": "质量基准集还剩什么没做",
+      "expect": [
+        "t26"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "semantic"
+      ],
+      "latencyMs": 9.934916999999814,
+      "returned": 3,
+      "ftsCount": 1,
+      "semanticCount": 8,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 1,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 5,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q19",
+      "kind": "empty",
+      "query": "虚拟滚动 react-window 帧率优化",
+      "expect": [],
+      "ranks": [],
+      "hitAt5": false,
+      "hitAt10": false,
+      "reciprocalRank": 0,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [],
+      "latencyMs": 10.375165999999808,
+      "returned": 0,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "semanticOnlyReturned": 0,
+      "degraded": false,
+      "firstExpectedRank": 0,
+      "ftsRank": 0,
+      "semanticRank": 0,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q20",
+      "kind": "leakage",
+      "query": "401 token 刷新重放请求",
+      "expect": [],
+      "ranks": [],
+      "hitAt5": false,
+      "hitAt10": false,
+      "reciprocalRank": 0,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "fts",
+        "semantic"
+      ],
+      "latencyMs": 6.415290999999797,
+      "returned": 6,
+      "ftsCount": 5,
+      "semanticCount": 2,
+      "semanticOnlyReturned": 1,
+      "degraded": false,
+      "firstExpectedRank": 0,
+      "ftsRank": 0,
+      "semanticRank": 0,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q21",
+      "kind": "empty",
+      "query": "Kubernetes Ingress 灰度发布配置",
+      "expect": [],
+      "ranks": [],
+      "hitAt5": false,
+      "hitAt10": false,
+      "reciprocalRank": 0,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "semantic"
+      ],
+      "latencyMs": 3.2487500000002,
+      "returned": 2,
+      "ftsCount": 0,
+      "semanticCount": 4,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 0,
+      "ftsRank": 0,
+      "semanticRank": 0,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 2,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q22",
+      "kind": "empty",
+      "query": "支付回调 验签 对账差异",
+      "expect": [],
+      "ranks": [],
+      "hitAt5": false,
+      "hitAt10": false,
+      "reciprocalRank": 0,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "semantic"
+      ],
+      "latencyMs": 2.8457499999999527,
+      "returned": 2,
+      "ftsCount": 0,
+      "semanticCount": 2,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 0,
+      "ftsRank": 0,
+      "semanticRank": 0,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q23",
+      "kind": "empty",
+      "query": "iOS APNs 推送证书 续期",
+      "expect": [],
+      "ranks": [],
+      "hitAt5": false,
+      "hitAt10": false,
+      "reciprocalRank": 0,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [],
+      "latencyMs": 3.5914999999999964,
+      "returned": 0,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "semanticOnlyReturned": 0,
+      "degraded": false,
+      "firstExpectedRank": 0,
+      "ftsRank": 0,
+      "semanticRank": 0,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q24",
+      "kind": "empty",
+      "query": "Excel 导出 中文乱码 编码",
+      "expect": [],
+      "ranks": [],
+      "hitAt5": false,
+      "hitAt10": false,
+      "reciprocalRank": 0,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "semantic"
+      ],
+      "latencyMs": 2.036875000000009,
+      "returned": 1,
+      "ftsCount": 0,
+      "semanticCount": 1,
+      "semanticOnlyReturned": 1,
+      "degraded": false,
+      "firstExpectedRank": 0,
+      "ftsRank": 0,
+      "semanticRank": 0,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q25",
+      "kind": "relevance",
+      "origin": "heldout",
+      "query": "purge 之后重装会不会残留旧表",
+      "expect": [
+        "t09"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "semantic"
+      ],
+      "latencyMs": 7.994709000000057,
+      "returned": 5,
+      "ftsCount": 3,
+      "semanticCount": 5,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 1,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q26",
+      "kind": "relevance",
+      "origin": "heldout",
+      "query": "job 的类型名后来有没有改过",
+      "expect": [
+        "t10"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "semantic",
+        "fts"
+      ],
+      "latencyMs": 7.199540999999954,
+      "returned": 4,
+      "ftsCount": 3,
+      "semanticCount": 2,
+      "semanticOnlyReturned": 1,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 1,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q27",
+      "kind": "relevance",
+      "origin": "heldout",
+      "query": "干净机器上装完做过验收吗",
+      "expect": [
+        "t16"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "semantic"
+      ],
+      "latencyMs": 6.905458999999837,
+      "returned": 3,
+      "ftsCount": 1,
+      "semanticCount": 15,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 1,
+      "semanticRank": 2,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 12,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q28",
+      "kind": "relevance",
+      "origin": "heldout",
+      "query": "有没有真的跑通一整轮记忆生成",
+      "expect": [
+        "t17"
+      ],
+      "ranks": [
+        2
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 0.5,
+      "recallAt10": 1,
+      "rPrecision": 0,
+      "leaked": [],
+      "matchSources": [
+        "semantic"
+      ],
+      "latencyMs": 5.842291999999816,
+      "returned": 2,
+      "ftsCount": 0,
+      "semanticCount": 3,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 2,
+      "ftsRank": 0,
+      "semanticRank": 2,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 1,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q29",
+      "kind": "relevance",
+      "origin": "heldout",
+      "query": "两路检索结果是用什么算法合并的",
+      "expect": [
+        "t21"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "semantic"
+      ],
+      "latencyMs": 5.349332999999888,
+      "returned": 1,
+      "ftsCount": 0,
+      "semanticCount": 1,
+      "semanticOnlyReturned": 1,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 0,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q30",
+      "kind": "relevance",
+      "origin": "heldout",
+      "query": "中文界面和中文提示是怎么支持的",
+      "expect": [
+        "t24"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "semantic"
+      ],
+      "latencyMs": 5.179374999999936,
+      "returned": 1,
+      "ftsCount": 0,
+      "semanticCount": 1,
+      "semanticOnlyReturned": 1,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 0,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q31",
+      "kind": "relevance",
+      "origin": "heldout",
+      "query": "还有哪些类型错误没有修完",
+      "expect": [
+        "t25"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "semantic"
+      ],
+      "latencyMs": 9.709625000000187,
+      "returned": 3,
+      "ftsCount": 1,
+      "semanticCount": 12,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 1,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 9,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q32",
+      "kind": "relevance",
+      "origin": "heldout",
+      "query": "搜索词里带引号或括号会不会崩",
+      "expect": [
+        "t01"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "semantic"
+      ],
+      "latencyMs": 5.312040999999908,
+      "returned": 2,
+      "ftsCount": 0,
+      "semanticCount": 3,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 0,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 1,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q33",
+      "kind": "relevance",
+      "origin": "heldout",
+      "query": "向量算不出来的时候搜索还能不能用",
+      "expect": [
+        "t02"
+      ],
+      "ranks": [],
+      "hitAt5": false,
+      "hitAt10": false,
+      "reciprocalRank": 0,
+      "recallAt10": 0,
+      "rPrecision": 0,
+      "leaked": [],
+      "matchSources": [
+        "semantic"
+      ],
+      "latencyMs": 5.701000000000022,
+      "returned": 2,
+      "ftsCount": 0,
+      "semanticCount": 3,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 0,
+      "ftsRank": 0,
+      "semanticRank": 3,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 1,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q34",
+      "kind": "relevance",
+      "origin": "heldout",
+      "query": "报错日志会不会把模型原始输出写进去",
+      "expect": [
+        "t04"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "semantic"
+      ],
+      "latencyMs": 7.475875000000087,
+      "returned": 3,
+      "ftsCount": 1,
+      "semanticCount": 4,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 1,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 1,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q35",
+      "kind": "relevance",
+      "origin": "heldout",
+      "query": "改一次版本号要动几个文件",
+      "expect": [
+        "t05"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "semantic"
+      ],
+      "latencyMs": 5.823875000000044,
+      "returned": 3,
+      "ftsCount": 1,
+      "semanticCount": 4,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 1,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 1,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q36",
+      "kind": "relevance",
+      "origin": "heldout",
+      "query": "连接池里有个子进程死了会怎么处理",
+      "expect": [
+        "t07"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "semantic"
+      ],
+      "latencyMs": 5.9583339999999225,
+      "returned": 2,
+      "ftsCount": 0,
+      "semanticCount": 6,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 0,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 4,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q37",
+      "kind": "relevance",
+      "origin": "heldout",
+      "query": "模型输出解析不了会不会把这一轮丢掉",
+      "expect": [
+        "t08"
+      ],
+      "ranks": [],
+      "hitAt5": false,
+      "hitAt10": false,
+      "reciprocalRank": 0,
+      "recallAt10": 0,
+      "rPrecision": 0,
+      "leaked": [],
+      "matchSources": [
+        "semantic"
+      ],
+      "latencyMs": 7.93754100000001,
+      "returned": 2,
+      "ftsCount": 0,
+      "semanticCount": 3,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 0,
+      "ftsRank": 0,
+      "semanticRank": 3,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 1,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q38",
+      "kind": "relevance",
+      "origin": "heldout",
+      "query": "单元测试用的数据库文件放在哪里",
+      "expect": [
+        "t12"
+      ],
+      "ranks": [
+        4
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 0.25,
+      "recallAt10": 1,
+      "rPrecision": 0,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "semantic",
+        "fts"
+      ],
+      "latencyMs": 12.297917000000098,
+      "returned": 7,
+      "ftsCount": 5,
+      "semanticCount": 9,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 4,
+      "ftsRank": 0,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 4,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q39",
+      "kind": "relevance",
+      "origin": "heldout",
+      "query": "安装时少拷了一个文件会有什么现象",
+      "expect": [
+        "t13"
+      ],
+      "ranks": [],
+      "hitAt5": false,
+      "hitAt10": false,
+      "reciprocalRank": 0,
+      "recallAt10": 0,
+      "rPrecision": 0,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "semantic"
+      ],
+      "latencyMs": 10.810167000000092,
+      "returned": 3,
+      "ftsCount": 1,
+      "semanticCount": 9,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 0,
+      "ftsRank": 0,
+      "semanticRank": 3,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 6,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q40",
+      "kind": "relevance",
+      "origin": "heldout",
+      "query": "会话开头塞进去的索引占多少字节",
+      "expect": [
+        "t18"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "semantic"
+      ],
+      "latencyMs": 5.574499999999944,
+      "returned": 2,
+      "ftsCount": 0,
+      "semanticCount": 3,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 0,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 1,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q41",
+      "kind": "relevance",
+      "origin": "heldout",
+      "query": "两个不同仓库的记忆是怎么分开的",
+      "expect": [
+        "t22"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "hybrid",
+        "semantic"
+      ],
+      "latencyMs": 10.44729099999995,
+      "returned": 3,
+      "ftsCount": 1,
+      "semanticCount": 3,
+      "semanticOnlyReturned": 2,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 1,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    },
+    {
+      "id": "q42",
+      "kind": "relevance",
+      "origin": "heldout",
+      "query": "向量是多少维 用了什么量化",
+      "expect": [
+        "t23"
+      ],
+      "ranks": [
+        1
+      ],
+      "hitAt5": true,
+      "hitAt10": true,
+      "reciprocalRank": 1,
+      "recallAt10": 1,
+      "rPrecision": 1,
+      "leaked": [],
+      "matchSources": [
+        "semantic"
+      ],
+      "latencyMs": 6.434625000000096,
+      "returned": 1,
+      "ftsCount": 0,
+      "semanticCount": 1,
+      "semanticOnlyReturned": 1,
+      "degraded": false,
+      "firstExpectedRank": 1,
+      "ftsRank": 0,
+      "semanticRank": 1,
+      "protocol": "semantic-en-v1",
+      "semanticQueryRejected": null,
+      "semanticOnlyDropped": 0,
+      "discoveryRequested": true,
+      "discoveryEffective": true
+    }
+  ],
+  "allGatesOk": true
+}

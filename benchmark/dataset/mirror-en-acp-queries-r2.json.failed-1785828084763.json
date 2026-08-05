@@ -1,0 +1,113 @@
+{
+  "provenance": {
+    "source": "acp",
+    "agent": "kiro-mem-compressor",
+    "kiroCli": "kiro-cli (see report)",
+    "target": "queries",
+    "querySet": "r2",
+    "generatedAt": "2026-08-04T07:21:24.745Z",
+    "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+    "items": 61,
+    "failures": 7,
+    "retries": 26,
+    "wallTimeMs": 41807,
+    "itemLatencyMs": {
+      "p50": 26576,
+      "p95": 33943,
+      "max": 41668
+    }
+  },
+  "queries": {
+    "w09": "Which naming convention was ultimately kept in the decision",
+    "w02": "How was the deadlock in the resource pool resolved?",
+    "w32": "What was measured in that 487-byte reading?",
+    "w40": "Which project is the 620KB number from?",
+    "w08": "What was the semantic floor finally set to",
+    "w05": "How was the version drift check added?",
+    "w26": "Did the end-to-end round cover the interactive session?",
+    "w25": "Which step was manually bypassed during acceptance testing at the time?",
+    "w04": "What changed after moving test isolation to a temp directory?",
+    "w44": "What happens if the validation isn't done?",
+    "w24": "What pitfalls have been hit with idempotency?",
+    "w22": "After redaction, can you still tell which type of failure it was?",
+    "n28": "How to handle backpressure in gRPC bidirectional streaming",
+    "w21": "Which escaping ruleset is this based on?",
+    "w06": "Have both the byte budget and the scope filtering been verified?",
+    "n11": "How is the time-based retention cleanup policy configured?",
+    "w03": "What is workspace isolation implemented with",
+    "w42": "What exactly is this fusion step computing",
+    "n12": "How do I delete a single Observation",
+    "w23": "What are the consequences if something is missing from the manifest?",
+    "n31": "How do I release the Terraform state lock?",
+    "w38": "Why wasn't the dependency download step verified?",
+    "n21": "How do I write data validation for the data migration?",
+    "w37": "Does the silent failure end within a few seconds?",
+    "w33": "What did that fix for 131 pass",
+    "w31": "Where does the 23M come from",
+    "n13": "What is the command to export as JSON",
+    "w01": "Can you still search for anything after a timeout degrade?",
+    "n20": "How is service discovery done between the server and the client?",
+    "w48": "how do I switch the language for the description copy",
+    "n19": "Which layer should the unified entry point for exception handling be placed at?",
+    "w27": "So did we end up keeping auth or dropping it?",
+    "w51": "Who's in charge of the keepalive stuff?",
+    "n01": "What should I do about yellowing leaves on the tomatoes I'm growing on my balcony?",
+    "w34": "What are the three type errors, respectively?",
+    "w52": "Which quantization level was chosen?",
+    "n14": "Which vector database did we end up choosing?",
+    "w30": "What did the cleanup action do before install",
+    "w49": "Why can't the import path be resolved?",
+    "w10": "How is the priority of the quality benchmark set determined?",
+    "n15": "how does cross-encoder reranking get plugged in",
+    "w28": "Which layer should the boundary value validation be added to?",
+    "w07": "What's the conclusion on privacy redaction in the failure path?",
+    "w47": "How big is that injected thing?",
+    "w29": "How is localization hooked in?",
+    "w41": "What exactly happens during degradation",
+    "n22": "Where does the test data in the test environment come from?",
+    "n25": "How is the model version managed for model training?",
+    "n16": "How are field-level multi-vectors stored?",
+    "n18": "How do you control the canary/gray release in the release process?",
+    "n02": "What's the difference between a latte and a cappuccino",
+    "n26": "Where are the startup parameters and startup order defined?",
+    "w35": "if writes happen out of order, can they still come out in order?",
+    "w39": "Did the evaluation script exist at that time?",
+    "w43": "How was the leak confirmed?",
+    "w45": "Before isolation was implemented, where would it get written to?",
+    "n27": "How do you do slot migration for Redis Cluster",
+    "n24": "How are failure reasons for retry-on-failure classified?",
+    "w36": "How was the 'no fabricated conclusions' point verified?",
+    "n23": "Can the installation path of the package be changed?",
+    "n10": "What framework is the Web Viewer's frontend written in"
+  },
+  "failuresDetail": [
+    {
+      "id": "w50",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "n05",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "n09",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "w46",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "n17",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "n04",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "n03",
+      "reason": "JSON 解析失败"
+    }
+  ]
+}

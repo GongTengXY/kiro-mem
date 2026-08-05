@@ -1,0 +1,291 @@
+{
+  "provenance": {
+    "source": "merged-acp-runs",
+    "target": "queries",
+    "querySet": "r2",
+    "inputs": [
+      {
+        "path": "/tmp/r2-76.json",
+        "provenance": {
+          "source": "merged-acp-runs",
+          "target": "queries",
+          "querySet": "r2",
+          "inputs": [
+            {
+              "path": "/tmp/r2-main.json",
+              "provenance": {
+                "source": "merged-acp-runs",
+                "target": "queries",
+                "querySet": "r2",
+                "inputs": [
+                  {
+                    "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-queries-r2.json.failed-1785828084763.json",
+                    "provenance": {
+                      "source": "acp",
+                      "agent": "kiro-mem-compressor",
+                      "kiroCli": "kiro-cli (see report)",
+                      "target": "queries",
+                      "querySet": "r2",
+                      "generatedAt": "2026-08-04T07:21:24.745Z",
+                      "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+                      "items": 61,
+                      "failures": 7,
+                      "retries": 26,
+                      "wallTimeMs": 41807,
+                      "itemLatencyMs": {
+                        "p50": 26576,
+                        "p95": 33943,
+                        "max": 41668
+                      }
+                    }
+                  },
+                  {
+                    "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-queries-r2.json.failed-1785828115943.json",
+                    "provenance": {
+                      "source": "acp",
+                      "agent": "kiro-mem-compressor",
+                      "kiroCli": "kiro-cli (see report)",
+                      "target": "queries",
+                      "querySet": "r2",
+                      "generatedAt": "2026-08-04T07:21:55.943Z",
+                      "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+                      "items": 4,
+                      "failures": 3,
+                      "retries": 4,
+                      "wallTimeMs": 19574,
+                      "itemLatencyMs": {
+                        "p50": 14883,
+                        "p95": 19570,
+                        "max": 19570
+                      }
+                    }
+                  },
+                  {
+                    "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-queries-r2.json.failed-1785828142544.json",
+                    "provenance": {
+                      "source": "acp",
+                      "agent": "kiro-mem-compressor",
+                      "kiroCli": "kiro-cli (see report)",
+                      "target": "queries",
+                      "querySet": "r2",
+                      "generatedAt": "2026-08-04T07:22:22.544Z",
+                      "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+                      "items": 2,
+                      "failures": 1,
+                      "retries": 1,
+                      "wallTimeMs": 17870,
+                      "itemLatencyMs": {
+                        "p50": 11443,
+                        "p95": 17867,
+                        "max": 17867
+                      }
+                    }
+                  },
+                  {
+                    "path": "/tmp/r2-n04.json",
+                    "provenance": {
+                      "source": "acp",
+                      "agent": "kiro-mem-compressor",
+                      "kiroCli": "kiro-cli (see report)",
+                      "target": "queries",
+                      "querySet": "r2",
+                      "generatedAt": "2026-08-04T07:23:47.045Z",
+                      "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+                      "items": 1,
+                      "failures": 0,
+                      "retries": 1,
+                      "wallTimeMs": 15456,
+                      "itemLatencyMs": {
+                        "p50": 15456,
+                        "p95": 15456,
+                        "max": 15456
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-queries-r2.json.failed-1785828211510.json",
+              "provenance": {
+                "source": "acp",
+                "agent": "kiro-mem-compressor",
+                "kiroCli": "kiro-cli (see report)",
+                "target": "queries",
+                "querySet": "r2",
+                "generatedAt": "2026-08-04T07:23:31.510Z",
+                "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+                "items": 0,
+                "failures": 1,
+                "retries": 1,
+                "wallTimeMs": 16866,
+                "itemLatencyMs": {
+                  "p50": 16865,
+                  "p95": 16865,
+                  "max": 16865
+                }
+              }
+            },
+            {
+              "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-queries-r2.json.failed-1785828517623.json",
+              "provenance": {
+                "source": "acp",
+                "agent": "kiro-mem-compressor",
+                "kiroCli": "kiro-cli (see report)",
+                "target": "queries",
+                "querySet": "r2",
+                "generatedAt": "2026-08-04T07:28:37.623Z",
+                "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+                "items": 8,
+                "failures": 2,
+                "retries": 4,
+                "wallTimeMs": 24539,
+                "itemLatencyMs": {
+                  "p50": 16537,
+                  "p95": 24538,
+                  "max": 24538
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "path": "/tmp/r2-last2.json",
+        "provenance": {
+          "source": "acp",
+          "agent": "kiro-mem-compressor",
+          "kiroCli": "kiro-cli (see report)",
+          "target": "queries",
+          "querySet": "r2",
+          "generatedAt": "2026-08-04T07:29:32.806Z",
+          "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+          "items": 2,
+          "failures": 0,
+          "retries": 1,
+          "wallTimeMs": 15719,
+          "itemLatencyMs": {
+            "p50": 7971,
+            "p95": 15717,
+            "max": 15717
+          }
+        }
+      }
+    ],
+    "identityFilled": [
+      "w11",
+      "w12",
+      "w13",
+      "w14",
+      "w15",
+      "w16",
+      "w17",
+      "w18",
+      "w19",
+      "w20",
+      "n06",
+      "n07",
+      "n08",
+      "n29",
+      "n30",
+      "n32"
+    ],
+    "identityNote": "纯英文 query 的派生值合法地等于原文（护栏允许英文原文归一化为自身）。非新的生成事件，是规则 §2.5 预见的机械补齐。"
+  },
+  "queries": {
+    "w09": "Which naming convention was ultimately kept in the decision",
+    "w02": "How was the deadlock in the resource pool resolved?",
+    "w32": "What was measured in that 487-byte reading?",
+    "w40": "Which project is the 620KB number from?",
+    "w08": "What was the semantic floor finally set to",
+    "w05": "How was the version drift check added?",
+    "w26": "Did the end-to-end round cover the interactive session?",
+    "w25": "Which step was manually bypassed during acceptance testing at the time?",
+    "w04": "What changed after moving test isolation to a temp directory?",
+    "w44": "What happens if the validation isn't done?",
+    "w24": "What pitfalls have been hit with idempotency?",
+    "w22": "After redaction, can you still tell which type of failure it was?",
+    "n28": "How to handle backpressure in gRPC bidirectional streaming",
+    "w21": "Which escaping ruleset is this based on?",
+    "w06": "Have both the byte budget and the scope filtering been verified?",
+    "n11": "How is the time-based retention cleanup policy configured?",
+    "w03": "What is workspace isolation implemented with",
+    "w42": "What exactly is this fusion step computing",
+    "n12": "How do I delete a single Observation",
+    "w23": "What are the consequences if something is missing from the manifest?",
+    "n31": "How do I release the Terraform state lock?",
+    "w38": "Why wasn't the dependency download step verified?",
+    "n21": "How do I write data validation for the data migration?",
+    "w37": "Does the silent failure end within a few seconds?",
+    "w33": "What did that fix for 131 pass",
+    "w31": "Where does the 23M come from",
+    "n13": "What is the command to export as JSON",
+    "w01": "Can you still search for anything after a timeout degrade?",
+    "n20": "How is service discovery done between the server and the client?",
+    "w48": "how do I switch the language for the description copy",
+    "n19": "Which layer should the unified entry point for exception handling be placed at?",
+    "w27": "So did we end up keeping auth or dropping it?",
+    "w51": "Who's in charge of the keepalive stuff?",
+    "n01": "What should I do about yellowing leaves on the tomatoes I'm growing on my balcony?",
+    "w34": "What are the three type errors, respectively?",
+    "w52": "Which quantization level was chosen?",
+    "n14": "Which vector database did we end up choosing?",
+    "w30": "What did the cleanup action do before install",
+    "w49": "Why can't the import path be resolved?",
+    "w10": "How is the priority of the quality benchmark set determined?",
+    "n15": "how does cross-encoder reranking get plugged in",
+    "w28": "Which layer should the boundary value validation be added to?",
+    "w07": "What's the conclusion on privacy redaction in the failure path?",
+    "w47": "How big is that injected thing?",
+    "w29": "How is localization hooked in?",
+    "w41": "What exactly happens during degradation",
+    "n22": "Where does the test data in the test environment come from?",
+    "n25": "How is the model version managed for model training?",
+    "n16": "How are field-level multi-vectors stored?",
+    "n18": "How do you control the canary/gray release in the release process?",
+    "n02": "What's the difference between a latte and a cappuccino",
+    "n26": "Where are the startup parameters and startup order defined?",
+    "w35": "if writes happen out of order, can they still come out in order?",
+    "w39": "Did the evaluation script exist at that time?",
+    "w43": "How was the leak confirmed?",
+    "w45": "Before isolation was implemented, where would it get written to?",
+    "n27": "How do you do slot migration for Redis Cluster",
+    "n24": "How are failure reasons for retry-on-failure classified?",
+    "w36": "How was the 'no fabricated conclusions' point verified?",
+    "n23": "Can the installation path of the package be changed?",
+    "n10": "What framework is the Web Viewer's frontend written in",
+    "w46": "How was the drift detected?",
+    "n17": "Which config file has the default values for the config options written in it?",
+    "n09": "Which protocol is used for cross-machine memory sync",
+    "w50": "What happens if it still fails after retrying to the end?",
+    "n03": "What can I do about my cat parkouring around in the middle of the night?",
+    "n05": "How much cured meat should I put in yanducxian?",
+    "n04": "When learning guitar, should I practice chords first or scales first?",
+    "w61": "Which key is used for anchoring",
+    "w62": "What are the ones that aren't finished yet?",
+    "w54": "What did we decide on naming that time?",
+    "w58": "narrowed down to a few places",
+    "w59": "What was verified for the privacy part?",
+    "w60": "What did I change in that fail-fast fix",
+    "w57": "where does the priority rank",
+    "w56": "Covered up to which step?",
+    "w53": "Will running concurrently cause a collision?",
+    "w55": "Did we add it back after bypassing it?",
+    "w11": "AgentSpawn hook Worker restart",
+    "w12": "all-MiniLM-L6-v2 q8 384 dimensions",
+    "w13": "PACKAGE_VERSION npm pack single source",
+    "w14": "computeScopeKey all_scopes leakage",
+    "w15": "KIRO_MEMORY_DATA_DIR bunfig preload",
+    "w16": "ACPPool recycle slot concurrency",
+    "w17": "fallback quality job retry integration test",
+    "w18": "TS2345 typecheck auth middleware",
+    "w19": "timeline source turn mode scope",
+    "w20": "RRF hybrid search cosine floor",
+    "n06": "how long should sourdough proof before baking",
+    "n07": "best way to break in stiff leather boots",
+    "n08": "why does my basil keep wilting indoors",
+    "n29": "how do I rotate the signing key monthly",
+    "n30": "what is the p99 of the write path under load",
+    "n32": "configure sharding for the metrics store"
+  }
+}

@@ -1,0 +1,830 @@
+{
+  "provenance": {
+    "owner": "Codex",
+    "audit_protocol": "gate-b-blind-v2",
+    "created_after": "phase2b-policy-freeze",
+    "source_material": [
+      "benchmark/dataset/turns.json",
+      "benchmark/dataset/mirror-en-acp-records.json",
+      "benchmark/dataset/mirror-en-acp-records-other.json"
+    ],
+    "source_checksums": {
+      "turns.json": "aa8f9beda2a4f90320455ff2756815d5b6271977044d5820a76df489bdb533e0",
+      "mirror-en-acp-records.json": "cf44a10339c58b767debf585d457a70d3480bbca6901dc266f5954abd9112119",
+      "mirror-en-acp-records-other.json": "7678e8d796d8bef1b25f2098b39aed3399c3d37c7ac03a7d3ba21e922d41814c"
+    },
+    "selected_policy_aggregate_results_seen_before_creation": true,
+    "selected_policy_returns_for_this_audit_seen_before_freeze": false,
+    "allowed_pre_freeze_check": "FTS-only candidate count; no semantic search",
+    "queries_modified_after_selected_policy_run": false,
+    "scope": "cwd:/codex-gate-b-audit",
+    "notes": "This is a new query set. It is frozen after the FTS-only zero-anchor check and before its first selected-policy run. Prior aggregate and other-set results are disclosed, but no result for any query in this file was viewed while creating or editing it.",
+    "policy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "recency"
+    },
+    "inputPath": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/reports/phase2b-codex-blind-audit-input.json",
+    "inputSha256": "dc9a0ba59f1e6d638d71aed775e075da52eb0beda566678a77a88e58832f44e5",
+    "expectedInputSha256": "dc9a0ba59f1e6d638d71aed775e075da52eb0beda566678a77a88e58832f44e5",
+    "runMode": "semantic",
+    "commandLine": [
+      "/Users/lixinjie/.bun/bin/bun",
+      "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/run-codex-phase2b-audit.ts",
+      "--input=benchmark/reports/phase2b-codex-blind-audit-input.json",
+      "--report=benchmark/reports/phase2b-codex-blind-audit.md",
+      "--json=benchmark/reports/phase2b-codex-blind-audit.json",
+      "--expected-input-sha256=dc9a0ba59f1e6d638d71aed775e075da52eb0beda566678a77a88e58832f44e5"
+    ],
+    "generatedAt": "2026-07-31T14:22:39.637Z"
+  },
+  "summary": {
+    "relevanceQueries": 20,
+    "relevanceHitAt5": 1,
+    "relevanceMrr": 1,
+    "emptyQueries": 20,
+    "emptyMeanReturned": 0.3,
+    "emptyWorstReturned": 2,
+    "allFtsCountsZero": true,
+    "maxSemanticOnlyReturned": 2
+  },
+  "rows": [
+    {
+      "id": "cb-r01",
+      "kind": "relevance",
+      "query": "池内替身没能生成，后来调用怎样摆脱无期等待",
+      "expect": "t07",
+      "ftsCount": 0,
+      "semanticCount": 4,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 7,
+          "match_source": "semantic",
+          "semantic_score": 0.4985618305900009
+        },
+        {
+          "id": 2,
+          "match_source": "semantic",
+          "semantic_score": 0.33438642526565154
+        }
+      ]
+    },
+    {
+      "id": "cb-r02",
+      "kind": "relevance",
+      "query": "多轮归纳皆未成功时，最终条目应呈现何种保守信息",
+      "expect": "t08",
+      "ftsCount": 0,
+      "semanticCount": 12,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 8,
+          "match_source": "semantic",
+          "semantic_score": 0.4441027833055066
+        },
+        {
+          "id": 4,
+          "match_source": "semantic",
+          "semantic_score": 0.4235342300994459
+        }
+      ]
+    },
+    {
+      "id": "cb-r03",
+      "kind": "relevance",
+      "query": "彻底卸载再部署的沙箱试验如何避免碰宿主环境",
+      "expect": "t09",
+      "ftsCount": 0,
+      "semanticCount": 9,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 9,
+          "match_source": "semantic",
+          "semantic_score": 0.4149487675029967
+        },
+        {
+          "id": 12,
+          "match_source": "semantic",
+          "semantic_score": 0.3945405810822875
+        }
+      ]
+    },
+    {
+      "id": "cb-r04",
+      "kind": "relevance",
+      "query": "为何后台任务没有追加代际后缀",
+      "expect": "t10",
+      "ftsCount": 0,
+      "semanticCount": 8,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 10,
+          "match_source": "semantic",
+          "semantic_score": 0.6136670251124482
+        },
+        {
+          "id": 5,
+          "match_source": "semantic",
+          "semantic_score": 0.36684614847512187
+        }
+      ]
+    },
+    {
+      "id": "cb-r05",
+      "kind": "relevance",
+      "query": "回环端口的秘密串丢失之后，访问控制应采取什么姿态",
+      "expect": "t11",
+      "ftsCount": 0,
+      "semanticCount": 3,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 11,
+          "match_source": "semantic",
+          "semantic_score": 0.5425065532559015
+        },
+        {
+          "id": 19,
+          "match_source": "semantic",
+          "semantic_score": 0.2865881596524813
+        }
+      ]
+    },
+    {
+      "id": "cb-r06",
+      "kind": "relevance",
+      "query": "测试套件启动前怎样把所有落盘位置导向沙盒",
+      "expect": "t12",
+      "ftsCount": 0,
+      "semanticCount": 16,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 12,
+          "match_source": "semantic",
+          "semantic_score": 0.5395369988467966
+        },
+        {
+          "id": 15,
+          "match_source": "semantic",
+          "semantic_score": 0.33127119172173247
+        }
+      ]
+    },
+    {
+      "id": "cb-r07",
+      "kind": "relevance",
+      "query": "部署物漏件为何会导致守护进程无法装载",
+      "expect": "t13",
+      "ftsCount": 0,
+      "semanticCount": 13,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 13,
+          "match_source": "semantic",
+          "semantic_score": 0.596318882849914
+        },
+        {
+          "id": 14,
+          "match_source": "semantic",
+          "semantic_score": 0.41794036102067295
+        }
+      ]
+    },
+    {
+      "id": "cb-r08",
+      "kind": "relevance",
+      "query": "覆盖程序文件后为什么需要强制替换驻留进程",
+      "expect": "t14",
+      "ftsCount": 0,
+      "semanticCount": 14,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 14,
+          "match_source": "semantic",
+          "semantic_score": 0.5732729367449596
+        },
+        {
+          "id": 19,
+          "match_source": "semantic",
+          "semantic_score": 0.37990308871578277
+        }
+      ]
+    },
+    {
+      "id": "cb-r09",
+      "kind": "relevance",
+      "query": "怎样比较磁盘发行号与活动服务自报值来识别陈旧实例",
+      "expect": "t15",
+      "ftsCount": 0,
+      "semanticCount": 17,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 15,
+          "match_source": "semantic",
+          "semantic_score": 0.5086551544306721
+        },
+        {
+          "id": 5,
+          "match_source": "semantic",
+          "semantic_score": 0.4016022126818383
+        }
+      ]
+    },
+    {
+      "id": "cb-r10",
+      "kind": "relevance",
+      "query": "一台空白苹果电脑上验收部署时需要交叉核对哪三类状态",
+      "expect": "t16",
+      "ftsCount": 0,
+      "semanticCount": 11,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 16,
+          "match_source": "semantic",
+          "semantic_score": 0.5872027319503332
+        },
+        {
+          "id": 19,
+          "match_source": "semantic",
+          "semantic_score": 0.3873093185831338
+        }
+      ]
+    },
+    {
+      "id": "cb-r11",
+      "kind": "relevance",
+      "query": "整段会话结束以后，怎样确认保存的结论忠于实际操作且数值表示已就绪",
+      "expect": "t17",
+      "ftsCount": 0,
+      "semanticCount": 16,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 17,
+          "match_source": "semantic",
+          "semantic_score": 0.6456078801988961
+        },
+        {
+          "id": 20,
+          "match_source": "semantic",
+          "semantic_score": 0.40911668552268143
+        }
+      ]
+    },
+    {
+      "id": "cb-r12",
+      "kind": "relevance",
+      "query": "新会话附带的历史索引离载荷上限还有多少余量",
+      "expect": "t18",
+      "ftsCount": 0,
+      "semanticCount": 7,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 18,
+          "match_source": "semantic",
+          "semantic_score": 0.6380963696074465
+        },
+        {
+          "id": 23,
+          "match_source": "semantic",
+          "semantic_score": 0.29727367028638896
+        }
+      ]
+    },
+    {
+      "id": "cb-r13",
+      "kind": "relevance",
+      "query": "守护程序骤停期间，前台扩展须验证响应时间以及敏感正文不外流",
+      "expect": "t19",
+      "ftsCount": 0,
+      "semanticCount": 13,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 19,
+          "match_source": "semantic",
+          "semantic_score": 0.5094869028618577
+        },
+        {
+          "id": 3,
+          "match_source": "semantic",
+          "semantic_score": 0.4335401545349343
+        }
+      ]
+    },
+    {
+      "id": "cb-r14",
+      "kind": "relevance",
+      "query": "异步生成记录导致主键乱序后，相邻事件应该依据哪组事实排序",
+      "expect": "t20",
+      "ftsCount": 0,
+      "semanticCount": 2,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 20,
+          "match_source": "semantic",
+          "semantic_score": 0.6617254843287635
+        },
+        {
+          "id": 21,
+          "match_source": "semantic",
+          "semantic_score": 0.27988805561222696
+        }
+      ]
+    },
+    {
+      "id": "cb-r15",
+      "kind": "relevance",
+      "query": "两种候选列表按名次合并时如何过滤仅靠向量出现的低置信项",
+      "expect": "t21",
+      "ftsCount": 0,
+      "semanticCount": 3,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 21,
+          "match_source": "semantic",
+          "semantic_score": 0.5208504629860946
+        },
+        {
+          "id": 10,
+          "match_source": "semantic",
+          "semantic_score": 0.19939999341542997
+        }
+      ]
+    },
+    {
+      "id": "cb-r16",
+      "kind": "relevance",
+      "query": "仓库归属标签何以需在资料生成时确定，方可阻断别处读取",
+      "expect": "t22",
+      "ftsCount": 0,
+      "semanticCount": 16,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 22,
+          "match_source": "semantic",
+          "semantic_score": 0.5915097885514383
+        },
+        {
+          "id": 18,
+          "match_source": "semantic",
+          "semantic_score": 0.35855999187830845
+        }
+      ]
+    },
+    {
+      "id": "cb-r17",
+      "kind": "relevance",
+      "query": "离线附送的编码器用了八位量化后仍会产出多少个浮点分量",
+      "expect": "t23",
+      "ftsCount": 0,
+      "semanticCount": 4,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 23,
+          "match_source": "semantic",
+          "semantic_score": 0.5843435618591496
+        },
+        {
+          "id": 2,
+          "match_source": "semantic",
+          "semantic_score": 0.2983213945297067
+        }
+      ]
+    },
+    {
+      "id": "cb-r18",
+      "kind": "relevance",
+      "query": "代理可见的命令说明如何随语言设置切换措辞",
+      "expect": "t24",
+      "ftsCount": 0,
+      "semanticCount": 8,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 24,
+          "match_source": "semantic",
+          "semantic_score": 0.6203079975028737
+        },
+        {
+          "id": 18,
+          "match_source": "semantic",
+          "semantic_score": 0.27884056238638705
+        }
+      ]
+    },
+    {
+      "id": "cb-r19",
+      "kind": "relevance",
+      "query": "认证中间层的可空凭据造成了哪些静态类型诊断",
+      "expect": "t25",
+      "ftsCount": 0,
+      "semanticCount": 6,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 25,
+          "match_source": "semantic",
+          "semantic_score": 0.47339124677272937
+        },
+        {
+          "id": 11,
+          "match_source": "semantic",
+          "semantic_score": 0.39936861786853795
+        }
+      ]
+    },
+    {
+      "id": "cb-r20",
+      "kind": "relevance",
+      "query": "团队先行体验可以欠缺质量样本，为何面向外界交付前却不可省略",
+      "expect": "t26",
+      "ftsCount": 0,
+      "semanticCount": 6,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 26,
+          "match_source": "semantic",
+          "semantic_score": 0.6310450702640553
+        },
+        {
+          "id": 17,
+          "match_source": "semantic",
+          "semantic_score": 0.31964435218620135
+        }
+      ]
+    },
+    {
+      "id": "cb-e01",
+      "kind": "empty",
+      "query": "手冲咖啡水温与研磨粗细怎样配合",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "cb-e02",
+      "kind": "empty",
+      "query": "小提琴琴码弧度影响弓毛触弦吗",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "cb-e03",
+      "kind": "empty",
+      "query": "蝴蝶兰换盆后多久恢复施肥",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 3,
+      "returned": 2,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": [
+        {
+          "id": 2,
+          "match_source": "semantic",
+          "semantic_score": 0.2122106177444808
+        },
+        {
+          "id": 3,
+          "match_source": "semantic",
+          "semantic_score": 0.20851196284492876
+        }
+      ]
+    },
+    {
+      "id": "cb-e04",
+      "kind": "empty",
+      "query": "反射式望远镜如何校准光轴",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "cb-e05",
+      "kind": "empty",
+      "query": "陶瓷釉料在窑烧中为什么会产生针孔",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "cb-e06",
+      "kind": "empty",
+      "query": "国际象棋车兵残局怎样判断胜和",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "cb-e07",
+      "kind": "empty",
+      "query": "水肺潜水时怎样调整中性浮力",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "cb-e08",
+      "kind": "empty",
+      "query": "编织毛衣前如何用小样换算针数",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "cb-e09",
+      "kind": "empty",
+      "query": "意式浓缩萃取过快该调整哪些变量",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 3,
+      "returned": 2,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": [
+        {
+          "id": 2,
+          "match_source": "semantic",
+          "semantic_score": 0.2693260924928812
+        },
+        {
+          "id": 18,
+          "match_source": "semantic",
+          "semantic_score": 0.2272940494635904
+        }
+      ]
+    },
+    {
+      "id": "cb-e10",
+      "kind": "empty",
+      "query": "公路自行车外胎宽度如何影响滚阻",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "cb-e11",
+      "kind": "empty",
+      "query": "日全食摄影应怎样选择减光镜",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "cb-e12",
+      "kind": "empty",
+      "query": "蜂群更换蜂王后怎样确认接受成功",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "cb-e13",
+      "kind": "empty",
+      "query": "草缸硝酸盐偏高该如何控制",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "cb-e14",
+      "kind": "empty",
+      "query": "钢琴十二平均律调音从哪个音开始",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "cb-e15",
+      "kind": "empty",
+      "query": "酸面包面团含水率过高怎样折叠整形",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "cb-e16",
+      "kind": "empty",
+      "query": "海水缸珊瑚白化与光照强度有什么关系",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "cb-e17",
+      "kind": "empty",
+      "query": "木工燕尾榫的斜率如何选择",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "cb-e18",
+      "kind": "empty",
+      "query": "羽毛球拍穿线磅数影响甜区大小吗",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "cb-e19",
+      "kind": "empty",
+      "query": "家庭酿酒发酵停滞如何判断酵母状态",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 5,
+      "returned": 2,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": [
+        {
+          "id": 15,
+          "match_source": "semantic",
+          "semantic_score": 0.28845488079894843
+        },
+        {
+          "id": 19,
+          "match_source": "semantic",
+          "semantic_score": 0.2747424953461261
+        }
+      ]
+    },
+    {
+      "id": "cb-e20",
+      "kind": "empty",
+      "query": "观鸟时如何根据翼斑区分近似种",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    }
+  ]
+}

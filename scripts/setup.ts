@@ -193,6 +193,7 @@ interface BootstrapConfig {
     maxOutputBytes: number;
   };
   filter: { skipTools: string[] };
+  retrieval: { semanticDiscovery: boolean };
   runtime: { kiroHome: string };
 }
 
@@ -205,6 +206,9 @@ function defaultConfig(language: Language): BootstrapConfig {
       maxOutputBytes: 8192,
     },
     filter: { skipTools: ['introspect', 'todo_list', '@kiro-mem/*'] },
+    // Written explicitly rather than left to the loader default so the rollback
+    // switch is discoverable in the file the user actually opens.
+    retrieval: { semanticDiscovery: true },
     // Empty means "use the default under dataDir" (see resolveRuntimeHome).
     // Writing the resolved absolute path here instead would freeze the data dir
     // into the config file and make the setting look user-chosen when it isn't.
@@ -601,6 +605,9 @@ async function configCmd() {
     console.log(
       `  ${m.runtimeHomeLabel}      ${ansi.cyan(resolveRuntimeHome(r.kiroHome, DATA_DIR))}`,
     );
+    console.log(
+      `  ${m.discoveryLabel}  ${current.retrieval?.semanticDiscovery === false ? ansi.warn('off (rollback)') : ansi.cyan('on')}`,
+    );
     return;
   }
 
@@ -980,8 +987,44 @@ try {
         `  ${padLabel(m.diagJobsLabel, 14)}${ansi.cyan(String(s.jobs.pending))} ${m.diagJobsPending} / ${ansi.cyan(String(s.jobs.leased))} ${m.diagJobsLeased} / ${ansi.cyan(String(s.jobs.dead))} ${m.diagJobsDead}`,
       );
       console.log(
-        `  ${padLabel(m.diagSearch, 14)}${ansi.cyan(String(s.search24h.requests))} / ${ansi.cyan(pct(s.search24h.degradeRate))} ${m.diagDegrade} / p95 ${ansi.cyan(`${s.search24h.latencyMsP95}ms`)}`,
+        `  ${padLabel(m.diagSearch, 14)}${ansi.cyan(String(s.search24h.requests))} / ${ansi.cyan(pct(s.search24h.degradeRate))} ${m.diagDegrade} / p50 ${ansi.cyan(`${s.search24h.latencyMsP50}ms`)} / p95 ${ansi.cyan(`${s.search24h.latencyMsP95}ms`)}`,
       );
+      // Independent semantic recall (phase 2C) only works in the English vector
+      // space, so its coverage is the number that decides whether the feature is
+      // actually reachable in this install — not the offline benchmark.
+      const cfgRetrieval = (() => {
+        try {
+          const raw = JSON.parse(readFileSync(configPath, 'utf-8'));
+          return raw?.retrieval?.semanticDiscovery !== false;
+        } catch {
+          return true;
+        }
+      })();
+      console.log(
+        `  ${padLabel(m.diagDiscovery, 14)}${cfgRetrieval ? ansi.cyan('on') : ansi.warn('off (rollback)')} ${ansi.dim(`· ${m.diagSemanticEn} ${pct(s.search24h.semanticEnRate)} (${s.search24h.protocolSemanticEn}/${s.search24h.requests})`)}`,
+      );
+      if (s.search24h.zeroFts > 0 || s.search24h.semanticOnlyTotal > 0) {
+        console.log(
+          `  ${padLabel(m.diagZeroFts, 14)}${ansi.cyan(`${s.search24h.zeroFtsRecalled}/${s.search24h.zeroFts}`)} ${ansi.dim(`· ${m.diagSemanticOnly} ${s.search24h.semanticOnlyPerRequest} ${m.diagPerRequest} / max ${s.search24h.semanticOnlyMax}`)}`,
+        );
+      }
+      // scope 内向量数（方案 §8.2）：语义召回在这个 workspace 上到底有没有可能。
+      // 只在测量过的请求上报，`emptyScopeRequests` 非 0 时升级成告警——那批请求的
+      // 语义腿是结构性不可能，不是"没有相关记录"。
+      if (s.search24h.scopeVectorsMeasured > 0) {
+        const empty = s.search24h.emptyScopeRequests;
+        console.log(
+          `  ${empty > 0 ? `${ansi.warn('⚠')} ` : ''}${padLabel(m.diagScopeVectors, empty > 0 ? 12 : 14)} ${ansi.cyan(String(s.search24h.scopeVectorsAvg))} ${ansi.dim(`· min ${s.search24h.scopeVectorsMin} · ${m.diagEmptyScope} ${empty}/${s.search24h.scopeVectorsMeasured}`)}`,
+        );
+      }
+      // Only when something was actually refused or omitted: a healthy install
+      // where the agent always passes the English form should stay quiet.
+      const issues = Object.entries(s.search24h.semanticQueryIssues);
+      if (issues.length > 0) {
+        console.log(
+          `  ${ansi.warn('⚠')} ${padLabel(m.diagSemanticQueryIssues, 12)} ${ansi.dim(issues.map(([r, c]) => `${r}:${c}`).join(' '))}`,
+        );
+      }
       console.log(
         `  ${padLabel(m.diagAcpWindow, 14)}${m.diagRepairs}: ${ansi.cyan(String(s.acp24h.repairs))} / ${m.diagContam}: ${ansi.cyan(String(s.acp24h.contaminations))}`,
       );

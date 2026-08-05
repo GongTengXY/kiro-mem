@@ -11,7 +11,7 @@ import { createWorkerEmbedder } from '../worker-embedder';
 import { checkSemanticEnQuery, QUERY_MAX_CHARS } from '../semantic-en';
 import { logError } from '../logger';
 import { PACKAGE_VERSION } from '../version';
-import { hybridSearchObservations } from './observation-search';
+import { hybridSearchObservations, resolveRetrievalPolicy } from './observation-search';
 import { MissingSearchScopeError, resolveScopeKey } from './mcp-scope';
 
 const db = new MemoryDB();
@@ -23,6 +23,23 @@ const isEnglish = config.language === 'en';
  * the Worker, which is the one place a model lives per dataDir (§5.4).
  */
 const workerEmbedder = createWorkerEmbedder();
+
+/**
+ * The retrieval strategy this process serves every `search` with.
+ *
+ * Resolved ONCE at module load from the gray-release switch, so every request in
+ * a session runs the same policy and the per-request metrics can be attributed
+ * to one profile. Flipping `retrieval.semanticDiscovery` in
+ * `~/.kiro-mem/config.json` takes effect for MCP servers started afterwards —
+ * the next Kiro session — which is also the rollback path documented in the
+ * README.
+ *
+ * There is no environment variable and no tool parameter: phase 2B used a
+ * process-level env seam to test the real MCP path before the default changed,
+ * and it is gone. A retrieval strategy that any inherited env could change would
+ * make the shipped behavior unknowable from the config file.
+ */
+const retrievalPolicy = resolveRetrievalPolicy(config.retrieval.semanticDiscovery);
 
 /**
  * Resolve the default search scope from the active Kiro session. Kiro injects
@@ -363,6 +380,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     const startedAt = Date.now();
     let degraded = false;
+    // Per-request observability (plan §8.2). Counts, enum reasons and latency
+    // only — never the query text, never Observation text. `protocol` and
+    // `rejectReason` are what make "the English space did not help" separable
+    // from "the agent never passed semantic_query_en", which is the whole
+    // question the 2C gray release has to answer.
+    //
+    // Flat locals rather than one object: the kernel reports through callbacks,
+    // and a nullable object assigned inside a callback reads as never-assigned to
+    // the type checker at the recording site.
+    let protocol: string | undefined;
+    let rejectReason: string | null = null;
+    let ftsCount: number | undefined;
+    let semanticCount: number | undefined;
+    let comparableVectors: number | undefined;
+    let scopeVectors: number | null = null;
+    let discoveryEffective: boolean | undefined;
+    let semanticOnly = 0;
     const results = await hybridSearchObservations(db, a.query, {
       scopeKey, type: a.type as string | undefined, days, limit,
       semanticQueryEn: semanticQueryEn || undefined,
@@ -370,8 +404,34 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       // The Worker owns the only model instance; this process must not load one.
       generateEmbedding: workerEmbedder,
       onDegrade: () => { degraded = true; },
+      policy: retrievalPolicy,
+      onCandidates: (i) => {
+        protocol = i.protocol;
+        // 'missing' is a distinct reason from every guardrail rejection: one is
+        // a caller that never supplied the derived value, the other is a supplied
+        // value the protocol refused. Collapsing them would hide which of the two
+        // the gray release has to fix.
+        rejectReason = semanticQueryEn.trim() ? i.semanticQueryRejected : 'missing';
+        ftsCount = i.ftsCount;
+        semanticCount = i.semanticCount;
+        comparableVectors = i.comparableVectors;
+        scopeVectors = i.scopeVectors;
+        discoveryEffective = i.discoveryEffective;
+      },
+      onFusion: (i) => { semanticOnly = i.semanticOnlyReturned; },
     });
-    db.recordSearchMetric({ latencyMs: Date.now() - startedAt, degraded });
+    db.recordSearchMetric({
+      latencyMs: Date.now() - startedAt,
+      degraded,
+      protocol,
+      rejectReason,
+      ftsCount,
+      semanticCount,
+      comparableVectors,
+      scopeVectors,
+      semanticOnly,
+      discoveryEffective,
+    });
     return {
       content: [{
         type: 'text',

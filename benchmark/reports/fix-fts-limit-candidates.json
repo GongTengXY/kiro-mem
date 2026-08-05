@@ -1,0 +1,374 @@
+{
+  "generatedAt": "2026-08-05T02:06:28.176Z",
+  "provenance": {
+    "criteria": "benchmark/reports/fix-fts-limit-criteria.md",
+    "criteriaSha256": "376e50fdda17fdd7",
+    "fillerSha256": "10b572bd3ec7e4b9",
+    "scriptSha256": "2e4a534c56811cc5",
+    "bun": "1.2.20",
+    "seededRecords": 1970,
+    "queries": 5,
+    "repeatPerMeasurement": 5,
+    "limit": 50
+  },
+  "results": [
+    {
+      "key": "current",
+      "label": "当前生产形式（LIMIT ? 绑定参数）",
+      "diagnostic": false,
+      "msMedian": 843.939,
+      "plan": [
+        "SEARCH o USING INDEX idx_observations_scope_time (scope_key=? AND turn_stopped_at>?)",
+        "SCAN fts VIRTUAL TABLE INDEX 32:=M9",
+        "USE TEMP B-TREE FOR ORDER BY"
+      ],
+      "perQuery": [
+        {
+          "query": "当前安装流程里 Worker 是不是在运行中就被替换了",
+          "rows": 49,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": null
+        },
+        {
+          "query": "压缩失败之后会不会写出一条编造的记忆",
+          "rows": 0,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": null
+        },
+        {
+          "query": "FTS 检索为什么一条都召回不到",
+          "rows": 39,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": null
+        },
+        {
+          "query": "跨 workspace 的记忆会不会串到一起",
+          "rows": 0,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": null
+        },
+        {
+          "query": "token 认证是怎么做的",
+          "rows": 50,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": null
+        }
+      ],
+      "allSameSet": true,
+      "allSameOrder": true,
+      "allTieConfined": true
+    },
+    {
+      "key": "A-literal",
+      "label": "A 整数校验后内联为字面量",
+      "diagnostic": false,
+      "msMedian": 0.544,
+      "plan": [
+        "SCAN fts VIRTUAL TABLE INDEX 32:M9",
+        "SEARCH o USING INTEGER PRIMARY KEY (rowid=?)"
+      ],
+      "perQuery": [
+        {
+          "query": "当前安装流程里 Worker 是不是在运行中就被替换了",
+          "rows": 49,
+          "sameSet": true,
+          "sameOrder": false,
+          "tieConfined": true
+        },
+        {
+          "query": "压缩失败之后会不会写出一条编造的记忆",
+          "rows": 0,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": true
+        },
+        {
+          "query": "FTS 检索为什么一条都召回不到",
+          "rows": 39,
+          "sameSet": true,
+          "sameOrder": false,
+          "tieConfined": true
+        },
+        {
+          "query": "跨 workspace 的记忆会不会串到一起",
+          "rows": 0,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": true
+        },
+        {
+          "query": "token 认证是怎么做的",
+          "rows": 50,
+          "sameSet": false,
+          "sameOrder": false,
+          "tieConfined": false
+        }
+      ],
+      "allSameSet": false,
+      "allSameOrder": false,
+      "allTieConfined": false
+    },
+    {
+      "key": "B-crossjoin",
+      "label": "B CROSS JOIN 固定连接顺序（limit 仍为参数）",
+      "diagnostic": false,
+      "msMedian": 0.522,
+      "plan": [
+        "SCAN fts VIRTUAL TABLE INDEX 32:M9",
+        "SEARCH o USING INTEGER PRIMARY KEY (rowid=?)"
+      ],
+      "perQuery": [
+        {
+          "query": "当前安装流程里 Worker 是不是在运行中就被替换了",
+          "rows": 49,
+          "sameSet": true,
+          "sameOrder": false,
+          "tieConfined": true
+        },
+        {
+          "query": "压缩失败之后会不会写出一条编造的记忆",
+          "rows": 0,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": true
+        },
+        {
+          "query": "FTS 检索为什么一条都召回不到",
+          "rows": 39,
+          "sameSet": true,
+          "sameOrder": false,
+          "tieConfined": true
+        },
+        {
+          "query": "跨 workspace 的记忆会不会串到一起",
+          "rows": 0,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": true
+        },
+        {
+          "query": "token 认证是怎么做的",
+          "rows": 50,
+          "sameSet": false,
+          "sameOrder": false,
+          "tieConfined": false
+        }
+      ],
+      "allSameSet": false,
+      "allSameOrder": false,
+      "allTieConfined": false
+    },
+    {
+      "key": "C-subquery",
+      "label": "C 子查询先取 FTS rowid 再 join（limit 在过滤之前）",
+      "diagnostic": false,
+      "msMedian": 0.823,
+      "plan": [
+        "CO-ROUTINE f",
+        "SCAN observations_fts VIRTUAL TABLE INDEX 32:M9",
+        "SCAN f",
+        "SEARCH o USING INTEGER PRIMARY KEY (rowid=?)",
+        "USE TEMP B-TREE FOR ORDER BY"
+      ],
+      "perQuery": [
+        {
+          "query": "当前安装流程里 Worker 是不是在运行中就被替换了",
+          "rows": 49,
+          "sameSet": true,
+          "sameOrder": false,
+          "tieConfined": true
+        },
+        {
+          "query": "压缩失败之后会不会写出一条编造的记忆",
+          "rows": 0,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": true
+        },
+        {
+          "query": "FTS 检索为什么一条都召回不到",
+          "rows": 39,
+          "sameSet": true,
+          "sameOrder": false,
+          "tieConfined": true
+        },
+        {
+          "query": "跨 workspace 的记忆会不会串到一起",
+          "rows": 0,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": true
+        },
+        {
+          "query": "token 认证是怎么做的",
+          "rows": 50,
+          "sameSet": false,
+          "sameOrder": false,
+          "tieConfined": false
+        }
+      ],
+      "allSameSet": false,
+      "allSameOrder": false,
+      "allTieConfined": false,
+      "note": "limit 在 scope/days 过滤之前生效——预期会少召回，判据 §4 要求专门验证"
+    },
+    {
+      "key": "D-analyze",
+      "label": "D ANALYZE 后保持原 SQL",
+      "diagnostic": false,
+      "msMedian": 855.749,
+      "plan": [
+        "SEARCH o USING INDEX idx_observations_scope_time (scope_key=? AND turn_stopped_at>?)",
+        "SCAN fts VIRTUAL TABLE INDEX 32:=M9",
+        "USE TEMP B-TREE FOR ORDER BY"
+      ],
+      "perQuery": [
+        {
+          "query": "当前安装流程里 Worker 是不是在运行中就被替换了",
+          "rows": 49,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": true
+        },
+        {
+          "query": "压缩失败之后会不会写出一条编造的记忆",
+          "rows": 0,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": true
+        },
+        {
+          "query": "FTS 检索为什么一条都召回不到",
+          "rows": 39,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": true
+        },
+        {
+          "query": "跨 workspace 的记忆会不会串到一起",
+          "rows": 0,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": true
+        },
+        {
+          "query": "token 认证是怎么做的",
+          "rows": 50,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": true
+        }
+      ],
+      "allSameSet": true,
+      "allSameOrder": true,
+      "allTieConfined": true
+    },
+    {
+      "key": "BD-combo",
+      "label": "B + D 组合",
+      "diagnostic": false,
+      "msMedian": 0.548,
+      "plan": [
+        "SCAN fts VIRTUAL TABLE INDEX 32:M9",
+        "SEARCH o USING INTEGER PRIMARY KEY (rowid=?)"
+      ],
+      "perQuery": [
+        {
+          "query": "当前安装流程里 Worker 是不是在运行中就被替换了",
+          "rows": 49,
+          "sameSet": true,
+          "sameOrder": false,
+          "tieConfined": true
+        },
+        {
+          "query": "压缩失败之后会不会写出一条编造的记忆",
+          "rows": 0,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": true
+        },
+        {
+          "query": "FTS 检索为什么一条都召回不到",
+          "rows": 39,
+          "sameSet": true,
+          "sameOrder": false,
+          "tieConfined": true
+        },
+        {
+          "query": "跨 workspace 的记忆会不会串到一起",
+          "rows": 0,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": true
+        },
+        {
+          "query": "token 认证是怎么做的",
+          "rows": 50,
+          "sameSet": false,
+          "sameOrder": false,
+          "tieConfined": false
+        }
+      ],
+      "allSameSet": false,
+      "allSameOrder": false,
+      "allTieConfined": false
+    },
+    {
+      "key": "diag-tiebreak",
+      "label": "诊断：字面量 + 显式平局序 (rank, o.id)",
+      "diagnostic": true,
+      "msMedian": 0.581,
+      "plan": [
+        "SCAN fts VIRTUAL TABLE INDEX 0:M9",
+        "SEARCH o USING INTEGER PRIMARY KEY (rowid=?)",
+        "USE TEMP B-TREE FOR ORDER BY"
+      ],
+      "perQuery": [
+        {
+          "query": "当前安装流程里 Worker 是不是在运行中就被替换了",
+          "rows": 49,
+          "sameSet": true,
+          "sameOrder": false,
+          "tieConfined": true
+        },
+        {
+          "query": "压缩失败之后会不会写出一条编造的记忆",
+          "rows": 0,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": true
+        },
+        {
+          "query": "FTS 检索为什么一条都召回不到",
+          "rows": 39,
+          "sameSet": true,
+          "sameOrder": false,
+          "tieConfined": true
+        },
+        {
+          "query": "跨 workspace 的记忆会不会串到一起",
+          "rows": 0,
+          "sameSet": true,
+          "sameOrder": true,
+          "tieConfined": true
+        },
+        {
+          "query": "token 认证是怎么做的",
+          "rows": 50,
+          "sameSet": false,
+          "sameOrder": false,
+          "tieConfined": false
+        }
+      ],
+      "allSameSet": false,
+      "allSameOrder": false,
+      "allTieConfined": false,
+      "note": "本身会改变当前平局顺序，只用于刻画平局问题，不参与选择"
+    }
+  ]
+}

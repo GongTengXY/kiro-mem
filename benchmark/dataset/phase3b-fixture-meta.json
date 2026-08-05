@@ -1,0 +1,55 @@
+{
+  "frozen": true,
+  "frozenAt": "2026-08-04T09:45:49.943Z",
+  "criteria": "benchmark/reports/phase3b-criteria.md (A0 + B1)",
+  "builderScriptSha256": "f0a415ae9c7b7e00",
+  "recallScale": {
+    "totalRecords": 2000,
+    "targets": {
+      "count": 30,
+      "source": "benchmark/dataset/turns.json + mirror-en-acp-records.json（既有真实记录，不重译）",
+      "note": "目标置于时间轴最老端；填充全部更新"
+    },
+    "filler": {
+      "count": 1970,
+      "file": "benchmark/dataset/phase3b-filler.json",
+      "sha256": "10b572bd3ec7e4b9",
+      "seed": 3866624,
+      "prng": "mulberry32",
+      "domains": 15,
+      "byDomain": {
+        "android-ui": 132,
+        "game-render": 132,
+        "payment-settle": 132,
+        "k8s-operator": 132,
+        "ios-build": 132,
+        "warehouse-etl": 131,
+        "css-layout": 131,
+        "bluetooth": 131,
+        "map-tiles": 131,
+        "reco-ranking": 131,
+        "video-encode": 131,
+        "warehouse-robot": 131,
+        "email-delivery": 131,
+        "audio-dsp": 131,
+        "iot-fleet": 131
+      }
+    },
+    "lexicalRule": {
+      "rule": "B1：禁独特 concept + 禁文件基名；通用单词有意放过",
+      "bannedDistinctive": 78,
+      "bannedFileBasenames": 33,
+      "violations": 0
+    }
+  },
+  "performanceScale": {
+    "sizes": [
+      10000,
+      50000
+    ],
+    "vectors": "random unit vectors, 384 dims, L2 normalized",
+    "prng": "mulberry32",
+    "seed": 3870720,
+    "note": "不落盘：种子 + 规则可逐位复现 73MB 二进制不可复核"
+  }
+}

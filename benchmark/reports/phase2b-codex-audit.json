@@ -1,0 +1,814 @@
+{
+  "provenance": {
+    "owner": "Codex",
+    "created_after": "phase2b-selection",
+    "policy_results_viewed_before_creation": true,
+    "independence_status": "invalid_for_gate_b_selection_evidence",
+    "scope": "cwd:/codex-gate-b-audit",
+    "notes": "Fresh paraphrases and hard negatives. FTS zero-check is performed before semantic evaluation.",
+    "policy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "recency"
+    },
+    "inputPath": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/reports/phase2b-codex-audit-input.json",
+    "generatedAt": "2026-07-31T13:49:26.465Z"
+  },
+  "summary": {
+    "relevanceQueries": 20,
+    "relevanceHitAt5": 0.9,
+    "relevanceMrr": 0.825,
+    "emptyQueries": 20,
+    "emptyMeanReturned": 0.45,
+    "emptyWorstReturned": 2,
+    "allFtsCountsZero": true,
+    "maxSemanticOnlyReturned": 2
+  },
+  "rows": [
+    {
+      "id": "ca-r01",
+      "kind": "relevance",
+      "query": "输入异常字符时全文检索为什么会被误解成语法",
+      "expect": "t01",
+      "ftsCount": 0,
+      "semanticCount": 1,
+      "returned": 1,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 1,
+          "match_source": "semantic",
+          "semantic_score": 0.5292210677237186
+        }
+      ]
+    },
+    {
+      "id": "ca-r02",
+      "kind": "relevance",
+      "query": "向量服务卡住以后搜索怎样还能返回关键词结果",
+      "expect": "t02",
+      "ftsCount": 0,
+      "semanticCount": 6,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 2,
+          "match_source": "semantic",
+          "semantic_score": 0.3375465259034033
+        },
+        {
+          "id": 21,
+          "match_source": "semantic",
+          "semantic_score": 0.33038906378853317
+        }
+      ]
+    },
+    {
+      "id": "ca-r03",
+      "kind": "relevance",
+      "query": "启动子进程的钩子为何不该负责拉起后台服务",
+      "expect": "t03",
+      "ftsCount": 0,
+      "semanticCount": 4,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 3,
+          "match_source": "semantic",
+          "semantic_score": 0.49253241424787886
+        },
+        {
+          "id": 19,
+          "match_source": "semantic",
+          "semantic_score": 0.33233579294250637
+        }
+      ]
+    },
+    {
+      "id": "ca-r04",
+      "kind": "relevance",
+      "query": "调模型出了岔子后哪些内容不应该落盘",
+      "expect": "t04",
+      "ftsCount": 0,
+      "semanticCount": 7,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 4,
+          "match_source": "semantic",
+          "semantic_score": 0.32048669439699107
+        },
+        {
+          "id": 8,
+          "match_source": "semantic",
+          "semantic_score": 0.28672122534556316
+        }
+      ]
+    },
+    {
+      "id": "ca-r05",
+      "kind": "relevance",
+      "query": "应用版本数字怎样保证所有入口读到同一份",
+      "expect": "t05",
+      "ftsCount": 0,
+      "semanticCount": 3,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 5,
+          "match_source": "semantic",
+          "semantic_score": 0.37102335318491075
+        },
+        {
+          "id": 15,
+          "match_source": "semantic",
+          "semantic_score": 0.32396562387711253
+        }
+      ]
+    },
+    {
+      "id": "ca-r06",
+      "kind": "relevance",
+      "query": "调用参数超出范围会在何处被挡住",
+      "expect": "t06",
+      "ftsCount": 0,
+      "semanticCount": 7,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 6,
+          "match_source": "semantic",
+          "semantic_score": 0.28302029487925967
+        },
+        {
+          "id": 22,
+          "match_source": "semantic",
+          "semantic_score": 0.26321637436602074
+        }
+      ]
+    },
+    {
+      "id": "ca-r07",
+      "kind": "relevance",
+      "query": "池中旧执行器换新没成功时如何避免一直等待",
+      "expect": "t07",
+      "ftsCount": 0,
+      "semanticCount": 6,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 7,
+          "match_source": "semantic",
+          "semantic_score": 0.4565505751611127
+        },
+        {
+          "id": 3,
+          "match_source": "semantic",
+          "semantic_score": 0.24317286871664257
+        }
+      ]
+    },
+    {
+      "id": "ca-r08",
+      "kind": "relevance",
+      "query": "全部尝试都不成时本轮工作如何被如实保存",
+      "expect": "t08",
+      "ftsCount": 0,
+      "semanticCount": 10,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 8,
+          "match_source": "semantic",
+          "semantic_score": 0.3359346104958792
+        },
+        {
+          "id": 17,
+          "match_source": "semantic",
+          "semantic_score": 0.3271354086454155
+        }
+      ]
+    },
+    {
+      "id": "ca-r09",
+      "kind": "relevance",
+      "query": "彻底清理安装环境再装一遍的测试覆盖了哪些东西",
+      "expect": "t09",
+      "ftsCount": 0,
+      "semanticCount": 14,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 9,
+          "match_source": "semantic",
+          "semantic_score": 0.4980568417898912
+        },
+        {
+          "id": 15,
+          "match_source": "semantic",
+          "semantic_score": 0.43342447178803545
+        }
+      ]
+    },
+    {
+      "id": "ca-r10",
+      "kind": "relevance",
+      "query": "为什么任务名称继续使用原来的两个基础名字",
+      "expect": "t10",
+      "ftsCount": 0,
+      "semanticCount": 2,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 10,
+          "match_source": "semantic",
+          "semantic_score": 0.46713298739283793
+        },
+        {
+          "id": 22,
+          "match_source": "semantic",
+          "semantic_score": 0.20265161286566638
+        }
+      ]
+    },
+    {
+      "id": "ca-r11",
+      "kind": "relevance",
+      "query": "本机访问凭据轮换时怎样避免认证突然失效",
+      "expect": "t11",
+      "ftsCount": 0,
+      "semanticCount": 4,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 11,
+          "match_source": "semantic",
+          "semantic_score": 0.5368084815334406
+        },
+        {
+          "id": 19,
+          "match_source": "semantic",
+          "semantic_score": 0.2529759818856308
+        }
+      ]
+    },
+    {
+      "id": "ca-r12",
+      "kind": "relevance",
+      "query": "跑用例时怎样确保用户自己的历史资料不会被碰到",
+      "expect": "t12",
+      "ftsCount": 0,
+      "semanticCount": 13,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 12,
+          "match_source": "semantic",
+          "semantic_score": 0.4326178115409167
+        },
+        {
+          "id": 4,
+          "match_source": "semantic",
+          "semantic_score": 0.33468353723309535
+        }
+      ]
+    },
+    {
+      "id": "ca-r13",
+      "kind": "relevance",
+      "query": "发版清单少了一件东西后后台为何无法载入",
+      "expect": "t13",
+      "ftsCount": 0,
+      "semanticCount": 8,
+      "returned": 2,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": [
+        {
+          "id": 19,
+          "match_source": "semantic",
+          "semantic_score": 0.36050051902674546
+        },
+        {
+          "id": 3,
+          "match_source": "semantic",
+          "semantic_score": 0.3262937659909653
+        }
+      ]
+    },
+    {
+      "id": "ca-r14",
+      "kind": "relevance",
+      "query": "重新覆盖安装内容以后为何原来常驻的程序不会自动更新",
+      "expect": "t14",
+      "ftsCount": 0,
+      "semanticCount": 11,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 14,
+          "match_source": "semantic",
+          "semantic_score": 0.4066482243250543
+        },
+        {
+          "id": 15,
+          "match_source": "semantic",
+          "semantic_score": 0.3438501880309852
+        }
+      ]
+    },
+    {
+      "id": "ca-r15",
+      "kind": "relevance",
+      "query": "怎样察觉后台仍在使用上一版产物",
+      "expect": "t15",
+      "ftsCount": 0,
+      "semanticCount": 10,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 15,
+          "match_source": "semantic",
+          "semantic_score": 0.3144929377890058
+        },
+        {
+          "id": 5,
+          "match_source": "semantic",
+          "semantic_score": 0.28332803690128516
+        }
+      ]
+    },
+    {
+      "id": "ca-r16",
+      "kind": "relevance",
+      "query": "全新机器安装完成后要检查哪些运行条件",
+      "expect": "t16",
+      "ftsCount": 0,
+      "semanticCount": 15,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 0.5,
+      "expectedRank": 2,
+      "results": [
+        {
+          "id": 19,
+          "match_source": "semantic",
+          "semantic_score": 0.41664830586412976
+        },
+        {
+          "id": 16,
+          "match_source": "semantic",
+          "semantic_score": 0.4145752973397704
+        }
+      ]
+    },
+    {
+      "id": "ca-r17",
+      "kind": "relevance",
+      "query": "一次完整会话结束后记忆条目和向量应当是什么状态",
+      "expect": "t17",
+      "ftsCount": 0,
+      "semanticCount": 6,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 0.5,
+      "expectedRank": 2,
+      "results": [
+        {
+          "id": 2,
+          "match_source": "semantic",
+          "semantic_score": 0.3084802611437471
+        },
+        {
+          "id": 17,
+          "match_source": "semantic",
+          "semantic_score": 0.2526177826352951
+        }
+      ]
+    },
+    {
+      "id": "ca-r18",
+      "kind": "relevance",
+      "query": "进入新对话自动带上的历史材料大小如何衡量",
+      "expect": "t18",
+      "ftsCount": 0,
+      "semanticCount": 1,
+      "returned": 1,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": [
+        {
+          "id": 20,
+          "match_source": "semantic",
+          "semantic_score": 0.20115871228420804
+        }
+      ]
+    },
+    {
+      "id": "ca-r19",
+      "kind": "relevance",
+      "query": "进程异常和隐私标记同时出现时故障验证看什么",
+      "expect": "t19",
+      "ftsCount": 0,
+      "semanticCount": 12,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 0.5,
+      "expectedRank": 2,
+      "results": [
+        {
+          "id": 4,
+          "match_source": "semantic",
+          "semantic_score": 0.471558323024618
+        },
+        {
+          "id": 19,
+          "match_source": "semantic",
+          "semantic_score": 0.4690280430642494
+        }
+      ]
+    },
+    {
+      "id": "ca-r20",
+      "kind": "relevance",
+      "query": "并发处理造成编号失真时怎样还原真实先后",
+      "expect": "t20",
+      "ftsCount": 0,
+      "semanticCount": 6,
+      "returned": 2,
+      "hitAt5": true,
+      "reciprocalRank": 1,
+      "expectedRank": 1,
+      "results": [
+        {
+          "id": 20,
+          "match_source": "semantic",
+          "semantic_score": 0.3372200420904522
+        },
+        {
+          "id": 7,
+          "match_source": "semantic",
+          "semantic_score": 0.3029117332488799
+        }
+      ]
+    },
+    {
+      "id": "ca-e01",
+      "kind": "empty",
+      "query": "支付网关的退款对账差异如何处理",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 2,
+      "returned": 2,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": [
+        {
+          "id": 7,
+          "match_source": "semantic",
+          "semantic_score": 0.24267968342472077
+        },
+        {
+          "id": 8,
+          "match_source": "semantic",
+          "semantic_score": 0.22851865293739232
+        }
+      ]
+    },
+    {
+      "id": "ca-e02",
+      "kind": "empty",
+      "query": "移动端推送证书到期后的续签流程",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "ca-e03",
+      "kind": "empty",
+      "query": "仓库库存盘点的条码打印策略",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "ca-e04",
+      "kind": "empty",
+      "query": "在线视频清晰度自动切换算法",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "ca-e05",
+      "kind": "empty",
+      "query": "旅游订单取消后的酒店赔付计算",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "ca-e06",
+      "kind": "empty",
+      "query": "物联网传感器的电池寿命预测模型",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 1,
+      "returned": 1,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": [
+        {
+          "id": 2,
+          "match_source": "semantic",
+          "semantic_score": 0.25829583536901857
+        }
+      ]
+    },
+    {
+      "id": "ca-e07",
+      "kind": "empty",
+      "query": "电商优惠券叠加时的税费结算",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "ca-e08",
+      "kind": "empty",
+      "query": "医学影像归档的匿名化字段清单",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "ca-e09",
+      "kind": "empty",
+      "query": "会议室门禁卡的访客授权策略",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "ca-e10",
+      "kind": "empty",
+      "query": "气象站降雨量采集的校准周期",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "ca-e11",
+      "kind": "empty",
+      "query": "银行转账批处理的节假日清算安排",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "ca-e12",
+      "kind": "empty",
+      "query": "游戏角色技能冷却的数值平衡方案",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "ca-e13",
+      "kind": "empty",
+      "query": "物流路线规划的冷链温度约束",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 1,
+      "returned": 1,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": [
+        {
+          "id": 2,
+          "match_source": "semantic",
+          "semantic_score": 0.26449640715122175
+        }
+      ]
+    },
+    {
+      "id": "ca-e14",
+      "kind": "empty",
+      "query": "新闻推荐的作者画像去重规则",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "ca-e15",
+      "kind": "empty",
+      "query": "工厂机械臂的碰撞检测阈值设置",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 1,
+      "returned": 1,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": [
+        {
+          "id": 21,
+          "match_source": "semantic",
+          "semantic_score": 0.21179874436596258
+        }
+      ]
+    },
+    {
+      "id": "ca-e16",
+      "kind": "empty",
+      "query": "学校选课系统的候补名额释放时间",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 2,
+      "returned": 2,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": [
+        {
+          "id": 26,
+          "match_source": "semantic",
+          "semantic_score": 0.23291807987995494
+        },
+        {
+          "id": 2,
+          "match_source": "semantic",
+          "semantic_score": 0.2066440683319277
+        }
+      ]
+    },
+    {
+      "id": "ca-e17",
+      "kind": "empty",
+      "query": "播客录音的阵列拾音与回声消除方案",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "ca-e18",
+      "kind": "empty",
+      "query": "保险理赔材料的电子签章验真方式",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 4,
+      "returned": 2,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": [
+        {
+          "id": 4,
+          "match_source": "semantic",
+          "semantic_score": 0.3495860931712972
+        },
+        {
+          "id": 11,
+          "match_source": "semantic",
+          "semantic_score": 0.22806455313643517
+        }
+      ]
+    },
+    {
+      "id": "ca-e19",
+      "kind": "empty",
+      "query": "温室自动浇水时的含水率触发点",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    },
+    {
+      "id": "ca-e20",
+      "kind": "empty",
+      "query": "航空行李分拣的超重收费规则",
+      "expect": null,
+      "ftsCount": 0,
+      "semanticCount": 0,
+      "returned": 0,
+      "hitAt5": false,
+      "reciprocalRank": 0,
+      "expectedRank": 0,
+      "results": []
+    }
+  ]
+}

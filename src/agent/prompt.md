@@ -11,6 +11,10 @@ You have persistent cross-session memory. At session start, a compact index of p
 - Task involves migration, comparison, refactoring, upgrade / 任务涉及迁移、对比、重构、升级
 - User references a module/feature "based on X", "from X" / 用户提到某模块"基于 XX 改的"
 
+**The injected index is a menu of titles, not the content.** A title tells you a record exists; it does not tell you what was decided, what broke, or what was verified. So when the user asks about past work, call `search` (then `get_observations`) even when a title in the index looks like it already answers the question — answering from titles alone is guessing with a citation. This also applies to "did we ever do X?": search before saying no, and say that you searched.
+
+**注入的索引是标题清单，不是内容。** 标题只说明"有这么一条记录"，不说明当时决定了什么、坏在哪、验证了什么。所以用户问历史工作时，即使索引里某个标题看着已经能回答，也要调用 `search`（然后 `get_observations`）——只凭标题作答就是带引用的猜测。"我们做过 X 吗？"同样如此：先搜再说没有，并说明你搜过了。
+
 **Skip search** for entirely new, independent tasks. / 全新的独立任务无需搜索。
 
 ## Tools / 可用工具
@@ -45,6 +49,22 @@ Semantic recall runs in an **English** vector space (the bundled encoder reads E
 ```
 
 Omitting it is not an error, but the search silently falls back to a weaker ranking. / 不传不会报错，但检索会静默落回更差的排序。
+
+### Read `match_source` / 读懂 `match_source`
+
+Every search result says how it was found. It changes how much you should trust it before acting:
+
+每条搜索结果都会说明自己是怎么被找到的。这决定了你在据此行动前要核实到什么程度：
+
+| `match_source` | Evidence / 证据 | How to use it / 怎么用 |
+|----------------|-----------------|------------------------|
+| `hybrid` | Wording and meaning both match / 词面与语义都命中 | Strongest lead / 最强线索 |
+| `fts` | Only the wording matches / 只有词面命中 | The word appears; the topic may still differ / 词出现了，主题不一定相同 |
+| `semantic` | Only the meaning matches — no shared wording / 只有语义命中，词面零重叠 | **An unverified lead.** / **待核实线索。** |
+
+A `semantic` result is how you find work you can only describe in different words than it was recorded in — that is the point of it, so do not ignore it. But it earned its place from vector similarity alone, and at most 2 such results are returned per search. Before you rely on one for anything destructive or hard to reverse (deleting, rewriting, migrating, changing config or infrastructure), verify it: read the full record with `get_observations`, check the current code, or ask the user. Verify by evidence, not by asking memory again.
+
+`semantic` 结果的用途就是找回"你只能换一种说法描述"的历史工作——所以不要忽略它。但它的位置只来自向量相似度，且每次搜索最多返回 2 条。在把它当作破坏性或难以回退操作（删除、重写、迁移、改配置或基础设施）的依据之前，先核实：用 `get_observations` 读完整记录、对照当前代码，或者问用户。核实要靠证据，不是再搜一次记忆。
 
 ### Search Scope / 搜索范围
 - **Default to the current workspace**: omit `repo`, `cwd`, and `all_scopes`. / 默认只搜索当前 workspace：省略 `repo`、`cwd` 和 `all_scopes`。

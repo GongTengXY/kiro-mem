@@ -21,6 +21,25 @@ export interface Config {
   filter: {
     skipTools: string[];
   };
+  retrieval: {
+    /**
+     * Gray-release switch for independent semantic recall (plan §8.1 item 4,
+     * the flag the plan calls `SEMANTIC_DISCOVERY_ENABLED`). It lives here
+     * rather than in a new environment variable because this file is already
+     * the project's configuration surface, and a retrieval strategy that can be
+     * flipped by whatever env a session inherited is not auditable.
+     *
+     * `true` (default) — the phase 2C production policy: a query with a legal
+     * `semantic_query_en` reaches the semantic leg even when FTS matched nothing.
+     *
+     * `false` — the explicit rollback: restores the phase 1b lexical-anchor
+     * profile in full (gate on, floor 0.2, no semantic-only cap). Takes effect
+     * for MCP servers started after the edit, i.e. the next Kiro session; no
+     * schema change, no re-embedding, no vector-protocol change, so it can be
+     * flipped back and forth freely.
+     */
+    semanticDiscovery: boolean;
+  };
   runtime: {
     /**
      * Isolated KIRO_HOME used by the ACP compressor sub-agent. When empty,
@@ -44,6 +63,9 @@ const defaults: Config = {
   },
   filter: {
     skipTools: ['introspect', 'todo_list', '@kiro-mem/*'],
+  },
+  retrieval: {
+    semanticDiscovery: true,
   },
   runtime: {
     kiroHome: '',
@@ -97,6 +119,14 @@ export function loadConfig(): Config {
         raw.context?.maxOutputBytes ?? defaults.context.maxOutputBytes,
     },
     filter: { ...defaults.filter, ...raw.filter },
+    retrieval: {
+      // Strict `=== false` rather than `??`: a config written before 2C has no
+      // `retrieval` block at all, and an upgrade must not read that absence as
+      // "the operator asked for the rollback profile". Only an explicit `false`
+      // turns discovery off; any other value (missing, null, "off", 0) leaves the
+      // frozen default on, where a typo cannot silently downgrade retrieval.
+      semanticDiscovery: raw.retrieval?.semanticDiscovery !== false,
+    },
     runtime: {
       kiroHome: raw.runtime?.kiroHome ?? defaults.runtime.kiroHome,
     },

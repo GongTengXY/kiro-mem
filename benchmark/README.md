@@ -68,7 +68,7 @@ bun run benchmark/run.ts --compressor=acp --concurrency=2 --report=/tmp/r.md --n
 
 三类的 `expect` 语义不同，不能互相推断——`empty` 与 `leakage` 的 `expect` 都是空数组，但前者意为"什么都不该返回"，后者只意为"不该返回别的 scope 的记录"。泄漏检查对**所有** query 生效，不只是 `leakage` 那条。`origin` 对 relevance 是必填项：缺省就等于把 heldout 混进 tuned，脚本会直接退出。
 
-**当前分层结果（gold）：tuned hit@5 94.4%，heldout hit@5 44.4%。** 50 个百分点的差距说明检索对调优过的问法有效、对同一批工作的另一种问法只有一半有效。诊断：heldout 里 9/18 条一个字面词都没命中；关掉词汇锚点规则只能升到 50.0%，所以主因是 FTS trigram 对自然语言换说法无效，而不是锚点规则。
+**当前分层结果（gold）：tuned hit@5 94.4%，heldout hit@5 44.4%（阶段 1b 口径，门未拆）。** 50 个百分点的差距说明检索对调优过的问法有效、对同一批工作的另一种问法只有一半有效。诊断：heldout 里 9/18 条一个字面词都没命中；只关掉词汇锚点规则（仍用 `raw-v1` 的 floor）只能升到 50.0%，所以主因是 FTS trigram 对自然语言换说法无效，而不是锚点规则本身。阶段 2C 之后这两个数字要在 `--protocol=semantic-en` 且 discovery 默认开启的前提下重读，见 `reports/phase2b-heldout-confirmation.md`。
 
 ## 指标与门槛
 
@@ -113,8 +113,8 @@ bun run benchmark/run.ts --compressor=acp --concurrency=2 --report=/tmp/r.md --n
 - **R-precision**，而不是 precision@5：标注集里 `expect` 通常只有 1 条，precision@5 的上限就是 20%，测出来只是 hit@5 的另一种写法。R-precision 的截断点跟着标注规模走，1.0 表示前 R 条正好命中标注的 R 条。gold 实测 61.1%，而 hit@5 是 94.4%——差距说明正确答案通常进了 Top-5 但常常不在第 1 位。
 - **expected-empty query 平均返回条数**：标注为 `kind: "empty"` 的 query（q19、q21–q24）——本 scope 内既无相关记忆也无合法词汇重叠——理想应返回空。gold 实测 **0.00（最坏 0）**。
   - 取样按**显式 kind**，不能用 `expect.length === 0` 推断。leakage 类的 `expect` 也是空的，但它空的含义是"不该返回**别的 scope**的记录"：q20 故意与本 scope 的 401/token 词汇重叠（`401` 在 t11/t19，`token` 在 5 条 primary turn），返回本 scope 命中是正确行为。第一版用推断口径把 q20 算了进去，指标因此偏高（8.5），并且会把"压制正确结果"变成优化方向。
-  - 收口方式是检索层的词汇锚点规则：本 scope 的 FTS 无命中即返回空（`src/server/observation-search.ts`）。校准数据说明门槛路线走不通——真正例 cosine 0.080–0.607（中位 0.322），而无关 query 的噪声上限 0.431，两个分布重叠。
-  - 门槛留 1 条余量只为一种情况：acp 模式下 Observation 正文由模型生成，某条 empty query 可能因此获得**真实**的词汇锚点。零锚点必返回空这条硬不变量由单测钉住（`tests/integration/search.test.ts`），不依赖这条门槛。
+  - 收口方式在阶段 2C 换了：过去是检索层的词汇锚点规则（本 scope 的 FTS 无命中即返回空），现在是 `semantic-en-v1` 空间里的 cosine floor `0.197` 加 semantic-only cap `2`（`DEFAULT_RETRIEVAL_POLICY`）。当年判定"门槛路线走不通"的那份校准数据是 `raw-v1` 的——真正例 cosine 0.080–0.607（中位 0.322）与无关 query 的噪声上限 0.431 重叠；换到英文空间后同一批记录与 query 的 AUC 是 0.998，这才让 floor 变成可用手段。
+  - 门槛留 1 条余量在 2C 之后是**紧的**，不是形式化的：既有 5 条 expected-empty 在选中工作点上平均返回 1.00，正好贴着门槛。零锚点且语义候选全部低于 floor 必返回空这条硬不变量由单测钉住（`tests/db/retrieval.test.ts`、`tests/integration/retrieval-policy.test.ts`），不依赖这条门槛。
 
 两个只报告、不设门槛的参考项：
 
@@ -130,7 +130,15 @@ bun run benchmark/run.ts --compressor=acp --concurrency=2 --report=/tmp/r.md --n
 
   数据来源是 `hybridSearchObservations` 新增的 `deps.onCandidates` 观测出口。选它而不是在 harness 里另调一次 `searchObservationsFts`：后者要复制一份 `limit: 50` 和 opts，等于给同一件事造第二个事实来源。该出口只读，不回流进排序。
 
-- **`heldoutZeroFtsAnchor`**：与 `heldoutNoAnchor` 同一件事的**不依赖返回结果**的口径（FTS 候选数为 0 的 heldout 条数）。今天两者必然相等（都是 9），所以此刻只是对照读数；但一旦拆掉词汇锚点门，`heldoutNoAnchor` 会自动掉到 0——不是因为找到了锚点，而是因为「返回条数为 0」不再测量它名字所指的东西。主口径届时切到这一列。
+- **`heldoutNoAnchor`**（阶段 2A 起的主口径）：FTS 候选数为 0 的 heldout 条数。它是纯输入侧读数，与 policy / floor / cap / 融合全部无关，所以拆门前后可比。
+
+- **`heldoutReturnedEmpty`**（旧口径，只为与阶段 0/1 报告对齐）：heldout 中最终返回条数为 0 的条数。`semanticDiscovery=false` 时两者必然相等（都是 9），但拆门后它会分叉——届时它测的是「两路都没有候选」，不再是「没有词汇锚点」。阶段 2A 实测证实了这次改名的必要性：`semanticDiscovery=on` 的诊断 arm 下 `heldoutNoAnchor` 仍是 9，而 `heldoutReturnedEmpty` 掉到 0。
+
+- **`zeroFtsRelevanceQueries` / `zeroFtsHitAt5` / `zeroFtsMrr`**：FTS 候选为 0 的 relevance 子集（既有集里共 10 条 = q08 + 9 条 heldout），拆门的主正面证据。`semanticDiscovery=false` 时后两者结构上恒为 0。
+
+- **`semanticOnlyMean` / `P95` / `Max` / `DroppedTotal`**：semantic-only 返回条数的分布，不只是总数。总数会被均值掩盖——阶段 1b 的 `semanticOnlyTotal 80` 里，均值只有 1.9 但**最坏一条占了 9**（limit 是 10）。cap 要挡的是 max。
+
+- **`phase2*`**：Gate A 冻结的 Phase 2 校准集（121 条，全部 `ftsCount = 0`）的分层指标，需要 `--phase2` 才加载。它与既有 `tuned` / `heldout` / `expected-empty` **严格分桶**，两个方向都挡：既有样本不进 `phase2*`，phase2 样本也不进既有指标。方案 §7.3 要求既有 tuned 只做历史连续性锁，选参只用这一组。
 
 
 **事实标记按 token 边界匹配，不是整串子串。** 详见上面 `annotation.key_facts` 一行与 `benchmark/scoring.ts`。旧的「去掉空白后做 substring」在两个方向上都会错：把 `coverage 是 1.0` 判成丢了 `coverage 1.0`（惩罚正确输出），又让 `en` 在 `content` 里意外命中（虚高）。

@@ -1,0 +1,46 @@
+{
+  "provenance": {
+    "source": "acp",
+    "agent": "kiro-mem-compressor",
+    "kiroCli": "kiro-cli (see report)",
+    "target": "queries",
+    "querySet": "phase2",
+    "generatedAt": "2026-07-31T07:22:27.256Z",
+    "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+    "items": 2,
+    "failures": 5,
+    "retries": 5,
+    "wallTimeMs": 18349,
+    "itemLatencyMs": {
+      "p50": 15683,
+      "p95": 18348,
+      "max": 18348
+    }
+  },
+  "queries": {
+    "z21": "How big is that chunk of stuff shoved in at the start?",
+    "y12": "At what age is it appropriate to start orthodontic treatment for children's teeth?"
+  },
+  "failuresDetail": [
+    {
+      "id": "y03",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "y08",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "y11",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "z32",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "z14",
+      "reason": "JSON 解析失败"
+    }
+  ]
+}

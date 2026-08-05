@@ -1,0 +1,11 @@
+{
+  "frozen": true,
+  "rule": "benchmark/reports/phase3a-r2-dataset-rules.md §2.4",
+  "eliminated": [],
+  "checks": {
+    "goldUnreachableByAnyLexicalLeg": [],
+    "duplicateAgainstExisting183": [],
+    "duplicateWithinNewCandidates": [],
+    "note": "两项检查均为 0；淘汰清单为空是检查结果，不是未做检查。"
+  }
+}

@@ -1,0 +1,9065 @@
+[
+  {
+    "arm": "baseline",
+    "variable": "—（当前发布行为，bigram 关闭）",
+    "diagnostic": false,
+    "policy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "bigramAux": false,
+      "bigramDfRatioCeiling": 1,
+      "bigramMinMatches": 1,
+      "bigramOnlyLimit": 2,
+      "bigramWeight": 1
+    },
+    "allGatesOk": true,
+    "failedGates": [],
+    "diffRows": 0,
+    "diffIds": [],
+    "metrics": {
+      "phase2HitAt5": 0.5,
+      "phase2Mrr": 0.4583333333333333,
+      "phase2RPrecision": 0.4097222222222222,
+      "phase2EmptyReturned": 0.5918367346938775,
+      "phase2EmptyWorst": 2,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.9444444444444444,
+      "tunedRPrecision": 0.8888888888888888,
+      "expectedEmptyReturned": 1,
+      "expectedEmptyWorst": 2,
+      "semanticOnlyMax": 2,
+      "semanticOnlyTotal": 156,
+      "semanticOnlyDroppedTotal": 130,
+      "bigramOnlyMax": 0,
+      "bigramOnlyTotal": 0,
+      "bigramOnlyDroppedTotal": 0,
+      "bigramProbedQueries": 0,
+      "bigramCandidateQueries": 0,
+      "bigramUnitsDroppedTotal": 0,
+      "leakTotal": 0,
+      "degrades": 0,
+      "latencyP95": 12.213040999999976
+    },
+    "ftsRescued": [],
+    "neutralityViolations": []
+  },
+  {
+    "arm": "df004-cap1",
+    "variable": "DF≤0.04 cap=1",
+    "diagnostic": false,
+    "policy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "bigramAux": true,
+      "bigramDfRatioCeiling": 0.04,
+      "bigramMinMatches": 1,
+      "bigramOnlyLimit": 1,
+      "bigramWeight": 1
+    },
+    "allGatesOk": false,
+    "failedGates": [
+      "expected-empty query 平均返回条数（5 条，最坏 2；目标 0，门槛 ≤1）"
+    ],
+    "diffRows": 64,
+    "diffIds": [
+      "q01",
+      "q04",
+      "q05",
+      "q07",
+      "q08",
+      "q09",
+      "q10",
+      "q11",
+      "q12",
+      "q13",
+      "q14",
+      "q15",
+      "q17",
+      "q18",
+      "q20",
+      "q24",
+      "z01",
+      "z02",
+      "z03",
+      "z05",
+      "z06",
+      "z07",
+      "z08",
+      "z09",
+      "z11",
+      "z12",
+      "z13",
+      "z15",
+      "z17",
+      "z19",
+      "z20",
+      "z22",
+      "z30",
+      "z31",
+      "z34",
+      "z35",
+      "z36",
+      "z37",
+      "z40",
+      "z41",
+      "z43",
+      "z47",
+      "z48",
+      "z49",
+      "z50",
+      "z51",
+      "z53",
+      "z54",
+      "z56",
+      "z57",
+      "y01",
+      "y16",
+      "y17",
+      "y21",
+      "y22",
+      "y23",
+      "y25",
+      "y27",
+      "y29",
+      "y33",
+      "y35",
+      "y37",
+      "y38",
+      "y40"
+    ],
+    "metrics": {
+      "phase2HitAt5": 0.5833333333333334,
+      "phase2Mrr": 0.5324074074074073,
+      "phase2RPrecision": 0.4791666666666667,
+      "phase2EmptyReturned": 0.8775510204081632,
+      "phase2EmptyWorst": 3,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.9166666666666666,
+      "tunedRPrecision": 0.7777777777777778,
+      "expectedEmptyReturned": 1.2,
+      "expectedEmptyWorst": 2,
+      "semanticOnlyMax": 2,
+      "semanticOnlyTotal": 146,
+      "semanticOnlyDroppedTotal": 122,
+      "bigramOnlyMax": 1,
+      "bigramOnlyTotal": 37,
+      "bigramOnlyDroppedTotal": 5,
+      "bigramProbedQueries": 117,
+      "bigramCandidateQueries": 64,
+      "bigramUnitsDroppedTotal": 95,
+      "leakTotal": 0,
+      "degrades": 0,
+      "latencyP95": 13.730792000000065
+    },
+    "ftsRescued": [
+      {
+        "id": "q08",
+        "kind": "relevance",
+        "origin": "tuned",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "q24",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z01",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "搜索"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z02",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z03",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z05",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z06",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负责"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z07",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z08",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "收敛"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z09",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负数"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z11",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z12",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "干净"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z13",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "后缀"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z15",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z17",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z19",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在真"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z20",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z22",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z30",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z31",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z34",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z35",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z36",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "回收"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z37",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z40",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "会漏"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z41",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在跑"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z43",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "半装"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z47",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "自增",
+          "顺序"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z48",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "名次",
+          "相关"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z49",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z50",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "随包"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z51",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z53",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "门槛",
+          "范围"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z54",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "单元"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z56",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "近期",
+          "候选"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z57",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "随包"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "y01",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y16",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y17",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y22",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y23",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y25",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y27",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y29",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y33",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y35",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y37",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y38",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y40",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      }
+    ],
+    "neutralityViolations": []
+  },
+  {
+    "arm": "df004-cap2",
+    "variable": "DF≤0.04 cap=2",
+    "diagnostic": false,
+    "policy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "bigramAux": true,
+      "bigramDfRatioCeiling": 0.04,
+      "bigramMinMatches": 1,
+      "bigramOnlyLimit": 2,
+      "bigramWeight": 1
+    },
+    "allGatesOk": false,
+    "failedGates": [
+      "expected-empty query 平均返回条数（5 条，最坏 2；目标 0，门槛 ≤1）"
+    ],
+    "diffRows": 64,
+    "diffIds": [
+      "q01",
+      "q04",
+      "q05",
+      "q07",
+      "q08",
+      "q09",
+      "q10",
+      "q11",
+      "q12",
+      "q13",
+      "q14",
+      "q15",
+      "q17",
+      "q18",
+      "q20",
+      "q24",
+      "z01",
+      "z02",
+      "z03",
+      "z05",
+      "z06",
+      "z07",
+      "z08",
+      "z09",
+      "z11",
+      "z12",
+      "z13",
+      "z15",
+      "z17",
+      "z19",
+      "z20",
+      "z22",
+      "z30",
+      "z31",
+      "z34",
+      "z35",
+      "z36",
+      "z37",
+      "z40",
+      "z41",
+      "z43",
+      "z47",
+      "z48",
+      "z49",
+      "z50",
+      "z51",
+      "z53",
+      "z54",
+      "z56",
+      "z57",
+      "y01",
+      "y16",
+      "y17",
+      "y21",
+      "y22",
+      "y23",
+      "y25",
+      "y27",
+      "y29",
+      "y33",
+      "y35",
+      "y37",
+      "y38",
+      "y40"
+    ],
+    "metrics": {
+      "phase2HitAt5": 0.6111111111111112,
+      "phase2Mrr": 0.5462962962962963,
+      "phase2RPrecision": 0.4791666666666667,
+      "phase2EmptyReturned": 0.9183673469387755,
+      "phase2EmptyWorst": 3,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.9166666666666666,
+      "tunedRPrecision": 0.7777777777777778,
+      "expectedEmptyReturned": 1.2,
+      "expectedEmptyWorst": 2,
+      "semanticOnlyMax": 2,
+      "semanticOnlyTotal": 146,
+      "semanticOnlyDroppedTotal": 122,
+      "bigramOnlyMax": 2,
+      "bigramOnlyTotal": 42,
+      "bigramOnlyDroppedTotal": 0,
+      "bigramProbedQueries": 117,
+      "bigramCandidateQueries": 64,
+      "bigramUnitsDroppedTotal": 95,
+      "leakTotal": 0,
+      "degrades": 0,
+      "latencyP95": 12.176083000000062
+    },
+    "ftsRescued": [
+      {
+        "id": "q08",
+        "kind": "relevance",
+        "origin": "tuned",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "q24",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z01",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "搜索"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z02",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z03",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z05",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z06",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负责"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z07",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z08",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "收敛"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z09",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负数"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z11",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z12",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "干净"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z13",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "后缀"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z15",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z17",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z19",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在真"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z20",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z22",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z30",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z31",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z34",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z35",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z36",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "回收"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z37",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z40",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "会漏"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z41",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在跑"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z43",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "半装"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z47",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "自增",
+          "顺序"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z48",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "名次",
+          "相关"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z49",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z50",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "随包"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z51",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z53",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "门槛",
+          "范围"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z54",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "单元"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z56",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "近期",
+          "候选"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z57",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "随包"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "y01",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y16",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y17",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y22",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y23",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y25",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y27",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y29",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y33",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y35",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y37",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y38",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y40",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      }
+    ],
+    "neutralityViolations": []
+  },
+  {
+    "arm": "df004-cap3",
+    "variable": "DF≤0.04 cap=3",
+    "diagnostic": false,
+    "policy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "bigramAux": true,
+      "bigramDfRatioCeiling": 0.04,
+      "bigramMinMatches": 1,
+      "bigramOnlyLimit": 3,
+      "bigramWeight": 1
+    },
+    "allGatesOk": false,
+    "failedGates": [
+      "expected-empty query 平均返回条数（5 条，最坏 2；目标 0，门槛 ≤1）"
+    ],
+    "diffRows": 64,
+    "diffIds": [
+      "q01",
+      "q04",
+      "q05",
+      "q07",
+      "q08",
+      "q09",
+      "q10",
+      "q11",
+      "q12",
+      "q13",
+      "q14",
+      "q15",
+      "q17",
+      "q18",
+      "q20",
+      "q24",
+      "z01",
+      "z02",
+      "z03",
+      "z05",
+      "z06",
+      "z07",
+      "z08",
+      "z09",
+      "z11",
+      "z12",
+      "z13",
+      "z15",
+      "z17",
+      "z19",
+      "z20",
+      "z22",
+      "z30",
+      "z31",
+      "z34",
+      "z35",
+      "z36",
+      "z37",
+      "z40",
+      "z41",
+      "z43",
+      "z47",
+      "z48",
+      "z49",
+      "z50",
+      "z51",
+      "z53",
+      "z54",
+      "z56",
+      "z57",
+      "y01",
+      "y16",
+      "y17",
+      "y21",
+      "y22",
+      "y23",
+      "y25",
+      "y27",
+      "y29",
+      "y33",
+      "y35",
+      "y37",
+      "y38",
+      "y40"
+    ],
+    "metrics": {
+      "phase2HitAt5": 0.6111111111111112,
+      "phase2Mrr": 0.5462962962962963,
+      "phase2RPrecision": 0.4791666666666667,
+      "phase2EmptyReturned": 0.9183673469387755,
+      "phase2EmptyWorst": 3,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.9166666666666666,
+      "tunedRPrecision": 0.7777777777777778,
+      "expectedEmptyReturned": 1.2,
+      "expectedEmptyWorst": 2,
+      "semanticOnlyMax": 2,
+      "semanticOnlyTotal": 146,
+      "semanticOnlyDroppedTotal": 122,
+      "bigramOnlyMax": 2,
+      "bigramOnlyTotal": 42,
+      "bigramOnlyDroppedTotal": 0,
+      "bigramProbedQueries": 117,
+      "bigramCandidateQueries": 64,
+      "bigramUnitsDroppedTotal": 95,
+      "leakTotal": 0,
+      "degrades": 0,
+      "latencyP95": 15.327541999999994
+    },
+    "ftsRescued": [
+      {
+        "id": "q08",
+        "kind": "relevance",
+        "origin": "tuned",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "q24",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z01",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "搜索"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z02",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z03",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z05",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z06",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负责"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z07",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z08",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "收敛"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z09",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负数"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z11",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z12",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "干净"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z13",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "后缀"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z15",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z17",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z19",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在真"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z20",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z22",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z30",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z31",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z34",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z35",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z36",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "回收"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z37",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z40",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "会漏"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z41",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在跑"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z43",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "半装"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z47",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "自增",
+          "顺序"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z48",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "名次",
+          "相关"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z49",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z50",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "随包"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z51",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z53",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "门槛",
+          "范围"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z54",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "单元"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z56",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "近期",
+          "候选"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z57",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "随包"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "y01",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y16",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y17",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y22",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y23",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y25",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y27",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y29",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y33",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y35",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y37",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y38",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y40",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      }
+    ],
+    "neutralityViolations": []
+  },
+  {
+    "arm": "df008-cap1",
+    "variable": "DF≤0.08 cap=1",
+    "diagnostic": false,
+    "policy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "bigramAux": true,
+      "bigramDfRatioCeiling": 0.08,
+      "bigramMinMatches": 1,
+      "bigramOnlyLimit": 1,
+      "bigramWeight": 1
+    },
+    "allGatesOk": false,
+    "failedGates": [
+      "expected-empty query 平均返回条数（5 条，最坏 5；目标 0，门槛 ≤1）"
+    ],
+    "diffRows": 75,
+    "diffIds": [
+      "q01",
+      "q04",
+      "q05",
+      "q07",
+      "q08",
+      "q09",
+      "q10",
+      "q11",
+      "q12",
+      "q13",
+      "q14",
+      "q15",
+      "q16",
+      "q17",
+      "q18",
+      "q20",
+      "q21",
+      "q24",
+      "z01",
+      "z02",
+      "z03",
+      "z05",
+      "z06",
+      "z07",
+      "z08",
+      "z09",
+      "z11",
+      "z12",
+      "z13",
+      "z15",
+      "z17",
+      "z18",
+      "z19",
+      "z20",
+      "z22",
+      "z24",
+      "z26",
+      "z30",
+      "z31",
+      "z34",
+      "z35",
+      "z36",
+      "z37",
+      "z39",
+      "z40",
+      "z41",
+      "z43",
+      "z47",
+      "z48",
+      "z49",
+      "z50",
+      "z51",
+      "z52",
+      "z53",
+      "z54",
+      "z56",
+      "z57",
+      "y01",
+      "y16",
+      "y17",
+      "y18",
+      "y20",
+      "y21",
+      "y22",
+      "y23",
+      "y25",
+      "y27",
+      "y29",
+      "y32",
+      "y33",
+      "y34",
+      "y35",
+      "y37",
+      "y38",
+      "y40"
+    ],
+    "metrics": {
+      "phase2HitAt5": 0.5972222222222222,
+      "phase2Mrr": 0.5300925925925926,
+      "phase2RPrecision": 0.4652777777777778,
+      "phase2EmptyReturned": 0.9795918367346939,
+      "phase2EmptyWorst": 4,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.8796296296296295,
+      "tunedRPrecision": 0.7222222222222222,
+      "expectedEmptyReturned": 1.8,
+      "expectedEmptyWorst": 5,
+      "semanticOnlyMax": 2,
+      "semanticOnlyTotal": 141,
+      "semanticOnlyDroppedTotal": 113,
+      "bigramOnlyMax": 1,
+      "bigramOnlyTotal": 49,
+      "bigramOnlyDroppedTotal": 33,
+      "bigramProbedQueries": 117,
+      "bigramCandidateQueries": 75,
+      "bigramUnitsDroppedTotal": 57,
+      "leakTotal": 0,
+      "degrades": 0,
+      "latencyP95": 12.65037499999994
+    },
+    "ftsRescued": [
+      {
+        "id": "q08",
+        "kind": "relevance",
+        "origin": "tuned",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "q21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "q24",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z01",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "搜索"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z02",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z03",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z05",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z06",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负责"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z07",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z08",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "收敛"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z09",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负数"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z11",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z12",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "干净"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z13",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "后缀"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z15",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z17",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z18",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z19",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在真"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z20",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "完整"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z22",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z24",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z26",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "精度"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z30",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "的字"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z31",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z34",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z35",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "成功"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z36",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "回收"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z37",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z39",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "凭据"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z40",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "清单",
+          "会漏"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z41",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在跑"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z43",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "半装"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z47",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "自增",
+          "顺序"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z48",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "名次",
+          "相关"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z49",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z50",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "精度",
+          "随包"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z51",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "也要"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z52",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z53",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "门槛",
+          "范围"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z54",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "单元"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z56",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "近期",
+          "候选"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z57",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "随包"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "y01",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y16",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y17",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y18",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y20",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y22",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y23",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y25",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y27",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y29",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y32",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y33",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y34",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y35",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y37",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y38",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y40",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      }
+    ],
+    "neutralityViolations": []
+  },
+  {
+    "arm": "df008-cap2",
+    "variable": "DF≤0.08 cap=2",
+    "diagnostic": false,
+    "policy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "bigramAux": true,
+      "bigramDfRatioCeiling": 0.08,
+      "bigramMinMatches": 1,
+      "bigramOnlyLimit": 2,
+      "bigramWeight": 1
+    },
+    "allGatesOk": false,
+    "failedGates": [
+      "expected-empty query 平均返回条数（5 条，最坏 5；目标 0，门槛 ≤1）"
+    ],
+    "diffRows": 75,
+    "diffIds": [
+      "q01",
+      "q04",
+      "q05",
+      "q07",
+      "q08",
+      "q09",
+      "q10",
+      "q11",
+      "q12",
+      "q13",
+      "q14",
+      "q15",
+      "q16",
+      "q17",
+      "q18",
+      "q20",
+      "q21",
+      "q24",
+      "z01",
+      "z02",
+      "z03",
+      "z05",
+      "z06",
+      "z07",
+      "z08",
+      "z09",
+      "z11",
+      "z12",
+      "z13",
+      "z15",
+      "z17",
+      "z18",
+      "z19",
+      "z20",
+      "z22",
+      "z24",
+      "z26",
+      "z30",
+      "z31",
+      "z34",
+      "z35",
+      "z36",
+      "z37",
+      "z39",
+      "z40",
+      "z41",
+      "z43",
+      "z47",
+      "z48",
+      "z49",
+      "z50",
+      "z51",
+      "z52",
+      "z53",
+      "z54",
+      "z56",
+      "z57",
+      "y01",
+      "y16",
+      "y17",
+      "y18",
+      "y20",
+      "y21",
+      "y22",
+      "y23",
+      "y25",
+      "y27",
+      "y29",
+      "y32",
+      "y33",
+      "y34",
+      "y35",
+      "y37",
+      "y38",
+      "y40"
+    ],
+    "metrics": {
+      "phase2HitAt5": 0.6388888888888888,
+      "phase2Mrr": 0.5509259259259259,
+      "phase2RPrecision": 0.4652777777777778,
+      "phase2EmptyReturned": 1.1224489795918366,
+      "phase2EmptyWorst": 4,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.8796296296296295,
+      "tunedRPrecision": 0.7222222222222222,
+      "expectedEmptyReturned": 1.8,
+      "expectedEmptyWorst": 5,
+      "semanticOnlyMax": 2,
+      "semanticOnlyTotal": 141,
+      "semanticOnlyDroppedTotal": 113,
+      "bigramOnlyMax": 2,
+      "bigramOnlyTotal": 69,
+      "bigramOnlyDroppedTotal": 13,
+      "bigramProbedQueries": 117,
+      "bigramCandidateQueries": 75,
+      "bigramUnitsDroppedTotal": 57,
+      "leakTotal": 0,
+      "degrades": 0,
+      "latencyP95": 14.180459000000155
+    },
+    "ftsRescued": [
+      {
+        "id": "q08",
+        "kind": "relevance",
+        "origin": "tuned",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "q21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "q24",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z01",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "搜索"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z02",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z03",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z05",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z06",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负责"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z07",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z08",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "收敛"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z09",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负数"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z11",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z12",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "干净"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z13",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "后缀"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z15",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z17",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z18",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z19",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在真"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z20",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "完整"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z22",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z24",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z26",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "精度"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z30",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "的字"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z31",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z34",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z35",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "成功"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z36",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "回收"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z37",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z39",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "凭据"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z40",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "清单",
+          "会漏"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z41",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在跑"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z43",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "半装"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z47",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "自增",
+          "顺序"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z48",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "名次",
+          "相关"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z49",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z50",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "精度",
+          "随包"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z51",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "也要"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z52",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z53",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "门槛",
+          "范围"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z54",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "单元"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z56",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "近期",
+          "候选"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z57",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "随包"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "y01",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y16",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y17",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y18",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y20",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y22",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y23",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y25",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y27",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y29",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y32",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y33",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y34",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y35",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y37",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y38",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y40",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      }
+    ],
+    "neutralityViolations": []
+  },
+  {
+    "arm": "df008-cap3",
+    "variable": "DF≤0.08 cap=3",
+    "diagnostic": false,
+    "policy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "bigramAux": true,
+      "bigramDfRatioCeiling": 0.08,
+      "bigramMinMatches": 1,
+      "bigramOnlyLimit": 3,
+      "bigramWeight": 1
+    },
+    "allGatesOk": false,
+    "failedGates": [
+      "expected-empty query 平均返回条数（5 条，最坏 5；目标 0，门槛 ≤1）"
+    ],
+    "diffRows": 75,
+    "diffIds": [
+      "q01",
+      "q04",
+      "q05",
+      "q07",
+      "q08",
+      "q09",
+      "q10",
+      "q11",
+      "q12",
+      "q13",
+      "q14",
+      "q15",
+      "q16",
+      "q17",
+      "q18",
+      "q20",
+      "q21",
+      "q24",
+      "z01",
+      "z02",
+      "z03",
+      "z05",
+      "z06",
+      "z07",
+      "z08",
+      "z09",
+      "z11",
+      "z12",
+      "z13",
+      "z15",
+      "z17",
+      "z18",
+      "z19",
+      "z20",
+      "z22",
+      "z24",
+      "z26",
+      "z30",
+      "z31",
+      "z34",
+      "z35",
+      "z36",
+      "z37",
+      "z39",
+      "z40",
+      "z41",
+      "z43",
+      "z47",
+      "z48",
+      "z49",
+      "z50",
+      "z51",
+      "z52",
+      "z53",
+      "z54",
+      "z56",
+      "z57",
+      "y01",
+      "y16",
+      "y17",
+      "y18",
+      "y20",
+      "y21",
+      "y22",
+      "y23",
+      "y25",
+      "y27",
+      "y29",
+      "y32",
+      "y33",
+      "y34",
+      "y35",
+      "y37",
+      "y38",
+      "y40"
+    ],
+    "metrics": {
+      "phase2HitAt5": 0.6388888888888888,
+      "phase2Mrr": 0.5509259259259259,
+      "phase2RPrecision": 0.4652777777777778,
+      "phase2EmptyReturned": 1.183673469387755,
+      "phase2EmptyWorst": 4,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.8796296296296295,
+      "tunedRPrecision": 0.7222222222222222,
+      "expectedEmptyReturned": 1.8,
+      "expectedEmptyWorst": 5,
+      "semanticOnlyMax": 2,
+      "semanticOnlyTotal": 141,
+      "semanticOnlyDroppedTotal": 113,
+      "bigramOnlyMax": 3,
+      "bigramOnlyTotal": 77,
+      "bigramOnlyDroppedTotal": 5,
+      "bigramProbedQueries": 117,
+      "bigramCandidateQueries": 75,
+      "bigramUnitsDroppedTotal": 57,
+      "leakTotal": 0,
+      "degrades": 0,
+      "latencyP95": 13.628958999999895
+    },
+    "ftsRescued": [
+      {
+        "id": "q08",
+        "kind": "relevance",
+        "origin": "tuned",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "q21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "q24",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z01",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "搜索"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z02",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z03",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z05",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z06",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负责"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z07",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z08",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "收敛"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z09",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负数"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z11",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z12",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "干净"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z13",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "后缀"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z15",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z17",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z18",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z19",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在真"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z20",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "完整"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z22",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z24",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z26",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "精度"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z30",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "的字"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z31",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z34",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z35",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "成功"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z36",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "回收"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z37",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z39",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "凭据"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z40",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "清单",
+          "会漏"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z41",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在跑"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z43",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "半装"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z47",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "自增",
+          "顺序"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z48",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "名次",
+          "相关"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z49",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z50",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "精度",
+          "随包"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z51",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "也要"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z52",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z53",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "门槛",
+          "范围"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z54",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "单元"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z56",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "近期",
+          "候选"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z57",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "随包"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "y01",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y16",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y17",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y18",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y20",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y22",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y23",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y25",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y27",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y29",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y32",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y33",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y34",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y35",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y37",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y38",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y40",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      }
+    ],
+    "neutralityViolations": []
+  },
+  {
+    "arm": "df012-cap1",
+    "variable": "DF≤0.12 cap=1",
+    "diagnostic": false,
+    "policy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "bigramAux": true,
+      "bigramDfRatioCeiling": 0.12,
+      "bigramMinMatches": 1,
+      "bigramOnlyLimit": 1,
+      "bigramWeight": 1
+    },
+    "allGatesOk": false,
+    "failedGates": [
+      "expected-empty query 平均返回条数（5 条，最坏 5；目标 0，门槛 ≤1）"
+    ],
+    "diffRows": 80,
+    "diffIds": [
+      "q01",
+      "q02",
+      "q03",
+      "q04",
+      "q05",
+      "q07",
+      "q08",
+      "q09",
+      "q10",
+      "q11",
+      "q12",
+      "q13",
+      "q14",
+      "q15",
+      "q16",
+      "q17",
+      "q18",
+      "q20",
+      "q21",
+      "q24",
+      "z01",
+      "z02",
+      "z03",
+      "z05",
+      "z06",
+      "z07",
+      "z08",
+      "z09",
+      "z11",
+      "z12",
+      "z13",
+      "z15",
+      "z17",
+      "z18",
+      "z19",
+      "z20",
+      "z22",
+      "z24",
+      "z26",
+      "z27",
+      "z28",
+      "z30",
+      "z31",
+      "z34",
+      "z35",
+      "z36",
+      "z37",
+      "z38",
+      "z39",
+      "z40",
+      "z41",
+      "z43",
+      "z47",
+      "z48",
+      "z49",
+      "z50",
+      "z51",
+      "z52",
+      "z53",
+      "z54",
+      "z56",
+      "z57",
+      "y01",
+      "y16",
+      "y17",
+      "y18",
+      "y20",
+      "y21",
+      "y22",
+      "y23",
+      "y25",
+      "y27",
+      "y29",
+      "y32",
+      "y33",
+      "y34",
+      "y35",
+      "y37",
+      "y38",
+      "y40"
+    ],
+    "metrics": {
+      "phase2HitAt5": 0.625,
+      "phase2Mrr": 0.542824074074074,
+      "phase2RPrecision": 0.4791666666666667,
+      "phase2EmptyReturned": 0.9795918367346939,
+      "phase2EmptyWorst": 4,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.9722222222222222,
+      "tunedRPrecision": 0.9166666666666666,
+      "expectedEmptyReturned": 1.8,
+      "expectedEmptyWorst": 5,
+      "semanticOnlyMax": 2,
+      "semanticOnlyTotal": 135,
+      "semanticOnlyDroppedTotal": 105,
+      "bigramOnlyMax": 1,
+      "bigramOnlyTotal": 57,
+      "bigramOnlyDroppedTotal": 62,
+      "bigramProbedQueries": 117,
+      "bigramCandidateQueries": 80,
+      "bigramUnitsDroppedTotal": 31,
+      "leakTotal": 0,
+      "degrades": 0,
+      "latencyP95": 12.273625000000038
+    },
+    "ftsRescued": [
+      {
+        "id": "q08",
+        "kind": "relevance",
+        "origin": "tuned",
+        "units": [
+          "压缩"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "q21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "q24",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z01",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "搜索"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z02",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "用户"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z03",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z05",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z06",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负责"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z07",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z08",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "收敛"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z09",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负数"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z11",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z12",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "干净"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z13",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "后缀"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z15",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z17",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z18",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z19",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在真"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z20",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "完整"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z22",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z24",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z26",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "精度"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z27",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z28",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "检查"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z30",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "用户",
+          "的字"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z31",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z34",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z35",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "成功"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z36",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "回收"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z37",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z38",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z39",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "凭据"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z40",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "清单",
+          "会漏"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z41",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在跑"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z43",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "半装",
+          "状态"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z47",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "自增",
+          "顺序"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z48",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "名次",
+          "相关"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z49",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z50",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "精度",
+          "随包"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z51",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "也要"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z52",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "类型"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z53",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "门槛",
+          "范围"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z54",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "单元"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z56",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "近期",
+          "候选"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z57",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "随包"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "y01",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y16",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y17",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y18",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y20",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y22",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y23",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y25",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y27",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y29",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y32",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y33",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y34",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y35",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y37",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y38",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y40",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      }
+    ],
+    "neutralityViolations": []
+  },
+  {
+    "arm": "df012-cap2",
+    "variable": "DF≤0.12 cap=2",
+    "diagnostic": false,
+    "policy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "bigramAux": true,
+      "bigramDfRatioCeiling": 0.12,
+      "bigramMinMatches": 1,
+      "bigramOnlyLimit": 2,
+      "bigramWeight": 1
+    },
+    "allGatesOk": false,
+    "failedGates": [
+      "expected-empty query 平均返回条数（5 条，最坏 5；目标 0，门槛 ≤1）"
+    ],
+    "diffRows": 80,
+    "diffIds": [
+      "q01",
+      "q02",
+      "q03",
+      "q04",
+      "q05",
+      "q07",
+      "q08",
+      "q09",
+      "q10",
+      "q11",
+      "q12",
+      "q13",
+      "q14",
+      "q15",
+      "q16",
+      "q17",
+      "q18",
+      "q20",
+      "q21",
+      "q24",
+      "z01",
+      "z02",
+      "z03",
+      "z05",
+      "z06",
+      "z07",
+      "z08",
+      "z09",
+      "z11",
+      "z12",
+      "z13",
+      "z15",
+      "z17",
+      "z18",
+      "z19",
+      "z20",
+      "z22",
+      "z24",
+      "z26",
+      "z27",
+      "z28",
+      "z30",
+      "z31",
+      "z34",
+      "z35",
+      "z36",
+      "z37",
+      "z38",
+      "z39",
+      "z40",
+      "z41",
+      "z43",
+      "z47",
+      "z48",
+      "z49",
+      "z50",
+      "z51",
+      "z52",
+      "z53",
+      "z54",
+      "z56",
+      "z57",
+      "y01",
+      "y16",
+      "y17",
+      "y18",
+      "y20",
+      "y21",
+      "y22",
+      "y23",
+      "y25",
+      "y27",
+      "y29",
+      "y32",
+      "y33",
+      "y34",
+      "y35",
+      "y37",
+      "y38",
+      "y40"
+    ],
+    "metrics": {
+      "phase2HitAt5": 0.6805555555555556,
+      "phase2Mrr": 0.5671296296296295,
+      "phase2RPrecision": 0.4791666666666667,
+      "phase2EmptyReturned": 1.1428571428571428,
+      "phase2EmptyWorst": 4,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.9722222222222222,
+      "tunedRPrecision": 0.9166666666666666,
+      "expectedEmptyReturned": 1.8,
+      "expectedEmptyWorst": 5,
+      "semanticOnlyMax": 2,
+      "semanticOnlyTotal": 135,
+      "semanticOnlyDroppedTotal": 104,
+      "bigramOnlyMax": 2,
+      "bigramOnlyTotal": 86,
+      "bigramOnlyDroppedTotal": 33,
+      "bigramProbedQueries": 117,
+      "bigramCandidateQueries": 80,
+      "bigramUnitsDroppedTotal": 31,
+      "leakTotal": 0,
+      "degrades": 0,
+      "latencyP95": 13.853333999999904
+    },
+    "ftsRescued": [
+      {
+        "id": "q08",
+        "kind": "relevance",
+        "origin": "tuned",
+        "units": [
+          "压缩"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "q21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "q24",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z01",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "搜索"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z02",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "用户"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z03",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z05",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z06",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负责"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z07",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z08",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "收敛"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z09",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负数"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z11",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z12",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "干净"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z13",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "后缀"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z15",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z17",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z18",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z19",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在真"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z20",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "完整"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z22",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z24",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z26",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "精度"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z27",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z28",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "检查"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z30",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "用户",
+          "的字"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z31",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z34",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z35",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "成功"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z36",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "回收"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z37",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z38",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z39",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "凭据"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z40",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "清单",
+          "会漏"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z41",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在跑"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z43",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "半装",
+          "状态"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z47",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "自增",
+          "顺序"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z48",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "名次",
+          "相关"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z49",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z50",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "精度",
+          "随包"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z51",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "也要"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z52",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "类型"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z53",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "门槛",
+          "范围"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z54",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "单元"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z56",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "近期",
+          "候选"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z57",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "随包"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "y01",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y16",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y17",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y18",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y20",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y22",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y23",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y25",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y27",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y29",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y32",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y33",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y34",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y35",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y37",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y38",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y40",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      }
+    ],
+    "neutralityViolations": []
+  },
+  {
+    "arm": "df012-cap3",
+    "variable": "DF≤0.12 cap=3",
+    "diagnostic": false,
+    "policy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "bigramAux": true,
+      "bigramDfRatioCeiling": 0.12,
+      "bigramMinMatches": 1,
+      "bigramOnlyLimit": 3,
+      "bigramWeight": 1
+    },
+    "allGatesOk": false,
+    "failedGates": [
+      "expected-empty query 平均返回条数（5 条，最坏 5；目标 0，门槛 ≤1）"
+    ],
+    "diffRows": 80,
+    "diffIds": [
+      "q01",
+      "q02",
+      "q03",
+      "q04",
+      "q05",
+      "q07",
+      "q08",
+      "q09",
+      "q10",
+      "q11",
+      "q12",
+      "q13",
+      "q14",
+      "q15",
+      "q16",
+      "q17",
+      "q18",
+      "q20",
+      "q21",
+      "q24",
+      "z01",
+      "z02",
+      "z03",
+      "z05",
+      "z06",
+      "z07",
+      "z08",
+      "z09",
+      "z11",
+      "z12",
+      "z13",
+      "z15",
+      "z17",
+      "z18",
+      "z19",
+      "z20",
+      "z22",
+      "z24",
+      "z26",
+      "z27",
+      "z28",
+      "z30",
+      "z31",
+      "z34",
+      "z35",
+      "z36",
+      "z37",
+      "z38",
+      "z39",
+      "z40",
+      "z41",
+      "z43",
+      "z47",
+      "z48",
+      "z49",
+      "z50",
+      "z51",
+      "z52",
+      "z53",
+      "z54",
+      "z56",
+      "z57",
+      "y01",
+      "y16",
+      "y17",
+      "y18",
+      "y20",
+      "y21",
+      "y22",
+      "y23",
+      "y25",
+      "y27",
+      "y29",
+      "y32",
+      "y33",
+      "y34",
+      "y35",
+      "y37",
+      "y38",
+      "y40"
+    ],
+    "metrics": {
+      "phase2HitAt5": 0.6805555555555556,
+      "phase2Mrr": 0.5671296296296295,
+      "phase2RPrecision": 0.4791666666666667,
+      "phase2EmptyReturned": 1.2244897959183674,
+      "phase2EmptyWorst": 4,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.9722222222222222,
+      "tunedRPrecision": 0.9166666666666666,
+      "expectedEmptyReturned": 1.8,
+      "expectedEmptyWorst": 5,
+      "semanticOnlyMax": 2,
+      "semanticOnlyTotal": 135,
+      "semanticOnlyDroppedTotal": 104,
+      "bigramOnlyMax": 3,
+      "bigramOnlyTotal": 100,
+      "bigramOnlyDroppedTotal": 19,
+      "bigramProbedQueries": 117,
+      "bigramCandidateQueries": 80,
+      "bigramUnitsDroppedTotal": 31,
+      "leakTotal": 0,
+      "degrades": 0,
+      "latencyP95": 12.8967090000001
+    },
+    "ftsRescued": [
+      {
+        "id": "q08",
+        "kind": "relevance",
+        "origin": "tuned",
+        "units": [
+          "压缩"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "q21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "q24",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z01",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "搜索"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z02",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "用户"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z03",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z05",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z06",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负责"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z07",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z08",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "收敛"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z09",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负数"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z11",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z12",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "干净"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z13",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "后缀"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z15",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z17",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z18",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z19",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在真"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z20",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "完整"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z22",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z24",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z26",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "精度"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z27",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z28",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "检查"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z30",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "用户",
+          "的字"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z31",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z34",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z35",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "成功"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z36",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "回收"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z37",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z38",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z39",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "凭据"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z40",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "清单",
+          "会漏"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z41",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在跑"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z43",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "半装",
+          "状态"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z47",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "自增",
+          "顺序"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z48",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "名次",
+          "相关"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z49",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z50",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "精度",
+          "随包"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z51",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "也要"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z52",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "类型"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z53",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "门槛",
+          "范围"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z54",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "单元"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z56",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "近期",
+          "候选"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z57",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "随包"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "y01",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y16",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y17",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y18",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y20",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y22",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y23",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y25",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y27",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y29",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y32",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y33",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y34",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y35",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y37",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y38",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y40",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      }
+    ],
+    "neutralityViolations": []
+  },
+  {
+    "arm": "df1-cap1",
+    "variable": "DF≤1 cap=1",
+    "diagnostic": false,
+    "policy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "bigramAux": true,
+      "bigramDfRatioCeiling": 1,
+      "bigramMinMatches": 1,
+      "bigramOnlyLimit": 1,
+      "bigramWeight": 1
+    },
+    "allGatesOk": false,
+    "failedGates": [
+      "expected-empty query 平均返回条数（5 条，最坏 5；目标 0，门槛 ≤1）"
+    ],
+    "diffRows": 85,
+    "diffIds": [
+      "q01",
+      "q02",
+      "q03",
+      "q04",
+      "q05",
+      "q07",
+      "q08",
+      "q09",
+      "q10",
+      "q11",
+      "q12",
+      "q13",
+      "q14",
+      "q15",
+      "q16",
+      "q17",
+      "q18",
+      "q20",
+      "q21",
+      "q24",
+      "z01",
+      "z02",
+      "z03",
+      "z05",
+      "z06",
+      "z07",
+      "z08",
+      "z09",
+      "z10",
+      "z11",
+      "z12",
+      "z13",
+      "z15",
+      "z17",
+      "z18",
+      "z19",
+      "z20",
+      "z22",
+      "z24",
+      "z26",
+      "z27",
+      "z28",
+      "z29",
+      "z30",
+      "z31",
+      "z33",
+      "z34",
+      "z35",
+      "z36",
+      "z37",
+      "z38",
+      "z39",
+      "z40",
+      "z41",
+      "z42",
+      "z43",
+      "z44",
+      "z47",
+      "z48",
+      "z49",
+      "z50",
+      "z51",
+      "z52",
+      "z53",
+      "z54",
+      "z56",
+      "z57",
+      "y01",
+      "y16",
+      "y17",
+      "y18",
+      "y20",
+      "y21",
+      "y22",
+      "y23",
+      "y25",
+      "y27",
+      "y29",
+      "y32",
+      "y33",
+      "y34",
+      "y35",
+      "y37",
+      "y38",
+      "y40"
+    ],
+    "metrics": {
+      "phase2HitAt5": 0.625,
+      "phase2Mrr": 0.5451388888888888,
+      "phase2RPrecision": 0.4791666666666667,
+      "phase2EmptyReturned": 1,
+      "phase2EmptyWorst": 4,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.9722222222222222,
+      "tunedRPrecision": 0.9166666666666666,
+      "expectedEmptyReturned": 1.8,
+      "expectedEmptyWorst": 5,
+      "semanticOnlyMax": 2,
+      "semanticOnlyTotal": 126,
+      "semanticOnlyDroppedTotal": 84,
+      "bigramOnlyMax": 1,
+      "bigramOnlyTotal": 68,
+      "bigramOnlyDroppedTotal": 136,
+      "bigramProbedQueries": 117,
+      "bigramCandidateQueries": 85,
+      "bigramUnitsDroppedTotal": 0,
+      "leakTotal": 0,
+      "degrades": 0,
+      "latencyP95": 14.370417000000089
+    },
+    "ftsRescued": [
+      {
+        "id": "q08",
+        "kind": "relevance",
+        "origin": "tuned",
+        "units": [
+          "压缩",
+          "失败"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "q21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "q24",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z01",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "搜索"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z02",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "用户"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z03",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z05",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z06",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负责"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z07",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z08",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "收敛"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z09",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负数"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z10",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z11",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z12",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "干净"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z13",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "后缀"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z15",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z17",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z18",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "不是"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z19",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在真"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z20",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "完整"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z22",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z24",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z26",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "本地",
+          "精度"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z27",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "模型"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z28",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "检查"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z29",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "必须"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z30",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "用户",
+          "的字"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z31",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z33",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z34",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z35",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "成功"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z36",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "回收"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z37",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z38",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z39",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "凭据"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z40",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "清单",
+          "会漏"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z41",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在跑"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z42",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "不能"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z43",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "半装",
+          "状态"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z44",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "直接"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z47",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "自增",
+          "顺序"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z48",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "名次",
+          "相关"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z49",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z50",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "精度",
+          "随包"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z51",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "也要"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z52",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "类型"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z53",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "门槛",
+          "范围"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z54",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "单元"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z56",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "近期",
+          "候选"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z57",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "随包"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "y01",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y16",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y17",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y18",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y20",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y22",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y23",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y25",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y27",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y29",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y32",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y33",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y34",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y35",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y37",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y38",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y40",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      }
+    ],
+    "neutralityViolations": []
+  },
+  {
+    "arm": "df1-cap2",
+    "variable": "DF≤1 cap=2",
+    "diagnostic": false,
+    "policy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "bigramAux": true,
+      "bigramDfRatioCeiling": 1,
+      "bigramMinMatches": 1,
+      "bigramOnlyLimit": 2,
+      "bigramWeight": 1
+    },
+    "allGatesOk": false,
+    "failedGates": [
+      "expected-empty query 平均返回条数（5 条，最坏 5；目标 0，门槛 ≤1）"
+    ],
+    "diffRows": 85,
+    "diffIds": [
+      "q01",
+      "q02",
+      "q03",
+      "q04",
+      "q05",
+      "q07",
+      "q08",
+      "q09",
+      "q10",
+      "q11",
+      "q12",
+      "q13",
+      "q14",
+      "q15",
+      "q16",
+      "q17",
+      "q18",
+      "q20",
+      "q21",
+      "q24",
+      "z01",
+      "z02",
+      "z03",
+      "z05",
+      "z06",
+      "z07",
+      "z08",
+      "z09",
+      "z10",
+      "z11",
+      "z12",
+      "z13",
+      "z15",
+      "z17",
+      "z18",
+      "z19",
+      "z20",
+      "z22",
+      "z24",
+      "z26",
+      "z27",
+      "z28",
+      "z29",
+      "z30",
+      "z31",
+      "z33",
+      "z34",
+      "z35",
+      "z36",
+      "z37",
+      "z38",
+      "z39",
+      "z40",
+      "z41",
+      "z42",
+      "z43",
+      "z44",
+      "z47",
+      "z48",
+      "z49",
+      "z50",
+      "z51",
+      "z52",
+      "z53",
+      "z54",
+      "z56",
+      "z57",
+      "y01",
+      "y16",
+      "y17",
+      "y18",
+      "y20",
+      "y21",
+      "y22",
+      "y23",
+      "y25",
+      "y27",
+      "y29",
+      "y32",
+      "y33",
+      "y34",
+      "y35",
+      "y37",
+      "y38",
+      "y40"
+    ],
+    "metrics": {
+      "phase2HitAt5": 0.6805555555555556,
+      "phase2Mrr": 0.5671296296296295,
+      "phase2RPrecision": 0.4791666666666667,
+      "phase2EmptyReturned": 1.183673469387755,
+      "phase2EmptyWorst": 5,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.9722222222222222,
+      "tunedRPrecision": 0.9166666666666666,
+      "expectedEmptyReturned": 1.8,
+      "expectedEmptyWorst": 5,
+      "semanticOnlyMax": 2,
+      "semanticOnlyTotal": 126,
+      "semanticOnlyDroppedTotal": 84,
+      "bigramOnlyMax": 2,
+      "bigramOnlyTotal": 109,
+      "bigramOnlyDroppedTotal": 93,
+      "bigramProbedQueries": 117,
+      "bigramCandidateQueries": 85,
+      "bigramUnitsDroppedTotal": 0,
+      "leakTotal": 0,
+      "degrades": 0,
+      "latencyP95": 12.88779199999999
+    },
+    "ftsRescued": [
+      {
+        "id": "q08",
+        "kind": "relevance",
+        "origin": "tuned",
+        "units": [
+          "压缩",
+          "失败"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "q21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "q24",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z01",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "搜索"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z02",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "用户"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z03",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z05",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z06",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负责"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z07",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z08",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "收敛"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z09",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负数"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z10",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z11",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z12",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "干净"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z13",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "后缀"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z15",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z17",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z18",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "不是"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z19",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在真"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z20",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "完整"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z22",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z24",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z26",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "本地",
+          "精度"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z27",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "模型"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z28",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "检查"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z29",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "必须"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z30",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "用户",
+          "的字"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z31",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z33",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z34",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z35",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "成功"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z36",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "回收"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z37",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z38",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z39",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "凭据"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z40",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "清单",
+          "会漏"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z41",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在跑"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z42",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "不能"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z43",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "半装",
+          "状态"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z44",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "直接"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z47",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "自增",
+          "顺序"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z48",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "名次",
+          "相关"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z49",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z50",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "精度",
+          "随包"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z51",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "也要"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z52",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "类型"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z53",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "门槛",
+          "范围"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z54",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "单元"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z56",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "近期",
+          "候选"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z57",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "随包"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "y01",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y16",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y17",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y18",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y20",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y22",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y23",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y25",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y27",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y29",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y32",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y33",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y34",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y35",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y37",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y38",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y40",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      }
+    ],
+    "neutralityViolations": []
+  },
+  {
+    "arm": "df1-cap3",
+    "variable": "DF≤1 cap=3",
+    "diagnostic": false,
+    "policy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "bigramAux": true,
+      "bigramDfRatioCeiling": 1,
+      "bigramMinMatches": 1,
+      "bigramOnlyLimit": 3,
+      "bigramWeight": 1
+    },
+    "allGatesOk": false,
+    "failedGates": [
+      "expected-empty query 平均返回条数（5 条，最坏 5；目标 0，门槛 ≤1）"
+    ],
+    "diffRows": 85,
+    "diffIds": [
+      "q01",
+      "q02",
+      "q03",
+      "q04",
+      "q05",
+      "q07",
+      "q08",
+      "q09",
+      "q10",
+      "q11",
+      "q12",
+      "q13",
+      "q14",
+      "q15",
+      "q16",
+      "q17",
+      "q18",
+      "q20",
+      "q21",
+      "q24",
+      "z01",
+      "z02",
+      "z03",
+      "z05",
+      "z06",
+      "z07",
+      "z08",
+      "z09",
+      "z10",
+      "z11",
+      "z12",
+      "z13",
+      "z15",
+      "z17",
+      "z18",
+      "z19",
+      "z20",
+      "z22",
+      "z24",
+      "z26",
+      "z27",
+      "z28",
+      "z29",
+      "z30",
+      "z31",
+      "z33",
+      "z34",
+      "z35",
+      "z36",
+      "z37",
+      "z38",
+      "z39",
+      "z40",
+      "z41",
+      "z42",
+      "z43",
+      "z44",
+      "z47",
+      "z48",
+      "z49",
+      "z50",
+      "z51",
+      "z52",
+      "z53",
+      "z54",
+      "z56",
+      "z57",
+      "y01",
+      "y16",
+      "y17",
+      "y18",
+      "y20",
+      "y21",
+      "y22",
+      "y23",
+      "y25",
+      "y27",
+      "y29",
+      "y32",
+      "y33",
+      "y34",
+      "y35",
+      "y37",
+      "y38",
+      "y40"
+    ],
+    "metrics": {
+      "phase2HitAt5": 0.6805555555555556,
+      "phase2Mrr": 0.5671296296296295,
+      "phase2RPrecision": 0.4791666666666667,
+      "phase2EmptyReturned": 1.2857142857142858,
+      "phase2EmptyWorst": 6,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.9722222222222222,
+      "tunedRPrecision": 0.9166666666666666,
+      "expectedEmptyReturned": 1.8,
+      "expectedEmptyWorst": 5,
+      "semanticOnlyMax": 2,
+      "semanticOnlyTotal": 125,
+      "semanticOnlyDroppedTotal": 84,
+      "bigramOnlyMax": 3,
+      "bigramOnlyTotal": 138,
+      "bigramOnlyDroppedTotal": 63,
+      "bigramProbedQueries": 117,
+      "bigramCandidateQueries": 85,
+      "bigramUnitsDroppedTotal": 0,
+      "leakTotal": 0,
+      "degrades": 0,
+      "latencyP95": 14.553749999999809
+    },
+    "ftsRescued": [
+      {
+        "id": "q08",
+        "kind": "relevance",
+        "origin": "tuned",
+        "units": [
+          "压缩",
+          "失败"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "q21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "q24",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z01",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "搜索"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z02",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "用户"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z03",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z05",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z06",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负责"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z07",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z08",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "收敛"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z09",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负数"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z10",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z11",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z12",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "干净"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z13",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "后缀"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z15",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z17",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z18",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "不是"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z19",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在真"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z20",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "完整"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z22",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z24",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z26",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "本地",
+          "精度"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z27",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "模型"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z28",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "检查"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z29",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "必须"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z30",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "用户",
+          "的字"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z31",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z33",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z34",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z35",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "成功"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z36",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "回收"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z37",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z38",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z39",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "凭据"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z40",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "清单",
+          "会漏"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z41",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在跑"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z42",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "不能"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z43",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "半装",
+          "状态"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z44",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "直接"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z47",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "自增",
+          "顺序"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z48",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "名次",
+          "相关"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z49",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z50",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "精度",
+          "随包"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z51",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "也要"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z52",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "类型"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z53",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "门槛",
+          "范围"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z54",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "单元"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z56",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "近期",
+          "候选"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z57",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "随包"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "y01",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y16",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y17",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y18",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y20",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y22",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y23",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y25",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y27",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y29",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y32",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y33",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y34",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y35",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y37",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y38",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y40",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      }
+    ],
+    "neutralityViolations": []
+  },
+  {
+    "arm": "diag-no-cap",
+    "variable": "诊断：方案 §10 字面实现（无上限、无 cap）",
+    "diagnostic": true,
+    "policy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "bigramAux": true,
+      "bigramDfRatioCeiling": 1,
+      "bigramMinMatches": 1,
+      "bigramOnlyLimit": "inf",
+      "bigramWeight": 1
+    },
+    "allGatesOk": false,
+    "failedGates": [
+      "expected-empty query 平均返回条数（5 条，最坏 5；目标 0，门槛 ≤1）"
+    ],
+    "diffRows": 85,
+    "diffIds": [
+      "q01",
+      "q02",
+      "q03",
+      "q04",
+      "q05",
+      "q07",
+      "q08",
+      "q09",
+      "q10",
+      "q11",
+      "q12",
+      "q13",
+      "q14",
+      "q15",
+      "q16",
+      "q17",
+      "q18",
+      "q20",
+      "q21",
+      "q24",
+      "z01",
+      "z02",
+      "z03",
+      "z05",
+      "z06",
+      "z07",
+      "z08",
+      "z09",
+      "z10",
+      "z11",
+      "z12",
+      "z13",
+      "z15",
+      "z17",
+      "z18",
+      "z19",
+      "z20",
+      "z22",
+      "z24",
+      "z26",
+      "z27",
+      "z28",
+      "z29",
+      "z30",
+      "z31",
+      "z33",
+      "z34",
+      "z35",
+      "z36",
+      "z37",
+      "z38",
+      "z39",
+      "z40",
+      "z41",
+      "z42",
+      "z43",
+      "z44",
+      "z47",
+      "z48",
+      "z49",
+      "z50",
+      "z51",
+      "z52",
+      "z53",
+      "z54",
+      "z56",
+      "z57",
+      "y01",
+      "y16",
+      "y17",
+      "y18",
+      "y20",
+      "y21",
+      "y22",
+      "y23",
+      "y25",
+      "y27",
+      "y29",
+      "y32",
+      "y33",
+      "y34",
+      "y35",
+      "y37",
+      "y38",
+      "y40"
+    ],
+    "metrics": {
+      "phase2HitAt5": 0.6805555555555556,
+      "phase2Mrr": 0.5688657407407407,
+      "phase2RPrecision": 0.4791666666666667,
+      "phase2EmptyReturned": 1.4285714285714286,
+      "phase2EmptyWorst": 10,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.9722222222222222,
+      "tunedRPrecision": 0.9166666666666666,
+      "expectedEmptyReturned": 1.8,
+      "expectedEmptyWorst": 5,
+      "semanticOnlyMax": 2,
+      "semanticOnlyTotal": 125,
+      "semanticOnlyDroppedTotal": 84,
+      "bigramOnlyMax": 9,
+      "bigramOnlyTotal": 183,
+      "bigramOnlyDroppedTotal": 0,
+      "bigramProbedQueries": 117,
+      "bigramCandidateQueries": 85,
+      "bigramUnitsDroppedTotal": 0,
+      "leakTotal": 0,
+      "degrades": 0,
+      "latencyP95": 12.571916999999985
+    },
+    "ftsRescued": [
+      {
+        "id": "q08",
+        "kind": "relevance",
+        "origin": "tuned",
+        "units": [
+          "压缩",
+          "失败"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "q21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "q24",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z01",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "搜索"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z02",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "用户"
+        ],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z03",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z05",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z06",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负责"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z07",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z08",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "收敛"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z09",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "负数"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z10",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z11",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z12",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "干净"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z13",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "后缀"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z15",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z17",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z18",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "不是"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z19",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在真"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z20",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "完整"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z22",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z24",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z26",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "本地",
+          "精度"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z27",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "模型"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z28",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "检查"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z29",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "必须"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z30",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "用户",
+          "的字"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z31",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z33",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z34",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z35",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "成功"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z36",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "回收"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z37",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z38",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z39",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "凭据"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z40",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "清单",
+          "会漏"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z41",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "在跑"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z42",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "不能"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z43",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "半装",
+          "状态"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z44",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "直接"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z47",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "自增",
+          "顺序"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z48",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "名次",
+          "相关"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z49",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "z50",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "精度",
+          "随包"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z51",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "也要"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z52",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "类型"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z53",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "门槛",
+          "范围"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z54",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "单元"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z56",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "近期",
+          "候选"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z57",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "随包"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "y01",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y16",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y17",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y18",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y20",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y21",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y22",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y23",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y25",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y27",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y29",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y32",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y33",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y34",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y35",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y37",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y38",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      },
+      {
+        "id": "y40",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      }
+    ],
+    "neutralityViolations": []
+  },
+  {
+    "arm": "diag-min2",
+    "variable": "诊断：共现下限 minMatches=2",
+    "diagnostic": true,
+    "policy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "bigramAux": true,
+      "bigramDfRatioCeiling": 1,
+      "bigramMinMatches": 2,
+      "bigramOnlyLimit": 2,
+      "bigramWeight": 1
+    },
+    "allGatesOk": true,
+    "failedGates": [],
+    "diffRows": 29,
+    "diffIds": [
+      "q01",
+      "q03",
+      "q04",
+      "q05",
+      "q07",
+      "q08",
+      "q09",
+      "q10",
+      "q11",
+      "q12",
+      "q13",
+      "q14",
+      "q15",
+      "q16",
+      "q17",
+      "q18",
+      "z07",
+      "z26",
+      "z27",
+      "z30",
+      "z38",
+      "z40",
+      "z43",
+      "z47",
+      "z48",
+      "z50",
+      "z53",
+      "z56",
+      "y25"
+    ],
+    "metrics": {
+      "phase2HitAt5": 0.5694444444444444,
+      "phase2Mrr": 0.5150462962962963,
+      "phase2RPrecision": 0.4583333333333333,
+      "phase2EmptyReturned": 0.6326530612244898,
+      "phase2EmptyWorst": 3,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.9444444444444444,
+      "tunedRPrecision": 0.8333333333333334,
+      "expectedEmptyReturned": 1,
+      "expectedEmptyWorst": 2,
+      "semanticOnlyMax": 2,
+      "semanticOnlyTotal": 152,
+      "semanticOnlyDroppedTotal": 121,
+      "bigramOnlyMax": 2,
+      "bigramOnlyTotal": 14,
+      "bigramOnlyDroppedTotal": 1,
+      "bigramProbedQueries": 117,
+      "bigramCandidateQueries": 29,
+      "bigramUnitsDroppedTotal": 0,
+      "leakTotal": 0,
+      "degrades": 0,
+      "latencyP95": 16.082583000000113
+    },
+    "ftsRescued": [
+      {
+        "id": "q08",
+        "kind": "relevance",
+        "origin": "tuned",
+        "units": [
+          "压缩",
+          "失败"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z07",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z26",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "本地",
+          "精度"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z27",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z30",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "用户",
+          "的字"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z38",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z40",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "清单",
+          "会漏"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "z43",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "半装",
+          "状态"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z47",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "自增",
+          "顺序"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z48",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "名次",
+          "相关"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z50",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "精度",
+          "随包"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z53",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "门槛",
+          "范围"
+        ],
+        "hit5Before": true,
+        "hit5After": true
+      },
+      {
+        "id": "z56",
+        "kind": "relevance",
+        "origin": "phase2",
+        "units": [
+          "近期",
+          "候选"
+        ],
+        "hit5Before": false,
+        "hit5After": true
+      },
+      {
+        "id": "y25",
+        "kind": "empty",
+        "origin": null,
+        "units": [],
+        "hit5Before": false,
+        "hit5After": false
+      }
+    ],
+    "neutralityViolations": []
+  }
+]

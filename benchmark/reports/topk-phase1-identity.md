@@ -1,0 +1,135 @@
+# Top-K 轮次阶段一：流式打分行为中立 —— **通过**
+
+> 判据：`benchmark/reports/topk-criteria.md`，A0 `699d988c419be7b3`，
+> 冻结于 `2026-08-05T11:12:03Z`，**先于任何实现改动**。
+>
+> 阶段一只换执行方式，`semanticCandidatePool` 保持已发布的 **20000**，
+> 新字段 `semanticTopK` 默认 `Infinity`（= 不截断 = 换之前的行为）。
+> 截断是阶段二的产品改动。
+
+---
+
+## 1. 改动范围
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/server/observation-search.ts` | 新增 `streamScoreCandidates()`：按块取候选 → 立即打分 → 有界保留；`RetrievalPolicy` 新增 `semanticTopK`（默认 `Infinity`，两个冻结 profile 均登记）；新增值域校验；`onCandidates` 新增 `aboveFloorCount`；语义腿改为调用流式打分 |
+| `tests/integration/retrieval-policy.test.ts` | 5 条等价性测试 + 冻结 profile 锁补字段 |
+| `benchmark/run-codex-phase2b-audit.ts` | 补登记新字段 |
+
+明确未改：`semanticCandidatePool`（仍 20000）、floor / cap / rrfK / 权重 / tieBreak /
+5 个 bigram 字段、FTS tokenizer、内部 FTS limit 50、embedding 模型、`semantic-en-v1` 协议、
+MCP schema、90 天窗口、DB schema。
+
+### 1.1 为什么这次替换可以是**可证**等价，而不是"看起来一样"
+
+两条性质决定一切，都写进了代码注释：
+
+1. **访问顺序**。旧路径一次 `IN (...)` 取回全部候选，再用**稳定排序**按 score 降序排——所以
+   同分时保持 SQLite 的返回顺序。实测（Bun 1.2.20 / SQLite 3.43.2）`WHERE id IN (...)`
+   **无论入参顺序都按 rowid 升序返回**。因此流式实现把 `candidateIds` 升序排序后分块，
+   比较器用 `(score desc, id asc)`，就复现了同一个平局次序。
+2. **名次语义**。两条不变量：FTS / bigram 命中的候选**永远保留**（丢掉会把 `hybrid`
+   降级成 `fts`，那是结果改变）；被保留但排在 K 名之后的候选，名次是**真实全局名次**
+   （靠流式过程中的"比我分高的条数"计数器，不是 `K+1`）。计数器数量有硬上界（FTS 内部
+   limit 50 + bigram cap），所以代价可忽略。
+
+---
+
+## 2. 门槛判定
+
+| # | 门槛 | 读数 | 判定 |
+| --- | --- | --- | :--: |
+| T1 | 30 条 gold 语料 239 条 query 有序 `resultIds` | 差异 **0**；其他字段差异 **0** | ✅ |
+| T2 | 全部 summary 指标 + 17 个 gate | 完全一致；gate 全过 | ✅ |
+| T3 | 2,000 条装置 276 条 query 有序 `resultIds` | 差异 **0** | ✅ |
+| T4 | `semanticRank` / `semanticScore` 逐键 | 与参考实现逐键相同（含全同分形状），见 §3 | ✅ |
+| T5 | `comparableVectors` 逐 query | 差异 **0**（`match_source`、触达、`goldRank` 亦 0） | ✅ |
+| T6 | 泄漏 / 协议混排 / `semanticOnlyMax` | 0 / 0 / 2；聚合指标逐位一致 | ✅ |
+| T7 | `bun test` / `typecheck` | **522 pass / 0 fail**；干净 | ✅ |
+| T8 | 50,000 档（pool=20000）延迟与内存 | 见 §4 | ✅ |
+
+T1/T2 对照 `benchmark/reports/phase3a-r2/baseline.json`；T3/T5/T6 对照候选池轮次冻结的
+`pool-policy/recall.json` 的 `pool-full` arm——在 2,000 条装置上任何 ≥2000 的池等价，
+所以那份读数就是**换之前**的基线。
+
+---
+
+## 3. T4：与参考实现的逐键比较，以及它为什么有判别力
+
+测试里内联了一份**参考实现**（旧算法的字面转写：一次查询取全部、打分、稳定排序），
+而不是比对录好的黄金文件——因为参考实现可以跑在任何 fixture 上，包括下面这些没有任何
+既有 benchmark 覆盖的形状：
+
+| 测试 | 断言 |
+| --- | --- |
+| 无平局 40 条 | 名次逐键相同 |
+| **全部同分** 25 条 | 名次逐键相同——平局次序不能因为流式而漂移 |
+| K = 1 / 29 / 30 / 31（30 条候选） | 保留集合无重复、条数恰为 `min(K, 全量)`、且保留项的名次值与全量一致 |
+| FTS 命中但分数最低，K=1 | 仍在名次表里、`match_source` 仍是 `hybrid`、名次是**真实全局名次 6** 而不是 `K+1 = 2` |
+| 全部候选低于 floor | 语义腿为空，不抛错 |
+
+**反向测试实测**（判据 §7 第 6 条要求，不是声称）：
+
+```text
+把"额外保留项的真实名次"改成 topK+1        → 2 fail
+去掉 FTS 命中的 always-keep               → 2 fail
+复原                                      → 0 fail
+```
+
+---
+
+## 4. T8：50,000 档（pool=20000）三次复现
+
+内存是 GC 驱动的读数，所以三次都留档：
+
+| run | p50 | p95 | p99 | 循环内 RSS 增量 | 检索进程峰值 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 1 | 88.41ms | 139.98ms | 425.95ms | **+322MB** | 386MB |
+| 2 | 88.35ms | 148.32ms | 444.76ms | +381MB | 509MB |
+| 3 | 91.01ms | 204.22ms | 295.08ms | +263MB | 390MB |
+| **换之前（已发布）** | 88–90ms | **183.39ms** | 282–343ms | **+461 / 466 / 465MB** | 547–593MB |
+
+- T8 的延迟阈值是 `183.39 × 1.15 = 210.9ms`：三次 139.98 / 148.32 / 204.22 全部达标；
+- T8 的内存阈值是 `≤466MB`：三次 322 / 381 / 263 全部达标，且**明显更省**——
+  流式在同一个池值下就已经把工作集降了约 30%，这正是阶段二要用掉的余量；
+- 如实登记一处变差：**p99 方差更大**（425.95 / 444.76 / 295.08，换之前是 282–343）。
+  T8 不设 p99 门槛，但阶段二的 S3（<500ms）会正面约束它，三次读数都在预算内。
+  按块取 blob 会多做几次 SQL 往返，尾部因此更抖，这是机制上说得通的。
+
+---
+
+## 5. 已知限制
+
+1. **逐位一致只在已冻结装置上验证**（239 + 276 条 query）。装置外的 query 分布可能触发未
+   覆盖的近平局形状——这也是判据 §6.4 要求阶段二请 Codex 对最终策略重建盲审集的原因。
+2. **平局等价依赖 SQLite 的 `IN` 返回顺序是 rowid 升序**。这一点是实测的，不是文档保证；
+   若将来 Bun / SQLite 改变它，旧实现的平局次序也会跟着变，"等价"的参照物本身会移动。
+   §3 的全同分测试是这条风险的探测器。
+3. **块大小 4096 是本机口径**：向量本体每块约 6.3MB。它不改变任何结果（§3 边界测试覆盖），
+   但最优值依赖内存带宽与 GC 行为。
+4. **阶段一不改善召回**，一条也没有。它只把内存腾出来，让阶段二有可能把池放回全 scope。
+
+---
+
+## 6. Provenance
+
+| 项 | 值 |
+| --- | --- |
+| commit | `b2e972f`，dirty（工作区含 Phase 1b–本轮未提交产物） |
+| Bun / 平台 | 1.2.20 / darwin-arm64 |
+| 判据 | A0 `699d988c419be7b3`（先于实现） |
+| 对照基线 | `phase3a-r2/baseline.json`（30 条语料）、`pool-policy/recall.json` 的 `pool-full`（2,000 条装置） |
+| 装置 | 2,000 条 recall-scale（filler `10b572bd3ec7e4b9`）；50,000 档回放（`pool-policy-filler-10k` `bbb3a6739cd4bed8`） |
+| 起点策略 | discovery=on / floor=0.197 / cap=2 / rrfK=60 / 1:1 / tieBreak=semantic-rank / pool=20000 / bigramAux=off / **semanticTopK=Infinity** |
+| 产物 | `topk/phase1-identity.json`、`topk/recall-stream.json`、`topk/perf-50000-stream-r{1,2,3}.json` |
+
+复现命令见 `topk-criteria.md` §10。
+
+---
+
+## 7. 下一步
+
+阶段二（判据 §6）：在流式实现上跑 `pool=Infinity` × K ∈ {200, 1000, 5000, 20000}，
+门槛 S1–S8，选**最小的、结果仍与全量打分逐位一致的** K。阶段二若通过，
+生产默认才改为 `Infinity`，并且必须请 Codex 针对最终策略重建盲审集。

@@ -1,0 +1,173 @@
+{
+  "generatedAt": "2026-08-05T08:47:15.005Z",
+  "provenance": {
+    "commit": "b2e972f",
+    "bun": "1.2.20",
+    "platform": "darwin-arm64",
+    "criteria": "benchmark/reports/pool-policy-criteria.md §12（B2）",
+    "criteriaSha256": "3af22b49d73ddd5a",
+    "fillerSha256": "bbb3a6739cd4bed8",
+    "fillerMeta": {
+      "frozen": true,
+      "frozenAt": "2026-08-05T08:36:55.536Z",
+      "criteria": "benchmark/reports/pool-policy-criteria.md §12（B2）",
+      "purpose": "性能门补证：真实 cosine 分布 + 确定性回放到 50,000 候选",
+      "count": 10000,
+      "seed": 3932160,
+      "domains": 15,
+      "rulesSameAs": "phase3b-criteria.md §3.4（B1）：78 独特 concept + 33 文件基名禁用表",
+      "lexicalViolations": 0,
+      "uniqueTitles": 10000,
+      "builderScriptSha256": "255136fee2e6c32e",
+      "fillerSha256": "bbb3a6739cd4bed8"
+    },
+    "harnessSha256": "a0c61e5ab2561bd2",
+    "spaceKey": "all-MiniLM-L6-v2:q8:384:semantic-en-v1",
+    "embeddingModel": "all-MiniLM-L6-v2",
+    "dimensions": 384,
+    "queryIds": [
+      "q01",
+      "q02",
+      "q03",
+      "q04",
+      "q05",
+      "q06",
+      "q07",
+      "q08",
+      "q09",
+      "q10",
+      "q11",
+      "q12",
+      "q13",
+      "q14",
+      "q15",
+      "q16",
+      "q17",
+      "q18",
+      "q19",
+      "q20"
+    ],
+    "rounds": 11,
+    "limit": 10,
+    "twoProcess": true,
+    "dbPath": "/tmp/pool-recheck-10k.db",
+    "basePolicy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "semanticCandidatePool": null,
+      "bigramAux": false,
+      "bigramDfRatioCeiling": 1,
+      "bigramMinMatches": 1,
+      "bigramOnlyLimit": 2,
+      "bigramWeight": 1,
+      "bigramVote": "always"
+    }
+  },
+  "gates": {
+    "P1": "p95 < 300ms",
+    "P2": "p99 < 500ms",
+    "P3": "循环内 RSS 增量 ≤ 512MB",
+    "P4": "检索进程绝对峰值 ≤ 1024MB",
+    "P5": "样本 ≥ 200",
+    "P6": "degrade = 0"
+  },
+  "results": [
+    {
+      "size": 10000,
+      "pool": "full",
+      "scopeVectors": 10000,
+      "samples": 200,
+      "latency": {
+        "p50": 28.99,
+        "p95": 44.73,
+        "p99": 53.7,
+        "max": 80.34
+      },
+      "firstRound": {
+        "p50": 31.94,
+        "p95": 54.94
+      },
+      "floorPass": {
+        "rateMean": 0.0924,
+        "rateP50": 0.05,
+        "rateP95": 0.28,
+        "rateMax": 0.2966,
+        "countMean": 924,
+        "countP95": 2774,
+        "countMax": 2966,
+        "comparableMean": 10000
+      },
+      "rssLoop": {
+        "beforeMb": 128,
+        "peakMb": 368,
+        "deltaMb": 240
+      },
+      "rssProcessPeakMb": 368,
+      "rssPerRoundMb": [
+        314,
+        331,
+        320,
+        328,
+        350,
+        354,
+        357,
+        358,
+        359,
+        364,
+        364
+      ],
+      "degradedCount": 0
+    },
+    {
+      "size": 10000,
+      "pool": "20000",
+      "scopeVectors": 10000,
+      "samples": 200,
+      "latency": {
+        "p50": 29.65,
+        "p95": 43.33,
+        "p99": 64.75,
+        "max": 75.16
+      },
+      "firstRound": {
+        "p50": 28.64,
+        "p95": 55.4
+      },
+      "floorPass": {
+        "rateMean": 0.0924,
+        "rateP50": 0.05,
+        "rateP95": 0.28,
+        "rateMax": 0.2966,
+        "countMean": 924,
+        "countP95": 2774,
+        "countMax": 2966,
+        "comparableMean": 10000
+      },
+      "rssLoop": {
+        "beforeMb": 365,
+        "peakMb": 420,
+        "deltaMb": 55
+      },
+      "rssProcessPeakMb": 420,
+      "rssPerRoundMb": [
+        385,
+        412,
+        412,
+        416,
+        418,
+        419,
+        420,
+        381,
+        380,
+        365,
+        366
+      ],
+      "degradedCount": 0
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { writeFileSync } from 'fs';
+import { writeFileSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { MemoryDB, detectRepo } from '../db';
 import type { MemoryType } from '../db/types';
@@ -11,6 +11,7 @@ import { ensureLocalAuthToken, readLocalAuthToken } from '../auth-token';
 import { readCaptureMisses } from '../hooks/capture-log';
 import { logError } from '../logger';
 import { JobRunner, extractArtifacts } from '../jobs';
+import { resolveRetrievalPolicy } from './observation-search';
 import {
   generateEmbedding,
   embeddingModelInitCount,
@@ -240,6 +241,31 @@ export interface AppDeps {
   authToken?: string;
   /** Set false to disable token auth (legacy tests). */
   enableAuth?: boolean;
+}
+
+/**
+ * The gray-release switch as it is ON DISK right now.
+ *
+ * `/health` needs the live value, not the one this Worker booted with: the switch
+ * is read per MCP server process, so an operator who edits `config.json` has new
+ * sessions on the new profile immediately while this long-lived process still
+ * holds its startup copy. Falls back to the injected config when the file is
+ * missing or unreadable (fresh install, tests), and treats only an explicit
+ * `false` as a rollback — same rule as `loadConfig()`.
+ *
+ * One small JSON read per health check. `/health` is polled by `diagnose` and by
+ * hand, not per request, so this is not on any hot path.
+ */
+function readSemanticDiscoverySwitch(fallback: Config): boolean {
+  try {
+    const raw = JSON.parse(readFileSync(join(getDataDir(), 'config.json'), 'utf-8'));
+    if (raw?.retrieval?.semanticDiscovery !== undefined) {
+      return raw.retrieval.semanticDiscovery !== false;
+    }
+  } catch {
+    /* fall through to the injected config */
+  }
+  return fallback.retrieval.semanticDiscovery;
 }
 
 export function createApp(deps: AppDeps) {
@@ -726,6 +752,33 @@ export function createApp(deps: AppDeps) {
       jobs: jobRunner.stats,
       jobs_24h: stats.jobs24h,
       search_24h: stats.search24h,
+      // Which retrieval profile MCP servers started from this dataDir will serve
+      // (plan §8.2). Read from DISK on every call, not from the config this
+      // Worker booted with: the switch takes effect per MCP process, so after a
+      // rollback edit new sessions are already on the old profile while the
+      // long-lived Worker still holds the value from its own start. Reporting the
+      // cached one would make /health answer "did my rollback take effect?" with
+      // last week's answer — the README promises the opposite.
+      //
+      // `semantic_only_limit` is reported as 'none' when uncapped, because JSON
+      // turns Infinity into null.
+      retrieval: (() => {
+        const enabled = readSemanticDiscoverySwitch(config);
+        const policy = resolveRetrievalPolicy(enabled);
+        return {
+          semantic_discovery: enabled,
+          profile: enabled ? 'default' : 'lexical-anchor-rollback',
+          semantic_floor: policy.semanticFloor,
+          semantic_only_limit: Number.isFinite(policy.semanticOnlyLimit)
+            ? policy.semanticOnlyLimit
+            : 'none',
+          // Reported for the same reason floor and cap are: `profile: 'default'`
+          // means `recency` on a pre-2D build and `semantic-rank` on this one, so
+          // without this field /health cannot answer "which fusion order am I
+          // actually serving?" without reading the binary's source.
+          tie_break: policy.tieBreak,
+        };
+      })(),
       observations: stats.observations,
       embeddings: stats.embeddings,
       // Phase 1b's lightweight claim is "one model instance per dataDir, not one

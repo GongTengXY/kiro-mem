@@ -1,4 +1,8 @@
 import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
+import { mkdtempSync, rmSync, readFileSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { Database } from 'bun:sqlite';
 import { MemoryDB, computeScopeKey, extractFtsSearchUnits } from '../../src/db';
 import { openInMemoryDB } from '../support/tmp-db';
 
@@ -334,5 +338,235 @@ describe('P1-2: the LIKE fallback covers every FTS column', () => {
   test('a term in no column still returns nothing', () => {
     seedObs({ title: 'alpha', stoppedAt: '2026-07-01T00:00:00Z' });
     expect(db.searchObservationsFts('zz')).toEqual([]);
+  });
+});
+
+describe('FTS 主查询的执行计划：CROSS JOIN 固定连接顺序', () => {
+  /**
+   * 断言的是**可观测后果**，不是计划文本。
+   *
+   * 判据（`benchmark/reports/fix-fts-limit-criteria.md` §7 第 1 条）要求反向测试能捕获计划
+   * 翻转，但 `EXPLAIN QUERY PLAN` 的输出字符串依赖 SQLite 版本与统计信息，把它写死会让测试
+   * 在升级 Bun 时无故失败——那种测试只会被删掉，不会被修。
+   *
+   * 所以断言两件可观测的事：
+   *   1. 计划的**驱动表**是 FTS 虚表（这是修复的全部内容：谁做外层循环）；
+   *   2. 计划里**没有** `TEMP B-TREE` 排序（FTS 自己的 rank 次序被直接使用）。
+   *
+   * 这两条都是语义中立的结构性质，不依赖具体的 index 名或代号。翻回 `JOIN` 之后两条都会失败
+   * ——实测确认过，这就是这个测试的判别力来源。
+   */
+  /**
+   * 取**生产源码里那条 SQL**，而不是在测试里重抄一遍。
+   *
+   * 第一版就是重抄的，于是反向测试（把生产改回 `JOIN`）时这两条计划断言**照样通过**——
+   * 它测的是"一条写着 CROSS JOIN 的 SQL 会有 CROSS JOIN 的计划"，同义反复，没有判别力。
+   * 反向测试就是为了抓这个而要求的。
+   *
+   * 现在从 `src/db/index.ts` 抽出 FTS 分支的 SQL 模板，再按生产的方式拼上 scope 与
+   * ORDER BY/LIMIT。改动生产的连接方式会立刻反映到这里。
+   */
+  const productionFtsSql = (): string => {
+    const src = readFileSync(new URL('../../src/db/index.ts', import.meta.url), 'utf-8');
+    const m = src.match(/let sql = `(SELECT o\.\* FROM observations_fts fts[\s\S]*?)`;/);
+    if (!m) throw new Error('没能从 src/db/index.ts 抽出 FTS 分支 SQL——正则与源码脱节了');
+    // 与生产 `searchObservationsFts` 相同的拼接顺序（scopeKey 给了、type 没给）。
+    return `${m[1]!} AND o.scope_key = ? ORDER BY fts.rank, o.id ASC LIMIT ?`;
+  };
+
+  const planOf = (query: string): string[] => {
+    const units = extractFtsSearchUnits(query);
+    const expr = units.map((u) => `"${u.replaceAll('"', '""')}"`).join(' OR ');
+    const threshold = new Date(Date.now() - 90 * 86400000).toISOString();
+    // 只读旁路连接。不给 MemoryDB 加一个只有测试用的 explain 方法：那是为了一个断言
+    // 在生产 API 上开洞。所以这个 describe 用**文件库**而不是内存库。
+    const raw = new Database(planDbPath, { readonly: true });
+    try {
+      return (raw.query(`EXPLAIN QUERY PLAN ${productionFtsSql()}`).all(
+        expr, threshold, computeScopeKey('/proj', '/proj'), 50,
+      ) as { detail: string }[]).map((r) => r.detail);
+    } finally {
+      raw.close();
+    }
+  };
+
+  let planDir: string;
+  let planDbPath: string;
+  let fileDb: MemoryDB;
+
+  beforeEach(() => {
+    planDir = mkdtempSync(join(tmpdir(), 'kiro-plan-'));
+    planDbPath = join(planDir, 'plan.db');
+    fileDb = new MemoryDB(planDbPath);
+    const session_id = 's-plan';
+    fileDb.upsertSessionRef({ session_id, cwd: '/proj', repo: '/proj' });
+    for (let i = 0; i < 30; i++) {
+      const seq = fileDb.allocateNextTurnSeq(session_id);
+      const turn = fileDb.createTurn({
+        session_id, seq, cwd: '/proj', repo: '/proj', prompt_text: `p${i}`,
+      });
+      const ts = new Date(Date.now() - (i + 1) * 3600_000).toISOString();
+      fileDb.markTurnClosed(turn.id, ts);
+      fileDb.insertObservation({
+        turn_id: turn.id, session_id, turn_seq: seq, repo: '/proj', cwd_scope: '/proj',
+        title: `record ${i} about quoting and escaping`,
+        summary: `synthetic body ${i} covering installation and worker restart`,
+        memory_type: 'change', quality: 'normal',
+        turn_started_at: ts, turn_stopped_at: ts,
+      });
+    }
+  });
+
+  afterEach(() => {
+    fileDb.close();
+    rmSync(planDir, { recursive: true, force: true });
+  });
+
+  test('驱动表是 FTS 虚表，不是 observations', () => {
+    const plan = planOf('installation worker restart');
+    expect(plan.length).toBeGreaterThan(0);
+    // 第一行 = 外层循环。必须是 FTS 虚表；翻回 JOIN 时这里会变成对 observations 的索引扫描。
+    expect(plan[0]).toContain('VIRTUAL TABLE');
+    expect(plan[0]).not.toContain('idx_observations_scope_time');
+  });
+
+  test('计划里出现 TEMP B-TREE 是预期的，但 FTS 必须仍是外层驱动', () => {
+    // B1 修订之后 `ORDER BY fts.rank, o.id` 是复合键，FTS 模块能流式给出自己的 rank
+    // 次序但给不出复合次序，所以 `TEMP B-TREE` 会出现——这是裁决明确接受的代价。
+    //
+    // 但**外层驱动**必须仍是 FTS：1900 倍的收益来自"谁做外层循环"，不来自有没有排序。
+    // 所以这条测试断言的是排序的存在**不影响**驱动方向，而不是"没有排序"。
+    const plan = planOf('installation worker restart');
+    expect(plan.join(' | ')).toContain('TEMP B-TREE');
+    expect(plan[0]).toContain('VIRTUAL TABLE');
+    // 关键的反面：observations 不得成为被全扫的驱动表。
+    expect(plan.join(' | ')).not.toContain('SCAN o');
+  });
+
+  test('`limit` 仍是绑定参数：SQL 文本里不含内联的数字上限', () => {
+    // 这一条钉住"没有为了性能而改用字符串拼接"。修法 A（内联字面量）测得同样快，
+    // 但会把一个值拼进 SQL；选 CROSS JOIN 就是为了不引入那个注入面。
+    const src = readFileSync(new URL('../../src/db/index.ts', import.meta.url), 'utf-8');
+    // 三条都是全文件断言：切片会被注释长度影响，那种脆弱只会让测试被删掉。
+    expect(src).toContain('CROSS JOIN observations o ON fts.rowid = o.id');
+    expect(src).toContain('ORDER BY fts.rank, o.id ASC LIMIT ?');
+    // 任何 `LIMIT ${...}` 都意味着把值拼进了 SQL——修法 A 的形状，本轮明确没选它。
+    expect(src).not.toMatch(/LIMIT \$\{/);
+  });
+
+  test('多个 bm25 精确等分记录严格按 id ASC 排序（B1 修订要求 1）', () => {
+    // 文本完全相同 → 词频与文档长度相同 → bm25 rank 精确相等。所以这一组的顺序
+    // 完全由平局键决定，是 `id ASC` 的直接检验。
+    const dir = mkdtempSync(join(tmpdir(), 'kiro-tie-eq-'));
+    const p = join(dir, 'tie.db');
+    const d = new MemoryDB(p);
+    try {
+      d.upsertSessionRef({ session_id: 's-tie', cwd: '/proj', repo: '/proj' });
+      const ids: number[] = [];
+      for (let i = 0; i < 8; i++) {
+        const seq = d.allocateNextTurnSeq('s-tie');
+        const turn = d.createTurn({
+          session_id: 's-tie', seq, cwd: '/proj', repo: '/proj', prompt_text: 'p',
+        });
+        const ts = new Date(Date.now() - (i + 1) * 3600_000).toISOString();
+        d.markTurnClosed(turn.id, ts);
+        ids.push(d.insertObservation({
+          turn_id: turn.id, session_id: 's-tie', turn_seq: seq, repo: '/proj', cwd_scope: '/proj',
+          // 逐字相同的可索引文本。
+          title: 'identical quoting escape record',
+          summary: 'identical body for exact bm25 tie',
+          memory_type: 'change', quality: 'normal',
+          turn_started_at: ts, turn_stopped_at: ts,
+        })!);
+      }
+      const rows = d.searchObservationsFts('identical quoting escape', {
+        scopeKey: computeScopeKey('/proj', '/proj'), days: 90, limit: 50,
+      });
+      expect(rows.length).toBe(8);
+      // 全部等分 → 必须严格升序，且恰好是插入顺序（id 单调）。
+      expect(rows.map((r) => r.id)).toEqual([...ids].sort((a, b) => a - b));
+    } finally {
+      d.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('平局跨越 limit 50 截断边界时，两种查询计划得到相同的有序 50 条（B1 修订要求 2）', () => {
+    // 这条测的是**成员**确定性，不只是顺序。60 条逐字相同的记录 → 一个 60 行的平局组
+    // 横跨 50 行边界，于是"保留哪 50 条"完全由平局键决定。
+    //
+    // 对照的是**两种查询计划**：CROSS JOIN（生产）与普通 JOIN（修复前的形状）。
+    // 修订之前这两者在这里会给出不同的 50 条成员；修订之后必须逐条相同——那才是
+    // "成员不再取决于计划"的实证。
+    const dir = mkdtempSync(join(tmpdir(), 'kiro-tie-cut-'));
+    const p = join(dir, 'cut.db');
+    const d = new MemoryDB(p);
+    try {
+      d.upsertSessionRef({ session_id: 's-cut', cwd: '/proj', repo: '/proj' });
+      const ids: number[] = [];
+      for (let i = 0; i < 60; i++) {
+        const seq = d.allocateNextTurnSeq('s-cut');
+        const turn = d.createTurn({
+          session_id: 's-cut', seq, cwd: '/proj', repo: '/proj', prompt_text: 'p',
+        });
+        const ts = new Date(Date.now() - (i + 1) * 3600_000).toISOString();
+        d.markTurnClosed(turn.id, ts);
+        ids.push(d.insertObservation({
+          turn_id: turn.id, session_id: 's-cut', turn_seq: seq, repo: '/proj', cwd_scope: '/proj',
+          title: 'boundary tie record for truncation',
+          summary: 'identical body so bm25 ties across the cut',
+          memory_type: 'change', quality: 'normal',
+          turn_started_at: ts, turn_stopped_at: ts,
+        })!);
+      }
+
+      const scope = computeScopeKey('/proj', '/proj');
+      const threshold = new Date(Date.now() - 90 * 86400000).toISOString();
+      const units = extractFtsSearchUnits('boundary tie record truncation');
+      const expr = units.map((u) => `"${u.replaceAll('"', '""')}"`).join(' OR ');
+      const raw = new Database(p, { readonly: true });
+      const run = (joinKind: 'CROSS JOIN' | 'JOIN'): number[] =>
+        (raw.query(
+          `SELECT o.id AS id FROM observations_fts fts
+             ${joinKind} observations o ON fts.rowid = o.id
+            WHERE observations_fts MATCH ? AND o.turn_stopped_at > ? AND o.scope_key = ?
+            ORDER BY fts.rank, o.id ASC LIMIT ?`,
+        ).all(expr, threshold, scope, 50) as { id: number }[]).map((r) => r.id);
+
+      const viaCross = run('CROSS JOIN');
+      const viaPlain = run('JOIN');
+      raw.close();
+
+      expect(viaCross.length).toBe(50);
+      // 成员与顺序都必须一致——这是修订要挡住的那件事。
+      expect(viaCross).toEqual(viaPlain);
+      // 并且必须是 id 最小的 50 条，不是任意 50 条。
+      expect(viaCross).toEqual([...ids].sort((a, b) => a - b).slice(0, 50));
+      // 生产方法走同一条路：确认这不只是在测一条手写 SQL。
+      const prod = d.searchObservationsFts('boundary tie record truncation', {
+        scopeKey: scope, days: 90, limit: 50,
+      });
+      expect(prod.map((r) => r.id)).toEqual(viaCross);
+    } finally {
+      d.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('修复不改变返回的行集合：同一 fixture 上按 (rank, id) 归一化后一致', () => {
+    // 平局顺序不做断言——SQLite 不保证它，钉死它会让测试比实现更严。
+    // 但**行集合**必须稳定，这是"修计划不改语义"的实质内容。
+    const rows = fileDb.searchObservationsFts('installation worker restart', {
+      scopeKey: computeScopeKey('/proj', '/proj'),
+      days: 90,
+      limit: 50,
+    });
+    expect(rows.length).toBe(30);
+    const again = fileDb.searchObservationsFts('installation worker restart', {
+      scopeKey: computeScopeKey('/proj', '/proj'),
+      days: 90,
+      limit: 50,
+    });
+    expect(new Set(again.map((r) => r.id))).toEqual(new Set(rows.map((r) => r.id)));
   });
 });

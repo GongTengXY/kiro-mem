@@ -261,7 +261,7 @@ export interface ObservabilityStats {
     succeeded: number;
     dead: number;
   };
-  /** MCP search activity in the last 24h, from metric_events (§12.4). */
+  /** MCP search activity in the last 24h, from metric_events (§12.4, plan §8.2). */
   search24h: {
     requests: number;
     /** Requests that degraded to FTS-only (embedding unavailable). */
@@ -270,8 +270,63 @@ export interface ObservabilityStats {
     degradeRate: number;
     /** Mean end-to-end search latency (ms). */
     latencyMsAvg: number;
+    /** Median end-to-end search latency (ms). */
+    latencyMsP50: number;
     /** 95th-percentile search latency (ms). */
     latencyMsP95: number;
+    /**
+     * Requests that ran in the `semantic-en-v1` space, i.e. the agent supplied a
+     * `semantic_query_en` the guardrail accepted. This is the coverage number
+     * the phase 2C gray release turns on: independent semantic recall is only
+     * available in this space, so a low rate means the feature is shipped but
+     * mostly unreachable, no matter how good the offline numbers are.
+     */
+    protocolSemanticEn: number;
+    /** Requests that fell back to the `raw-v1` space. */
+    protocolRaw: number;
+    /** protocolSemanticEn / requests, 0..1. */
+    semanticEnRate: number;
+    /**
+     * Why the English form was unusable, keyed by reason: `missing` (never
+     * passed) plus the `checkSemanticEnQuery` reject reasons. Bounded by that
+     * enum, so it cannot grow with traffic, and it never contains query text.
+     */
+    semanticQueryIssues: Record<string, number>;
+    /** Requests where discovery was requested by policy AND available. */
+    discoveryEffective: number;
+    /** Requests with zero FTS candidates — only semantic recall can answer these. */
+    zeroFts: number;
+    /** Of those, how many returned at least one semantic-only result. */
+    zeroFtsRecalled: number;
+    /** semantic-only results returned across the window. */
+    semanticOnlyTotal: number;
+    /** semanticOnlyTotal / requests. Compare against the frozen cap. */
+    semanticOnlyPerRequest: number;
+    /** Worst single request. Must never exceed the policy cap. */
+    semanticOnlyMax: number;
+    /**
+     * Mean number of stored vectors the semantic leg could actually score. Near
+     * zero while a `semantic-en-v1` rebuild is pending, which is the difference
+     * between "nothing relevant" and "nothing comparable".
+     */
+    comparableVectorsAvg: number;
+    /**
+     * Mean vectors in the ACTIVE space across the searched scope — the whole
+     * workspace, not the 200-row candidate pool (plan §8.2). On a large workspace
+     * `comparableVectorsAvg` saturates at the pool size and stops being able to
+     * say whether the scope is embedded; this does not.
+     */
+    scopeVectorsAvg: number;
+    /** Worst case in the window. 0 means some search ran against an unembedded scope. */
+    scopeVectorsMin: number;
+    /** Requests where the count actually ran (the semantic step was reached). */
+    scopeVectorsMeasured: number;
+    /**
+     * Requests whose scope had NO vectors in the active space. Non-zero means
+     * semantic recall was structurally impossible for them — a rebuild or job
+     * backlog issue, not a relevance one.
+     */
+    emptyScopeRequests: number;
   };
   /** ACP repair / contamination events in the last 24h, from metric_events (§12.4). */
   acp24h: {

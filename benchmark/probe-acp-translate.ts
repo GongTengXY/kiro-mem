@@ -34,9 +34,11 @@
 
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs';
 import { dirname, join, resolve } from 'path';
-import { loadDataset, mirroredRecordIds, DATASET_DIR } from './dataset';
+import { loadDataset, mirroredRecordIds, DATASET_DIR, PHASE2_QUERIES_FILE,
+  FUSION_QUERIES_FILE, EMPTY_EXT_QUERIES_FILE } from './dataset';
 import type { Annotation, DatasetQuery, DatasetTurn } from './dataset';
 import { ACPPool } from '../src/acp';
+import { checkSemanticEnQuery } from '../src/semantic-en';
 import { loadConfig, resolveRuntimeHome, getDataDir } from '../src/config';
 import { checkRuntimeHome, formatIssues } from '../src/acp/integrity';
 
@@ -52,13 +54,9 @@ if (target !== 'records' && target !== 'queries') {
   process.exit(2);
 }
 const querySet = flag('query-set', 'tuned') as
-  | 'tuned'
-  | 'heldout'
-  | 'empty'
-  | 'leakage'
-  | 'validation';
-if (!['tuned', 'heldout', 'empty', 'leakage', 'validation'].includes(querySet)) {
-  console.error('unknown --query-set (expected tuned|heldout|empty|leakage|validation)');
+  'tuned' | 'heldout' | 'empty' | 'leakage' | 'validation' | 'phase2' | 'r2';
+if (!['tuned', 'heldout', 'empty', 'leakage', 'validation', 'phase2', 'r2'].includes(querySet)) {
+  console.error('unknown --query-set (expected tuned|heldout|empty|leakage|validation|phase2|r2)');
   process.exit(2);
 }
 /**
@@ -195,7 +193,30 @@ function queryPrompt(q: string): string {
 // ---------------------------------------------------------------------------
 
 // validation 子集在单独文件里，默认不加载（见 dataset.ts 的"只读一次"说明）。
-const { turns, queries } = loadDataset(DATASET_DIR, { withValidation: querySet === 'validation' });
+const { turns, queries } = loadDataset(DATASET_DIR, {
+  withValidation: querySet === 'validation',
+  withPhase2: querySet === 'phase2',
+  // `r2` 一次带上两份：fusion 校准集与扩充 empty 集。它们同批冻结、同批生成派生值，
+  // 分两次跑会让「派生值一次性生成」这条纪律（规则 §2.5）出现两个时间点。
+  withFusion: querySet === 'r2',
+  withEmptyExt: querySet === 'r2',
+});
+/** R2 两份数据集的 id 集合。同样按文件判定，不按 id 前缀。 */
+const r2Ids = new Set<string>(
+  querySet === 'r2'
+    ? [FUSION_QUERIES_FILE, EMPTY_EXT_QUERIES_FILE].flatMap((f) =>
+        (JSON.parse(readFileSync(join(DATASET_DIR, f), 'utf-8')) as DatasetQuery[]).map((q) => q.id),
+      )
+    : [],
+);
+/** phase2 集的 id 集合。按文件判定而不是按 id 前缀，前缀约定会漂移。 */
+const phase2Ids = new Set<string>(
+  querySet === 'phase2'
+    ? (JSON.parse(
+        readFileSync(join(DATASET_DIR, PHASE2_QUERIES_FILE), 'utf-8'),
+      ) as DatasetQuery[]).map((q) => q.id)
+    : [],
+);
 
 interface Item {
   id: string;
@@ -235,14 +256,35 @@ if (target === 'records') {
       ? q.kind === 'empty'
       : querySet === 'leakage'
         ? q.kind === 'leakage'
-        : q.kind === 'relevance' && q.origin === querySet,
+        : querySet === 'phase2'
+          ? // phase2 集含 relevance 与 empty 两类，且只有中文那部分需要翻译。
+            // 英文 query 的 `semantic_query_en` 就是原文本身——护栏明确允许"英文原文
+            // 合法地归一化为自身"，所以拿它去跑一次中→英 prompt 是纯浪费，而且 1b 实测
+            // 那正是失败最集中的形状（模型倾向回一句解释而不是 JSON）。恒等部分单独补齐。
+            phase2Ids.has(q.id) && /[\u4e00-\u9fff]/.test(q.query)
+          : querySet === 'r2'
+            ? // 与 phase2 同口径：只有含中文那部分需要走中→英 prompt。纯英文 query 的
+              // `semantic_query_en` 就是原文本身（护栏明确允许英文原文归一化为自身），
+              // 拿它去跑一次翻译 prompt 是纯浪费，且 1b 实测那正是失败最集中的形状。
+              // 恒等部分在冻结脚本里单独补齐。
+              r2Ids.has(q.id) && /[\u4e00-\u9fff]/.test(q.query)
+            : q.kind === 'relevance' && q.origin === querySet,
   );
   items = picked.map((q) => ({
     id: q.id,
     prompt: queryPrompt(q.query),
     parse: (json) => {
       const en = str(json.en).trim();
-      return en ? en : null;
+      if (!en) return null;
+      // 过一遍**生产护栏**，不只是"非空即可"。
+      //
+      // 实测原因：阶段 2 校准集这一跑里，模型对两条 query 返回了字面 `...` ——
+      // JSON 合法、字符串非空，于是探针记成 ✓ 并写进固定输入，但生产
+      // `checkSemanticEnQuery` 会以 `placeholder` 拒绝它，于是那条 query 在 arm 里
+      // 静默落回 raw-v1。探针的成功计数因此**高估**了可用译文数，而高估的那部分
+      // 恰好是会污染实验的部分。判据放在这里，失败就走既有的重试与失败队列。
+      const check = checkSemanticEnQuery(en, q.query);
+      return check.ok ? en : null;
     },
   }));
 }

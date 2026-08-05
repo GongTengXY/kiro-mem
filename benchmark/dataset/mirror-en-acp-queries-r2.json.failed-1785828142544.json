@@ -1,0 +1,30 @@
+{
+  "provenance": {
+    "source": "acp",
+    "agent": "kiro-mem-compressor",
+    "kiroCli": "kiro-cli (see report)",
+    "target": "queries",
+    "querySet": "r2",
+    "generatedAt": "2026-08-04T07:22:22.544Z",
+    "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+    "items": 2,
+    "failures": 1,
+    "retries": 1,
+    "wallTimeMs": 17870,
+    "itemLatencyMs": {
+      "p50": 11443,
+      "p95": 17867,
+      "max": 17867
+    }
+  },
+  "queries": {
+    "n03": "What can I do about my cat parkouring around in the middle of the night?",
+    "n05": "How much cured meat should I put in yanducxian?"
+  },
+  "failuresDetail": [
+    {
+      "id": "n04",
+      "reason": "JSON 解析失败"
+    }
+  ]
+}

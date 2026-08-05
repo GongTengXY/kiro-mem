@@ -1,0 +1,1202 @@
+{
+  "resolution": 0.013888888888888888,
+  "baseline": {
+    "label": "floor=0.2 cap=inf",
+    "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/reports/phase2b/baseline.json",
+    "floor": 0.2,
+    "cap": "inf",
+    "discovery": false,
+    "rrfK": 60,
+    "weights": "1:1",
+    "tieBreak": "recency",
+    "phase2Relevance": 72,
+    "phase2HitAt5": 0,
+    "phase2Mrr": 0,
+    "phase2RPrecision": 0,
+    "phase2EmptyQueries": 49,
+    "phase2EmptyReturned": 0,
+    "phase2EmptyWorst": 0,
+    "tunedHitAt5": 0.9444444444444444,
+    "tunedMrr": 0.8333333333333334,
+    "tunedRPrecision": 0.7777777777777778,
+    "legacyEmptyReturned": 0,
+    "legacyEmptyWorst": 0,
+    "semanticOnlyMax": 6,
+    "leakTotal": 0,
+    "rawProtocolQueries": 0,
+    "latencyP95": 10.935625000000073,
+    "discoveryRequested": 0,
+    "discoveryEffective": 0,
+    "discoveryBlocked": 0
+  },
+  "arms": [
+    {
+      "label": "floor=0.197 cap=1",
+      "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/reports/phase2b/arm-f0.197-c1.json",
+      "floor": 0.197,
+      "cap": 1,
+      "discovery": true,
+      "rrfK": 60,
+      "weights": "1:1",
+      "tieBreak": "recency",
+      "phase2Relevance": 72,
+      "phase2HitAt5": 0.4166666666666667,
+      "phase2Mrr": 0.4166666666666667,
+      "phase2RPrecision": 0.3888888888888889,
+      "phase2EmptyQueries": 49,
+      "phase2EmptyReturned": 0.3877551020408163,
+      "phase2EmptyWorst": 1,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.8888888888888888,
+      "tunedRPrecision": 0.8333333333333334,
+      "legacyEmptyReturned": 0.6,
+      "legacyEmptyWorst": 1,
+      "semanticOnlyMax": 1,
+      "leakTotal": 0,
+      "rawProtocolQueries": 0,
+      "latencyP95": 12.041832999999997,
+      "discoveryRequested": 145,
+      "discoveryEffective": 145,
+      "discoveryBlocked": 0,
+      "checks": [
+        {
+          "name": "既有 tuned hit@5 ≥ 94.4%",
+          "ok": true,
+          "detail": "100.0%"
+        },
+        {
+          "name": "既有 tuned MRR ≥ 0.833",
+          "ok": true,
+          "detail": "0.889"
+        },
+        {
+          "name": "既有 tuned R-precision ≥ 77.8%",
+          "ok": true,
+          "detail": "83.3%"
+        },
+        {
+          "name": "Phase 2 zero-FTS hit@5 高于基线",
+          "ok": true,
+          "detail": "41.7% vs 基线 0.0%"
+        },
+        {
+          "name": "Phase 2 zero-FTS MRR 高于基线",
+          "ok": true,
+          "detail": "0.417 vs 基线 0.000"
+        },
+        {
+          "name": "Phase 2 empty 平均返回 ≤ 1",
+          "ok": true,
+          "detail": "0.39"
+        },
+        {
+          "name": "Phase 2 empty 最坏返回 ≤ 3",
+          "ok": true,
+          "detail": "1"
+        },
+        {
+          "name": "既有 expected-empty 平均 ≤ 1",
+          "ok": true,
+          "detail": "0.60"
+        },
+        {
+          "name": "既有 expected-empty 最坏 ≤ 3",
+          "ok": true,
+          "detail": "1"
+        },
+        {
+          "name": "semantic-only ≤ min(cap, limit)",
+          "ok": true,
+          "detail": "max 1 ≤ 1"
+        },
+        {
+          "name": "跨 scope 泄漏 = 0",
+          "ok": true,
+          "detail": "0"
+        },
+        {
+          "name": "protocol 混排 = 0（raw 腿 0 条）",
+          "ok": true,
+          "detail": "raw 0"
+        },
+        {
+          "name": "search p95 < 300ms",
+          "ok": true,
+          "detail": "12.0ms"
+        }
+      ]
+    },
+    {
+      "label": "floor=0.197 cap=2",
+      "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/reports/phase2b/arm-f0.197-c2.json",
+      "floor": 0.197,
+      "cap": 2,
+      "discovery": true,
+      "rrfK": 60,
+      "weights": "1:1",
+      "tieBreak": "recency",
+      "phase2Relevance": 72,
+      "phase2HitAt5": 0.5,
+      "phase2Mrr": 0.4583333333333333,
+      "phase2RPrecision": 0.4097222222222222,
+      "phase2EmptyQueries": 49,
+      "phase2EmptyReturned": 0.5918367346938775,
+      "phase2EmptyWorst": 2,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.8888888888888888,
+      "tunedRPrecision": 0.8333333333333334,
+      "legacyEmptyReturned": 1,
+      "legacyEmptyWorst": 2,
+      "semanticOnlyMax": 2,
+      "leakTotal": 0,
+      "rawProtocolQueries": 0,
+      "latencyP95": 12.409791999999925,
+      "discoveryRequested": 145,
+      "discoveryEffective": 145,
+      "discoveryBlocked": 0,
+      "checks": [
+        {
+          "name": "既有 tuned hit@5 ≥ 94.4%",
+          "ok": true,
+          "detail": "100.0%"
+        },
+        {
+          "name": "既有 tuned MRR ≥ 0.833",
+          "ok": true,
+          "detail": "0.889"
+        },
+        {
+          "name": "既有 tuned R-precision ≥ 77.8%",
+          "ok": true,
+          "detail": "83.3%"
+        },
+        {
+          "name": "Phase 2 zero-FTS hit@5 高于基线",
+          "ok": true,
+          "detail": "50.0% vs 基线 0.0%"
+        },
+        {
+          "name": "Phase 2 zero-FTS MRR 高于基线",
+          "ok": true,
+          "detail": "0.458 vs 基线 0.000"
+        },
+        {
+          "name": "Phase 2 empty 平均返回 ≤ 1",
+          "ok": true,
+          "detail": "0.59"
+        },
+        {
+          "name": "Phase 2 empty 最坏返回 ≤ 3",
+          "ok": true,
+          "detail": "2"
+        },
+        {
+          "name": "既有 expected-empty 平均 ≤ 1",
+          "ok": true,
+          "detail": "1.00"
+        },
+        {
+          "name": "既有 expected-empty 最坏 ≤ 3",
+          "ok": true,
+          "detail": "2"
+        },
+        {
+          "name": "semantic-only ≤ min(cap, limit)",
+          "ok": true,
+          "detail": "max 2 ≤ 2"
+        },
+        {
+          "name": "跨 scope 泄漏 = 0",
+          "ok": true,
+          "detail": "0"
+        },
+        {
+          "name": "protocol 混排 = 0（raw 腿 0 条）",
+          "ok": true,
+          "detail": "raw 0"
+        },
+        {
+          "name": "search p95 < 300ms",
+          "ok": true,
+          "detail": "12.4ms"
+        }
+      ]
+    },
+    {
+      "label": "floor=0.197 cap=3",
+      "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/reports/phase2b/arm-f0.197-c3.json",
+      "floor": 0.197,
+      "cap": 3,
+      "discovery": true,
+      "rrfK": 60,
+      "weights": "1:1",
+      "tieBreak": "recency",
+      "phase2Relevance": 72,
+      "phase2HitAt5": 0.5555555555555556,
+      "phase2Mrr": 0.4768518518518518,
+      "phase2RPrecision": 0.4097222222222222,
+      "phase2EmptyQueries": 49,
+      "phase2EmptyReturned": 0.7551020408163265,
+      "phase2EmptyWorst": 3,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.8888888888888888,
+      "tunedRPrecision": 0.8333333333333334,
+      "legacyEmptyReturned": 1.2,
+      "legacyEmptyWorst": 3,
+      "semanticOnlyMax": 3,
+      "leakTotal": 0,
+      "rawProtocolQueries": 0,
+      "latencyP95": 21.953207999999904,
+      "discoveryRequested": 145,
+      "discoveryEffective": 145,
+      "discoveryBlocked": 0,
+      "checks": [
+        {
+          "name": "既有 tuned hit@5 ≥ 94.4%",
+          "ok": true,
+          "detail": "100.0%"
+        },
+        {
+          "name": "既有 tuned MRR ≥ 0.833",
+          "ok": true,
+          "detail": "0.889"
+        },
+        {
+          "name": "既有 tuned R-precision ≥ 77.8%",
+          "ok": true,
+          "detail": "83.3%"
+        },
+        {
+          "name": "Phase 2 zero-FTS hit@5 高于基线",
+          "ok": true,
+          "detail": "55.6% vs 基线 0.0%"
+        },
+        {
+          "name": "Phase 2 zero-FTS MRR 高于基线",
+          "ok": true,
+          "detail": "0.477 vs 基线 0.000"
+        },
+        {
+          "name": "Phase 2 empty 平均返回 ≤ 1",
+          "ok": true,
+          "detail": "0.76"
+        },
+        {
+          "name": "Phase 2 empty 最坏返回 ≤ 3",
+          "ok": true,
+          "detail": "3"
+        },
+        {
+          "name": "既有 expected-empty 平均 ≤ 1",
+          "ok": false,
+          "detail": "1.20"
+        },
+        {
+          "name": "既有 expected-empty 最坏 ≤ 3",
+          "ok": true,
+          "detail": "3"
+        },
+        {
+          "name": "semantic-only ≤ min(cap, limit)",
+          "ok": true,
+          "detail": "max 3 ≤ 3"
+        },
+        {
+          "name": "跨 scope 泄漏 = 0",
+          "ok": true,
+          "detail": "0"
+        },
+        {
+          "name": "protocol 混排 = 0（raw 腿 0 条）",
+          "ok": true,
+          "detail": "raw 0"
+        },
+        {
+          "name": "search p95 < 300ms",
+          "ok": true,
+          "detail": "22.0ms"
+        }
+      ]
+    },
+    {
+      "label": "floor=0.197 cap=5",
+      "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/reports/phase2b/arm-f0.197-c5.json",
+      "floor": 0.197,
+      "cap": 5,
+      "discovery": true,
+      "rrfK": 60,
+      "weights": "1:1",
+      "tieBreak": "recency",
+      "phase2Relevance": 72,
+      "phase2HitAt5": 0.5555555555555556,
+      "phase2Mrr": 0.4768518518518518,
+      "phase2RPrecision": 0.4097222222222222,
+      "phase2EmptyQueries": 49,
+      "phase2EmptyReturned": 0.9387755102040817,
+      "phase2EmptyWorst": 5,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.8888888888888888,
+      "tunedRPrecision": 0.8333333333333334,
+      "legacyEmptyReturned": 1.4,
+      "legacyEmptyWorst": 4,
+      "semanticOnlyMax": 5,
+      "leakTotal": 0,
+      "rawProtocolQueries": 0,
+      "latencyP95": 12.054124999999885,
+      "discoveryRequested": 145,
+      "discoveryEffective": 145,
+      "discoveryBlocked": 0,
+      "checks": [
+        {
+          "name": "既有 tuned hit@5 ≥ 94.4%",
+          "ok": true,
+          "detail": "100.0%"
+        },
+        {
+          "name": "既有 tuned MRR ≥ 0.833",
+          "ok": true,
+          "detail": "0.889"
+        },
+        {
+          "name": "既有 tuned R-precision ≥ 77.8%",
+          "ok": true,
+          "detail": "83.3%"
+        },
+        {
+          "name": "Phase 2 zero-FTS hit@5 高于基线",
+          "ok": true,
+          "detail": "55.6% vs 基线 0.0%"
+        },
+        {
+          "name": "Phase 2 zero-FTS MRR 高于基线",
+          "ok": true,
+          "detail": "0.477 vs 基线 0.000"
+        },
+        {
+          "name": "Phase 2 empty 平均返回 ≤ 1",
+          "ok": true,
+          "detail": "0.94"
+        },
+        {
+          "name": "Phase 2 empty 最坏返回 ≤ 3",
+          "ok": false,
+          "detail": "5"
+        },
+        {
+          "name": "既有 expected-empty 平均 ≤ 1",
+          "ok": false,
+          "detail": "1.40"
+        },
+        {
+          "name": "既有 expected-empty 最坏 ≤ 3",
+          "ok": false,
+          "detail": "4"
+        },
+        {
+          "name": "semantic-only ≤ min(cap, limit)",
+          "ok": true,
+          "detail": "max 5 ≤ 5"
+        },
+        {
+          "name": "跨 scope 泄漏 = 0",
+          "ok": true,
+          "detail": "0"
+        },
+        {
+          "name": "protocol 混排 = 0（raw 腿 0 条）",
+          "ok": true,
+          "detail": "raw 0"
+        },
+        {
+          "name": "search p95 < 300ms",
+          "ok": true,
+          "detail": "12.1ms"
+        }
+      ]
+    },
+    {
+      "label": "floor=0.223 cap=1",
+      "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/reports/phase2b/arm-f0.223-c1.json",
+      "floor": 0.223,
+      "cap": 1,
+      "discovery": true,
+      "rrfK": 60,
+      "weights": "1:1",
+      "tieBreak": "recency",
+      "phase2Relevance": 72,
+      "phase2HitAt5": 0.375,
+      "phase2Mrr": 0.375,
+      "phase2RPrecision": 0.3472222222222222,
+      "phase2EmptyQueries": 49,
+      "phase2EmptyReturned": 0.30612244897959184,
+      "phase2EmptyWorst": 1,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.8888888888888888,
+      "tunedRPrecision": 0.8333333333333334,
+      "legacyEmptyReturned": 0.6,
+      "legacyEmptyWorst": 1,
+      "semanticOnlyMax": 1,
+      "leakTotal": 0,
+      "rawProtocolQueries": 0,
+      "latencyP95": 11.81145800000013,
+      "discoveryRequested": 145,
+      "discoveryEffective": 145,
+      "discoveryBlocked": 0,
+      "checks": [
+        {
+          "name": "既有 tuned hit@5 ≥ 94.4%",
+          "ok": true,
+          "detail": "100.0%"
+        },
+        {
+          "name": "既有 tuned MRR ≥ 0.833",
+          "ok": true,
+          "detail": "0.889"
+        },
+        {
+          "name": "既有 tuned R-precision ≥ 77.8%",
+          "ok": true,
+          "detail": "83.3%"
+        },
+        {
+          "name": "Phase 2 zero-FTS hit@5 高于基线",
+          "ok": true,
+          "detail": "37.5% vs 基线 0.0%"
+        },
+        {
+          "name": "Phase 2 zero-FTS MRR 高于基线",
+          "ok": true,
+          "detail": "0.375 vs 基线 0.000"
+        },
+        {
+          "name": "Phase 2 empty 平均返回 ≤ 1",
+          "ok": true,
+          "detail": "0.31"
+        },
+        {
+          "name": "Phase 2 empty 最坏返回 ≤ 3",
+          "ok": true,
+          "detail": "1"
+        },
+        {
+          "name": "既有 expected-empty 平均 ≤ 1",
+          "ok": true,
+          "detail": "0.60"
+        },
+        {
+          "name": "既有 expected-empty 最坏 ≤ 3",
+          "ok": true,
+          "detail": "1"
+        },
+        {
+          "name": "semantic-only ≤ min(cap, limit)",
+          "ok": true,
+          "detail": "max 1 ≤ 1"
+        },
+        {
+          "name": "跨 scope 泄漏 = 0",
+          "ok": true,
+          "detail": "0"
+        },
+        {
+          "name": "protocol 混排 = 0（raw 腿 0 条）",
+          "ok": true,
+          "detail": "raw 0"
+        },
+        {
+          "name": "search p95 < 300ms",
+          "ok": true,
+          "detail": "11.8ms"
+        }
+      ]
+    },
+    {
+      "label": "floor=0.223 cap=2",
+      "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/reports/phase2b/arm-f0.223-c2.json",
+      "floor": 0.223,
+      "cap": 2,
+      "discovery": true,
+      "rrfK": 60,
+      "weights": "1:1",
+      "tieBreak": "recency",
+      "phase2Relevance": 72,
+      "phase2HitAt5": 0.4027777777777778,
+      "phase2Mrr": 0.3888888888888889,
+      "phase2RPrecision": 0.3680555555555556,
+      "phase2EmptyQueries": 49,
+      "phase2EmptyReturned": 0.4489795918367347,
+      "phase2EmptyWorst": 2,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.8888888888888888,
+      "tunedRPrecision": 0.8333333333333334,
+      "legacyEmptyReturned": 0.8,
+      "legacyEmptyWorst": 2,
+      "semanticOnlyMax": 2,
+      "leakTotal": 0,
+      "rawProtocolQueries": 0,
+      "latencyP95": 16.920749999999998,
+      "discoveryRequested": 145,
+      "discoveryEffective": 145,
+      "discoveryBlocked": 0,
+      "checks": [
+        {
+          "name": "既有 tuned hit@5 ≥ 94.4%",
+          "ok": true,
+          "detail": "100.0%"
+        },
+        {
+          "name": "既有 tuned MRR ≥ 0.833",
+          "ok": true,
+          "detail": "0.889"
+        },
+        {
+          "name": "既有 tuned R-precision ≥ 77.8%",
+          "ok": true,
+          "detail": "83.3%"
+        },
+        {
+          "name": "Phase 2 zero-FTS hit@5 高于基线",
+          "ok": true,
+          "detail": "40.3% vs 基线 0.0%"
+        },
+        {
+          "name": "Phase 2 zero-FTS MRR 高于基线",
+          "ok": true,
+          "detail": "0.389 vs 基线 0.000"
+        },
+        {
+          "name": "Phase 2 empty 平均返回 ≤ 1",
+          "ok": true,
+          "detail": "0.45"
+        },
+        {
+          "name": "Phase 2 empty 最坏返回 ≤ 3",
+          "ok": true,
+          "detail": "2"
+        },
+        {
+          "name": "既有 expected-empty 平均 ≤ 1",
+          "ok": true,
+          "detail": "0.80"
+        },
+        {
+          "name": "既有 expected-empty 最坏 ≤ 3",
+          "ok": true,
+          "detail": "2"
+        },
+        {
+          "name": "semantic-only ≤ min(cap, limit)",
+          "ok": true,
+          "detail": "max 2 ≤ 2"
+        },
+        {
+          "name": "跨 scope 泄漏 = 0",
+          "ok": true,
+          "detail": "0"
+        },
+        {
+          "name": "protocol 混排 = 0（raw 腿 0 条）",
+          "ok": true,
+          "detail": "raw 0"
+        },
+        {
+          "name": "search p95 < 300ms",
+          "ok": true,
+          "detail": "16.9ms"
+        }
+      ]
+    },
+    {
+      "label": "floor=0.223 cap=3",
+      "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/reports/phase2b/arm-f0.223-c3.json",
+      "floor": 0.223,
+      "cap": 3,
+      "discovery": true,
+      "rrfK": 60,
+      "weights": "1:1",
+      "tieBreak": "recency",
+      "phase2Relevance": 72,
+      "phase2HitAt5": 0.4166666666666667,
+      "phase2Mrr": 0.39351851851851855,
+      "phase2RPrecision": 0.3680555555555556,
+      "phase2EmptyQueries": 49,
+      "phase2EmptyReturned": 0.5714285714285714,
+      "phase2EmptyWorst": 3,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.8888888888888888,
+      "tunedRPrecision": 0.8333333333333334,
+      "legacyEmptyReturned": 0.8,
+      "legacyEmptyWorst": 2,
+      "semanticOnlyMax": 3,
+      "leakTotal": 0,
+      "rawProtocolQueries": 0,
+      "latencyP95": 11.527624999999944,
+      "discoveryRequested": 145,
+      "discoveryEffective": 145,
+      "discoveryBlocked": 0,
+      "checks": [
+        {
+          "name": "既有 tuned hit@5 ≥ 94.4%",
+          "ok": true,
+          "detail": "100.0%"
+        },
+        {
+          "name": "既有 tuned MRR ≥ 0.833",
+          "ok": true,
+          "detail": "0.889"
+        },
+        {
+          "name": "既有 tuned R-precision ≥ 77.8%",
+          "ok": true,
+          "detail": "83.3%"
+        },
+        {
+          "name": "Phase 2 zero-FTS hit@5 高于基线",
+          "ok": true,
+          "detail": "41.7% vs 基线 0.0%"
+        },
+        {
+          "name": "Phase 2 zero-FTS MRR 高于基线",
+          "ok": true,
+          "detail": "0.394 vs 基线 0.000"
+        },
+        {
+          "name": "Phase 2 empty 平均返回 ≤ 1",
+          "ok": true,
+          "detail": "0.57"
+        },
+        {
+          "name": "Phase 2 empty 最坏返回 ≤ 3",
+          "ok": true,
+          "detail": "3"
+        },
+        {
+          "name": "既有 expected-empty 平均 ≤ 1",
+          "ok": true,
+          "detail": "0.80"
+        },
+        {
+          "name": "既有 expected-empty 最坏 ≤ 3",
+          "ok": true,
+          "detail": "2"
+        },
+        {
+          "name": "semantic-only ≤ min(cap, limit)",
+          "ok": true,
+          "detail": "max 3 ≤ 3"
+        },
+        {
+          "name": "跨 scope 泄漏 = 0",
+          "ok": true,
+          "detail": "0"
+        },
+        {
+          "name": "protocol 混排 = 0（raw 腿 0 条）",
+          "ok": true,
+          "detail": "raw 0"
+        },
+        {
+          "name": "search p95 < 300ms",
+          "ok": true,
+          "detail": "11.5ms"
+        }
+      ]
+    },
+    {
+      "label": "floor=0.223 cap=5",
+      "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/reports/phase2b/arm-f0.223-c5.json",
+      "floor": 0.223,
+      "cap": 5,
+      "discovery": true,
+      "rrfK": 60,
+      "weights": "1:1",
+      "tieBreak": "recency",
+      "phase2Relevance": 72,
+      "phase2HitAt5": 0.4166666666666667,
+      "phase2Mrr": 0.39351851851851855,
+      "phase2RPrecision": 0.3680555555555556,
+      "phase2EmptyQueries": 49,
+      "phase2EmptyReturned": 0.673469387755102,
+      "phase2EmptyWorst": 5,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.8888888888888888,
+      "tunedRPrecision": 0.8333333333333334,
+      "legacyEmptyReturned": 0.8,
+      "legacyEmptyWorst": 2,
+      "semanticOnlyMax": 5,
+      "leakTotal": 0,
+      "rawProtocolQueries": 0,
+      "latencyP95": 13.392624999999953,
+      "discoveryRequested": 145,
+      "discoveryEffective": 145,
+      "discoveryBlocked": 0,
+      "checks": [
+        {
+          "name": "既有 tuned hit@5 ≥ 94.4%",
+          "ok": true,
+          "detail": "100.0%"
+        },
+        {
+          "name": "既有 tuned MRR ≥ 0.833",
+          "ok": true,
+          "detail": "0.889"
+        },
+        {
+          "name": "既有 tuned R-precision ≥ 77.8%",
+          "ok": true,
+          "detail": "83.3%"
+        },
+        {
+          "name": "Phase 2 zero-FTS hit@5 高于基线",
+          "ok": true,
+          "detail": "41.7% vs 基线 0.0%"
+        },
+        {
+          "name": "Phase 2 zero-FTS MRR 高于基线",
+          "ok": true,
+          "detail": "0.394 vs 基线 0.000"
+        },
+        {
+          "name": "Phase 2 empty 平均返回 ≤ 1",
+          "ok": true,
+          "detail": "0.67"
+        },
+        {
+          "name": "Phase 2 empty 最坏返回 ≤ 3",
+          "ok": false,
+          "detail": "5"
+        },
+        {
+          "name": "既有 expected-empty 平均 ≤ 1",
+          "ok": true,
+          "detail": "0.80"
+        },
+        {
+          "name": "既有 expected-empty 最坏 ≤ 3",
+          "ok": true,
+          "detail": "2"
+        },
+        {
+          "name": "semantic-only ≤ min(cap, limit)",
+          "ok": true,
+          "detail": "max 5 ≤ 5"
+        },
+        {
+          "name": "跨 scope 泄漏 = 0",
+          "ok": true,
+          "detail": "0"
+        },
+        {
+          "name": "protocol 混排 = 0（raw 腿 0 条）",
+          "ok": true,
+          "detail": "raw 0"
+        },
+        {
+          "name": "search p95 < 300ms",
+          "ok": true,
+          "detail": "13.4ms"
+        }
+      ]
+    },
+    {
+      "label": "floor=0.275 cap=1",
+      "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/reports/phase2b/arm-f0.275-c1.json",
+      "floor": 0.275,
+      "cap": 1,
+      "discovery": true,
+      "rrfK": 60,
+      "weights": "1:1",
+      "tieBreak": "recency",
+      "phase2Relevance": 72,
+      "phase2HitAt5": 0.2638888888888889,
+      "phase2Mrr": 0.2638888888888889,
+      "phase2RPrecision": 0.25,
+      "phase2EmptyQueries": 49,
+      "phase2EmptyReturned": 0.20408163265306123,
+      "phase2EmptyWorst": 1,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.8888888888888888,
+      "tunedRPrecision": 0.8333333333333334,
+      "legacyEmptyReturned": 0,
+      "legacyEmptyWorst": 0,
+      "semanticOnlyMax": 1,
+      "leakTotal": 0,
+      "rawProtocolQueries": 0,
+      "latencyP95": 13.839042000000063,
+      "discoveryRequested": 145,
+      "discoveryEffective": 145,
+      "discoveryBlocked": 0,
+      "checks": [
+        {
+          "name": "既有 tuned hit@5 ≥ 94.4%",
+          "ok": true,
+          "detail": "100.0%"
+        },
+        {
+          "name": "既有 tuned MRR ≥ 0.833",
+          "ok": true,
+          "detail": "0.889"
+        },
+        {
+          "name": "既有 tuned R-precision ≥ 77.8%",
+          "ok": true,
+          "detail": "83.3%"
+        },
+        {
+          "name": "Phase 2 zero-FTS hit@5 高于基线",
+          "ok": true,
+          "detail": "26.4% vs 基线 0.0%"
+        },
+        {
+          "name": "Phase 2 zero-FTS MRR 高于基线",
+          "ok": true,
+          "detail": "0.264 vs 基线 0.000"
+        },
+        {
+          "name": "Phase 2 empty 平均返回 ≤ 1",
+          "ok": true,
+          "detail": "0.20"
+        },
+        {
+          "name": "Phase 2 empty 最坏返回 ≤ 3",
+          "ok": true,
+          "detail": "1"
+        },
+        {
+          "name": "既有 expected-empty 平均 ≤ 1",
+          "ok": true,
+          "detail": "0.00"
+        },
+        {
+          "name": "既有 expected-empty 最坏 ≤ 3",
+          "ok": true,
+          "detail": "0"
+        },
+        {
+          "name": "semantic-only ≤ min(cap, limit)",
+          "ok": true,
+          "detail": "max 1 ≤ 1"
+        },
+        {
+          "name": "跨 scope 泄漏 = 0",
+          "ok": true,
+          "detail": "0"
+        },
+        {
+          "name": "protocol 混排 = 0（raw 腿 0 条）",
+          "ok": true,
+          "detail": "raw 0"
+        },
+        {
+          "name": "search p95 < 300ms",
+          "ok": true,
+          "detail": "13.8ms"
+        }
+      ]
+    },
+    {
+      "label": "floor=0.275 cap=2",
+      "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/reports/phase2b/arm-f0.275-c2.json",
+      "floor": 0.275,
+      "cap": 2,
+      "discovery": true,
+      "rrfK": 60,
+      "weights": "1:1",
+      "tieBreak": "recency",
+      "phase2Relevance": 72,
+      "phase2HitAt5": 0.2638888888888889,
+      "phase2Mrr": 0.2638888888888889,
+      "phase2RPrecision": 0.2638888888888889,
+      "phase2EmptyQueries": 49,
+      "phase2EmptyReturned": 0.2653061224489796,
+      "phase2EmptyWorst": 2,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.8888888888888888,
+      "tunedRPrecision": 0.8333333333333334,
+      "legacyEmptyReturned": 0,
+      "legacyEmptyWorst": 0,
+      "semanticOnlyMax": 2,
+      "leakTotal": 0,
+      "rawProtocolQueries": 0,
+      "latencyP95": 12.746791999999914,
+      "discoveryRequested": 145,
+      "discoveryEffective": 145,
+      "discoveryBlocked": 0,
+      "checks": [
+        {
+          "name": "既有 tuned hit@5 ≥ 94.4%",
+          "ok": true,
+          "detail": "100.0%"
+        },
+        {
+          "name": "既有 tuned MRR ≥ 0.833",
+          "ok": true,
+          "detail": "0.889"
+        },
+        {
+          "name": "既有 tuned R-precision ≥ 77.8%",
+          "ok": true,
+          "detail": "83.3%"
+        },
+        {
+          "name": "Phase 2 zero-FTS hit@5 高于基线",
+          "ok": true,
+          "detail": "26.4% vs 基线 0.0%"
+        },
+        {
+          "name": "Phase 2 zero-FTS MRR 高于基线",
+          "ok": true,
+          "detail": "0.264 vs 基线 0.000"
+        },
+        {
+          "name": "Phase 2 empty 平均返回 ≤ 1",
+          "ok": true,
+          "detail": "0.27"
+        },
+        {
+          "name": "Phase 2 empty 最坏返回 ≤ 3",
+          "ok": true,
+          "detail": "2"
+        },
+        {
+          "name": "既有 expected-empty 平均 ≤ 1",
+          "ok": true,
+          "detail": "0.00"
+        },
+        {
+          "name": "既有 expected-empty 最坏 ≤ 3",
+          "ok": true,
+          "detail": "0"
+        },
+        {
+          "name": "semantic-only ≤ min(cap, limit)",
+          "ok": true,
+          "detail": "max 2 ≤ 2"
+        },
+        {
+          "name": "跨 scope 泄漏 = 0",
+          "ok": true,
+          "detail": "0"
+        },
+        {
+          "name": "protocol 混排 = 0（raw 腿 0 条）",
+          "ok": true,
+          "detail": "raw 0"
+        },
+        {
+          "name": "search p95 < 300ms",
+          "ok": true,
+          "detail": "12.7ms"
+        }
+      ]
+    },
+    {
+      "label": "floor=0.275 cap=3",
+      "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/reports/phase2b/arm-f0.275-c3.json",
+      "floor": 0.275,
+      "cap": 3,
+      "discovery": true,
+      "rrfK": 60,
+      "weights": "1:1",
+      "tieBreak": "recency",
+      "phase2Relevance": 72,
+      "phase2HitAt5": 0.2638888888888889,
+      "phase2Mrr": 0.2638888888888889,
+      "phase2RPrecision": 0.2638888888888889,
+      "phase2EmptyQueries": 49,
+      "phase2EmptyReturned": 0.2857142857142857,
+      "phase2EmptyWorst": 3,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.8888888888888888,
+      "tunedRPrecision": 0.8333333333333334,
+      "legacyEmptyReturned": 0,
+      "legacyEmptyWorst": 0,
+      "semanticOnlyMax": 3,
+      "leakTotal": 0,
+      "rawProtocolQueries": 0,
+      "latencyP95": 12.517209000000094,
+      "discoveryRequested": 145,
+      "discoveryEffective": 145,
+      "discoveryBlocked": 0,
+      "checks": [
+        {
+          "name": "既有 tuned hit@5 ≥ 94.4%",
+          "ok": true,
+          "detail": "100.0%"
+        },
+        {
+          "name": "既有 tuned MRR ≥ 0.833",
+          "ok": true,
+          "detail": "0.889"
+        },
+        {
+          "name": "既有 tuned R-precision ≥ 77.8%",
+          "ok": true,
+          "detail": "83.3%"
+        },
+        {
+          "name": "Phase 2 zero-FTS hit@5 高于基线",
+          "ok": true,
+          "detail": "26.4% vs 基线 0.0%"
+        },
+        {
+          "name": "Phase 2 zero-FTS MRR 高于基线",
+          "ok": true,
+          "detail": "0.264 vs 基线 0.000"
+        },
+        {
+          "name": "Phase 2 empty 平均返回 ≤ 1",
+          "ok": true,
+          "detail": "0.29"
+        },
+        {
+          "name": "Phase 2 empty 最坏返回 ≤ 3",
+          "ok": true,
+          "detail": "3"
+        },
+        {
+          "name": "既有 expected-empty 平均 ≤ 1",
+          "ok": true,
+          "detail": "0.00"
+        },
+        {
+          "name": "既有 expected-empty 最坏 ≤ 3",
+          "ok": true,
+          "detail": "0"
+        },
+        {
+          "name": "semantic-only ≤ min(cap, limit)",
+          "ok": true,
+          "detail": "max 3 ≤ 3"
+        },
+        {
+          "name": "跨 scope 泄漏 = 0",
+          "ok": true,
+          "detail": "0"
+        },
+        {
+          "name": "protocol 混排 = 0（raw 腿 0 条）",
+          "ok": true,
+          "detail": "raw 0"
+        },
+        {
+          "name": "search p95 < 300ms",
+          "ok": true,
+          "detail": "12.5ms"
+        }
+      ]
+    },
+    {
+      "label": "floor=0.275 cap=5",
+      "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/reports/phase2b/arm-f0.275-c5.json",
+      "floor": 0.275,
+      "cap": 5,
+      "discovery": true,
+      "rrfK": 60,
+      "weights": "1:1",
+      "tieBreak": "recency",
+      "phase2Relevance": 72,
+      "phase2HitAt5": 0.2638888888888889,
+      "phase2Mrr": 0.2638888888888889,
+      "phase2RPrecision": 0.2638888888888889,
+      "phase2EmptyQueries": 49,
+      "phase2EmptyReturned": 0.2857142857142857,
+      "phase2EmptyWorst": 3,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.8888888888888888,
+      "tunedRPrecision": 0.8333333333333334,
+      "legacyEmptyReturned": 0,
+      "legacyEmptyWorst": 0,
+      "semanticOnlyMax": 4,
+      "leakTotal": 0,
+      "rawProtocolQueries": 0,
+      "latencyP95": 13.452624999999898,
+      "discoveryRequested": 145,
+      "discoveryEffective": 145,
+      "discoveryBlocked": 0,
+      "checks": [
+        {
+          "name": "既有 tuned hit@5 ≥ 94.4%",
+          "ok": true,
+          "detail": "100.0%"
+        },
+        {
+          "name": "既有 tuned MRR ≥ 0.833",
+          "ok": true,
+          "detail": "0.889"
+        },
+        {
+          "name": "既有 tuned R-precision ≥ 77.8%",
+          "ok": true,
+          "detail": "83.3%"
+        },
+        {
+          "name": "Phase 2 zero-FTS hit@5 高于基线",
+          "ok": true,
+          "detail": "26.4% vs 基线 0.0%"
+        },
+        {
+          "name": "Phase 2 zero-FTS MRR 高于基线",
+          "ok": true,
+          "detail": "0.264 vs 基线 0.000"
+        },
+        {
+          "name": "Phase 2 empty 平均返回 ≤ 1",
+          "ok": true,
+          "detail": "0.29"
+        },
+        {
+          "name": "Phase 2 empty 最坏返回 ≤ 3",
+          "ok": true,
+          "detail": "3"
+        },
+        {
+          "name": "既有 expected-empty 平均 ≤ 1",
+          "ok": true,
+          "detail": "0.00"
+        },
+        {
+          "name": "既有 expected-empty 最坏 ≤ 3",
+          "ok": true,
+          "detail": "0"
+        },
+        {
+          "name": "semantic-only ≤ min(cap, limit)",
+          "ok": true,
+          "detail": "max 4 ≤ 5"
+        },
+        {
+          "name": "跨 scope 泄漏 = 0",
+          "ok": true,
+          "detail": "0"
+        },
+        {
+          "name": "protocol 混排 = 0（raw 腿 0 条）",
+          "ok": true,
+          "detail": "raw 0"
+        },
+        {
+          "name": "search p95 < 300ms",
+          "ok": true,
+          "detail": "13.5ms"
+        }
+      ]
+    }
+  ],
+  "ranked": [
+    "floor=0.197 cap=2",
+    "floor=0.197 cap=1",
+    "floor=0.223 cap=3",
+    "floor=0.223 cap=2",
+    "floor=0.223 cap=1",
+    "floor=0.275 cap=1",
+    "floor=0.275 cap=2",
+    "floor=0.275 cap=3",
+    "floor=0.275 cap=5"
+  ],
+  "winner": {
+    "floor": 0.197,
+    "cap": 2,
+    "label": "floor=0.197 cap=2"
+  }
+}

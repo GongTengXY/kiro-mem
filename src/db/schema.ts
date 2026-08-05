@@ -134,7 +134,33 @@ CREATE TABLE IF NOT EXISTS metric_events (
   degraded     INTEGER NOT NULL DEFAULT 0,
   -- search only: end-to-end latency in milliseconds.
   latency_ms   INTEGER,
-  created_at   TEXT NOT NULL
+  created_at   TEXT NOT NULL,
+  -- --- phase 2C search columns (all search-only, all NULL on other kinds) ---
+  -- Vector space the request ran in: 'semantic-en-v1' | 'raw-v1'. NULL on rows
+  -- written before 2C, which is why the aggregation counts protocols explicitly
+  -- instead of treating "not semantic-en" as raw.
+  protocol           TEXT,
+  -- Why the semantic leg was not in the English space: 'missing' (the caller
+  -- never passed semantic_query_en) or a checkSemanticEnQuery reject reason.
+  -- NULL when the derived value was accepted.
+  reject_reason      TEXT,
+  -- FTS candidate count. 0 identifies the zero-anchor queries that only
+  -- independent semantic recall can answer.
+  fts_count          INTEGER,
+  -- Semantic candidates above the policy floor.
+  semantic_count     INTEGER,
+  -- Stored vectors in the active space that were available to score. Separates
+  -- "nothing was relevant" from "this scope has no vectors under this protocol".
+  comparable_vectors INTEGER,
+  -- Vectors in the active space across the WHOLE search scope, not just the
+  -- candidate pool (plan §8.2). NULL when the semantic step never ran, which is
+  -- deliberately different from 0 = the scope really has none.
+  scope_vectors      INTEGER,
+  -- semantic-only results that survived the cap into the returned page.
+  semantic_only      INTEGER,
+  -- 1 when discovery was both requested by the policy AND available in this
+  -- space. The gap against the policy is the gray-release signal.
+  discovery          INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS idx_metric_events_kind_time
@@ -314,6 +340,19 @@ export const ALL_SCHEMA = [
 ].join('\n');
 
 /**
+ * Shape changes that `CREATE TABLE IF NOT EXISTS` cannot express.
+ *
+ * Called from the `MemoryDB` constructor after the declarative schema, so a
+ * fresh database short-circuits on every step. Each migration must be
+ * idempotent and safe to run while another process holds the same file open —
+ * both the Worker and the MCP server construct `MemoryDB`.
+ */
+export function migrateSchema(db: Database): void {
+  migrateObservationEmbeddingsPrimaryKey(db);
+  migrateMetricEventsSearchColumns(db);
+}
+
+/**
  * Rebuild `observation_embeddings` when an existing database still has the old
  * single-column primary key.
  *
@@ -328,7 +367,7 @@ export const ALL_SCHEMA = [
  * ACP call. Dropping them would have been simpler and would have destroyed the
  * only copy of work that a repair could still use.
  */
-export function migrateSchema(db: Database): void {
+function migrateObservationEmbeddingsPrimaryKey(db: Database): void {
   const row = db
     .query(
       "SELECT sql AS sql FROM sqlite_master WHERE type = 'table' AND name = 'observation_embeddings'",
@@ -353,4 +392,39 @@ export function migrateSchema(db: Database): void {
     DROP TABLE observation_embeddings;
     ALTER TABLE observation_embeddings__migrating RENAME TO observation_embeddings;
   `);
+}
+
+/**
+ * Add the phase 2C search columns to an existing `metric_events` table.
+ *
+ * `CREATE TABLE IF NOT EXISTS` is a no-op on a database that already has the
+ * table, so without this an upgraded install would keep the 4-column shape and
+ * every `recordSearchMetric` INSERT would fail — silently, because metric writes
+ * are best-effort by design. The result would be a release whose whole gray
+ * release rests on counters that are never written.
+ *
+ * Additive and idempotent: existing rows keep NULL in the new columns, which the
+ * aggregation reads as "unknown" rather than as zero. No table rebuild, so it
+ * cannot lose the ACP / auth history a running Worker has already written, and
+ * an older Worker binary keeps working against the new shape (it just leaves the
+ * new columns NULL) — the compound-key incompatibility phase 1b hit came from a
+ * rebuild, and this migration deliberately avoids that class.
+ */
+function migrateMetricEventsSearchColumns(db: Database): void {
+  const existing = new Set(
+    (db.query('PRAGMA table_info(metric_events)').all() as { name: string }[]).map((c) => c.name),
+  );
+  const columns: [string, string][] = [
+    ['protocol', 'TEXT'],
+    ['reject_reason', 'TEXT'],
+    ['fts_count', 'INTEGER'],
+    ['semantic_count', 'INTEGER'],
+    ['comparable_vectors', 'INTEGER'],
+    ['scope_vectors', 'INTEGER'],
+    ['semantic_only', 'INTEGER'],
+    ['discovery', 'INTEGER'],
+  ];
+  for (const [name, type] of columns) {
+    if (!existing.has(name)) db.run(`ALTER TABLE metric_events ADD COLUMN ${name} ${type}`);
+  }
 }

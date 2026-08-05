@@ -100,7 +100,7 @@ export interface DatasetQuery {
    *   heldout 的结果——所以它比"完全独立的第三方标注"弱。它强的地方只有一处：这些
    *   具体问法从未参与过任何选择。报告里必须带上这句限定。
    */
-  origin?: 'tuned' | 'heldout' | 'validation';
+  origin?: 'tuned' | 'heldout' | 'validation' | 'phase2' | 'fusion';
   scope: 'primary' | 'other';
   query: string;
   expect: string[];
@@ -119,6 +119,32 @@ export const DATASET_DIR = join(import.meta.dir, 'dataset');
 export const VALIDATION_QUERIES_FILE = 'queries-validation.json';
 
 /**
+ * 阶段 2 校准集（`origin: 'phase2'`，121 条全部 `ftsCount = 0`）。
+ *
+ * 同样默认不加载，但理由与 validation 相反：validation 怕被消耗，phase2 怕被**混入**。
+ * 它是 floor/cap 的选参依据，而既有 `tuned + empty` 是历史连续性锁——两者必须能分开
+ * 报（方案 §7.3）。默认加载会让"与 Phase 1b 逐 query 一致"这个中立性判据失去意义，
+ * 因为 42 条的报告和 163 条的报告没法逐条对齐。
+ */
+export const PHASE2_QUERIES_FILE = 'queries-phase2.json';
+
+/**
+ * Phase 3A-R2 的两份数据集（规则见 `benchmark/reports/phase3a-r2-dataset-rules.md`）。
+ *
+ * `queries-fusion.json` 是「两腿都命中」校准集。Phase 2 那 121 条全是 `ftsCount = 0`，
+ * 对融合层是结构盲区——改 `bigramWeight` 或改「bigram 是否给已有候选投票」在单腿页面上
+ * 不产生任何可观测差异。这一份专为测那件事而建，分四层 S1–S4。
+ *
+ * `queries-empty-ext.json` 是扩充的 empty / hard-negative 集，其中 N3 层刻意含高文档频率
+ * 的两字词。它**不替换**既有 5 条 expected-empty：那 5 条是 Gate B 起预登记的连续性锁，
+ * Codex Gate E 明确裁定不得用后来的集合替换它，所以这一份是并列的第二道门槛。
+ *
+ * 与 validation / phase2 同一条纪律：默认不加载，显式开关。
+ */
+export const FUSION_QUERIES_FILE = 'queries-fusion.json';
+export const EMPTY_EXT_QUERIES_FILE = 'queries-empty-ext.json';
+
+/**
  * 加载数据集。
  *
  * `withValidation` 默认 false，这是刻意的：把 20 条新 query 混进默认 `bun run bench`
@@ -126,7 +152,10 @@ export const VALIDATION_QUERIES_FILE = 'queries-validation.json';
  * 同一份数据集却给出不同的数字。更重要的是"只读一次"这条纪律：显式开关让每一次读取
  * 都留在命令行里，而不是被默认行为悄悄消耗掉。
  */
-export function loadDataset(dir = DATASET_DIR, opts?: { withValidation?: boolean }): Dataset {
+export function loadDataset(
+  dir = DATASET_DIR,
+  opts?: { withValidation?: boolean; withPhase2?: boolean; withFusion?: boolean; withEmptyExt?: boolean },
+): Dataset {
   const queries = JSON.parse(
     readFileSync(join(dir, 'queries.json'), 'utf-8'),
   ) as DatasetQuery[];
@@ -135,11 +164,28 @@ export function loadDataset(dir = DATASET_DIR, opts?: { withValidation?: boolean
       ...(JSON.parse(readFileSync(join(dir, VALIDATION_QUERIES_FILE), 'utf-8')) as DatasetQuery[]),
     );
   }
+  if (opts?.withPhase2) {
+    queries.push(
+      ...(JSON.parse(readFileSync(join(dir, PHASE2_QUERIES_FILE), 'utf-8')) as DatasetQuery[]),
+    );
+  }
+  if (opts?.withFusion) {
+    queries.push(
+      ...(JSON.parse(readFileSync(join(dir, FUSION_QUERIES_FILE), 'utf-8')) as DatasetQuery[]),
+    );
+  }
+  if (opts?.withEmptyExt) {
+    queries.push(
+      ...(JSON.parse(readFileSync(join(dir, EMPTY_EXT_QUERIES_FILE), 'utf-8')) as DatasetQuery[]),
+    );
+  }
   return {
     turns: JSON.parse(readFileSync(join(dir, 'turns.json'), 'utf-8')) as DatasetTurn[],
     queries,
   };
 }
+
+const ALLOWED_ORIGINS = ['tuned', 'heldout', 'validation', 'phase2', 'fusion'] as const;
 
 /**
  * 标注自检。返回错误列表而不是直接退出——调用方（harness / probe）自己决定怎么
@@ -156,8 +202,10 @@ export function validateQueries(queries: DatasetQuery[]): string[] {
       );
     }
     // origin 决定这条 query 算不算泛化证据，缺省就等于把 heldout 混进 tuned。
-    if (wantsHits && q.origin !== 'tuned' && q.origin !== 'heldout' && q.origin !== 'validation') {
-      errors.push(`${q.id}: relevance query 必须声明 origin: "tuned" | "heldout" | "validation"`);
+    if (wantsHits && !ALLOWED_ORIGINS.includes(q.origin as never)) {
+      errors.push(
+        `${q.id}: relevance query 必须声明 origin: ${ALLOWED_ORIGINS.map((o) => `"${o}"`).join(' | ')}`,
+      );
     }
   }
   return errors;
@@ -371,16 +419,23 @@ const ACP_EN_QUERY_FILES = [
 ];
 /** 新增验证集的英文形式，与 `queries-validation.json` 一起显式加载。 */
 const ACP_EN_VALIDATION_QUERY_FILE = 'mirror-en-acp-queries-validation.json';
+/** 阶段 2 校准集的英文形式，与 `queries-phase2.json` 一起显式加载。 */
+const ACP_EN_PHASE2_QUERY_FILE = 'mirror-en-acp-queries-phase2.json';
+/** Phase 3A-R2 两份数据集的英文形式，与它们一起显式加载。 */
+const ACP_EN_R2_QUERY_FILE = 'mirror-en-acp-queries-r2.json';
 
 export function loadAcpEnFixture(
   dir = DATASET_DIR,
-  opts?: { withValidation?: boolean },
+  opts?: { withValidation?: boolean; withPhase2?: boolean; withR2?: boolean },
 ): AcpEnFixture {
   const records: Record<string, SemanticEnRecord> = {};
   const queries: Record<string, string> = {};
-  const queryFiles = opts?.withValidation
-    ? [...ACP_EN_QUERY_FILES, ACP_EN_VALIDATION_QUERY_FILE]
-    : ACP_EN_QUERY_FILES;
+  const queryFiles = [
+    ...ACP_EN_QUERY_FILES,
+    ...(opts?.withValidation ? [ACP_EN_VALIDATION_QUERY_FILE] : []),
+    ...(opts?.withPhase2 ? [ACP_EN_PHASE2_QUERY_FILE] : []),
+    ...(opts?.withR2 ? [ACP_EN_R2_QUERY_FILE] : []),
+  ];
   for (const file of ACP_EN_RECORD_FILES) {
     const parsed = JSON.parse(readFileSync(join(dir, file), 'utf-8')) as {
       records?: Record<string, SemanticEnRecord>;

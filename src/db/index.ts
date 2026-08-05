@@ -49,8 +49,40 @@ const FTS_MIN_UNIT_LEN = 3;
 const FTS_CJK_WINDOW = 3;
 /** Bounds the OR expression so a pathological query can't explode the scan. */
 const FTS_MAX_UNITS = 32;
+/**
+ * Bounds how many CJK bigrams one search may turn into auxiliary LIKE probes
+ * (phase 3A). Same role as `FTS_MAX_UNITS`, different mechanism: each surviving
+ * bigram becomes one `CASE WHEN ... LIKE` term in a SINGLE scan, so this caps
+ * per-row work rather than the number of scans.
+ *
+ * 16 covers a 17-character unsegmented Chinese question in full. Past that the
+ * budget is sampled ACROSS the run, not consumed from its head — see
+ * `extractCjkBigrams`.
+ */
+const BIGRAM_MAX_UNITS = 16;
 /** CJK / Japanese / Korean runs, which carry no whitespace word boundaries. */
 const CJK_RUN_RE = /[\u3400-\u4dbf\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]{3,}/g;
+/**
+ * Same alphabet as `CJK_RUN_RE` but from length 2, because the whole point of
+ * phase 3A is the two-character word a 3-character window cannot reach.
+ */
+const CJK_RUN_BIGRAM_RE = /[\u3400-\u4dbf\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]{2,}/g;
+/**
+ * The columns `observations_fts` indexes, in its own order.
+ *
+ * Single source of truth for both LIKE paths — the sub-trigram fallback in
+ * `searchObservationsFts` and the phase 3A bigram leg. When this list covered
+ * only 5 of the 9 indexed columns, a 2-character query could not reach a term
+ * that appears solely in `request` or `evidence_json`, so the same word was
+ * findable at 3 characters and invisible at 2. Two hand-maintained copies of the
+ * list is the same bug waiting to happen once.
+ */
+const FTS_INDEXED_COLUMNS = [
+  'title', 'summary', 'request', 'outcome', 'learned',
+  'next_steps', 'concepts_json', 'files_touched_json', 'evidence_json',
+] as const;
+
+
 /** Any CJK character, used only to detect a mixed-script segment. */
 const CJK_CHAR_RE = /[\u3400-\u4dbf\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]/;
 /** Latin/digit runs, extracted only out of mixed-script segments (see below). */
@@ -251,6 +283,66 @@ export function extractFtsSearchUnits(query: string): string[] {
   }
 
   return units;
+}
+
+/**
+ * Split a query into the CJK **two-character** units the trigram index cannot
+ * reach (phase 3A).
+ *
+ * Why this exists: FTS5 tokenizes with trigram, so a query unit must be ≥3
+ * characters AND appear as an exact substring. A Chinese two-character word is
+ * therefore reachable only when the 3-character windows happen to line up on
+ * BOTH sides. Measured on q32: the query yields `带引号` / `引号或`, while the
+ * record holds `未闭合引号等` and `双引号翻倍` → `合引号` / `引号等` / `双引号` /
+ * `引号翻`. Both sides contain 引号; not one window matches.
+ *
+ * The FTS5 shortcut does not exist. A prefix query (`"引号" *`) returns nothing
+ * because the trigram tokenizer tokenizes the QUERY too — a 2-character string
+ * yields zero tokens, so `*` has nothing to attach to. The index vocabulary does
+ * contain `引号等` and `引号翻`; MATCH simply cannot reach them. Hence the
+ * auxiliary LIKE path in `searchObservationsByCjkBigrams`.
+ *
+ * No segmentation. Without a dictionary there is no way to know that 引号 is a
+ * word and 号或 is not, and adding a segmenter would put a second independent
+ * variable (dictionary version) inside phase 3A. Sliding windows therefore emit
+ * non-words by construction, so noise is controlled downstream by a document
+ * frequency ceiling and a structural cap — NOT by segmenting accurately.
+ *
+ * Budget is sampled ACROSS each run for the same reason as the trigram windows:
+ * head-first consumption spends everything on the opening words of a long
+ * question and silently drops the terms that distinguish it.
+ *
+ * Exported for tests.
+ */
+export function extractCjkBigrams(query: string): string[] {
+  const runs = query.trim().match(CJK_RUN_BIGRAM_RE) ?? [];
+  if (runs.length === 0) return [];
+
+  const positions = runs.map((r) => r.length - 1); // 2-char windows per run
+  const totalPositions = positions.reduce((a, b) => a + b, 0);
+
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const push = (bg: string): void => {
+    if (seen.has(bg)) return;
+    seen.add(bg);
+    out.push(bg);
+  };
+
+  runs.forEach((run, i) => {
+    const count = positions[i]!;
+    // Under budget pressure every run still keeps its head and tail window.
+    const quota =
+      totalPositions <= BIGRAM_MAX_UNITS
+        ? count
+        : Math.max(2, Math.floor((count / totalPositions) * BIGRAM_MAX_UNITS));
+    for (const idx of evenIndices(count, quota)) push(run.slice(idx, idx + 2));
+  });
+
+  // Dedup across runs can leave us under budget; it can never leave us over,
+  // because each run's quota is already proportional. The slice is belt and
+  // braces for the `Math.max(2, ...)` floor on many short runs.
+  return out.slice(0, BIGRAM_MAX_UNITS);
 }
 
 /**
@@ -817,6 +909,24 @@ export class MemoryDB {
    * rather than an error. Rows written by another model version are skipped so
    * they fall back to keyword matching, which is honest, instead of being
    * silently misranked.
+   *
+   * Queried in ONE statement, which is only safe because the candidate set is
+   * bounded: `semanticCandidatePool` ships at 20,000, so the id list plus the two
+   * filter parameters stays far below SQLite's ceiling. That ceiling is real and
+   * undocumented — measured on Bun 1.2.20 / SQLite 3.43.2, an `IN (?,?,…)` list
+   * accepts 65,535 bound parameters and fails at 65,536 with `expected 0 values,
+   * received 65536`, a uint16 wrap. `tests/db/embedding-versioning.test.ts` pins
+   * that boundary.
+   *
+   * Why this matters if the pool ever grows: the failure is a thrown error, and the
+   * retrieval kernel's catch turns it into `onDegrade` + FTS-only, i.e. semantic
+   * recall would disappear SILENTLY rather than loudly. Scope-wide scoring was
+   * measured in the pool round and did not ship (it needs ~720MB at 50,000
+   * records), so this path is unreachable today — see
+   * `benchmark/reports/pool-policy-criteria.md` §4.1 and `pool-policy-submission.md`
+   * §9.4. A future round that raises the pool past ~65,000 must handle it, and the
+   * right shape there is chunked read → score immediately → bounded Top-K, not a
+   * chunked fetch that still aggregates everything in memory.
    */
   getObservationEmbeddingsByIds(
     ids: number[],
@@ -1033,11 +1143,9 @@ export class MemoryDB {
       const like = `%${literalQuery}%`;
       let sql = `SELECT * FROM observations
         WHERE turn_stopped_at > ?
-          AND (title LIKE ? OR summary LIKE ? OR request LIKE ? OR outcome LIKE ?
-               OR learned LIKE ? OR next_steps LIKE ? OR concepts_json LIKE ?
-               OR evidence_json LIKE ? OR files_touched_json LIKE ?)`;
+          AND (${FTS_INDEXED_COLUMNS.map((c) => `${c} LIKE ?`).join(' OR ')})`;
       const params: (string | number)[] = [
-        dateThreshold, like, like, like, like, like, like, like, like, like,
+        dateThreshold, ...FTS_INDEXED_COLUMNS.map(() => like),
       ];
       if (opts?.scopeKey) { sql += ' AND scope_key = ?'; params.push(opts.scopeKey); }
       if (opts?.type) { sql += ' AND memory_type = ?'; params.push(opts.type); }
@@ -1056,32 +1164,272 @@ export class MemoryDB {
     // substring match, which a whole user sentence essentially never satisfies.
     // bm25 then ranks documents matching more units higher.
     const ftsExpr = units.map((u) => `"${u.replaceAll('"', '""')}"`).join(' OR ');
+    // `CROSS JOIN`, not `JOIN` — and this is a performance fix with measured
+    // evidence behind it, not a style choice.
+    //
+    // With a plain JOIN and `LIMIT ?` as a BOUND PARAMETER, SQLite cannot see the
+    // limit at planning time and flips the join order: it drives from
+    // `observations` (scanning every row in scope inside the time window), probes
+    // the FTS table once per row, then sorts the result in a temp B-tree. The cost
+    // becomes O(corpus) instead of O(matching rows). Measured on a 1,970-record
+    // fixture, one query, same 50 rows returned:
+    //
+    //   plain JOIN + LIMIT ?      995ms      SEARCH o USING idx_observations_scope_time
+    //                                       SCAN fts / USE TEMP B-TREE FOR ORDER BY
+    //   CROSS JOIN + LIMIT ?      0.52ms     SCAN fts / SEARCH o USING INTEGER PRIMARY KEY
+    //
+    // 1,900x. It is invisible on the 30-record benchmark corpus (O(corpus) of 30 is
+    // 30), which is why every historical p95 reading is both valid and blind to it
+    // — full audit: `benchmark/reports/fix-fts-limit-audit.json`, where this is the
+    // ONLY one of 12 `LIMIT ?` sites whose plan flips.
+    //
+    // `CROSS JOIN` is SQLite's documented way to pin join order: the FTS table
+    // stays the outer loop, so its own rank ordering is used directly and no sort
+    // is needed. The alternative — interpolating the limit as a literal — measured
+    // the same (0.54ms) but puts a value into the SQL string, so it needs integer
+    // validation to stay injection-free. Pinning the order costs nothing here
+    // because there is only one sensible order: FTS narrows to a handful of rows,
+    // `observations` is then a primary-key lookup.
     let sql = `SELECT o.* FROM observations_fts fts
-      JOIN observations o ON fts.rowid = o.id
+      CROSS JOIN observations o ON fts.rowid = o.id
       WHERE observations_fts MATCH ? AND o.turn_stopped_at > ?`;
     const params: (string | number)[] = [ftsExpr, dateThreshold];
     if (opts?.scopeKey) { sql += ' AND o.scope_key = ?'; params.push(opts.scopeKey); }
     if (opts?.type) { sql += ' AND o.memory_type = ?'; params.push(opts.type); }
-    // Ranking is bm25 only. `is_pinned` deliberately does NOT participate: the
-    // hybrid layer turns this row order into the FTS rank it feeds into RRF
-    // (see observation-search.ts), so ordering pinned rows first would let a
-    // weakly-matching pinned Observation steal rank 1 from a strong match. Pin
-    // affects bootstrap injection, not search relevance.
-    sql += ' ORDER BY fts.rank LIMIT ?';
+    // Ranking is bm25, then `o.id` as a TECHNICAL TOTAL-ORDER KEY.
+    //
+    // `is_pinned` deliberately does NOT participate: the hybrid layer turns this
+    // row order into the FTS rank it feeds into RRF (see observation-search.ts),
+    // so ordering pinned rows first would let a weakly-matching pinned
+    // Observation steal rank 1 from a strong match. Pin affects bootstrap
+    // injection, not search relevance.
+    //
+    // Why `, o.id ASC` exists, and why it is `id` and nothing else:
+    //
+    // bm25 produces EXACT ties, and SQLite does not guarantee any order among
+    // them — so the pre-fix order was an artifact of the query plan, not a
+    // decision. That has two consequences, and the second one is the reason this
+    // clause is here rather than in a "nice to have" list:
+    //
+    //   1. Tied rows could swap position when the plan changed. Cosmetic on its
+    //      own — measured on the gold corpus as 3 queries out of 90 with FTS hits.
+    //   2. When matches EXCEED the internal limit of 50, the tie sits on the
+    //      truncation boundary, so *which 50 rows survive* — the MEMBERSHIP, not
+    //      just the order — was also undefined. Membership flows into RRF and the
+    //      semantic fusion, so it can change the final recall. Measured: 1 of 5
+    //      probe queries on a 1,970-record fixture returned exactly 50 rows.
+    //
+    // `o.id` is chosen because it is the only field that is unique, immutable and
+    // carries no ranking opinion. `turn_stopped_at` would smuggle recency into
+    // relevance, `is_pinned` would smuggle curation, a semantic score would
+    // smuggle the other leg — any of them turns a defect fix into an
+    // uncalibrated ranking change. `id` is monotonic with insertion, so among
+    // records the ranker cannot distinguish, the older one wins; that is a
+    // stated, arbitrary, stable convention rather than a relevance claim.
+    //
+    // Cost: this reintroduces `USE TEMP B-TREE FOR ORDER BY` (the FTS module can
+    // stream its own rank order but not a composite key), measured at ~11% on the
+    // 1,970-record fixture — 0.581ms vs 0.522ms. The 50,000-record scale
+    // measurement is what decides whether that is affordable; the FTS table stays
+    // the OUTER loop either way, which is where the 1,900x came from.
+    sql += ' ORDER BY fts.rank, o.id ASC LIMIT ?';
     params.push(limit);
     return this.db.query(sql).all(...params) as Observation[];
   }
 
-  /** Recent Observation ids for the semantic candidate pool, scoped and typed. */
+  /**
+   * Auxiliary CJK bigram candidates (phase 3A) — the two-character words the
+   * trigram index cannot reach.
+   *
+   * ONE table scan, not one per bigram: each bigram becomes a `CASE WHEN ... LIKE`
+   * column, so the per-row cost grows with the number of bigrams while the number
+   * of scans stays at 1. The alternative (a query per bigram) was measured at
+   * 0.035ms per bigram on a 26-record corpus, which is cheap here and linear in
+   * corpus size × bigram count — this shape is linear in corpus size only.
+   *
+   * `LIKE '%XY%'` rather than the FTS index because the index cannot serve it:
+   * FTS5's trigram tokenizer tokenizes the query too, so a 2-character string
+   * yields zero tokens and matches nothing, prefix syntax included. An
+   * `fts5vocab` prefix expansion (`XY?` → a MATCH over those trigrams) WAS
+   * measured as the index-backed alternative and lost on both axes at this scale:
+   * 14× slower (0.496ms vs 0.035ms) and incomplete — it misses a record where the
+   * bigram sits at the very end of a column, because only `?XY` is indexed there
+   * (9 such hits, e.g. 「问题」 in three records). That latency comparison IS
+   * scale-dependent and is registered for phase 3B; the incompleteness is not.
+   *
+   * Columns mirror `observations_fts` exactly, matched per column rather than
+   * against a concatenation, so a bigram can never match across a column
+   * boundary — the same semantics FTS5 gives by tokenizing each column
+   * separately.
+   *
+   * Two noise controls, and the division of labour between them matters:
+   *
+   *  - `dfRatioCeiling` drops bigrams that match too large a FRACTION of the
+   *    scope. A ratio, not an absolute count, because an absolute threshold does
+   *    not survive a change of corpus size: on the 26-record benchmark corpus
+   *    `df <= 1` is the only non-breaching pure-DF setting, but on 10,000 records
+   *    「引号」 will not have df 1 and the whole feature would silently stop
+   *    firing. A fraction is scale-invariant — 「测试」 takes 30-50% of any
+   *    corpus, 「引号」 a few percent.
+   *  - `minMatches` requires a record to hit several DISTINCT bigrams. Measured
+   *    as effective but blunt: at 2 it drives worst-case false recall to 0-2 but
+   *    cuts reachable targets from 32/72 to 9/72, which is worse than the DF
+   *    ceiling achieves. Kept as a knob, defaulted to 1.
+   *
+   * NEITHER of them is the release gate. The bound that holds regardless of
+   * corpus size and DF distribution is the post-fusion `bigramOnlyLimit` in the
+   * retrieval kernel — same shape as `semanticOnlyLimit`, worst case guaranteed
+   * by construction rather than by a threshold that happened to fit 26 records.
+   *
+   * Returns candidates ordered by how many distinct bigrams they matched, then
+   * recency, then id. That order becomes the leg's rank in RRF.
+   */
+  searchObservationsByCjkBigrams(
+    bigrams: string[],
+    opts: {
+      scopeKey?: string;
+      type?: string;
+      days?: number;
+      /** Max `df / scopeSize` for a bigram to be used. 1 = no ceiling. */
+      dfRatioCeiling: number;
+      /** Min number of DISTINCT surviving bigrams a record must match. */
+      minMatches: number;
+      limit: number;
+    },
+  ): {
+    candidates: { id: number; matches: number; bigrams: string[] }[];
+    /** Bigrams that actually ran (after the per-search unit budget). */
+    unitsProbed: number;
+    /** Bigrams present in the corpus but dropped by the DF ceiling. */
+    droppedByDf: { bigram: string; df: number }[];
+    /** Bigrams absent from the corpus entirely (df = 0). */
+    zeroDf: number;
+    /** Denominator of the DF ratio: rows this scan considered. */
+    scopeSize: number;
+  } {
+    const empty = {
+      candidates: [] as { id: number; matches: number; bigrams: string[] }[],
+      unitsProbed: 0,
+      droppedByDf: [] as { bigram: string; df: number }[],
+      zeroDf: 0,
+      scopeSize: 0,
+    };
+    if (bigrams.length === 0) return empty;
+
+    const days = opts.days ?? 90;
+    const dateThreshold = new Date(Date.now() - days * 86400000).toISOString();
+
+    // One boolean column per bigram. Params appear in SELECT before WHERE, which
+    // is the order SQLite binds positional parameters in.
+    const flagCols = bigrams
+      .map((_, i) => `CASE WHEN (${FTS_INDEXED_COLUMNS.map((c) => `${c} LIKE ?`).join(' OR ')}) THEN 1 ELSE 0 END AS b${i}`)
+      .join(',\n        ');
+    let sql = `SELECT id, turn_stopped_at,\n        ${flagCols}\n      FROM observations WHERE turn_stopped_at > ?`;
+    const params: (string | number)[] = [];
+    for (const bg of bigrams) {
+      const like = `%${bg}%`;
+      for (const _ of FTS_INDEXED_COLUMNS) params.push(like);
+    }
+    params.push(dateThreshold);
+    if (opts.scopeKey) { sql += ' AND scope_key = ?'; params.push(opts.scopeKey); }
+    if (opts.type) { sql += ' AND memory_type = ?'; params.push(opts.type); }
+
+    type Row = { id: number; turn_stopped_at: string } & Record<string, number>;
+    const rows = this.db.query(sql).all(...params) as Row[];
+    const scopeSize = rows.length;
+    if (scopeSize === 0) return { ...empty, unitsProbed: bigrams.length };
+
+    // DF per bigram, then the ceiling. Computed from the SAME scan rather than
+    // by separate COUNT queries so the ratio's denominator is provably the set
+    // of rows the candidates come from.
+    const df = bigrams.map((_, i) => rows.reduce((n, r) => n + (r[`b${i}`] ?? 0), 0));
+    const droppedByDf: { bigram: string; df: number }[] = [];
+    let zeroDf = 0;
+    const usable: number[] = [];
+    bigrams.forEach((bg, i) => {
+      const d = df[i]!;
+      if (d === 0) { zeroDf++; return; }
+      if (d / scopeSize > opts.dfRatioCeiling) { droppedByDf.push({ bigram: bg, df: d }); return; }
+      usable.push(i);
+    });
+
+    const scored: { id: number; matches: number; bigrams: string[]; stoppedAt: string }[] = [];
+    for (const r of rows) {
+      // Which bigrams matched, not just how many. Plan §10 requires the phase 3A
+      // gain be attributable to a SPECIFIC two-character word — "FTS got better"
+      // is not an attribution, and recomputing this in the benchmark would be a
+      // second source of truth for what the leg matched.
+      const hit: string[] = [];
+      for (const i of usable) if (r[`b${i}`]) hit.push(bigrams[i]!);
+      if (hit.length >= opts.minMatches && hit.length > 0) {
+        scored.push({ id: r.id, matches: hit.length, bigrams: hit, stoppedAt: r.turn_stopped_at });
+      }
+    }
+    scored.sort((a, b) => {
+      if (b.matches !== a.matches) return b.matches - a.matches;
+      if (a.stoppedAt !== b.stoppedAt) return a.stoppedAt < b.stoppedAt ? 1 : -1;
+      return a.id - b.id;
+    });
+
+    return {
+      candidates: scored.slice(0, opts.limit).map((s) => ({ id: s.id, matches: s.matches, bigrams: s.bigrams })),
+      unitsProbed: bigrams.length,
+      droppedByDf,
+      zeroDf,
+      scopeSize,
+    };
+  }
+
+  /**
+   * Recent Observation ids for the semantic candidate pool, scoped and typed.
+   *
+   * `limit: Infinity` means "the whole scope" and drops the LIMIT clause. It is
+   * handled here rather than at the call site because binding `Infinity` into
+   * SQLite does NOT fail loudly: it coerces, and the caller gets some row count
+   * nobody chose. The phase 3B `pool-full` arm depends on this being an explicit,
+   * checked branch.
+   */
   getRecentObservationIds(opts: { scopeKey?: string; type?: string; days: number; limit: number }): number[] {
     const dateThreshold = new Date(Date.now() - opts.days * 86400000).toISOString();
     let sql = `SELECT id FROM observations WHERE turn_stopped_at > ?`;
     const params: (string | number)[] = [dateThreshold];
     if (opts.scopeKey) { sql += ' AND scope_key = ?'; params.push(opts.scopeKey); }
     if (opts.type) { sql += ' AND memory_type = ?'; params.push(opts.type); }
-    sql += ' ORDER BY turn_stopped_at DESC LIMIT ?';
-    params.push(opts.limit);
+    sql += ' ORDER BY turn_stopped_at DESC';
+    if (Number.isFinite(opts.limit)) { sql += ' LIMIT ?'; params.push(opts.limit); }
     return (this.db.query(sql).all(...params) as { id: number }[]).map((r) => r.id);
+  }
+
+  /**
+   * How many Observations in this scope have a vector in ONE embedding space.
+   *
+   * The candidate-pool count the retrieval kernel already reports
+   * (`comparableVectors`) is bounded by "FTS hits ∪ the most recent
+   * `semanticCandidatePool`" (20,000 since the pool round), so it cannot answer the scope-level question plan §8.2 asks for: does this
+   * workspace have vectors under the active protocol at all? A zero here and a
+   * zero from "nothing was relevant" produce the same empty page, and only this
+   * number tells them apart — e.g. a `semantic-en-v1` rebuild that has not
+   * reached this workspace yet.
+   *
+   * NOT filtered by type or days on purpose: those narrow one request, while this
+   * describes the corpus the semantic leg could ever reach in this scope. Omitting
+   * `scopeKey` counts the whole dataDir, which is what an explicit all-scopes
+   * search actually searches.
+   *
+   * Returns a count only. The caller records a number; the scope key never leaves
+   * this call.
+   */
+  countScopeVectors(opts: { scopeKey?: string; model: string; dimensions: number }): number {
+    let sql = `SELECT COUNT(*) AS c FROM observation_embeddings e
+                 JOIN observations o ON o.id = e.observation_id
+                WHERE e.model = ? AND e.dimensions = ?`;
+    const params: (string | number)[] = [opts.model, opts.dimensions];
+    if (opts.scopeKey) {
+      sql += ' AND o.scope_key = ?';
+      params.push(opts.scopeKey);
+    }
+    const row = this.db.query(sql).get(...params) as { c: number } | null;
+    return row?.c ?? 0;
   }
 
   /**
@@ -1352,13 +1700,51 @@ export class MemoryDB {
    * Record one MCP search request. `degraded` marks an FTS-only fallback (query
    * embedding unavailable). Written from the MCP server process. Never throws
    * out — metric recording must not break search.
+   *
+   * Everything past `degraded` is the phase 2C retrieval observability (plan
+   * §8.2) and is optional: a caller that only knows latency still writes a valid
+   * row, and the aggregation reports the rest as unknown instead of zero. All of
+   * it is counts and enum reasons — no query text, no Observation text, no scope
+   * key — because these rows outlive the request and a metric table is the one
+   * place nobody expects to find user content.
    */
-  recordSearchMetric(opts: { latencyMs: number; degraded: boolean }): void {
+  recordSearchMetric(opts: {
+    latencyMs: number;
+    degraded: boolean;
+    /** Vector space the request ran in (`semantic-en-v1` | `raw-v1`). */
+    protocol?: string;
+    /** `missing` or a guardrail reject reason; null when the English form was used. */
+    rejectReason?: string | null;
+    ftsCount?: number;
+    semanticCount?: number;
+    comparableVectors?: number;
+    /** Vectors in the whole scope; `null` when the semantic step never ran. */
+    scopeVectors?: number | null;
+    semanticOnly?: number;
+    discoveryEffective?: boolean;
+  }): void {
     try {
+      const int = (v: number | undefined): number | null =>
+        v === undefined ? null : Math.max(0, Math.round(v));
       const r = this.db.run(
-        `INSERT INTO metric_events (kind, degraded, latency_ms, created_at)
-         VALUES ('search', ?, ?, ?)`,
-        [opts.degraded ? 1 : 0, Math.max(0, Math.round(opts.latencyMs)), nowISO()],
+        `INSERT INTO metric_events
+           (kind, degraded, latency_ms, created_at,
+            protocol, reject_reason, fts_count, semantic_count,
+            comparable_vectors, scope_vectors, semantic_only, discovery)
+         VALUES ('search', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          opts.degraded ? 1 : 0,
+          Math.max(0, Math.round(opts.latencyMs)),
+          nowISO(),
+          opts.protocol ?? null,
+          opts.rejectReason ?? null,
+          int(opts.ftsCount),
+          int(opts.semanticCount),
+          int(opts.comparableVectors),
+          opts.scopeVectors == null ? null : Math.max(0, Math.round(opts.scopeVectors)),
+          int(opts.semanticOnly),
+          opts.discoveryEffective === undefined ? null : opts.discoveryEffective ? 1 : 0,
+        ],
       );
       this.maybePruneMetrics(Number(r.lastInsertRowid));
     } catch {
@@ -1462,19 +1848,58 @@ export class MemoryDB {
       .query(
         `SELECT COUNT(*) AS requests,
                 COALESCE(SUM(degraded), 0) AS ftsOnly,
-                COALESCE(AVG(latency_ms), 0) AS avgMs
+                COALESCE(AVG(latency_ms), 0) AS avgMs,
+                COALESCE(SUM(protocol = 'semantic-en-v1'), 0) AS semanticEn,
+                COALESCE(SUM(protocol = 'raw-v1'), 0) AS raw,
+                COALESCE(SUM(discovery = 1), 0) AS discovery,
+                COALESCE(SUM(fts_count = 0), 0) AS zeroFts,
+                COALESCE(SUM(fts_count = 0 AND semantic_only > 0), 0) AS zeroFtsRecalled,
+                COALESCE(SUM(semantic_only), 0) AS semanticOnlyTotal,
+                COALESCE(MAX(semantic_only), 0) AS semanticOnlyMax,
+                COALESCE(AVG(comparable_vectors), 0) AS comparableAvg,
+                COALESCE(AVG(scope_vectors), 0) AS scopeVectorsAvg,
+                COALESCE(MIN(scope_vectors), 0) AS scopeVectorsMin,
+                COALESCE(SUM(scope_vectors = 0), 0) AS emptyScope,
+                COALESCE(SUM(scope_vectors IS NOT NULL), 0) AS scopeMeasured
            FROM metric_events
           WHERE kind = 'search' AND created_at > ?`,
       )
-      .get(since) as { requests: number; ftsOnly: number; avgMs: number };
+      .get(since) as {
+        requests: number;
+        ftsOnly: number;
+        avgMs: number;
+        semanticEn: number;
+        raw: number;
+        discovery: number;
+        zeroFts: number;
+        zeroFtsRecalled: number;
+        semanticOnlyTotal: number;
+        semanticOnlyMax: number;
+        comparableAvg: number;
+        scopeVectorsAvg: number;
+        scopeVectorsMin: number;
+        emptyScope: number;
+        scopeMeasured: number;
+      };
 
-    let latencyMsP95 = 0;
-    if (searchAgg.requests > 0) {
-      const offset = Math.min(
-        searchAgg.requests - 1,
-        Math.floor(searchAgg.requests * 0.95),
-      );
-      const p95Row = this.db
+    // Why `semantic_query_en` was not usable, by reason. Bounded by the reject
+    // enum plus 'missing', so this cannot grow with traffic.
+    const rejectRows = this.db
+      .query(
+        `SELECT reject_reason AS reason, COUNT(*) AS c
+           FROM metric_events
+          WHERE kind = 'search' AND created_at > ? AND reject_reason IS NOT NULL
+          GROUP BY reject_reason`,
+      )
+      .all(since) as { reason: string; c: number }[];
+    const semanticQueryIssues: Record<string, number> = {};
+    for (const row of rejectRows) semanticQueryIssues[row.reason] = row.c;
+
+    /** Nearest-rank percentile over the window's latencies. */
+    const latencyPercentile = (p: number): number => {
+      if (searchAgg.requests === 0) return 0;
+      const offset = Math.min(searchAgg.requests - 1, Math.floor(searchAgg.requests * p));
+      const row = this.db
         .query(
           `SELECT latency_ms AS v FROM metric_events
             WHERE kind = 'search' AND latency_ms IS NOT NULL AND created_at > ?
@@ -1482,8 +1907,10 @@ export class MemoryDB {
             LIMIT 1 OFFSET ?`,
         )
         .get(since, offset) as { v: number } | null;
-      latencyMsP95 = p95Row?.v ?? 0;
-    }
+      return row?.v ?? 0;
+    };
+    const latencyMsP50 = latencyPercentile(0.5);
+    const latencyMsP95 = latencyPercentile(0.95);
 
     return {
       observations: { total, normal, fallback, pinned },
@@ -1516,7 +1943,29 @@ export class MemoryDB {
             ? Number((searchAgg.ftsOnly / searchAgg.requests).toFixed(3))
             : 0,
         latencyMsAvg: Math.round(searchAgg.avgMs),
+        latencyMsP50,
         latencyMsP95,
+        protocolSemanticEn: searchAgg.semanticEn,
+        protocolRaw: searchAgg.raw,
+        semanticEnRate:
+          searchAgg.requests > 0
+            ? Number((searchAgg.semanticEn / searchAgg.requests).toFixed(3))
+            : 0,
+        semanticQueryIssues,
+        discoveryEffective: searchAgg.discovery,
+        zeroFts: searchAgg.zeroFts,
+        zeroFtsRecalled: searchAgg.zeroFtsRecalled,
+        semanticOnlyTotal: searchAgg.semanticOnlyTotal,
+        semanticOnlyPerRequest:
+          searchAgg.requests > 0
+            ? Number((searchAgg.semanticOnlyTotal / searchAgg.requests).toFixed(3))
+            : 0,
+        semanticOnlyMax: searchAgg.semanticOnlyMax,
+        comparableVectorsAvg: Math.round(searchAgg.comparableAvg),
+        scopeVectorsAvg: Math.round(searchAgg.scopeVectorsAvg),
+        scopeVectorsMin: searchAgg.scopeVectorsMin,
+        scopeVectorsMeasured: searchAgg.scopeMeasured,
+        emptyScopeRequests: searchAgg.emptyScope,
       },
       acp24h: {
         repairs: scalar(

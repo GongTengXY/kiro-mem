@@ -46,7 +46,14 @@
           }
         }
       }
-    ]
+    ],
+    "v20Repair": {
+      "was": "...",
+      "now": "was the quality benchmark set treated as a release blocker",
+      "why": "v20 原文本来就是英文，中→英 prompt 面对已是英文的输入会返回解释而不是 JSON（阶段 1b §5 已记录该形状）。首轮落进固定输入的是字面 \"...\"，生产护栏以 placeholder 正确拒绝，于是该 query 在 arm 里静默落回 raw-v1。加固后的探针（parse 里过一遍 checkSemanticEnQuery）重译得到恒等形式，护栏明确允许\"An English source legitimately normalizes to itself\"。",
+      "repairedAt": "2026-07-31",
+      "gate": "Gate B 后续整改"
+    }
   },
   "queries": {
     "v12": "what happens to search when the embedding model is unavailable",
@@ -68,6 +75,6 @@
     "v03": "How does the local token work in a way that's completely unnoticeable to the user",
     "v19": "are the MCP tool descriptions available in more than one language",
     "v17": "how does diagnose notice that the installed version drifted",
-    "v20": "..."
+    "v20": "was the quality benchmark set treated as a release blocker"
   }
 }

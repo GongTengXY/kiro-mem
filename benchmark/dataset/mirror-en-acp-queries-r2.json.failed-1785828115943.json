@@ -1,0 +1,40 @@
+{
+  "provenance": {
+    "source": "acp",
+    "agent": "kiro-mem-compressor",
+    "kiroCli": "kiro-cli (see report)",
+    "target": "queries",
+    "querySet": "r2",
+    "generatedAt": "2026-08-04T07:21:55.943Z",
+    "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+    "items": 4,
+    "failures": 3,
+    "retries": 4,
+    "wallTimeMs": 19574,
+    "itemLatencyMs": {
+      "p50": 14883,
+      "p95": 19570,
+      "max": 19570
+    }
+  },
+  "queries": {
+    "w46": "How was the drift detected?",
+    "n17": "Which config file has the default values for the config options written in it?",
+    "n09": "Which protocol is used for cross-machine memory sync",
+    "w50": "What happens if it still fails after retrying to the end?"
+  },
+  "failuresDetail": [
+    {
+      "id": "n05",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "n03",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "n04",
+      "reason": "JSON 解析失败"
+    }
+  ]
+}

@@ -53,6 +53,34 @@ function unitVector(dims: number, hot: number): Float32Array {
 beforeEach(() => { db = openInMemoryDB(); seq = 0; });
 afterEach(() => { db.close(); });
 
+describe('getObservationEmbeddingsByIds — 绑定参数天花板', () => {
+  /**
+   * SQLite via Bun accepts 65,535 bound parameters and wraps at 65,536.
+   *
+   * Kept as a boundary pin even though production cannot reach it: the shipped
+   * `semanticCandidatePool` is 20,000, so the id list plus two filter params stays
+   * far below the ceiling. It matters because the failure mode is silent — the
+   * retrieval kernel's catch turns the throw into `onDegrade` + FTS-only, so a
+   * future round that raises the pool past ~65,000 would lose semantic recall
+   * without an error. This test is the only place that records where the cliff is,
+   * and it fails loudly if a future Bun moves it.
+   *
+   * The pool round measured scope-wide scoring and it did NOT ship (memory, not
+   * this ceiling): `benchmark/reports/pool-policy-submission.md` §9.
+   */
+  test('单条 IN 列表在 65,536 个参数处回绕失败，65,535 个成功', () => {
+    const raw = (db as unknown as { db: { query: (s: string) => { all: (...a: unknown[]) => unknown } } }).db;
+    const ids = Array.from({ length: 65_536 }, (_, i) => i + 1);
+    expect(() =>
+      raw.query(`SELECT observation_id FROM observation_embeddings WHERE observation_id IN (${ids.map(() => '?').join(',')})`).all(...ids),
+    ).toThrow();
+    const under = ids.slice(0, 65_535);
+    expect(() =>
+      raw.query(`SELECT observation_id FROM observation_embeddings WHERE observation_id IN (${under.map(() => '?').join(',')})`).all(...under),
+    ).not.toThrow();
+  });
+});
+
 describe('getObservationEmbeddingsByIds — version filter', () => {
   test('returns rows written by the current model', () => {
     const id = seedObs('current model');

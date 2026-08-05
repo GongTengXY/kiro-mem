@@ -1,0 +1,42 @@
+{
+  "frozen": true,
+  "stage": "full",
+  "generatedAt": "2026-08-04T07:58:12.928Z",
+  "rules": {
+    "path": "benchmark/reports/phase3a-r2-dataset-rules.md",
+    "sha256": "8621b6fdf71fcc21a8abd6397aabc76da0e4fbe18766be91351652722453fb2e",
+    "frozenAt": "2026-08-04T14:51:03Z",
+    "note": "规则先于本脚本与任何 query 冻结"
+  },
+  "counts": {
+    "fusion": 62,
+    "emptyExt": 32,
+    "eliminated": 0,
+    "strata": {
+      "S1": 23,
+      "S2": 11,
+      "S3": 19,
+      "S4": 7,
+      "S5": 2
+    },
+    "semanticReachesGold": 53
+  },
+  "sha256": {
+    "queries-fusion.json": "9ff56d6d2c8e5187a4c7c7f99e968805cd1b7c2dae43dffd32565deee2759704",
+    "queries-empty-ext.json": "d36fb3602f14dee104e51caf71695bfca57ed0ae097db22495d7e8953a794b34",
+    "queries-fusion-eliminated.json": "51736a6c2b60661681c1808f8f14f9eb7333e390b006163a314d13ec1443e8db",
+    "mirror-en-acp-queries-r2.json": "07ce80e608c7fd018b1ca1a8178d2e66f502ee93ea5bd3498492cb9858734d78",
+    "build-phase3a-r2-dataset.ts": "1d4679e4dce8c8b90a2e84c46673c986fd19b5580a8a43901deb89c2b989009b"
+  },
+  "continuityLock": {
+    "ids": [
+      "q19",
+      "q21",
+      "q22",
+      "q23",
+      "q24"
+    ],
+    "status": "永久保留，本轮一个字未改；新增集合是并列的第二道门槛，不是替换",
+    "gate": "均值 ≤1.00 / 最坏 ≤2（2D 读数）"
+  }
+}

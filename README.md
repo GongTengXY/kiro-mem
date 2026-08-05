@@ -29,7 +29,7 @@ kiro-mem automatically captures each turn (prompt → tool calls → stop) durin
 - 🧠 **Persistent Memory** — Keep project context across sessions
 - 🧩 **Atomic & Immutable** — One closed turn → one Observation; text is never rewritten or merged
 - 🤖 **ACP-native** — Compression runs through Kiro CLI ACP — no LLM API key required
-- 🔍 **Hybrid Search** — FTS5 full-text search + local semantic reranking, hard-scoped per workspace
+- 🔍 **Hybrid Search** — FTS5 full-text search + local semantic recall, fused with RRF and hard-scoped per workspace; a query with no shared wording can still find the record
 - 📊 **Read-time Organization** — Inject a compact index; the agent pulls relevance on demand (`search` → `timeline` → `get_observations`)
 - 🔧 **MCP Tools** — `search`, `timeline`, `get_observations`, `pin`
 - 🔒 **Privacy Control** — Use `<private>` tags to redact sensitive content before storage
@@ -41,13 +41,20 @@ kiro-mem automatically captures each turn (prompt → tool calls → stop) durin
 
 Requires [Bun](https://bun.sh) and a [Kiro CLI](https://kiro.dev) build that supports the `acp` subcommand.
 
-> **V3 is a clean break from V2.** Existing users must remove all V2 data and runtime files before installing V3. There is no database migration or compatibility mode.
+> **V3 is a clean break from V2, and the only supported upgrade path is a full wipe and reinstall.** There is no database migration and no compatibility mode; running a V3 install over V2 data is not supported and is not tested.
 >
 > ```bash
-> kiro-mem uninstall --purge
+> kiro-mem stop
+> kiro-mem uninstall --purge   # ⚠️ see the warning below
 > npm i -g kiro-mem@3
 > kiro-mem install
 > ```
+>
+> ### ⚠️ `--purge` permanently deletes all memory and configuration
+>
+> It removes `~/.kiro-mem` in full: every captured turn, every Observation, every vector, the job queue, your `config.json`, and the local Worker token. **This cannot be undone and there is no export.** If any of that history matters to you, copy `~/.kiro-mem` somewhere else before running it — note that a V2 copy cannot be read back by V3.
+>
+> `kiro-mem stop` first is not optional: it prevents the old Worker from writing into a directory that is being removed underneath it.
 
 For a first-time installation:
 
@@ -86,7 +93,7 @@ curl http://127.0.0.1:37778/health
 
 1. **Core Truth Layer** — `session_id` → `turns` → `turn_events` (append-only raw hook payloads) + `turn_artifacts` (deterministic extraction: tools, files, commands, test/build/lint signals, errors). This layer is never rewritten and can rebuild any projection.
 2. **Synthesis Layer** — Persistent jobs (`summarize_turn` → `embed_observation`) drive an **ACP runtime pool**: each prompt goes to a `kiro-cli acp` sub-process running an isolated `kiro-mem-compressor` sub-agent declared with `tools: []`. Any tool-call notification on that session is treated as contamination and the runtime slot is recycled. `summarize_turn` consumes the user prompt, the assistant's final response (`assistant_response`), and the deterministic artifacts, then writes exactly one immutable Observation per closed turn (idempotent on `turn_id`). It never clusters, merges, or supersedes. On compression failure it degrades to a `quality=fallback` Observation carrying only deterministic evidence — never a fabricated result.
-3. **Retrieval Layer** — `observations_fts` (FTS5) + local semantic reranking, fused with RRF and hard-scoped by workspace → MCP tools → context injection.
+3. **Retrieval Layer** — `observations_fts` (FTS5) and local semantic recall run as two independent legs, fused with RRF and hard-scoped by workspace → MCP tools → context injection. The semantic leg does not need a keyword hit to run: it can recall a record nothing in the query literally matches, bounded by a cosine floor and a semantic-only cap.
 
 At session start, kiro-mem injects a compact **Observation index** for the current workspace: pinned observations, a few recent entries with a short outcome snippet, and a longer recent index where each line carries an approximate read cost. It is a menu, not the content — no LLM synthesis, no topics. The agent then pulls relevance on demand via `search` → `timeline` → `get_observations`.
 
@@ -147,6 +154,9 @@ Edit `~/.kiro-mem/config.json`, or run `kiro-mem config` for interactive setup:
   "filter": {
     "skipTools": ["introspect", "todo_list", "@kiro-mem/*"]
   },
+  "retrieval": {
+    "semanticDiscovery": true
+  },
   "runtime": {
     "kiroHome": ""
   }
@@ -158,6 +168,39 @@ Edit `~/.kiro-mem/config.json`, or run `kiro-mem config` for interactive setup:
 - `compression.maxRetries`: how many JSON-repair retries to attempt before degrading to a `quality=fallback` Observation (default `2`).
 - `runtime.kiroHome`: isolated `KIRO_HOME` for the compressor sub-agent. Empty falls back to `<dataDir>/kiro-runtime`, which is the layout `kiro-mem install` lays down.
 - `context.maxOutputBytes`: byte budget for the injected Observation index, kept below the `agentSpawn` 10KB limit (default `8192`).
+- `retrieval.semanticDiscovery`: whether semantic similarity may surface records that keyword search never matched (default `true`). See below.
+
+### Semantic Discovery and Rollback
+
+`retrieval.semanticDiscovery: true` is the shipped default: a `search` that carries a legal `semantic_query_en` runs the semantic leg even when FTS matched nothing in this workspace, so a question phrased entirely differently from the record can still find it. Two bounds keep that from filling the page with plausible noise, both selected by a full-pipeline parameter scan rather than by taste: a cosine floor of `0.197` and **at most 2 semantic-only results per search**. Results that only the semantic leg found are labelled `match_source: "semantic"` and should be verified before you act on them.
+
+Setting it to `false` is the rollback. It restores the previous behavior in full — keyword anchor required, floor `0.2`, no semantic-only cap, recency tie-break — and takes effect for Kiro sessions started after the edit:
+
+```bash
+# roll back
+kiro-mem config --show   # shows the active profile
+# edit ~/.kiro-mem/config.json: "retrieval": { "semanticDiscovery": false }
+```
+
+The switch changes retrieval only. It does not touch the database schema, the stored vectors or the embedding protocol, so it can be flipped back and forth with no rebuild and no data loss.
+
+### Retrieval Metrics
+
+`curl http://127.0.0.1:37778/health` and `kiro-mem diagnose` report a trailing 24h window of search counters. They hold counts, enum reasons and latency only — never query text, Observation text or workspace paths.
+
+| Field (`search_24h`) | Meaning |
+| --- | --- |
+| `requests` / `latencyMsP50` / `latencyMsP95` | Search volume and latency. |
+| `protocolSemanticEn` / `semanticEnRate` | How many searches actually ran in the English vector space. Independent semantic recall only works there, so a low rate means the feature is shipped but mostly unreachable. |
+| `semanticQueryIssues` | Why the English form was unusable, by reason: `missing` (the agent never passed `semantic_query_en`) plus guardrail rejections such as `untranslated` or `placeholder`. |
+| `ftsOnly` / `degradeRate` | Searches that fell back to keyword-only because the query embedding was unavailable (Worker down, timeout). A degraded request is a capability failure, not a policy choice. |
+| `zeroFts` / `zeroFtsRecalled` | Searches with no keyword match at all, and how many of those still returned something via semantic recall. This is the number the feature exists to move. |
+| `semanticOnlyTotal` / `semanticOnlyPerRequest` / `semanticOnlyMax` | Volume of unverified semantic-only leads. `semanticOnlyMax` must never exceed the cap. |
+| `comparableVectors` (avg) | How many stored vectors the semantic leg had available to compare. Bounded by the candidate pool (FTS hits ∪ the 20,000 most recent in scope), so it saturates once a scope passes 20,000 Observations. |
+| `scopeVectors` (avg / min / measured) | Vectors in the active space across the WHOLE searched scope — not the candidate pool. This is the number that answers "has this workspace been embedded under this protocol?". `null` (not counted) when the semantic step never ran, which is deliberately different from 0. |
+| `emptyScopeRequests` | Searches whose scope had no vectors at all. Non-zero means semantic recall was structurally impossible for them — a rebuild or job-backlog problem, not a relevance one. |
+
+`/health` also reports the active profile under `retrieval`, read from disk on every call, so "did my rollback take effect?" is answerable without reading code. It reports what the **next** session will serve — a session already running keeps the profile it started with.
 
 ## CLI
 
@@ -190,8 +233,9 @@ kiro-mem uninstall --purge
 | Requires Kiro CLI ACP               | Compression cannot run without a working `kiro-cli acp` subcommand    | `kiro-mem diagnose` runs an ACP smoke test    |
 | `agentSpawn` output limit 10KB      | Injected index must stay compact                                      | Budget-controlled context builder             |
 | Search queries shorter than 3 chars | Falls back to `LIKE`, less precise                                    | Use longer terms when possible                |
-| Search needs a keyword anchor        | Semantic similarity only reranks and extends keyword hits — it never surfaces records on its own. A query with no FTS match in the current workspace returns nothing, even if a paraphrase of it exists | Include at least one term that literally appears in the work you are looking for |
-| Semantic recall window is bounded   | Reranking considers the FTS hits plus the ~200 most recent observations in scope, so older entries are reachable by keyword but may drop out of semantic ranking | Use distinctive keywords for old work; `days` widens the time filter |
+| Semantic-only results are unverified | A query with no keyword overlap can now find records through meaning alone, but those results rest on vector similarity only, and a query about work this project never did can still return up to 2 plausible-looking records | They are labelled `match_source: "semantic"` and capped at 2 per search; verify with `get_observations` or the current code before acting |
+| Independent recall needs the English form | The semantic leg only recalls unanchored records in the `semantic-en-v1` space. If the agent omits `semantic_query_en` or the guardrail refuses it, the search falls back to keyword-anchored behavior | `semanticEnRate` and `semanticQueryIssues` in `/health` / `kiro-mem diagnose` show how often that happens |
+| Semantic recall is bounded at 20,000 records | The semantic leg scores the FTS hits plus the **20,000 most recent** Observations in scope. That is 100× the previous 200, so an older entry is now reachable in every workspace below that size — but past 20,000 the pool truncates by recency again, and an older record can still be scored never at all. Scope-wide scoring was measured and is better on recall, but it needs ~720MB of working memory at 50,000 records (over the 512MB budget), so it did not ship | Measured full-search p95 at 50,000 records: 183ms against a 300ms budget. The real fix — chunked read, score immediately, keep a bounded Top-K — is a separate round |
 | Install step                        | Copies the bundled embedding model (~23 MB) into `~/.kiro-mem/models` | Model ships in the package — no model download |
 | No Web Viewer UI yet                | Memory inspected through CLI/MCP/DB                                   | Planned separately                            |
 | Local only                          | No built-in cross-machine sync                                        | Future: git sync or cloud storage             |
