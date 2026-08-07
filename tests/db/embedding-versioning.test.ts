@@ -12,7 +12,7 @@ import { MemoryDB } from '../../src/db';
 import { openInMemoryDB } from '../support/tmp-db';
 import { hybridSearchObservations } from '../../src/server/observation-search';
 import { DIMENSIONS, embeddingToBlob } from '../../src/embedding';
-import { RAW_PROTOCOL, embeddingSpaceKey } from '../../src/semantic-en';
+import { RAW_PROTOCOL, SEMANTIC_EN_PROTOCOL, embeddingSpaceKey } from '../../src/semantic-en';
 
 /**
  * The name a stored vector must carry to be readable today.
@@ -24,6 +24,8 @@ import { RAW_PROTOCOL, embeddingSpaceKey } from '../../src/semantic-en';
  * like a foreign-model row — unreadable, keyword-reachable only.
  */
 const RAW_SPACE_KEY = embeddingSpaceKey(RAW_PROTOCOL);
+/** 语义腿唯一会读的空间：raw-v1 降级轮次之后，raw 空间的向量再也不会被比较。 */
+const EN_SPACE_KEY = embeddingSpaceKey(SEMANTIC_EN_PROTOCOL);
 
 let db: MemoryDB;
 let seq = 0;
@@ -129,7 +131,9 @@ describe('hybrid search with an incomparable stored vector', () => {
     const results = await hybridSearchObservations(
       db,
       'vector rotation handling',
-      { scopeKey: undefined, limit: 10 },
+      // 语义腿只在 semantic-en-v1 空间执行（raw-v1 降级轮次），所以这里必须显式传英文形式，
+      // 否则测的就不是"向量可比性"而是"降级路径不打分"。query 本身是英文，护栏允许原样归一。
+      { scopeKey: undefined, limit: 10, semanticQueryEn: 'vector rotation handling' },
       { generateEmbedding: async () => unitVector(DIMENSIONS, 5) },
     );
 
@@ -143,12 +147,16 @@ describe('hybrid search with an incomparable stored vector', () => {
 
   test('a current-model row IS semantically ranked', async () => {
     const current = seedObs('vector rotation handling');
-    db.upsertObservationEmbedding(current, RAW_SPACE_KEY, DIMENSIONS, embeddingToBlob(unitVector(DIMENSIONS, 5)));
+    // 写进**英文**空间：语义腿只在 semantic-en-v1 里打分，所以"当前空间"现在指的是它。
+    // 原先这里写 raw 空间，那时 raw-v1 查询还会读它；本轮之后 raw 向量永不参与比较。
+    db.upsertObservationEmbedding(current, EN_SPACE_KEY, DIMENSIONS, embeddingToBlob(unitVector(DIMENSIONS, 5)));
 
     const results = await hybridSearchObservations(
       db,
       'vector rotation handling',
-      { scopeKey: undefined, limit: 10 },
+      // 语义腿只在 semantic-en-v1 空间执行（raw-v1 降级轮次），所以这里必须显式传英文形式，
+      // 否则测的就不是"向量可比性"而是"降级路径不打分"。query 本身是英文，护栏允许原样归一。
+      { scopeKey: undefined, limit: 10, semanticQueryEn: 'vector rotation handling' },
       { generateEmbedding: async () => unitVector(DIMENSIONS, 5) },
     );
 

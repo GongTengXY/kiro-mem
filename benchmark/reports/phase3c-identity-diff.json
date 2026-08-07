@@ -1,0 +1,51 @@
+{
+  "criteria": "benchmark/reports/phase3c-criteria.md",
+  "criteriaSha256": "366ce756b0d6ebd0",
+  "gate": "N1-N5（阶段一行为中立，现有 30 条 gold 语料）",
+  "baseline": "benchmark/reports/topk/phase2-final-gold.json（同一策略，改动前的 90 天默认窗）",
+  "candidate": "benchmark/reports/phase3c-identity.json",
+  "queries": 239,
+  "comparedFieldsPerQuery": 41,
+  "N1_orderedResultIdsDiff": 0,
+  "N4_semanticRankDiff": 0,
+  "N5_leaked": 0,
+  "N5_semanticOnlyMax": 2,
+  "N5_protocols": [
+    "semantic-en-v1"
+  ],
+  "perQueryFieldDiffs": "none",
+  "gateOkDiffs": [],
+  "gateCount": [
+    17,
+    17
+  ],
+  "gateValueDiffs_timingOnly": [
+    [
+      "search p95 延迟 < 300ms",
+      "3.9ms",
+      "4.0ms"
+    ],
+    [
+      "bootstrap 构建 < 100ms 且在预算内",
+      "12.9ms / 3096B",
+      "12.3ms / 3096B"
+    ]
+  ],
+  "metricDiffs": {
+    "latencyP95": [
+      3.9032079999999496,
+      3.9706670000000486
+    ],
+    "latencyP50": [
+      1.8267080000000533,
+      1.9686249999999745
+    ]
+  },
+  "excludedFromIdentity": [
+    "latencyMs",
+    "latencyP50",
+    "latencyP95",
+    "latency 类 gate 的 value（ok 状态仍须一致）"
+  ],
+  "verdict": "PASS"
+}

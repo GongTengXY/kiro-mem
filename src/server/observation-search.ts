@@ -16,7 +16,7 @@ import type { MemoryDB } from '../db';
 // `extractFtsSearchUnits` in the db layer rather than being duplicated here. The
 // module has no import side effects — the DB singleton is constructed by the
 // caller and passed in, which is the property this file's header protects.
-import { extractCjkBigrams } from '../db';
+import { extractCjkBigrams, DEFAULT_SEARCH_DAYS } from '../db';
 import type { Observation } from '../db/types';
 import {
   cosineSimilarity,
@@ -94,9 +94,29 @@ export interface RetrievalPolicy {
    * page (phase 1b measured 80 such results across 42 queries), so the cap is
    * live on the anchored path too, not just on discovery.
    *
-   * The cap is the only bound on false recall once the keyword gate is gone. At
-   * cap=3 the historical expected-empty mean crosses the ≤1 threshold (1.20), so
-   * this number is a release gate, not a preference.
+   * ## What this cap is, and what it is NOT (final recall audit correction)
+   *
+   * It bounds ONE source label: `match_source: "semantic"`. It is a **quota for
+   * unverified pure-semantic leads**, not a whole-page false-recall guardrail.
+   * `fts` and `hybrid` results have never been subject to it — see the cap walk
+   * below, which only counts `semantic`.
+   *
+   * The earlier wording here ("the only bound on false recall once the keyword
+   * gate is gone") was wrong in a way that mattered: once the default time window
+   * became unbounded, the FTS leg's candidate set grew from "the last 90 days" to
+   * the whole history, and additions on that path bypass this cap entirely. The
+   * final audit measured 136 page additions across 56 queries with 30 `hybrid` and
+   * 19 `fts` among them — 36% of additions outside this cap's reach.
+   *
+   * Whole-page false recall is therefore gated by the audit's C1/C2 thresholds
+   * across ALL sources, not by this field. Keeping cap=2 is still correct (the
+   * historical calibration holds: at cap=3 the expected-empty mean crosses ≤1 at
+   * 1.20), but it must not be described as complete page safety.
+   *
+   * One measurement bound worth stating: the frozen audit's main queries are all
+   * zero-FTS, so they fully exercise the semantic channel and CANNOT settle the
+   * FTS/hybrid exposure. That needs a separate frozen negative set with a lexical
+   * anchor whose claim is nonetheless false.
    */
   semanticOnlyLimit: number;
   /** RRF rank-fusion constant. */
@@ -377,40 +397,24 @@ export const DEFAULT_RETRIEVAL_POLICY: RetrievalPolicy = {
   semanticWeight: 1,
   tieBreak: 'semantic-rank',
   /**
-   * 20,000 candidates — branch **B-2** of the pool round.
+   * Scope-wide candidate pool — the Top-K round's phase 2 selection.
    *
-   * Was 200 through phase 3B. The round's own rule (§7) selected scope-wide
-   * (`Infinity`), and on quality it is still the right answer: the 72 `ftsCount=0`
-   * calibration queries went from **0/72 reachable** to 43/72 (hit@5 0% → 31.9%),
-   * overall semantic reach 35.8% → 80.0%, hit@5 36.8% → 65.8%, with **zero** gold
-   * answers leaving top-5 or the page. 500 / 1000 / 1970 were measured and are not
-   * compromises: reach stays exactly 68, i.e. zero benefit at up to 9.4× the work.
+   * 200 through phase 3B, 20,000 after the pool round, scope-wide now. The recall
+   * case was already settled by the pool round and has not changed: the 72
+   * `ftsCount=0` calibration queries go from **0/72 reachable** to 43/72 (hit@5
+   * 0% → 31.9%), overall semantic reach 35.8% → 80.0%, hit@5 36.8% → 65.8%, with
+   * zero gold answers leaving top-5 or the page.
    *
-   * `Infinity` did not ship because it failed the **memory** gate, measured under
-   * the ruling's two-process protocol (seed in one process, search in another, so
-   * seeding's footprint is not charged to search) on a 50,000-record corpus whose
-   * vectors replay a real `semantic-en-v1` cosine distribution:
+   * What changed is affordability. The pool round measured scope-wide scoring at
+   * +720MB against a 512MB budget, so it shipped 20,000 instead. Streaming the
+   * candidates (fetch a chunk → score it → keep a bounded top set → drop the chunk)
+   * removed that: at 50,000 records the search loop now needs +225…+324MB across
+   * five repetitions, and p95 stays 158–286ms against a 300ms budget.
    *
-   * ```text
-   * pool=Infinity  p95 277.35ms  p99 434.00ms  loop RSS +720MB  ← over the 512MB gate
-   * pool=20000     p95 183.15ms  p99 300.24ms  loop RSS +384MB
-   * ```
-   *
-   * The mechanism is not a leak (per-round RSS oscillates 657–825MB): scoring the
-   * whole scope aggregates every fetched blob and every above-floor candidate in
-   * memory at once. Measured pass rate above `semanticFloor` is 9.2% mean / 29.7%
-   * max, so at 50,000 that is ~4,600 candidates on average and ~14,800 at worst.
-   * Fixing it properly means chunked read → score immediately → keep a bounded
-   * Top-K, which is a separate round; raising this number before that lands would
-   * ship the memory failure.
-   *
-   * **20,000 is NOT recall-equivalent to scope-wide.** On a scope larger than
-   * 20,000 Observations it truncates by recency again — 60% of a 50,000-record
-   * scope is never scored — and that recall loss is UNMEASURED: the recall fixture
-   * holds 2,000 records, so every pool ≥ 2,000 reads identically on it. Do not cite
-   * the numbers above as evidence for corpora past 20,000.
+   * Pairs with `semanticTopK: 1000` and is only affordable because of it. Do not
+   * raise one without re-running the other's gates.
    */
-  semanticCandidatePool: 20000,
+  semanticCandidatePool: Number.POSITIVE_INFINITY,
   // Phase 3A arrives switched OFF. The knobs exist so the 3A matrix can scan
   // them; the working point is not selected yet, so shipping it on would be a
   // product change with no gate behind it. `bun run benchmark/run.ts` with no
@@ -424,13 +428,39 @@ export const DEFAULT_RETRIEVAL_POLICY: RetrievalPolicy = {
   // `discovery-only` here would ship an R2 product change with no gate behind it.
   // The R2 grid selects; this line follows the grid, not the other way round.
   bigramVote: 'always',
-  // Phase 1 of the Top-K round ships "retain everything", i.e. the pre-streaming
-  // behavior. Truncation is a product change and needs phase 2 (topk-criteria.md §6).
-  semanticTopK: Number.POSITIVE_INFINITY,
+  /**
+   * 1,000 — the Top-K round's phase 2 selection, and the ONLY feasible arm.
+   *
+   * `benchmark/select-topk.ts` applied the pre-registered gates to
+   * K ∈ {200, 1000, 5000, 20000} at 50,000 records under the ruling's strict
+   * aggregation rule (**every repetition must pass**, no median, no min):
+   *
+   * ```text
+   * K=  200  ❌ p95 181/192/372ms, p99 294/400/702ms, and 3 queries lose gold from
+   *             the rank map — a deterministic identity failure, not noise
+   * K= 1000  ✅ p95 158/183/193/216/286ms  p99 338/357/358/443/448ms  RSS +225…+324MB
+   * K= 5000  ❌ p95 250/257/536ms  p99 328/538/1376ms
+   * K=20000  ❌ p95 271/333/349ms  p99 410/449/524ms
+   * ```
+   *
+   * Returned pages are identical to full scoring at every K — on the 2,000-record
+   * fixture (276 queries) and, more importantly, at 50,000 records where truncation
+   * actually bites (K=200 retains 163 of 4,618 above-floor candidates and still
+   * produces the same 20 pages). That is the pre-registered prediction holding: a
+   * semantic rank in the thousands contributes 1/(60+n) to RRF, which cannot reach a
+   * page of 10 with a semantic-only cap of 2.
+   *
+   * `Infinity` is deliberately NOT the default even though its RSS reads inside the
+   * budget: it retains every above-floor candidate (measured 4,618 mean / 14,830
+   * worst at 50,000), so the retained set grows with the corpus and the promise of
+   * `O(chunk + K)` does not hold. A finite K is what makes the bound real.
+   */
+  semanticTopK: 1000,
 };
 
 /**
- * The explicit rollback profile: phase 1b behavior, field for field.
+ * The explicit rollback profile: phase 1b behavior, field for field — **with one
+ * deliberate exception, documented below.**
  *
  * Reached only by setting `retrieval.semanticDiscovery: false` in
  * `~/.kiro-mem/config.json` — see `resolveRetrievalPolicy`. Nothing in the code
@@ -443,6 +473,35 @@ export const DEFAULT_RETRIEVAL_POLICY: RetrievalPolicy = {
  * phase 1b report query by query. `discovery off` combined with the 2C floor and
  * cap has never been measured, so shipping it as "the safe option" would be a
  * guess wearing a rollback label.
+ *
+ * ## The one thing this profile no longer restores (intentional safety fix)
+ *
+ * Phase 1b ran the semantic leg in the `raw-v1` space whenever `semantic_query_en`
+ * was missing or refused, as long as FTS had at least one hit. **That no longer
+ * happens, under this profile or any other**, and it is a deliberate correction
+ * rather than an implementation gap in the rollback:
+ *
+ *  - measured on a 302-record fixture, one FTS hit was enough for the `raw-v1` leg
+ *    to score the WHOLE scope and put a 900-day-old record with zero word overlap
+ *    on the page as `match_source: "semantic"`
+ *    (`benchmark/reports/raw-degrade-investigation.md`);
+ *  - the three values that leg read — `semanticFloor`, `semanticCandidatePool`,
+ *    `semanticTopK` — were every one of them calibrated in the ENGLISH space;
+ *  - `raw-v1` has no defensible floor at all: annotated positives span cosine
+ *    0.080–0.607 while worst-case noise reaches 0.431, so the distributions
+ *    overlap and no threshold separates them;
+ *  - phase 1b kept that ghost off the page with its 200-record recency pool, not
+ *    with its 0.2 floor (0.30 passes 0.2 too) — i.e. by time truncation, not by a
+ *    relevance guard. Restoring that is not restoring a safety property.
+ *
+ * So: a missing or refused English form is FTS-only, always. Setting this profile
+ * still restores the lexical-anchor gate, the 0.2 floor, the uncapped
+ * semantic-only count, the 200-record pool and the recency tie-break — all of
+ * which apply to LEGAL `semantic-en-v1` queries, where phase 1b's numbers were
+ * actually measured.
+ *
+ * Cost, stated plainly: a degraded request loses raw-v1 reranking, so its ordering
+ * is bm25 plus the `id` total-order key. Accepted, not free.
  */
 export const LEXICAL_ANCHOR_ROLLBACK_POLICY: RetrievalPolicy = {
   semanticDiscovery: false,
@@ -755,6 +814,11 @@ export interface ObservationSearchOpts {
   /** Hard scope filter (frozen scope_key). Omit only for explicit all-scopes. */
   scopeKey?: string;
   type?: string;
+  /**
+   * Narrow to the last N days. Omitted => {@link DEFAULT_SEARCH_DAYS} (unbounded,
+   * phase 3C), which is what makes the searchable range equal to the range
+   * bootstrap can inject.
+   */
   days?: number;
   limit?: number;
   /**
@@ -1054,7 +1118,11 @@ export async function hybridSearchObservations(
   if (!normalizedQuery) return [];
 
   const limit = opts?.limit ?? 20;
-  const days = opts?.days ?? 90;
+  // Phase 3C: unbounded by default, matching bootstrap's visible range. The
+  // value is imported rather than repeated because the old `?? 90` existed in
+  // four separate layers (kernel, two db methods, MCP), and any one of them left
+  // behind would keep filtering while every other layer read as unbounded.
+  const days = opts?.days ?? DEFAULT_SEARCH_DAYS;
   const scopeKey = opts?.scopeKey;
   const generateEmbedding = deps?.generateEmbedding ?? localEmbedding;
   const embeddingTimeoutMs = deps?.embeddingTimeoutMs ?? DEFAULT_QUERY_EMBEDDING_TIMEOUT_MS;
@@ -1203,6 +1271,46 @@ export async function hybridSearchObservations(
   // vectors under this protocol?", and that answer does not depend on whether we
   // managed to embed the query. Its own failure degrades to `null`, never to 0.
   let scopeVectors: number | null = null;
+
+  /**
+   * The semantic leg runs ONLY in the `semantic-en-v1` space. Outside it, this
+   * request is FTS-only: no query embedding is generated, no stored vector is read.
+   *
+   * This is an INVARIANT, not a policy field — no profile and no benchmark arm can
+   * turn it on. Written this way because the previous shape was subtly broken: the
+   * lexical-anchor gate above only covers `ftsCount === 0`, so a single FTS hit was
+   * enough to let the `raw-v1` semantic leg score the WHOLE scope and inject a
+   * lexically-unrelated record as `match_source: "semantic"`. Measured on a
+   * 302-record fixture: a 900-day-old record with zero word overlap reached the
+   * page at cosine 0.30 (`benchmark/reports/raw-degrade-investigation.md` §2).
+   *
+   * Why that was indefensible rather than merely aggressive: the three values the
+   * leg reads — `semanticFloor` 0.197, `semanticCandidatePool`, `semanticTopK` —
+   * were every one of them calibrated in the ENGLISH space (phase 2B for the floor,
+   * the pool round and the Top-K round for the other two, whose 121-query
+   * calibration set is entirely English-derived). `raw-v1` has no defensible floor
+   * at all: annotated positives span cosine 0.080–0.607 while the worst noise on a
+   * query about work that never happened here reaches 0.431 — OVERLAPPING
+   * distributions, so no threshold separates them.
+   *
+   * Note what the fix is NOT: it is not "restore the phase 1b raw policy". Phase 1b
+   * kept that ghost out with a 200-record recency pool, not with its 0.2 floor
+   * (0.30 > 0.2 passes it too) — i.e. by time truncation, not by a relevance guard.
+   * Restoring it would forfeit old-record recall AND fork the protocol parameters,
+   * the candidate pool and the time window three ways. Plan §2.3 already classifies
+   * a missing or refused English form as CAPABILITY DEGRADATION whose default is
+   * FTS-only, with a semantic leg allowed only under an independently calibrated
+   * raw policy — which does not exist.
+   *
+   * Consequence to state plainly: a degraded request loses raw-v1 RERANKING, so its
+   * ordering is bm25 plus the `id` total-order key. That is an accepted cost, not a
+   * free win.
+   *
+   * `scopeVectors` stays `null` here on purpose: "the semantic step never ran" is a
+   * different fact from "the scope has 0 vectors", and only `null` says the first.
+   */
+  const semanticLegEligible = protocol === SEMANTIC_EN_PROTOCOL;
+  if (semanticLegEligible) {
   try {
     scopeVectors = db.countScopeVectors({
       ...(scopeKey === undefined ? {} : { scopeKey }),
@@ -1256,6 +1364,7 @@ export async function hybridSearchObservations(
     // embedding unavailable — FTS-only fusion below. Signal the degradation so
     // the caller can record it (§12.4 FTS-only rate).
     deps?.onDegrade?.();
+  }
   }
 
   // Both candidate lists are final here; fusion below only reorders and slices

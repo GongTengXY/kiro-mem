@@ -127,6 +127,7 @@ const policyOverride: Partial<RetrievalPolicy> = {
   ...(tieBreakArg !== undefined ? { tieBreak: tieBreakArg as RetrievalPolicy['tieBreak'] } : {}),
   // 阶段 3B：语义候选池大小。`inf` = 全 scope brute-force。缺省即 200（当前发布行为）。
   ...(numFlag('semantic-candidate-pool') !== undefined ? { semanticCandidatePool: numFlag('semantic-candidate-pool')! } : {}),
+  ...(numFlag('semantic-topk') !== undefined ? { semanticTopK: numFlag('semantic-topk')! } : {}),
   // 阶段 3A：中文两字词辅助腿。与上面同一套纪律——缺省即取内核默认值（关闭），
   // 解析失败退出而不是回落，否则一个 arm 的结果会被写进另一个 arm 的名下。
   ...(boolFlag('bigram-aux') !== undefined ? { bigramAux: boolFlag('bigram-aux')! } : {}),

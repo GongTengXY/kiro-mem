@@ -43,9 +43,50 @@ function nowISO(): string {
   return new Date().toISOString();
 }
 
+/**
+ * The default time window for `search`: **unbounded** (phase 3C).
+ *
+ * Why unbounded, and why it is a named constant rather than four `?? 90`s:
+ *
+ * bootstrap injects the Observation index with NO time filter at all — see
+ * `getRecentObservations` / `getPinnedObservations` below, whose SQL has no
+ * `turn_stopped_at` predicate, only a row-count limit. Search used to default to
+ * 90 days, so a workspace idle for four months would list `#O42` in the session's
+ * opening index and then fail to find it. Two visible ranges in one product is
+ * not a relevance problem; it is a contradiction, and the wider side is the one
+ * with evidence behind it (narrowing bootstrap would REMOVE history the user can
+ * see today).
+ *
+ * `Infinity` rather than a large number such as 3650: a large number is a hidden
+ * cliff — records ten years and one day old would vanish silently with no line of
+ * code saying that was intended. It also matches the idiom this codebase already
+ * uses for "no bound" (`semanticCandidatePool`, `semanticTopK`, and the
+ * `Number.isFinite(limit)` guard in `getRecentObservationIds`).
+ *
+ * Explicit `days=N` still narrows, and that capability is what makes the default
+ * safe to widen. The cost bound is measured, not assumed: the window only ever
+ * REDUCED the working set, so the cost of an unbounded default at N records is
+ * bounded by the already-measured cost of N records all inside the window
+ * (`benchmark/reports/phase3c-submission.md`).
+ */
+export const DEFAULT_SEARCH_DAYS = Number.POSITIVE_INFINITY;
+
+/**
+ * ISO threshold for a `days` window, or `null` when the window is unbounded.
+ *
+ * `null` means the CALLER MUST OMIT the `turn_stopped_at > ?` clause entirely
+ * rather than bind some sentinel value. Returning a very old date instead would
+ * still emit the predicate, which keeps a filter in the query plan that the
+ * product no longer has — and would silently reintroduce a cliff at whatever
+ * date the sentinel happened to be.
+ */
+function searchDateThreshold(days: number): string | null {
+  if (!Number.isFinite(days)) return null;
+  return new Date(Date.now() - days * 86400000).toISOString();
+}
+
 /** Trigram is the FTS5 tokenizer, so anything shorter can never be indexed. */
-const FTS_MIN_UNIT_LEN = 3;
-/** Sliding window over an unsegmented CJK run, matching trigram granularity. */
+const FTS_MIN_UNIT_LEN = 3;/** Sliding window over an unsegmented CJK run, matching trigram granularity. */
 const FTS_CJK_WINDOW = 3;
 /** Bounds the OR expression so a pathological query can't explode the scan. */
 const FTS_MAX_UNITS = 32;
@@ -1130,8 +1171,8 @@ export class MemoryDB {
     if (!literalQuery) return [];
 
     const limit = opts?.limit ?? 20;
-    const days = opts?.days ?? 90;
-    const dateThreshold = new Date(Date.now() - days * 86400000).toISOString();
+    const days = opts?.days ?? DEFAULT_SEARCH_DAYS;
+    const dateThreshold = searchDateThreshold(days);
 
     const units = extractFtsSearchUnits(literalQuery);
     if (units.length === 0) {
@@ -1141,12 +1182,11 @@ export class MemoryDB {
       // that appears solely in `request` or `evidence_json`, so the same word
       // was findable at 3 chars and invisible at 2.
       const like = `%${literalQuery}%`;
-      let sql = `SELECT * FROM observations
-        WHERE turn_stopped_at > ?
-          AND (${FTS_INDEXED_COLUMNS.map((c) => `${c} LIKE ?`).join(' OR ')})`;
-      const params: (string | number)[] = [
-        dateThreshold, ...FTS_INDEXED_COLUMNS.map(() => like),
-      ];
+      let sql = `SELECT * FROM observations WHERE 1 = 1`;
+      const params: (string | number)[] = [];
+      if (dateThreshold !== null) { sql += ' AND turn_stopped_at > ?'; params.push(dateThreshold); }
+      sql += ` AND (${FTS_INDEXED_COLUMNS.map((c) => `${c} LIKE ?`).join(' OR ')})`;
+      for (const _ of FTS_INDEXED_COLUMNS) params.push(like);
       if (opts?.scopeKey) { sql += ' AND scope_key = ?'; params.push(opts.scopeKey); }
       if (opts?.type) { sql += ' AND memory_type = ?'; params.push(opts.type); }
       // Same reasoning as the FTS branch: no pin ordering, recency only.
@@ -1192,8 +1232,9 @@ export class MemoryDB {
     // `observations` is then a primary-key lookup.
     let sql = `SELECT o.* FROM observations_fts fts
       CROSS JOIN observations o ON fts.rowid = o.id
-      WHERE observations_fts MATCH ? AND o.turn_stopped_at > ?`;
-    const params: (string | number)[] = [ftsExpr, dateThreshold];
+      WHERE observations_fts MATCH ?`;
+    const params: (string | number)[] = [ftsExpr];
+    if (dateThreshold !== null) { sql += ' AND o.turn_stopped_at > ?'; params.push(dateThreshold); }
     if (opts?.scopeKey) { sql += ' AND o.scope_key = ?'; params.push(opts.scopeKey); }
     if (opts?.type) { sql += ' AND o.memory_type = ?'; params.push(opts.type); }
     // Ranking is bm25, then `o.id` as a TECHNICAL TOTAL-ORDER KEY.
@@ -1220,12 +1261,32 @@ export class MemoryDB {
     //      probe queries on a 1,970-record fixture returned exactly 50 rows.
     //
     // `o.id` is chosen because it is the only field that is unique, immutable and
-    // carries no ranking opinion. `turn_stopped_at` would smuggle recency into
-    // relevance, `is_pinned` would smuggle curation, a semantic score would
-    // smuggle the other leg — any of them turns a defect fix into an
-    // uncalibrated ranking change. `id` is monotonic with insertion, so among
-    // records the ranker cannot distinguish, the older one wins; that is a
-    // stated, arbitrary, stable convention rather than a relevance claim.
+    // available without consulting another leg. `turn_stopped_at` would smuggle
+    // recency into relevance, `is_pinned` would smuggle curation, a semantic score
+    // would smuggle the other leg — any of them turns a defect fix into an
+    // uncalibrated ranking change.
+    //
+    // ## Correction (final recall audit): this key is NOT ranking-neutral
+    //
+    // The original comment here claimed `id` "carries no ranking opinion" and that
+    // older-wins was "a stated, arbitrary, stable convention rather than a
+    // relevance claim". That was defensible only while a time window bounded the
+    // candidate set to recent records. It no longer is: since phase 3C the default
+    // window is unbounded, so `id ASC` is an explicit **oldest-first** policy over
+    // the entire corpus — `id` is monotonic with insertion, so on a bm25 tie the
+    // oldest record in the whole workspace wins. Calling that neutral hides a real
+    // ranking decision.
+    //
+    // Not changed here, deliberately. The audit that surfaced this could not
+    // measure the tie-break's independent contribution: its 50,000-record fixture
+    // correlates age with bm25 advantage by construction (the oldest 10,000 rows
+    // are the un-suffixed originals, hence the shortest documents, which bm25
+    // favours). The observed page churn had FTS ranks 1–8, i.e. NOT exact ties, so
+    // it is not attributable to this clause. Replacing it needs a fixture with
+    // equal bm25 and age decoupled from document length, comparing `id ASC`
+    // against an explicit recency key — and if recency wins, the key must be a
+    // real time key (`turn_stopped_at DESC, turn_seq DESC, id ASC`), never `id
+    // DESC` posing as time.
     //
     // Cost: this reintroduces `USE TEMP B-TREE FOR ORDER BY` (the FTS module can
     // stream its own rank order but not a composite key), measured at ~11% on the
@@ -1316,21 +1377,21 @@ export class MemoryDB {
     };
     if (bigrams.length === 0) return empty;
 
-    const days = opts.days ?? 90;
-    const dateThreshold = new Date(Date.now() - days * 86400000).toISOString();
+    const days = opts.days ?? DEFAULT_SEARCH_DAYS;
+    const dateThreshold = searchDateThreshold(days);
 
     // One boolean column per bigram. Params appear in SELECT before WHERE, which
     // is the order SQLite binds positional parameters in.
     const flagCols = bigrams
       .map((_, i) => `CASE WHEN (${FTS_INDEXED_COLUMNS.map((c) => `${c} LIKE ?`).join(' OR ')}) THEN 1 ELSE 0 END AS b${i}`)
       .join(',\n        ');
-    let sql = `SELECT id, turn_stopped_at,\n        ${flagCols}\n      FROM observations WHERE turn_stopped_at > ?`;
+    let sql = `SELECT id, turn_stopped_at,\n        ${flagCols}\n      FROM observations WHERE 1 = 1`;
     const params: (string | number)[] = [];
     for (const bg of bigrams) {
       const like = `%${bg}%`;
       for (const _ of FTS_INDEXED_COLUMNS) params.push(like);
     }
-    params.push(dateThreshold);
+    if (dateThreshold !== null) { sql += ' AND turn_stopped_at > ?'; params.push(dateThreshold); }
     if (opts.scopeKey) { sql += ' AND scope_key = ?'; params.push(opts.scopeKey); }
     if (opts.type) { sql += ' AND memory_type = ?'; params.push(opts.type); }
 
@@ -1389,10 +1450,11 @@ export class MemoryDB {
    * nobody chose. The phase 3B `pool-full` arm depends on this being an explicit,
    * checked branch.
    */
-  getRecentObservationIds(opts: { scopeKey?: string; type?: string; days: number; limit: number }): number[] {
-    const dateThreshold = new Date(Date.now() - opts.days * 86400000).toISOString();
-    let sql = `SELECT id FROM observations WHERE turn_stopped_at > ?`;
-    const params: (string | number)[] = [dateThreshold];
+  getRecentObservationIds(opts: { scopeKey?: string; type?: string; days?: number; limit: number }): number[] {
+    const dateThreshold = searchDateThreshold(opts.days ?? DEFAULT_SEARCH_DAYS);
+    let sql = `SELECT id FROM observations WHERE 1 = 1`;
+    const params: (string | number)[] = [];
+    if (dateThreshold !== null) { sql += ' AND turn_stopped_at > ?'; params.push(dateThreshold); }
     if (opts.scopeKey) { sql += ' AND scope_key = ?'; params.push(opts.scopeKey); }
     if (opts.type) { sql += ' AND memory_type = ?'; params.push(opts.type); }
     sql += ' ORDER BY turn_stopped_at DESC';

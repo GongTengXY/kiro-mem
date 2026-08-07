@@ -110,36 +110,51 @@ describe('protocol isolation in hybrid search', () => {
     expect(results.find((r) => r.id === rawOnly)!.semantic_score).toBeNull();
   });
 
-  test('a query with no English form only scores raw-v1 vectors', async () => {
+  test('a query with no English form scores NOTHING — the leg does not run at all', async () => {
+    // 这条原先断言的是「只给 `raw-v1` 向量打分」。raw-v1 降级轮次把它裁定为缺陷并反转：
+    // 缺失英文形式属于能力降级，一律 FTS-only，不生成 query embedding、不读任何向量。
+    // 理由是 raw-v1 没有可辩护的 floor（正例 0.080–0.607 与最坏噪声 0.431 区间重叠），
+    // 而它此前读的 floor / 候选池 / Top-K 全是在英文空间校准的。
     const enOnly = seed({ title: 'beta english leg', enHot: 4 });
     const rawOnly = seed({ title: 'beta raw leg', rawHot: 4 });
 
-    const { results, protocol } = await search('beta 检索', undefined, 4);
+    const { results, protocol, embedded } = await search('beta 检索', undefined, 4);
     expect(protocol).toBe(RAW_PROTOCOL);
-    const scored = results.filter((r) => r.semantic_score != null).map((r) => r.id);
-    expect(scored).toEqual([rawOnly]);
+    // 一次 embedding 都没算。
+    expect(embedded).toEqual([]);
+    // 两条记录都没有语义分——包括那条有 raw 向量的。
+    expect(results.filter((r) => r.semantic_score != null)).toEqual([]);
+    // 但词面可达性不变：raw 那条仍然能被关键词搜到（降级不是删除）。
+    expect(results.map((r) => r.id)).toContain(rawOnly);
+    expect(results.find((r) => r.id === rawOnly)!.semantic_score).toBeNull();
     expect(results.find((r) => r.id === enOnly)!.semantic_score).toBeNull();
   });
 
-  test('the embedded text is the English one exactly when the English space is used', async () => {
+  test('the embedded text is the English one, and nothing is embedded without it', async () => {
     seed({ title: 'gamma record', enHot: 5, rawHot: 5 });
 
     const withEn = await search('gamma 中文问题', 'gamma english question', 5);
     expect(withEn.embedded).toEqual(['gamma english question']);
 
+    // 原先这里断言 `['gamma 中文问题']`——即中文原文被送进模型。那正是本轮取消的事：
+    // 没有合法英文形式时不生成任何 query embedding。
     const withoutEn = await search('gamma 中文问题', undefined, 5);
-    expect(withoutEn.embedded).toEqual(['gamma 中文问题']);
+    expect(withoutEn.embedded).toEqual([]);
   });
 
-  test('a refused English query falls back to raw-v1 instead of failing', async () => {
+  test('a refused English query falls back to FTS-only instead of failing', async () => {
     const rawOnly = seed({ title: 'delta raw leg', rawHot: 6 });
     seed({ title: 'delta english leg', enHot: 6 });
 
     // `...` is the exact phase 1a q16 failure.
-    const { results, protocol, rejected } = await search('delta 问题', '...', 6);
+    const { results, protocol, rejected, embedded } = await search('delta 问题', '...', 6);
     expect(protocol).toBe(RAW_PROTOCOL);
     expect(rejected).toBe('placeholder');
-    expect(results.filter((r) => r.semantic_score != null).map((r) => r.id)).toEqual([rawOnly]);
+    // 原先断言"回落到 raw-v1 打分"。现在是回落到 **FTS-only**：不打分，但也不失败。
+    expect(embedded).toEqual([]);
+    expect(results.filter((r) => r.semantic_score != null)).toEqual([]);
+    // 仍然返回词面结果，不是空。
+    expect(results.map((r) => r.id)).toContain(rawOnly);
   });
 
   test('echoing the Chinese query as its own English form is refused, not embedded', async () => {

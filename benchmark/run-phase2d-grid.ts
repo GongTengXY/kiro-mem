@@ -49,6 +49,10 @@ const BASE_POLICY = {
   bigramOnlyLimit: 2,
   bigramWeight: 1,
   bigramVote: 'always',
+  // Top-K 轮次新增。历史读数都是在"不截断"下测的，所以这里就是 Infinity；
+  // 阶段二若把生产默认改成有限 K，这一行仍应保持 Infinity 并加显式例外，
+  // 理由与 semanticCandidatePool=200 那条相同。
+  semanticTopK: Number.POSITIVE_INFINITY,
 } as const;
 
 type Policy = Record<string, unknown>;
@@ -75,6 +79,8 @@ type Policy = Record<string, unknown>;
     // relaxing the field-count check instead would let a future field slip in
     // unregistered, which is exactly what this guard exists to prevent.
     if (k === 'semanticCandidatePool') continue;
+    // 同理：Top-K 轮次把生产默认从"不截断"改成 1000，历史读数都是在不截断下测的。
+    if (k === "semanticTopK") continue;
     if ((BASE_POLICY as Policy)[k] !== shipped[k]) {
       throw new Error(
         `BASE_POLICY.${k}=${JSON.stringify((BASE_POLICY as Policy)[k])} 与生产策略的 ` +
@@ -89,6 +95,12 @@ type Policy = Record<string, unknown>;
     throw new Error(
       `BASE_POLICY.semanticCandidatePool 必须是 200（2D 实际运行时的候选池；生产默认已由候选池` +
       `轮次改为 Infinity），实际 ${BASE_POLICY.semanticCandidatePool}`,
+    );
+  }
+  if (BASE_POLICY.semanticTopK !== Number.POSITIVE_INFINITY) {
+    throw new Error(
+      `BASE_POLICY.semanticTopK 必须是 Infinity（本驱动历史读数在不截断下测的；` +
+      `生产默认已由 Top-K 轮次改为 1000），实际 ${BASE_POLICY.semanticTopK}`,
     );
   }
 }
@@ -122,6 +134,7 @@ function flagsFor(policy: Policy): string[] {
     bigramMinMatches: 'bigram-min-matches',
     bigramOnlyLimit: 'bigram-only-limit',
     bigramWeight: 'bigram-weight',
+    semanticTopK: 'semantic-topk',
     bigramVote: 'bigram-vote',
   };
   return Object.entries(policy).map(([k, v]) => {

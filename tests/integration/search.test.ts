@@ -4,6 +4,17 @@ import { openInMemoryDB } from '../support/tmp-db';
 import { embeddingToBlob } from '../../src/embedding';
 import { hybridSearchObservations } from '../../src/server/observation-search';
 
+/**
+ * 注：本文件的搜索调用都显式传 `semanticQueryEn`。
+ *
+ * 这不是装饰。raw-v1 降级轮次冻结的产品语义是「`semantic_query_en` 缺失或被护栏拒绝时一律
+ * 走 FTS-only，不生成 query embedding、不读取 raw 向量」，所以不传英文形式的调用**根本不会
+ * 执行语义腿**，那些断言测的就不再是 RRF / 平局 / cap / 超时降级了。
+ *
+ * 传 query 自身是合法路径而非取巧：护栏写明"An English source legitimately normalizes to
+ * itself"，只拒绝中文原文的回显，而本文件的 fixture query 全是英文。
+ */
+
 let db: MemoryDB;
 
 beforeEach(() => { db = openInMemoryDB(); });
@@ -52,7 +63,7 @@ describe('hybridSearchObservations', () => {
     const ftsOnly = seed({ title: 'alpha task', stoppedAt: '2026-07-02T00:00:00Z' });
     const semOnly = seed({ title: 'beta thing', stoppedAt: '2026-07-03T00:00:00Z', embedding: [1, 0, 0, 0] });
 
-    const results = await hybridSearchObservations(db, 'alpha', { scopeKey: computeScopeKey('/proj', '/proj') }, { ...TEST_VECTOR_SPACE, generateEmbedding: queryVec });
+    const results = await hybridSearchObservations(db, 'alpha', { scopeKey: computeScopeKey('/proj', '/proj'), semanticQueryEn: 'alpha' }, { ...TEST_VECTOR_SPACE, generateEmbedding: queryVec });
     const ids = results.map((r) => r.id);
     expect(ids).toContain(both);
     expect(ids).toContain(ftsOnly);
@@ -67,7 +78,7 @@ describe('hybridSearchObservations', () => {
     seed({ session_id: 'a', repo: '/repoA', cwd: '/repoA', title: 'shared alpha', stoppedAt: '2026-07-01T00:00:00Z', embedding: [1, 0, 0, 0] });
     const inB = seed({ session_id: 'b', repo: '/repoB', cwd: '/repoB', title: 'shared alpha', stoppedAt: '2026-07-02T00:00:00Z', embedding: [1, 0, 0, 0] });
 
-    const results = await hybridSearchObservations(db, 'alpha', { scopeKey: computeScopeKey('/repoA', '/repoA') }, { ...TEST_VECTOR_SPACE, generateEmbedding: queryVec });
+    const results = await hybridSearchObservations(db, 'alpha', { scopeKey: computeScopeKey('/repoA', '/repoA'), semanticQueryEn: 'alpha' }, { ...TEST_VECTOR_SPACE, generateEmbedding: queryVec });
     expect(results.length).toBe(1);
     expect(results[0]!.repo).toBe('/repoA');
     expect(results.map((r) => r.id)).not.toContain(inB);
@@ -77,7 +88,7 @@ describe('hybridSearchObservations', () => {
     const hit = seed({ title: 'gamma work', stoppedAt: '2026-07-01T00:00:00Z', embedding: [1, 0, 0, 0] });
     const throwing = async () => { throw new Error('model unavailable'); };
 
-    const results = await hybridSearchObservations(db, 'gamma', { scopeKey: computeScopeKey('/proj', '/proj') }, { ...TEST_VECTOR_SPACE, generateEmbedding: throwing });
+    const results = await hybridSearchObservations(db, 'gamma', { scopeKey: computeScopeKey('/proj', '/proj'), semanticQueryEn: 'gamma' }, { ...TEST_VECTOR_SPACE, generateEmbedding: throwing });
     expect(results.length).toBe(1);
     expect(results[0]!.id).toBe(hit);
     expect(results[0]!.match_source).toBe('fts'); // no semantic contribution
@@ -89,7 +100,7 @@ describe('hybridSearchObservations', () => {
     const older = seed({ title: 'gamma only fts', stoppedAt: '2026-07-01T00:00:00Z' });
     const newer = seed({ title: 'delta only semantic', stoppedAt: '2026-07-05T00:00:00Z', embedding: [1, 0, 0, 0] });
 
-    const results = await hybridSearchObservations(db, 'gamma', { scopeKey: computeScopeKey('/proj', '/proj') }, { ...TEST_VECTOR_SPACE, generateEmbedding: queryVec });
+    const results = await hybridSearchObservations(db, 'gamma', { scopeKey: computeScopeKey('/proj', '/proj'), semanticQueryEn: 'gamma' }, { ...TEST_VECTOR_SPACE, generateEmbedding: queryVec });
     expect(results.length).toBe(2);
     // Tie broken toward the newer observation.
     expect(results[0]!.id).toBe(newer);
@@ -98,7 +109,7 @@ describe('hybridSearchObservations', () => {
 
   test('empty candidate set returns []', async () => {
     seed({ title: 'nothing relevant', stoppedAt: '2026-07-01T00:00:00Z' });
-    const results = await hybridSearchObservations(db, 'zzzznomatch', { scopeKey: computeScopeKey('/proj', '/proj') }, { ...TEST_VECTOR_SPACE, generateEmbedding: async () => new Float32Array([0, 0, 0, 1]) });
+    const results = await hybridSearchObservations(db, 'zzzznomatch', { scopeKey: computeScopeKey('/proj', '/proj'), semanticQueryEn: 'zzzznomatch' }, { ...TEST_VECTOR_SPACE, generateEmbedding: async () => new Float32Array([0, 0, 0, 1]) });
     expect(results.length).toBe(0);
   });
 
@@ -110,7 +121,7 @@ describe('hybridSearchObservations', () => {
     const results = await hybridSearchObservations(
       db,
       'timeout fallback',
-      { scopeKey: computeScopeKey('/proj', '/proj') },
+      { scopeKey: computeScopeKey('/proj', '/proj'), semanticQueryEn: 'timeout fallback' },
       { ...TEST_VECTOR_SPACE, generateEmbedding: never, embeddingTimeoutMs: 20, onDegrade: () => { degraded++; } },
     );
 
@@ -150,7 +161,7 @@ describe('hybridSearchObservations', () => {
     const anchor = seed({ title: 'epsilon anchor', stoppedAt: '2026-07-01T00:00:00Z' });
     const semOnly = seed({ title: 'no shared words here', stoppedAt: '2026-07-02T00:00:00Z', embedding: [1, 0, 0, 0] });
 
-    const results = await hybridSearchObservations(db, 'epsilon', { scopeKey: computeScopeKey('/proj', '/proj') }, { ...TEST_VECTOR_SPACE, generateEmbedding: queryVec });
+    const results = await hybridSearchObservations(db, 'epsilon', { scopeKey: computeScopeKey('/proj', '/proj'), semanticQueryEn: 'epsilon' }, { ...TEST_VECTOR_SPACE, generateEmbedding: queryVec });
     const ids = results.map((r) => r.id);
     expect(ids).toContain(anchor);
     expect(ids).toContain(semOnly);

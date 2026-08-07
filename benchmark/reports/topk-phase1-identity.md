@@ -14,7 +14,7 @@
 | 文件 | 改动 |
 | --- | --- |
 | `src/server/observation-search.ts` | 新增 `streamScoreCandidates()`：按块取候选 → 立即打分 → 有界保留；`RetrievalPolicy` 新增 `semanticTopK`（默认 `Infinity`，两个冻结 profile 均登记）；新增值域校验；`onCandidates` 新增 `aboveFloorCount`；语义腿改为调用流式打分 |
-| `tests/integration/retrieval-policy.test.ts` | 5 条等价性测试 + 冻结 profile 锁补字段 |
+| `tests/integration/retrieval-policy.test.ts` | 6 条等价性测试（含真实分块边界 4095/4096/4097/8192）+ 冻结 profile 锁补字段 |
 | `benchmark/run-codex-phase2b-audit.ts` | 补登记新字段 |
 
 明确未改：`semanticCandidatePool`（仍 20000）、floor / cap / rrfK / 权重 / tieBreak /
@@ -46,7 +46,7 @@ MCP schema、90 天窗口、DB schema。
 | T4 | `semanticRank` / `semanticScore` 逐键 | 与参考实现逐键相同（含全同分形状），见 §3 | ✅ |
 | T5 | `comparableVectors` 逐 query | 差异 **0**（`match_source`、触达、`goldRank` 亦 0） | ✅ |
 | T6 | 泄漏 / 协议混排 / `semanticOnlyMax` | 0 / 0 / 2；聚合指标逐位一致 | ✅ |
-| T7 | `bun test` / `typecheck` | **522 pass / 0 fail**；干净 | ✅ |
+| T7 | `bun test` / `typecheck` | **523 pass / 0 fail**（含补齐的真实分块边界测试）；干净 | ✅ |
 | T8 | 50,000 档（pool=20000）延迟与内存 | 见 §4 | ✅ |
 
 T1/T2 对照 `benchmark/reports/phase3a-r2/baseline.json`；T3/T5/T6 对照候选池轮次冻结的
@@ -65,7 +65,8 @@ T1/T2 对照 `benchmark/reports/phase3a-r2/baseline.json`；T3/T5/T6 对照候�
 | --- | --- |
 | 无平局 40 条 | 名次逐键相同 |
 | **全部同分** 25 条 | 名次逐键相同——平局次序不能因为流式而漂移 |
-| K = 1 / 29 / 30 / 31（30 条候选） | 保留集合无重复、条数恰为 `min(K, 全量)`、且保留项的名次值与全量一致 |
+| **真实分块边界：候选数 4095 / 4096 / 4097 / 8192** | 每档与参考实现**逐键相同**，且 `comparableVectors === n`、`aboveFloorCount === 参考的过 floor 条数`。块大小是 4096，所以这四个数分别是"差一条填满 / 恰好一块 / 溢出一条 / 整数倍"（判据 §7 第 3 条要求的正是它们） |
+| K = 1 / 29 / 30 / 31（30 条候选） | 保留集合无重复、条数恰为 `min(K, 全量)`、且保留项的名次值与全量一致。**这条测的是 K 的收放，不是分块边界**——30 条候选连一块都填不满 |
 | FTS 命中但分数最低，K=1 | 仍在名次表里、`match_source` 仍是 `hybrid`、名次是**真实全局名次 6** 而不是 `K+1 = 2` |
 | 全部候选低于 floor | 语义腿为空，不抛错 |
 
@@ -74,8 +75,22 @@ T1/T2 对照 `benchmark/reports/phase3a-r2/baseline.json`；T3/T5/T6 对照候�
 ```text
 把"额外保留项的真实名次"改成 topK+1        → 2 fail
 去掉 FTS 命中的 always-keep               → 2 fail
+分块步长 −1（每块漏掉最后一条）             → 2 fail
+分块步长重叠 1（边界处重复计入）             → 2 fail
 复原                                      → 0 fail
 ```
+
+### 3.1 一处必须登记的更正：分块边界测试原先是错标的
+
+初版报告的这张表里写着「候选数落在块边界与其附近」，而那条测试只造了 **30 条候选**、
+扫的是 K = 1 / 29 / 30 / 31。30 条连一个 4,096 的块都填不满，所以它测的是 **K 的收放**，
+根本没有触达"块与块之间是否拼接正确"。判据 §7 第 3 条要求的候选数是
+**4095 / 4096 / 4097 / 整数倍**，那一条并未满足。
+
+这是 **Codex 验收指出的**（发布验收因此未签发），不是我自查发现的。已补真实边界测试
+（四档共约 20,480 次逐键比较），并把旧那条如实改名为「K 的收放不改变保留集」。
+上面两条新增的反向测试（步长 −1 / 重叠 1）就是为了证明新测试确实能抓到拼接错误——
+在错标的旧测试下，这两种破坏都不会被发现。
 
 ---
 

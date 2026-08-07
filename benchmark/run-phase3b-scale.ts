@@ -36,6 +36,15 @@ const arg = (name: string): string | undefined =>
   process.argv.find((a) => a.startsWith(`--${name}=`))?.split('=')[1];
 /** 性能档位。默认跑全部；`--sizes=2000` 可只跑 recall 那一档做快速自检。 */
 const SIZES = (arg('sizes') ?? '2000,10000,50000').split(',').map(Number);
+/**
+ * 有界 Top-K（Top-K 轮次阶段二的自变量）。默认不传 = 沿用生产默认，
+ * 因此不带该参数运行仍复现既有口径。
+ */
+const TOPK = arg("semantic-topk") === undefined
+  ? undefined
+  : (arg("semantic-topk") === "inf" || arg("semantic-topk") === "full"
+      ? Number.POSITIVE_INFINITY
+      : Number(arg("semantic-topk")));
 /** 延迟取样轮数（含被丢弃的首轮）。 */
 const ROUNDS = Number(arg('rounds') ?? 4);
 
@@ -46,6 +55,10 @@ const die = (msg: string, err?: unknown): never => {
   if (tmpDir) rmSync(tmpDir, { recursive: true, force: true });
   process.exit(1);
 };
+
+if (TOPK !== undefined && !(TOPK === Number.POSITIVE_INFINITY || (Number.isInteger(TOPK) && TOPK >= 1))) {
+  die(`--semantic-topk=${arg("semantic-topk")} 必须是 ≥1 的整数或 inf`);
+}
 
 // ---------------------------------------------------------------------------
 // 装置输入（必须已冻结）
@@ -367,7 +380,7 @@ async function runQuery(
     q.query,
     { scopeKey, semanticQueryEn, limit: LIMIT },
     {
-      policy: { ...DEFAULT_RETRIEVAL_POLICY, semanticCandidatePool: pool },
+      policy: { ...DEFAULT_RETRIEVAL_POLICY, semanticCandidatePool: pool, ...(TOPK === undefined ? {} : { semanticTopK: TOPK }) },
       onCandidates: (i) => {
         semanticRankKeys = [...i.semanticRank.keys()];
         ftsRankKeys = [...i.ftsRank.keys()];
@@ -1027,6 +1040,7 @@ async function measureLatencyLoop(
             ...DEFAULT_RETRIEVAL_POLICY,
             semanticCandidatePool: pool,
             ...(PERF_FLOOR === undefined ? {} : { semanticFloor: PERF_FLOOR }),
+            ...(TOPK === undefined ? {} : { semanticTopK: TOPK }),
           },
           onCandidates: (i) => { comparableSum += i.comparableVectors; comparableN++; },
           onDegrade: () => { degradedCount++; },
@@ -1244,6 +1258,7 @@ const report = {
     poolPolicyCriteria: 'benchmark/reports/pool-policy-criteria.md',
     poolPolicyCriteriaSha256: sha16(readFileSync(join(REPORTS_DIR, 'pool-policy-criteria.md'), 'utf-8')),
     recallPools: arms.map((a) => a.name),
+    semanticTopK: TOPK === undefined ? 'default' : String(TOPK),
     perfPools: PERF_POOLS.map((p) => p.name),
     fixtureMetaSha256: sha16(metaRaw),
     fillerSha256: sha16(fillerRaw),

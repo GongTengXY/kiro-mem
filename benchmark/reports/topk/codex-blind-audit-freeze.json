@@ -1,0 +1,18 @@
+{
+  "frozen": true,
+  "frozenAt": "2026-08-05T12:55:30Z",
+  "input": "benchmark/reports/topk/codex-blind-audit-input.json",
+  "inputSha256": "9048d05c57c5aa09440f17216b1fd034cbe75b478cd78c225399948f5648157c",
+  "fixtureFiller": "benchmark/dataset/phase3b-filler.json",
+  "fixtureFillerSha16": "10b572bd3ec7e4b9",
+  "relevanceQueries": 26,
+  "hardNegativeQueries": 26,
+  "zeroFtsRelevance": 26,
+  "allGoldOutsideRecent200": true,
+  "semanticArmsRunBeforeFreeze": false,
+  "armsAuthorizedAfterFreeze": [
+    "semanticCandidatePool=200, semanticTopK=Infinity",
+    "semanticCandidatePool=Infinity, semanticTopK=Infinity",
+    "semanticCandidatePool=Infinity, semanticTopK=1000"
+  ]
+}

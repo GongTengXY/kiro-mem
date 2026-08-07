@@ -5,7 +5,7 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { loadConfig } from '../config';
-import { MemoryDB, computeScopeKey } from '../db';
+import { MemoryDB, computeScopeKey, DEFAULT_SEARCH_DAYS } from '../db';
 import type { Observation } from '../db/types';
 import { createWorkerEmbedder } from '../worker-embedder';
 import { checkSemanticEnQuery, QUERY_MAX_CHARS } from '../semantic-en';
@@ -72,7 +72,7 @@ const T = isEnglish
       typeDescription: 'Filter by memory type',
       repoDescription: 'Filter by git repo root (explicit scope)',
       cwdDescription: 'Current working directory — scopes results to this workspace when no repo is given',
-      daysDescription: 'Within the last N days',
+      daysDescription: 'Narrow to the last N days. Omit to search all history (the default) — omitting it is what matches the range of the injected memory index',
       limitDescription: 'Maximum number of results',
       allScopesDescription:
         'Search across all workspaces; set true when the user asks for other projects, cross-project, all-project, or global history (default false)',
@@ -105,7 +105,7 @@ const T = isEnglish
       typeDescription: '按类型过滤',
       repoDescription: '按 git repo 根过滤（显式 scope）',
       cwdDescription: '当前工作目录——未传 repo 时按此 workspace 隔离结果',
-      daysDescription: '最近 N 天内',
+      daysDescription: '收窄到最近 N 天；不传则搜索全部历史（默认），与注入的记忆索引可见范围一致',
       limitDescription: '最大返回数',
       allScopesDescription:
         '跨所有 workspace 搜索；当用户要求搜索其他项目、跨项目、所有项目或全局历史时设为 true（默认 false）',
@@ -238,7 +238,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           type: { type: 'string', enum: ['decision', 'bugfix', 'feature', 'refactor', 'discovery', 'change'], description: T.typeDescription },
           repo: { type: 'string', description: T.repoDescription },
           cwd: { type: 'string', description: T.cwdDescription },
-          days: { type: 'integer', minimum: 1, maximum: 3650, description: T.daysDescription, default: 90 },
+          // Phase 3C: NO `default` here on purpose. The default is unbounded
+          // (`DEFAULT_SEARCH_DAYS`), and a JSON-Schema `default` cannot express
+          // that — writing `default: 90` back would make the schema lie to the
+          // agent about what omitting the field does. `maximum` still bounds an
+          // EXPLICIT narrowing value, which is a different question.
+          days: { type: 'integer', minimum: 1, maximum: 3650, description: T.daysDescription },
           limit: { type: 'integer', minimum: 1, maximum: 50, description: T.limitDescription, default: 20 },
           all_scopes: { type: 'boolean', description: T.allScopesDescription, default: false },
         },
@@ -352,7 +357,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (a.type !== undefined && !MEMORY_TYPES.includes(a.type as (typeof MEMORY_TYPES)[number])) {
       return toolError(`search.type must be one of: ${MEMORY_TYPES.join(', ')}`);
     }
-    const days = boundedInteger(a.days, 90, 1, 3650);
+    const days = boundedInteger(a.days, DEFAULT_SEARCH_DAYS, 1, 3650);
     const limit = boundedInteger(a.limit, 20, 1, 50);
     if (days == null) return toolError('search.days must be an integer between 1 and 3650');
     if (limit == null) return toolError('search.limit must be an integer between 1 and 50');

@@ -58,11 +58,24 @@ function seed(o: {
   return id;
 }
 
+/**
+ * 通用搜索助手。**显式传 `semanticQueryEn`**，等于 query 本身。
+ *
+ * raw-v1 降级轮次冻结的产品语义是「`semantic_query_en` 缺失或被护栏拒绝 => FTS-only，
+ * 不生成 query embedding、不读取 raw 向量」。所以不传英文形式的调用**根本不会执行语义腿**，
+ * 那些关于 RRF、平局、cap、权重的断言就失去了对象——它们测的不是协议边界，而是融合层。
+ *
+ * 传 query 自身是合法路径而非取巧：护栏写明"An English source legitimately normalizes to
+ * itself"，只拒绝中文原文的回显，本文件的 fixture query 全是英文。
+ *
+ * 需要**测降级路径本身**的用例不要用这个助手：见
+ * `describe('raw-v1 一律 FTS-only')` 与 `tests/integration/raw-degrade.test.ts`。
+ */
 const search = (query: string, policy?: Partial<RetrievalPolicy>, limit?: number) =>
   hybridSearchObservations(
     db,
     query,
-    { scopeKey: SCOPE, ...(limit === undefined ? {} : { limit }) },
+    { scopeKey: SCOPE, semanticQueryEn: query, ...(limit === undefined ? {} : { limit }) },
     { ...TEST_VECTOR_SPACE, generateEmbedding: queryVec, ...(policy ? { policy } : {}) },
   );
 
@@ -150,9 +163,69 @@ describe('流式打分与有界 Top-K（Top-K 轮次阶段一）', () => {
     );
   });
 
-  test('候选数落在块边界与其附近时结果不变、无重复、无遗漏', async () => {
-    // 块大小是 4096，用不到那么多记录；这里验证的是"分块本身不改变名次集合"，
-    // 用 topK 强制多次收放来触达同一条代码路径。
+  test('真实分块边界：候选数 4095 / 4096 / 4097 / 8192（整数倍）时与参考实现逐键相同', async () => {
+    // 判据 §7 第 3 条要求的正是这四个数：块大小 4096，所以 4095 差一条填满、4096 恰好一块、
+    // 4097 溢出一条进第二块、8192 是整数倍（两块整齐结束）。上一条测试用 30 条候选连一块都
+    // 填不满，测不到"块之间是否拼接正确"——Codex 验收指出的就是这一点。
+    //
+    // 每档都与参考实现（单次查询 + 稳定排序）逐键比较：只要某一块被漏掉、重复计入、或者
+    // 边界处的名次错位，`aboveFloorCount` / 名次表 / 分数表任一项都会立刻不一致。
+    const CHUNK = 4096;
+    for (const n of [CHUNK - 1, CHUNK, CHUNK + 1, CHUNK * 2]) {
+      db.close();
+      db = openInMemoryDB();
+      // 批量播种：逐条走 seed() 在 8,192 条上太慢，这里直接写 observations + 向量，
+      // 时间戳与分数都是确定的（分数递减，避免平局干扰本条的判别对象）。
+      const session = 's-chunk';
+      db.upsertSessionRef({ session_id: session, cwd: '/proj', repo: '/proj' });
+      const ids: number[] = [];
+      for (let i = 0; i < n; i++) {
+        const seq = db.allocateNextTurnSeq(session);
+        const turn = db.createTurn({ session_id: session, seq, cwd: '/proj', repo: '/proj' });
+        db.markTurnClosed(turn.id);
+        const ts = new Date(Date.UTC(2026, 6, 1, 0, 0, 0) + i * 1000).toISOString();
+        const id = db.insertObservation({
+          turn_id: turn.id, session_id: session, turn_seq: seq, repo: '/proj', cwd_scope: '/proj',
+          title: `zzz qqq ${i}`, summary: `zzz qqq ${i}`, memory_type: 'change', quality: 'normal',
+          turn_started_at: ts, turn_stopped_at: ts,
+        })!;
+        // 分数 = 第一维，随 i 单调下降但始终高于 floor 0.197。
+        db.upsertObservationEmbedding(id, 'test', 4, embeddingToBlob(new Float32Array([0.9 - (i / n) * 0.6, 1, 0, 0])));
+        ids.push(id);
+      }
+
+      const ref = referenceRanks(ids, new Float32Array([1, 0, 0, 0]), DEFAULT_RETRIEVAL_POLICY.semanticFloor);
+      let ranks: ReadonlyMap<number, number> = new Map();
+      let aboveFloor = -1;
+      let comparable = -1;
+      await hybridSearchObservations(
+        db,
+        'unrelated wording entirely',
+        { scopeKey: SCOPE, semanticQueryEn: 'unrelated wording entirely', limit: 10 },
+        {
+          ...TEST_VECTOR_SPACE,
+          generateEmbedding: queryVec,
+          // 不截断：本条要验证的是分块拼接，不是 Top-K 的取舍。
+          policy: { semanticDiscovery: true, semanticTopK: Number.POSITIVE_INFINITY },
+          onCandidates: (i) => {
+            ranks = i.semanticRank;
+            aboveFloor = i.aboveFloorCount;
+            comparable = i.comparableVectors;
+          },
+        },
+      );
+
+      expect(comparable).toBe(n);          // 一条不漏、一条不重
+      expect(aboveFloor).toBe(ref.size);   // 过 floor 的population 与参考一致
+      expect(ranks.size).toBe(ref.size);
+      for (const [id, rank] of ref) expect(ranks.get(id)).toBe(rank);
+    }
+  }, 60_000);
+
+  test('K 的收放不改变保留集：无重复、条数恰为 min(K, 全量)、名次值不变', async () => {
+    // 这条测的是 **topK 的收放**，不是分块边界——30 条候选连一个 4,096 块都填不满。
+    // 真正的分块边界由下一条测试覆盖（判据 §7 第 3 条要求 4095 / 4096 / 4097 / 整数倍）。
+    // Codex 验收时指出过这条曾被错标成"分块边界覆盖"，此处如实改名。
     const ids: number[] = [];
     for (let i = 0; i < 30; i++) {
       ids.push(seed({ title: `zzz qqq ${i}`, stoppedAt: `2026-07-01T00:${String(i).padStart(2, '0')}:00Z`, embedding: [0.9 - i * 0.01, 1, 0, 0] }));
@@ -270,15 +343,14 @@ describe('DEFAULT_RETRIEVAL_POLICY', () => {
       ftsWeight: 1,
       semanticWeight: 1,
       tieBreak: 'semantic-rank',
-      // 候选池轮次的**分支 B-2**：质量上 `Infinity` 胜出（那 72 条零 FTS 校准 query 从
-      // 结构上不可达的 0/72 变成 43/72），但它在裁定的双进程口径下**内存门失败**——
-      // 50,000 条真实向量分布回放时检索循环 RSS +720MB > 512MB。20,000 在同一口径下
-      // p95 183.15ms / p99 300.24ms / +384MB 六门全过。
+      // 候选池轮次选 `Infinity`（质量上它胜出：那 72 条零 FTS 校准 query 从结构上不可达的
+      // 0/72 变成 43/72），但当时它在裁定的双进程口径下**内存门失败**——50,000 条真实向量
+      // 分布回放时检索循环 RSS +720MB > 512MB，所以那一轮先发了 20,000（分支 B-2）。
       //
-      // 20,000 **不等价于全 scope**：超过 20,000 条的 scope 会重新按 recency 截断，
-      // 而那部分召回损失未测（召回装置只有 2,000 条）。改这个数字要等"分块读取 → 立即
-      // 打分 → 有界 Top-K"那一轮，直接调大它等于把内存失败发出去。
-      semanticCandidatePool: 20000,
+      // Top-K 轮次把它解开了：流式打分（分块取候选 → 立即打分 → 有界保留 → 丢弃该块）
+      // 把工作集降到 +225…+324MB、p95 158–286ms，于是 `Infinity` 才成为发布形态。
+      // 它与下面的 `semanticTopK: 1000` **成对成立**，单独调大任何一个都要重跑另一个的门槛。
+      semanticCandidatePool: Number.POSITIVE_INFINITY,
       // 阶段 3A 的五个字段保持**关闭**。锁住 `bigramAux: false` 的意义与上面那四个数字
       // 相反：那些是「选出来的值不许被改」，这个是「Gate E 判定 3A 未通过，不许被打开」。
       // 15 个 arm 里零个同时满足质量与误召回门槛；架构被认可，工作点不存在。
@@ -291,9 +363,10 @@ describe('DEFAULT_RETRIEVAL_POLICY', () => {
       // R2 新增。默认必须是 `always`（3A 的行为）：写成 `discovery-only` 等于在没有
       // Gate 的情况下把 R2 的产品改动发出去。工作点由 R2 网格选，不由这一行选。
       bigramVote: 'always',
-      // Top-K 轮次阶段一：流式打分只换执行方式，`Infinity` = 不截断 = 换之前的行为。
-      // 引入截断是产品改动，要走该轮判据 §6 的 K 矩阵与门槛，不是改这一行。
-      semanticTopK: Number.POSITIVE_INFINITY,
+      // Top-K 轮次阶段二选出的唯一可行 K。严格口径（每次复现都需达标）下 200 / 5000 /
+      // 20000 全部因 p95/p99 超限失败，200 还额外丢了 3 条 query 的 gold 名次。
+      // `Infinity` 不作为发布形态：它的保留集随语料规模增长，不满足 O(块大小 + K)。
+      semanticTopK: 1000,
     });
   });
 
@@ -542,7 +615,7 @@ describe('semanticOnlyLimit', () => {
     await hybridSearchObservations(
       db,
       'alpha',
-      { scopeKey: SCOPE },
+      { scopeKey: SCOPE, semanticQueryEn: 'alpha' },
       {
         ...TEST_VECTOR_SPACE,
         generateEmbedding: queryVec,
@@ -646,7 +719,7 @@ describe('tieBreak', () => {
     await hybridSearchObservations(
       db,
       'alpha',
-      { scopeKey: SCOPE },
+      { scopeKey: SCOPE, semanticQueryEn: 'alpha' },
       {
         ...TEST_VECTOR_SPACE,
         generateEmbedding: queryVec,
@@ -984,10 +1057,22 @@ describe('semanticDiscovery 的协议边界（Gate A 整改）', () => {
     expect(results).toEqual([]);
   });
 
-  describe('FTS 有候选时行为中立（Phase 1b 的 raw 重排必须一个字不变）', () => {
+  describe('raw-v1 一律 FTS-only（raw-v1 降级轮次的安全修正）', () => {
     /**
-     * 协议边界**只**作用于 `ftsCount === 0`。FTS 有命中时语义腿照旧在它所处的空间里
-     * 重排，包括 `raw-v1`——那是 Phase 1b 行为，不能因为加了边界而改变。
+     * 这一组原先断言的是相反的事：「协议边界**只**作用于 `ftsCount === 0`；FTS 有命中时语义腿
+     * 照旧在它所处的空间里重排，包括 `raw-v1`——那是 Phase 1b 行为，不能因为加了边界而改变」。
+     *
+     * 那个断言被裁定为**缺陷**，不是需要保护的行为。实测原因（`raw-degrade-investigation.md`）：
+     * 只要有 1 条 FTS 命中，`raw-v1` 的语义腿就会对**整个 scope** 打分，并把一条 900 天前、
+     * 词面零重叠的记录以 `match_source: "semantic"` 送进页面。而它读的 floor 0.197、
+     * 候选池与 Top-K 全都是在**英文空间**校准的，`raw-v1` 本身没有可辩护的 floor
+     * （标注正例 0.080–0.607 与最坏噪声 0.431 区间重叠）。
+     *
+     * 冻结的产品语义（`raw-degrade-criteria.md` §2）：`semantic_query_en` 缺失或被护栏拒绝时，
+     * 一律不生成 query embedding、不读取 raw 向量，只返回词面结果；且**不受 `semanticDiscovery`
+     * 开关影响**。所以这一组现在断言的是"语义腿完全不参与"。
+     *
+     * 这不是放宽测试，是把断言的方向调正——同一个 fixture、同一批 query，期望值反过来。
      */
     function seedAnchored(): { hybrid: number; semanticOnly: number } {
       const hybrid = seed({ title: 'alpha anchor', stoppedAt: '2026-07-01T00:00:00Z', embedding: [0.99, 0, 0, 0] });
@@ -998,31 +1083,46 @@ describe('semanticDiscovery 的协议边界（Gate A 整改）', () => {
     test.each([
       ['missing', undefined],
       ['rejected(placeholder)', '...'],
-    ])('raw-v1（%s）在 FTS 有命中时仍然重排并可补入 semantic-only', async (_label, en) => {
+    ])('raw-v1（%s）即使 FTS 有命中也不跑语义腿：无 embedding、无 semantic/hybrid', async (_label, en) => {
       const { hybrid, semanticOnly } = seedAnchored();
-      const seen: { protocol: string; effective: boolean }[] = [];
+      const seen: { protocol: string; effective: boolean; comparable: number; scopeVectors: number | null }[] = [];
+      let embedCalls = 0;
       const results = await hybridSearchObservations(
         db,
         'alpha',
         { scopeKey: SCOPE, ...(en === undefined ? {} : { semanticQueryEn: en }) },
         {
           ...TEST_VECTOR_SPACE,
-          generateEmbedding: queryVec,
+          generateEmbedding: async () => { embedCalls++; return queryVec(); },
           policy: { semanticDiscovery: true },
-          onCandidates: (i) => seen.push({ protocol: i.protocol, effective: i.discoveryEffective }),
+          onCandidates: (i) => seen.push({
+            protocol: i.protocol,
+            effective: i.discoveryEffective,
+            comparable: i.comparableVectors,
+            scopeVectors: i.scopeVectors,
+          }),
         },
       );
       expect(seen[0]!.protocol).toBe('raw-v1');
-      // discovery 不生效，但这与"语义腿是否参与重排"无关。
       expect(seen[0]!.effective).toBe(false);
+      // 语义腿一步都没走：没算 embedding、没读向量、连 scope 向量数都没数。
+      // `scopeVectors === null` 与 `=== 0` 是两件事，前者才是"语义步骤从未运行"。
+      expect(embedCalls).toBe(0);
+      expect(seen[0]!.comparable).toBe(0);
+      expect(seen[0]!.scopeVectors).toBe(null);
+      // 词面命中的那条仍然返回，但只能是 `fts`——`hybrid` 的含义是"语义证据 + 可靠词面证据"，
+      // raw 打分不再产生语义证据。
       const ids = results.map((r) => r.id);
       expect(ids).toContain(hybrid);
-      expect(ids).toContain(semanticOnly);
-      expect(results.find((r) => r.id === hybrid)!.match_source).toBe('hybrid');
-      expect(results.find((r) => r.id === semanticOnly)!.match_source).toBe('semantic');
+      expect(results.find((r) => r.id === hybrid)!.match_source).toBe('fts');
+      // 只有语义腿能找到的那条，现在不可达。
+      expect(ids).not.toContain(semanticOnly);
+      expect(results.map((r) => r.match_source).filter((s) => s !== 'fts')).toEqual([]);
     });
 
     test('discovery=on/off 在 FTS 有命中时结果逐条相同', async () => {
+      // 这条现在成立的理由变了：不再是"两边都跑 raw 重排所以一样"，而是
+      // **两边都不跑语义腿**所以一样——裁定第 2 条要求该规则不受 discovery 开关影响。
       seedAnchored();
       const off = await hybridSearchObservations(
         db, 'alpha', { scopeKey: SCOPE },
@@ -1338,7 +1438,7 @@ describe('policy 不泄漏给调用方', () => {
     await hybridSearchObservations(
       db,
       'alpha',
-      { scopeKey: SCOPE },
+      { scopeKey: SCOPE, semanticQueryEn: 'alpha' },
       {
         ...TEST_VECTOR_SPACE,
         generateEmbedding: queryVec,

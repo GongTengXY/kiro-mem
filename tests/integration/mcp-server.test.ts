@@ -42,7 +42,7 @@ async function readUntilId(
 
 function seedObservation(
   db: MemoryDB,
-  input: { sessionId: string; repo: string; title: string },
+  input: { sessionId: string; repo: string; title: string; stoppedAt?: string },
 ): number {
   db.upsertSessionRef({
     session_id: input.sessionId,
@@ -69,7 +69,7 @@ function seedObservation(
     memory_type: 'change',
     quality: 'normal',
     turn_started_at: turn.started_at,
-    turn_stopped_at: new Date().toISOString(),
+    turn_stopped_at: input.stoppedAt ?? new Date().toISOString(),
   })!;
 }
 
@@ -174,6 +174,72 @@ describe('MCP server tool surface', () => {
     expect(payload.results.map((result: { title: string }) => result.title)).toEqual([
       'shared marker from repo A',
     ]);
+  });
+
+  /**
+   * Phase 3C on the REAL MCP path.
+   *
+   * The kernel-level coverage lives in `time-window.test.ts`, but the MCP layer has
+   * its own default (`boundedInteger(a.days, ...)`) and its own JSON-Schema
+   * `default`. Both are on the path for a real agent call and invisible to a
+   * kernel test, so an omission there would ship a 90-day window while every
+   * kernel test reported unbounded.
+   *
+   * 判据 `phase3c-criteria.md` §4.2 / §7。
+   */
+  test('Phase 3C: default search reaches a 400-day-old record, days=90 still narrows', async () => {
+    const repo = '/repo-old';
+    const db = new MemoryDB(resolve(DATA_DIR, 'kiro-mem.db'));
+    const oldId = seedObservation(db, {
+      sessionId: 'session-old',
+      repo,
+      title: 'zzancient marker from long ago',
+      stoppedAt: new Date(Date.now() - 400 * 86400000).toISOString(),
+    });
+    seedObservation(db, {
+      sessionId: 'session-old',
+      repo,
+      title: 'zzancient marker from yesterday',
+      stoppedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+    });
+    db.close();
+
+    proc = spawn({
+      cmd: ['bun', 'run', 'src/server/mcp-server.ts'],
+      cwd: PKG_ROOT,
+      stdin: 'pipe',
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: { ...process.env, KIRO_MEMORY_DATA_DIR: DATA_DIR, KIRO_SESSION_ID: 'session-old' },
+    });
+
+    const reader = (proc.stdout as ReadableStream<Uint8Array>).getReader();
+    const decoder = new TextDecoder();
+    const buf = { s: '' };
+    const stdin = proc.stdin as any;
+    const send = (obj: unknown) => { stdin.write(JSON.stringify(obj) + '\n'); stdin.flush?.(); };
+
+    send({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'test', version: '1.0.0' } } });
+    await readUntilId(reader, decoder, 1, buf);
+    send({ jsonrpc: '2.0', method: 'notifications/initialized' });
+
+    // The schema must not advertise a 90-day default any more, or the agent is
+    // told the wrong thing about omitting the field.
+    send({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} });
+    const listResp = await readUntilId(reader, decoder, 2, buf);
+    const searchTool = (listResp.result?.tools ?? []).find((t: { name: string }) => t.name === 'search');
+    expect(searchTool.inputSchema.properties.days.default).toBeUndefined();
+
+    // Omitting `days` must reach the 400-day-old record.
+    send({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'search', arguments: { query: 'zzancient marker' } } });
+    const wide = JSON.parse((await readUntilId(reader, decoder, 3, buf)).result?.content?.[0]?.text ?? '{}');
+    expect(wide.results.map((r: { id: number }) => r.id)).toContain(oldId);
+
+    // Explicit `days=90` must still exclude it.
+    send({ jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'search', arguments: { query: 'zzancient marker', days: 90 } } });
+    const narrow = JSON.parse((await readUntilId(reader, decoder, 4, buf)).result?.content?.[0]?.text ?? '{}');
+    expect(narrow.results.map((r: { id: number }) => r.id)).not.toContain(oldId);
+    expect(narrow.results.length).toBe(1);
   });
 });
 

@@ -1,0 +1,10 @@
+{
+  "gate": "N3",
+  "baseline": "topk/phase2-final-recall.json",
+  "candidate": "phase3c-recall.json",
+  "queries": 276,
+  "comparedFieldsPerQuery": 16,
+  "perQueryDiffs": "none",
+  "armSummaryDiffsExcludingLatency": [],
+  "verdict": "PASS"
+}

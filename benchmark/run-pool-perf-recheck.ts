@@ -34,7 +34,27 @@ const PHASE = arg('phase') ?? die('必须指定 --phase=seed|measure');
 const SIZE = Number(arg('size') ?? 50000);
 const DB_PATH = arg('db') ?? join(process.env.TMPDIR ?? '/tmp', `pool-recheck-${SIZE}.db`);
 const ROUNDS = Number(arg('rounds') ?? 11);
+/** 有界 Top-K（阶段二自变量）。不传 = 生产默认。 */
+const TOPK = arg("semantic-topk") === undefined
+  ? undefined
+  : (arg("semantic-topk") === "inf" || arg("semantic-topk") === "full"
+      ? Number.POSITIVE_INFINITY
+      : Number(arg("semantic-topk")));
 const LIMIT = 10;
+/**
+ * Phase 3C：把这批记录铺开到多少天（老语料装置）。
+ *
+ * 不传 = 沿用历史口径（每条 +1 分钟，全部落在 90 天窗内），因此候选池轮次与 Top-K 轮次的
+ * 读数可以逐位复现。传 `--spread-days=1095` 则把同一批记录均匀铺到最近 3 年，于是绝大多数
+ * 记录落在**旧的 90 天窗口之外**——这是 3C 判据 §6.3 唯一关心的形状：时间窗不再过滤之后，
+ * 那些原本被挡住的记录进入工作集要花多少钱。
+ *
+ * 只改时间戳，不改文本、不改向量，所以 cosine 分布逐位不变，唯一自变量是"有多少条在旧窗外"。
+ */
+const SPREAD_DAYS = arg('spread-days') === undefined ? undefined : Number(arg('spread-days'));
+if (SPREAD_DAYS !== undefined && (!Number.isFinite(SPREAD_DAYS) || SPREAD_DAYS <= 0)) {
+  die(`--spread-days 必须是正数，实际 ${arg('spread-days')}`);
+}
 /** 冻结的 10,000 条真实文本。重复 5 份到 50,000 时，向量分布逐位保留（§12.1）。 */
 const FILLER_FILE = join(DATASET_DIR, 'pool-policy-filler-10k.json');
 const META_FILE = join(DATASET_DIR, 'pool-policy-filler-10k-meta.json');
@@ -96,8 +116,17 @@ if (PHASE === 'seed') {
 
   // 时间轴：当天 UTC 零点往前 30 天为基准，每条 +1 分钟（口径同 3B / 2D P1-1，写死绝对
   // 日期会让装置在某一天静默滑出 90 天窗口）。
+  //
+  // Phase 3C 的老语料装置走另一支：`--spread-days=N` 把这批记录**均匀铺到最近 N 天**，
+  // 最旧的一条在 N 天前、最新的一条在今天。于是 50,000 条铺 1,095 天时只有约
+  // 90/1095 ≈ 8.2% 落在旧的 90 天窗内，其余 91.8% 是"改动之前搜不到、现在要进工作集"的记录。
   const base = new Date(new Date().toISOString().slice(0, 10)).getTime() - 30 * 86400000;
-  const stoppedAt = (i: number): string => new Date(base + i * 60000).toISOString();
+  const spreadStart = Date.now() - (SPREAD_DAYS ?? 0) * 86400000;
+  const spreadStep = SIZE > 1 ? ((SPREAD_DAYS ?? 0) * 86400000) / (SIZE - 1) : 0;
+  const stoppedAt = (i: number): string =>
+    SPREAD_DAYS === undefined
+      ? new Date(base + i * 60000).toISOString()
+      : new Date(spreadStart + Math.round(i * spreadStep)).toISOString();
 
   const t1 = Date.now();
   for (let i = 0; i < SIZE; i++) {
@@ -141,6 +170,34 @@ const db = new MemoryDB(DB_PATH);
 const scopeVectors = db.countScopeVectors({ scopeKey: SCOPE, model: SPACE_KEY, dimensions: DIMENSIONS });
 if (scopeVectors !== SIZE) die(`库里向量 ${scopeVectors} ≠ --size=${SIZE}`);
 
+/**
+ * Phase 3C：实测库里的时间形状，而不是相信 `--spread-days` 这个参数。
+ *
+ * seed 与 measure 是两个进程，所以 measure 侧必须自己确认"这批记录到底有多少落在旧的 90 天
+ * 窗口之外"。这个比例就是本轮性能读数的全部意义所在：0% 意味着这次测量与 Top-K 轮次的读数
+ * 等价（什么都没多测），接近 100% 才说明测到了"原本被窗口挡住的记录进入工作集"的成本。
+ */
+const corpusAge = (() => {
+  const raw = (db as unknown as { db: { query: (s: string) => { get: (...a: unknown[]) => unknown } } }).db;
+  const cutoff = new Date(Date.now() - 90 * 86400000).toISOString();
+  const r = raw.query(
+    `SELECT MIN(turn_stopped_at) AS oldest, MAX(turn_stopped_at) AS newest,
+            SUM(CASE WHEN turn_stopped_at <= ? THEN 1 ELSE 0 END) AS outside90
+       FROM observations WHERE scope_key = ?`,
+  ).get(cutoff, SCOPE) as { oldest: string; newest: string; outside90: number };
+  const spanDays = Math.round((Date.parse(r.newest) - Date.parse(r.oldest)) / 86400000);
+  return {
+    oldest: r.oldest, newest: r.newest, spanDays,
+    outsideOld90dWindow: r.outside90,
+    outsideOld90dWindowPct: Math.round((r.outside90 / SIZE) * 1000) / 10,
+  };
+})();
+console.log(
+  `[recheck] 语料时间形状：跨度 ${corpusAge.spanDays} 天（${corpusAge.oldest.slice(0, 10)} → ` +
+    `${corpusAge.newest.slice(0, 10)}），落在旧 90 天窗外 ${corpusAge.outsideOld90dWindow}/${SIZE} ` +
+    `(${corpusAge.outsideOld90dWindowPct}%)`,
+);
+
 const POOLS: { name: string; pool: number }[] = (arg('pools') ?? 'full')
   .split(',')
   .map((raw) => {
@@ -168,28 +225,35 @@ for (const p of POOLS) {
   const rssBefore = rssMb();
   let rssPeak = rssBefore;
   const rssPerRound: number[] = [];
+  const pages: { id: string; resultIds: number[]; sources: string[] }[] = [];
 
   for (let round = 0; round < ROUNDS; round++) {
     for (const q of QUERIES) {
       let passed = 0;
       let cmp = 0;
       const t0 = performance.now();
-      await hybridSearchObservations(
+      const res = await hybridSearchObservations(
         db,
         q.query,
         { scopeKey: SCOPE, semanticQueryEn: enFixture.queries[q.id]!, limit: LIMIT },
         {
-          policy: { ...DEFAULT_RETRIEVAL_POLICY, semanticCandidatePool: p.pool },
+          policy: { ...DEFAULT_RETRIEVAL_POLICY, semanticCandidatePool: p.pool, ...(TOPK === undefined ? {} : { semanticTopK: TOPK }) },
           onCandidates: (i) => {
-            // `semanticRank` 只包含**过 floor**的候选，`comparableVectors` 是打过分的总数。
-            // 两者之比就是裁定要的"过 0.197 floor 的比例"。
-            passed = i.semanticRank.size;
+            // 必须用 `aboveFloorCount` 而不是 `semanticRank.size`：Top-K 轮次引入截断后，
+            // 后者变成**保留集**的大小，于是"过 floor 的比例"会随 K 一起缩水，测的就不再是
+            // 语料性质而是 K。实测过这个坑：K=200 时 semanticRank.size 只有 163，
+            // 而真实过 floor 是 4,618 条。
+            passed = i.aboveFloorCount;
             cmp = i.comparableVectors;
           },
           onDegrade: () => { degraded++; },
         },
       );
       const dt = performance.now() - t0;
+      // 只记最后一轮：K 的截断效果与轮次无关，但逐轮存 200 页会让 JSON 膨胀。
+      // 这一份是阶段二 S1 在**真正会截断的规模上**的唯一凭据——2,000 条装置里
+      // above-floor ≤ ~600，K≥1000 压根不截断，在那里比对等于什么都没比。
+      if (round === ROUNDS - 1) pages.push({ id: q.id, resultIds: res.map((r) => r.id), sources: res.map((r) => r.match_source) });
       if (round === 0) firstRound.push(dt);
       else {
         lat.push(dt);
@@ -228,6 +292,7 @@ for (const p of POOLS) {
     rssProcessPeakMb: rssPeak,
     rssPerRoundMb: rssPerRound,
     degradedCount: degraded,
+    pages,
   };
   results.push(row);
   console.log(
@@ -258,6 +323,12 @@ const out = {
     dimensions: DIMENSIONS,
     queryIds: QUERIES.map((q) => q.id),
     rounds: ROUNDS,
+    semanticTopK: TOPK === undefined ? 'default' : String(TOPK),
+    // Phase 3C：`undefined` = 历史口径（全部落在 90 天窗内，可复现候选池 / Top-K 读数）；
+    // 数字 = 老语料装置，记录均匀铺到最近 N 天。measure 阶段从库里实测真实跨度并回写，
+    // 因为 seed 与 measure 是两个进程，光记录参数无法证明库里真的是那个形状。
+    spreadDays: SPREAD_DAYS ?? null,
+    corpusAgeDays: corpusAge,
     limit: LIMIT,
     twoProcess: true,
     dbPath: DB_PATH,

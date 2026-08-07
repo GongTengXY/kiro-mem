@@ -1,0 +1,429 @@
+{
+  "note": "汇总产物：只从已冻结 JSON 读数，未重跑任何 arm，未改动任何历史指标。",
+  "criteria": "benchmark/reports/topk-criteria.md",
+  "criteriaA0": "699d988c419be7b3",
+  "criteriaB1": "2285d0fa8cf5e1ee（§6.3 聚合口径 =「每次复现都需达标」+ ∞ 不截断不得发布）",
+  "selection": {
+    "file": "benchmark/reports/topk-selection.json",
+    "sha16": "9c4880dfb6bf8cab",
+    "selected": {
+      "semanticCandidatePool": "Infinity",
+      "semanticTopK": 1000
+    },
+    "excluded": {
+      "Infinity": "B1：topK=Infinity 让保留集随语料规模增长（50,000 档实测均 4,618 / 最坏 14,830 条），不满足 O(块大小 + K)，不得作为发布形态"
+    },
+    "aggregationRule": "每次复现都需达标（裁定 B1；不接受中位数 / 最小值+分布）",
+    "identityBaselines": {
+      "2000": "pool-policy/recall.json arm pool-full（换之前的全量打分）",
+      "50000": "topk/perf-50000-full-noK.json（流式但不截断）"
+    }
+  },
+  "gateVerdictPerK": {
+    "200": {
+      "feasible": false,
+      "failedChecks": [
+        {
+          "id": "S8/T4 名次表仍含 gold（触达差异 0）",
+          "reading": "3 条 query"
+        },
+        {
+          "id": "S2 每次 p95 < 300ms",
+          "reading": "181.54 / 192.41 / 372.04ms"
+        },
+        {
+          "id": "S3 每次 p99 < 500ms",
+          "reading": "293.79 / 400.48 / 702.39ms"
+        }
+      ],
+      "passedCheckCount": 9
+    },
+    "1000": {
+      "feasible": true,
+      "failedChecks": [],
+      "passedCheckCount": 12
+    },
+    "5000": {
+      "feasible": false,
+      "failedChecks": [
+        {
+          "id": "S2 每次 p95 < 300ms",
+          "reading": "250.01 / 257.19 / 535.59ms"
+        },
+        {
+          "id": "S3 每次 p99 < 500ms",
+          "reading": "328.15 / 538.33 / 1376ms"
+        }
+      ],
+      "passedCheckCount": 10
+    },
+    "20000": {
+      "feasible": false,
+      "failedChecks": [
+        {
+          "id": "S2 每次 p95 < 300ms",
+          "reading": "270.54 / 332.7 / 348.54ms"
+        },
+        {
+          "id": "S3 每次 p99 < 500ms",
+          "reading": "410.01 / 448.83 / 524.03ms"
+        }
+      ],
+      "passedCheckCount": 10
+    }
+  },
+  "perfRunsPerArm": {
+    "pool=20000 / topK=default": [
+      {
+        "file": "perf-50000-stream-r1.json",
+        "sha16": "4931659cf8bad0c0",
+        "samples": 200,
+        "p50": 88.41,
+        "p95": 139.98,
+        "p99": 425.95,
+        "rssDeltaMb": 322,
+        "rssProcessPeakMb": 386,
+        "degraded": 0,
+        "aboveFloorMean": 1850,
+        "aboveFloorMax": 5932,
+        "comparableMean": 20015
+      },
+      {
+        "file": "perf-50000-stream-r2.json",
+        "sha16": "ca708a8551692f38",
+        "samples": 200,
+        "p50": 88.35,
+        "p95": 148.32,
+        "p99": 444.76,
+        "rssDeltaMb": 381,
+        "rssProcessPeakMb": 509,
+        "degraded": 0,
+        "aboveFloorMean": 1850,
+        "aboveFloorMax": 5932,
+        "comparableMean": 20015
+      },
+      {
+        "file": "perf-50000-stream-r3.json",
+        "sha16": "46e9e672455ba8af",
+        "samples": 200,
+        "p50": 91.01,
+        "p95": 204.22,
+        "p99": 295.08,
+        "rssDeltaMb": 263,
+        "rssProcessPeakMb": 390,
+        "degraded": 0,
+        "aboveFloorMean": 1850,
+        "aboveFloorMax": 5932,
+        "comparableMean": 20015
+      }
+    ],
+    "pool=full / topK=1000": [
+      {
+        "file": "perf-50000-full-k1000-r2.json",
+        "sha16": "a68c6d94044656d4",
+        "samples": 200,
+        "p50": 126.53,
+        "p95": 182.95,
+        "p99": 356.51,
+        "rssDeltaMb": 318,
+        "rssProcessPeakMb": 446,
+        "degraded": 0,
+        "aboveFloorMean": 4618,
+        "aboveFloorMax": 14830,
+        "comparableMean": 50000
+      },
+      {
+        "file": "perf-50000-full-k1000-r3.json",
+        "sha16": "e34616c0192ad445",
+        "samples": 200,
+        "p50": 127.72,
+        "p95": 158.23,
+        "p99": 447.91,
+        "rssDeltaMb": 324,
+        "rssProcessPeakMb": 453,
+        "degraded": 0,
+        "aboveFloorMean": 4618,
+        "aboveFloorMax": 14830,
+        "comparableMean": 50000
+      },
+      {
+        "file": "perf-50000-full-k1000.json",
+        "sha16": "9598f05d68f4333c",
+        "samples": 200,
+        "p50": 126.68,
+        "p95": 192.74,
+        "p99": 337.92,
+        "rssDeltaMb": 285,
+        "rssProcessPeakMb": 413,
+        "degraded": 0,
+        "aboveFloorMean": 760,
+        "aboveFloorMax": 1011,
+        "comparableMean": 50000
+      },
+      {
+        "file": "perf-50000-k1000-n600-r1.json",
+        "sha16": "ddb77ba12c6ba398",
+        "samples": 600,
+        "p50": 160.13,
+        "p95": 286.29,
+        "p99": 442.76,
+        "rssDeltaMb": 225,
+        "rssProcessPeakMb": 354,
+        "degraded": 0,
+        "aboveFloorMean": 4618,
+        "aboveFloorMax": 14830,
+        "comparableMean": 50000
+      },
+      {
+        "file": "perf-50000-k1000-n600-r2.json",
+        "sha16": "8ddc68c8ae0a1311",
+        "samples": 600,
+        "p50": 132.93,
+        "p95": 216.25,
+        "p99": 358.25,
+        "rssDeltaMb": 299,
+        "rssProcessPeakMb": 427,
+        "degraded": 0,
+        "aboveFloorMean": 4618,
+        "aboveFloorMax": 14830,
+        "comparableMean": 50000
+      }
+    ],
+    "pool=full / topK=200": [
+      {
+        "file": "perf-50000-full-k200-r2.json",
+        "sha16": "853a7a2888488701",
+        "samples": 200,
+        "p50": 148.24,
+        "p95": 372.04,
+        "p99": 702.39,
+        "rssDeltaMb": 296,
+        "rssProcessPeakMb": 425,
+        "degraded": 0,
+        "aboveFloorMean": 4618,
+        "aboveFloorMax": 14830,
+        "comparableMean": 50000
+      },
+      {
+        "file": "perf-50000-full-k200-r3.json",
+        "sha16": "6118263a0c81d246",
+        "samples": 200,
+        "p50": 127.11,
+        "p95": 192.41,
+        "p99": 400.48,
+        "rssDeltaMb": 260,
+        "rssProcessPeakMb": 386,
+        "degraded": 0,
+        "aboveFloorMean": 4618,
+        "aboveFloorMax": 14830,
+        "comparableMean": 50000
+      },
+      {
+        "file": "perf-50000-full-k200.json",
+        "sha16": "6773b7945f0c1fd6",
+        "samples": 200,
+        "p50": 123.8,
+        "p95": 181.54,
+        "p99": 293.79,
+        "rssDeltaMb": 247,
+        "rssProcessPeakMb": 375,
+        "degraded": 0,
+        "aboveFloorMean": 163,
+        "aboveFloorMax": 231,
+        "comparableMean": 50000
+      }
+    ],
+    "pool=full / topK=20000": [
+      {
+        "file": "perf-50000-full-k20000-r2.json",
+        "sha16": "75074b03db6fdc60",
+        "samples": 200,
+        "p50": 182.31,
+        "p95": 332.7,
+        "p99": 524.03,
+        "rssDeltaMb": 335,
+        "rssProcessPeakMb": 462,
+        "degraded": 0,
+        "aboveFloorMean": 4618,
+        "aboveFloorMax": 14830,
+        "comparableMean": 50000
+      },
+      {
+        "file": "perf-50000-full-k20000-r3.json",
+        "sha16": "1160630b3610c613",
+        "samples": 200,
+        "p50": 185.78,
+        "p95": 348.54,
+        "p99": 448.83,
+        "rssDeltaMb": 324,
+        "rssProcessPeakMb": 449,
+        "degraded": 0,
+        "aboveFloorMean": 4618,
+        "aboveFloorMax": 14830,
+        "comparableMean": 50000
+      },
+      {
+        "file": "perf-50000-full-k20000.json",
+        "sha16": "0febf4625ce251e3",
+        "samples": 200,
+        "p50": 143.13,
+        "p95": 270.54,
+        "p99": 410.01,
+        "rssDeltaMb": 378,
+        "rssProcessPeakMb": 509,
+        "degraded": 0,
+        "aboveFloorMean": 4618,
+        "aboveFloorMax": 14830,
+        "comparableMean": 50000
+      }
+    ],
+    "pool=full / topK=5000": [
+      {
+        "file": "perf-50000-full-k5000-r2.json",
+        "sha16": "8db41676972ecb39",
+        "samples": 200,
+        "p50": 150.33,
+        "p95": 535.59,
+        "p99": 1376,
+        "rssDeltaMb": 352,
+        "rssProcessPeakMb": 478,
+        "degraded": 0,
+        "aboveFloorMean": 4618,
+        "aboveFloorMax": 14830,
+        "comparableMean": 50000
+      },
+      {
+        "file": "perf-50000-full-k5000-r3.json",
+        "sha16": "979bfacb4155429a",
+        "samples": 200,
+        "p50": 150.27,
+        "p95": 257.19,
+        "p99": 328.15,
+        "rssDeltaMb": 280,
+        "rssProcessPeakMb": 410,
+        "degraded": 0,
+        "aboveFloorMean": 4618,
+        "aboveFloorMax": 14830,
+        "comparableMean": 50000
+      },
+      {
+        "file": "perf-50000-full-k5000.json",
+        "sha16": "3177af26f66b1176",
+        "samples": 200,
+        "p50": 139.24,
+        "p95": 250.01,
+        "p99": 538.33,
+        "rssDeltaMb": 352,
+        "rssProcessPeakMb": 479,
+        "degraded": 0,
+        "aboveFloorMean": 2725,
+        "aboveFloorMax": 5000,
+        "comparableMean": 50000
+      }
+    ],
+    "pool=full / topK=default": [
+      {
+        "file": "perf-50000-full-noK-r2.json",
+        "sha16": "0b8e63dde458db8b",
+        "samples": 200,
+        "p50": 144.65,
+        "p95": 274.53,
+        "p99": 439.31,
+        "rssDeltaMb": 403,
+        "rssProcessPeakMb": 532,
+        "degraded": 0,
+        "aboveFloorMean": 4618,
+        "aboveFloorMax": 14830,
+        "comparableMean": 50000
+      },
+      {
+        "file": "perf-50000-full-noK-r3.json",
+        "sha16": "d37814d30c18e5e4",
+        "samples": 200,
+        "p50": 162.45,
+        "p95": 318.32,
+        "p99": 420.03,
+        "rssDeltaMb": 397,
+        "rssProcessPeakMb": 525,
+        "degraded": 0,
+        "aboveFloorMean": 4618,
+        "aboveFloorMax": 14830,
+        "comparableMean": 50000
+      },
+      {
+        "file": "perf-50000-full-noK.json",
+        "sha16": "707b2254435a882d",
+        "samples": 200,
+        "p50": 139.21,
+        "p95": 240.48,
+        "p99": 361.11,
+        "rssDeltaMb": 395,
+        "rssProcessPeakMb": 522,
+        "degraded": 0,
+        "aboveFloorMean": 4618,
+        "aboveFloorMax": 14830,
+        "comparableMean": 50000
+      },
+      {
+        "file": "perf-50000-noK-n600-r1.json",
+        "sha16": "768ea15e0365a04c",
+        "samples": 600,
+        "p50": 168.09,
+        "p95": 317.07,
+        "p99": 468.12,
+        "rssDeltaMb": 338,
+        "rssProcessPeakMb": 466,
+        "degraded": 0,
+        "aboveFloorMean": 4618,
+        "aboveFloorMax": 14830,
+        "comparableMean": 50000
+      },
+      {
+        "file": "perf-50000-noK-n600-r2.json",
+        "sha16": "24874eb676192620",
+        "samples": 600,
+        "p50": 145.62,
+        "p95": 262.83,
+        "p99": 396.68,
+        "rssDeltaMb": 405,
+        "rssProcessPeakMb": 531,
+        "degraded": 0,
+        "aboveFloorMean": 4618,
+        "aboveFloorMax": 14830,
+        "comparableMean": 50000
+      }
+    ]
+  },
+  "recallIdentity2000Fixture": {
+    "200": {
+      "file": "recall-k200.json",
+      "sha16": "6e92c4f71d26a310",
+      "queries": 276,
+      "orderedResultIdsDiffVsStreamRef": 0
+    },
+    "1000": {
+      "file": "recall-k1000.json",
+      "sha16": "176c826cc867e7e1",
+      "queries": 276,
+      "orderedResultIdsDiffVsStreamRef": 0
+    },
+    "5000": {
+      "file": "recall-k5000.json",
+      "sha16": "72ec6c0e9f2d4287",
+      "queries": 276,
+      "orderedResultIdsDiffVsStreamRef": 0
+    },
+    "20000": {
+      "file": "recall-k20000.json",
+      "sha16": "5512dd988741cad6",
+      "queries": 276,
+      "orderedResultIdsDiffVsStreamRef": 0
+    }
+  },
+  "armRoles": {
+    "pool=20000 / topK=default": "阶段一连续性锁（流式实现、不截断、池仍 20000）",
+    "pool=full / topK=default": "阶段二 S1 的 full-scoring 一致性参考；判据 B1 认定它不得作为发布形态（保留集随语料增长）",
+    "pool=full / topK=1000": "选定形态",
+    "pool=full / topK=200|5000|20000": "失败 arm，失败原因见 gateVerdictPerK"
+  }
+}

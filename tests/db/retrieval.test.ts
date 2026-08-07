@@ -363,28 +363,38 @@ describe('FTS 主查询的执行计划：CROSS JOIN 固定连接顺序', () => {
    * 它测的是"一条写着 CROSS JOIN 的 SQL 会有 CROSS JOIN 的计划"，同义反复，没有判别力。
    * 反向测试就是为了抓这个而要求的。
    *
-   * 现在从 `src/db/index.ts` 抽出 FTS 分支的 SQL 模板，再按生产的方式拼上 scope 与
+   * 现在从 `src/db/index.ts` 抽出 FTS 分支的 SQL 模板，再按生产的方式拼上时间阈值、scope 与
    * ORDER BY/LIMIT。改动生产的连接方式会立刻反映到这里。
+   *
+   * Phase 3C 之后模板本身**不再包含**时间阈值：默认时间窗是无界的，阈值改成由
+   * `searchDateThreshold()` 返回 `null` 时省略整个子句。所以这里要按生产的顺序条件拼接
+   * （MATCH → [阈值] → scope → type → ORDER BY/LIMIT），并且两种形状都要验计划——
+   * 默认无界是新的生产默认，显式 `days=N` 仍然是真实路径。
    */
-  const productionFtsSql = (): string => {
+  const productionFtsSql = (withDateThreshold: boolean): string => {
     const src = readFileSync(new URL('../../src/db/index.ts', import.meta.url), 'utf-8');
     const m = src.match(/let sql = `(SELECT o\.\* FROM observations_fts fts[\s\S]*?)`;/);
     if (!m) throw new Error('没能从 src/db/index.ts 抽出 FTS 分支 SQL——正则与源码脱节了');
+    const threshold = withDateThreshold ? ' AND o.turn_stopped_at > ?' : '';
     // 与生产 `searchObservationsFts` 相同的拼接顺序（scopeKey 给了、type 没给）。
-    return `${m[1]!} AND o.scope_key = ? ORDER BY fts.rank, o.id ASC LIMIT ?`;
+    return `${m[1]!}${threshold} AND o.scope_key = ? ORDER BY fts.rank, o.id ASC LIMIT ?`;
   };
 
-  const planOf = (query: string): string[] => {
+  const planOf = (query: string, opts?: { days?: number }): string[] => {
     const units = extractFtsSearchUnits(query);
     const expr = units.map((u) => `"${u.replaceAll('"', '""')}"`).join(' OR ');
-    const threshold = new Date(Date.now() - 90 * 86400000).toISOString();
+    const withDateThreshold = opts?.days !== undefined;
+    const params: (string | number)[] = [expr];
+    if (withDateThreshold) {
+      params.push(new Date(Date.now() - opts!.days! * 86400000).toISOString());
+    }
+    params.push(computeScopeKey('/proj', '/proj'), 50);
     // 只读旁路连接。不给 MemoryDB 加一个只有测试用的 explain 方法：那是为了一个断言
     // 在生产 API 上开洞。所以这个 describe 用**文件库**而不是内存库。
     const raw = new Database(planDbPath, { readonly: true });
     try {
-      return (raw.query(`EXPLAIN QUERY PLAN ${productionFtsSql()}`).all(
-        expr, threshold, computeScopeKey('/proj', '/proj'), 50,
-      ) as { detail: string }[]).map((r) => r.detail);
+      return (raw.query(`EXPLAIN QUERY PLAN ${productionFtsSql(withDateThreshold)}`)
+        .all(...params) as { detail: string }[]).map((r) => r.detail);
     } finally {
       raw.close();
     }
@@ -423,11 +433,15 @@ describe('FTS 主查询的执行计划：CROSS JOIN 固定连接顺序', () => {
   });
 
   test('驱动表是 FTS 虚表，不是 observations', () => {
-    const plan = planOf('installation worker restart');
-    expect(plan.length).toBeGreaterThan(0);
-    // 第一行 = 外层循环。必须是 FTS 虚表；翻回 JOIN 时这里会变成对 observations 的索引扫描。
-    expect(plan[0]).toContain('VIRTUAL TABLE');
-    expect(plan[0]).not.toContain('idx_observations_scope_time');
+    // Phase 3C：两种形状都要验。默认无界是新的生产默认；显式 `days=N` 仍会拼出时间阈值，
+    // 而多一个谓词有可能让 SQLite 改选驱动表——那正是判据 §6.3 要求出示计划对照的原因。
+    for (const opts of [undefined, { days: 90 }]) {
+      const plan = planOf('installation worker restart', opts);
+      expect(plan.length).toBeGreaterThan(0);
+      // 第一行 = 外层循环。必须是 FTS 虚表；翻回 JOIN 时这里会变成对 observations 的索引扫描。
+      expect(plan[0]).toContain('VIRTUAL TABLE');
+      expect(plan[0]).not.toContain('idx_observations_scope_time');
+    }
   });
 
   test('计划里出现 TEMP B-TREE 是预期的，但 FTS 必须仍是外层驱动', () => {
@@ -436,11 +450,13 @@ describe('FTS 主查询的执行计划：CROSS JOIN 固定连接顺序', () => {
     //
     // 但**外层驱动**必须仍是 FTS：1900 倍的收益来自"谁做外层循环"，不来自有没有排序。
     // 所以这条测试断言的是排序的存在**不影响**驱动方向，而不是"没有排序"。
-    const plan = planOf('installation worker restart');
-    expect(plan.join(' | ')).toContain('TEMP B-TREE');
-    expect(plan[0]).toContain('VIRTUAL TABLE');
-    // 关键的反面：observations 不得成为被全扫的驱动表。
-    expect(plan.join(' | ')).not.toContain('SCAN o');
+    for (const opts of [undefined, { days: 90 }]) {
+      const plan = planOf('installation worker restart', opts);
+      expect(plan.join(' | ')).toContain('TEMP B-TREE');
+      expect(plan[0]).toContain('VIRTUAL TABLE');
+      // 关键的反面：observations 不得成为被全扫的驱动表。
+      expect(plan.join(' | ')).not.toContain('SCAN o');
+    }
   });
 
   test('`limit` 仍是绑定参数：SQL 文本里不含内联的数字上限', () => {

@@ -45,6 +45,10 @@ const BASE_POLICY = {
   // 装置修复**：`always` 正是 3A 运行时的既有行为（每个命中候选都加一票），不是在替已经收口的
   // bigram 路线选新策略。按裁定不因此重跑 3A 矩阵。
   bigramVote: "always",
+  // Top-K 轮次新增。历史读数都是在"不截断"下测的，所以这里就是 Infinity；
+  // 阶段二若把生产默认改成有限 K，这一行仍应保持 Infinity 并加显式例外，
+  // 理由与 semanticCandidatePool=200 那条相同。
+  semanticTopK: Number.POSITIVE_INFINITY,
 } as const;
 
 type Policy = Record<string, unknown>;
@@ -67,6 +71,8 @@ type Policy = Record<string, unknown>;
     // 在这里钉住它（并在下面断言），比放宽字段数检查安全：字段数检查的作用是让新字段
     // 必须被显式登记，放宽它等于关掉守卫。
     if (k === "semanticCandidatePool") continue;
+    // 同理：Top-K 轮次把生产默认从"不截断"改成 1000，历史读数都是在不截断下测的。
+    if (k === "semanticTopK") continue;
     if ((BASE_POLICY as Policy)[k] !== shipped[k]) {
       throw new Error(
         `BASE_POLICY.${k}=${JSON.stringify((BASE_POLICY as Policy)[k])} 与生产策略的 ` +
@@ -87,6 +93,12 @@ type Policy = Record<string, unknown>;
     throw new Error(
       `BASE_POLICY.semanticCandidatePool 必须是 200（本驱动历史读数实际使用的候选池；` +
       `生产默认已由候选池轮次改为 Infinity），实际 ${BASE_POLICY.semanticCandidatePool}`,
+    );
+  }
+  if (BASE_POLICY.semanticTopK !== Number.POSITIVE_INFINITY) {
+    throw new Error(
+      `BASE_POLICY.semanticTopK 必须是 Infinity（本驱动历史读数在不截断下测的；` +
+      `生产默认已由 Top-K 轮次改为 1000），实际 ${BASE_POLICY.semanticTopK}`,
     );
   }
 }
@@ -114,6 +126,7 @@ function flagsFor(policy: Policy): string[] {
     bigramMinMatches: 'bigram-min-matches',
     bigramOnlyLimit: 'bigram-only-limit',
     bigramWeight: 'bigram-weight',
+    semanticTopK: 'semantic-topk',
     // 与 BASE_POLICY 同批补上（裁定第 5 条）：字段是 R2 新增的，`run.ts` 早已支持该参数，
     // 缺的只是这个驱动里的映射。不补映射，守卫会在字段比对之后再挂一次。
     bigramVote: 'bigram-vote',
