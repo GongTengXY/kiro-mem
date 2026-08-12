@@ -1,0 +1,1393 @@
+{
+  "step": "P2 第 4 步：零 FTS 声明确认",
+  "criteria": {
+    "path": "benchmark/reports/safety-round/p2-calibration-criteria.md",
+    "sha256": "b38f7e43e2871bda89a49aa87869c14fe49c6d3bfff2e0d170c8f54fa3b74726",
+    "section": "§4.6 / §8.4"
+  },
+  "corpus": {
+    "newRecords": 40,
+    "oldPrimary": 26,
+    "fillerDistinctTexts": 10000,
+    "rowsSeeded": 10066,
+    "copiesNote": "判据 §4.6 的装置是 filler ×5 副本。副本是同一段文本，FTS 命中数按份数成倍，但零/非零判定与份数无关，因此这里播 1 份；结论为零时播 5 份仍为零。",
+    "vectorsBuilt": 0,
+    "semanticArmsExecuted": 0
+  },
+  "emptyZeroFts": {
+    "count": 40,
+    "allZero": true,
+    "violations": []
+  },
+  "lexicalAnchor": {
+    "count": 30,
+    "allHit": true,
+    "violations": [],
+    "ftsCountMin": 1,
+    "ftsCountMax": 50
+  },
+  "perQuery": [
+    {
+      "id": "sr-r01",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 5,
+      "ftsHits": [
+        "c25",
+        "t19",
+        "c29",
+        "c21",
+        "c41"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r02",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 9,
+      "ftsHits": [
+        "s02",
+        "c38",
+        "c22",
+        "s05",
+        "c20",
+        "c19",
+        "c32",
+        "c21"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r03",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r04",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 5,
+      "ftsHits": [
+        "c39",
+        "c29",
+        "c19",
+        "c24",
+        "s04"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r05",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 4,
+      "ftsHits": [
+        "s05",
+        "c38",
+        "c35",
+        "t21"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r06",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 2,
+      "ftsHits": [
+        "s06",
+        "c28"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r07",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 5,
+      "ftsHits": [
+        "c17",
+        "c19",
+        "c32",
+        "t01",
+        "s08"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r08",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 1,
+      "ftsHits": [
+        "s08"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r09",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 5,
+      "ftsHits": [
+        "c09",
+        "s03",
+        "c14",
+        "c20",
+        "c22"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r10",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r11",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c11"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r12",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r13",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 10,
+      "ftsHits": [
+        "c13",
+        "s01",
+        "c26",
+        "t21",
+        "c36",
+        "c29",
+        "c18",
+        "c09"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r14",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r15",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 8,
+      "ftsHits": [
+        "c36",
+        "c18",
+        "s03",
+        "t21",
+        "c29",
+        "c09",
+        "s04",
+        "s01"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r16",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r17",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 4,
+      "ftsHits": [
+        "c19",
+        "t21",
+        "c17",
+        "c29"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r18",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r19",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 6,
+      "ftsHits": [
+        "c38",
+        "s05",
+        "c25",
+        "t15",
+        "c22",
+        "s03"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r20",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 13,
+      "ftsHits": [
+        "c21",
+        "t12",
+        "c22",
+        "s03",
+        "c20",
+        "c38",
+        "c17",
+        "s05"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r21",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 2,
+      "ftsHits": [
+        "s03",
+        "c23"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r22",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 3,
+      "ftsHits": [
+        "c40",
+        "s04",
+        "s07"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r23",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 3,
+      "ftsHits": [
+        "c28",
+        "c25",
+        "s06"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r24",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c26"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r25",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 4,
+      "ftsHits": [
+        "c33",
+        "s06",
+        "c10",
+        "s01"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r26",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 3,
+      "ftsHits": [
+        "s08",
+        "s04",
+        "s07"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r27",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 2,
+      "ftsHits": [
+        "t12",
+        "c10"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r28",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 1,
+      "ftsHits": [
+        "t04"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r29",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c41"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r30",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r31",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c25"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r32",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r33",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c35"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r34",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 2,
+      "ftsHits": [
+        "c22",
+        "s03"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r35",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r36",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 2,
+      "ftsHits": [
+        "c19",
+        "c38"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r37",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c39"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r38",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c17"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r39",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 2,
+      "ftsHits": [
+        "c41",
+        "s07"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r40",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r41",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c14"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n01",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n02",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n03",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n04",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n05",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n06",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n07",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n08",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n09",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n10",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n11",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n12",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n13",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n14",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n15",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n16",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n17",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n18",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n19",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n20",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n21",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n22",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n23",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n24",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n25",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n26",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n27",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n28",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n29",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n30",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n31",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n32",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n33",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n34",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n35",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n36",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n37",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n38",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n39",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-n40",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-a01",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 14,
+      "ftsHits": [
+        "c14",
+        "c22",
+        "c13",
+        "t21",
+        "c17",
+        "c20",
+        "c28",
+        "c11"
+      ],
+      "lexicalAnchor": "地板线"
+    },
+    {
+      "id": "sr-a02",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 2,
+      "ftsHits": [
+        "c22",
+        "s03"
+      ],
+      "lexicalAnchor": "配额"
+    },
+    {
+      "id": "sr-a03",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 8,
+      "ftsHits": [
+        "t21",
+        "c36",
+        "c29",
+        "c18",
+        "c09",
+        "s03",
+        "s04",
+        "s01"
+      ],
+      "lexicalAnchor": "相似度"
+    },
+    {
+      "id": "sr-a04",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 1,
+      "ftsHits": [
+        "t20"
+      ],
+      "lexicalAnchor": "压缩"
+    },
+    {
+      "id": "sr-a05",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 50,
+      "ftsHits": [
+        "t03",
+        "filler:f4533",
+        "filler:f2208",
+        "filler:f2973",
+        "filler:f9558",
+        "filler:f7158",
+        "filler:f3558",
+        "filler:f3228"
+      ],
+      "lexicalAnchor": "hook"
+    },
+    {
+      "id": "sr-a06",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 10,
+      "ftsHits": [
+        "t22",
+        "t18",
+        "t20",
+        "s02",
+        "c22",
+        "c28",
+        "s03",
+        "s06"
+      ],
+      "lexicalAnchor": "scope"
+    },
+    {
+      "id": "sr-a07",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c17"
+      ],
+      "lexicalAnchor": "指标"
+    },
+    {
+      "id": "sr-a08",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 1,
+      "ftsHits": [
+        "t08"
+      ],
+      "lexicalAnchor": "重试耗尽"
+    },
+    {
+      "id": "sr-a09",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c18"
+      ],
+      "lexicalAnchor": "安装"
+    },
+    {
+      "id": "sr-a10",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 2,
+      "ftsHits": [
+        "c22",
+        "s03"
+      ],
+      "lexicalAnchor": "脱敏"
+    },
+    {
+      "id": "sr-a11",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c18"
+      ],
+      "lexicalAnchor": "向量"
+    },
+    {
+      "id": "sr-a12",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 4,
+      "ftsHits": [
+        "t20",
+        "c22",
+        "s03",
+        "t06"
+      ],
+      "lexicalAnchor": "timeline"
+    },
+    {
+      "id": "sr-a13",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 4,
+      "ftsHits": [
+        "c18",
+        "c17",
+        "s07",
+        "s05"
+      ],
+      "lexicalAnchor": "延迟"
+    },
+    {
+      "id": "sr-a14",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c32"
+      ],
+      "lexicalAnchor": "种子"
+    },
+    {
+      "id": "sr-a15",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 4,
+      "ftsHits": [
+        "t18",
+        "t22",
+        "c22",
+        "s03"
+      ],
+      "lexicalAnchor": "schema"
+    },
+    {
+      "id": "sr-a16",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 4,
+      "ftsHits": [
+        "c30",
+        "c13",
+        "s08",
+        "c26"
+      ],
+      "lexicalAnchor": "关键词"
+    },
+    {
+      "id": "sr-a17",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 2,
+      "ftsHits": [
+        "c29",
+        "s04"
+      ],
+      "lexicalAnchor": "多个副本"
+    },
+    {
+      "id": "sr-a18",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c33"
+      ],
+      "lexicalAnchor": "持久化"
+    },
+    {
+      "id": "sr-a19",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 50,
+      "ftsHits": [
+        "c31",
+        "c18",
+        "t11",
+        "t25",
+        "t13",
+        "t15",
+        "t16",
+        "filler:f0996"
+      ],
+      "lexicalAnchor": "token"
+    },
+    {
+      "id": "sr-a20",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 2,
+      "ftsHits": [
+        "t25",
+        "c33"
+      ],
+      "lexicalAnchor": "持久化"
+    },
+    {
+      "id": "sr-a21",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 1,
+      "ftsHits": [
+        "t02"
+      ],
+      "lexicalAnchor": "召回"
+    },
+    {
+      "id": "sr-a22",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c27"
+      ],
+      "lexicalAnchor": "常驻内存"
+    },
+    {
+      "id": "sr-a23",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 2,
+      "ftsHits": [
+        "c19",
+        "t15"
+      ],
+      "lexicalAnchor": "指标口径"
+    },
+    {
+      "id": "sr-a24",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 4,
+      "ftsHits": [
+        "c22",
+        "c28",
+        "s03",
+        "s06"
+      ],
+      "lexicalAnchor": "英文"
+    },
+    {
+      "id": "sr-a25",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 50,
+      "ftsHits": [
+        "t04",
+        "t07",
+        "t08",
+        "t05",
+        "t11",
+        "t25",
+        "t13",
+        "t15"
+      ],
+      "lexicalAnchor": "ACP"
+    },
+    {
+      "id": "sr-a26",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 7,
+      "ftsHits": [
+        "s08",
+        "c26",
+        "c13",
+        "c22",
+        "s03",
+        "c30",
+        "c14"
+      ],
+      "lexicalAnchor": "来源"
+    },
+    {
+      "id": "sr-a27",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c18"
+      ],
+      "lexicalAnchor": "SQLite"
+    },
+    {
+      "id": "sr-a28",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c31"
+      ],
+      "lexicalAnchor": "预算"
+    },
+    {
+      "id": "sr-a29",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 2,
+      "ftsHits": [
+        "c29",
+        "c18"
+      ],
+      "lexicalAnchor": "分位数"
+    },
+    {
+      "id": "sr-a30",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c18"
+      ],
+      "lexicalAnchor": "不可变"
+    },
+    {
+      "id": "sr-r42",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c17"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r43",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 3,
+      "ftsHits": [
+        "c33",
+        "c10",
+        "s01"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r44",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 8,
+      "ftsHits": [
+        "c19",
+        "c17",
+        "s02",
+        "c27",
+        "c29",
+        "c37",
+        "c22",
+        "c41"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r45",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r46",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 1,
+      "ftsHits": [
+        "t12"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r47",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c18"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r48",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 4,
+      "ftsHits": [
+        "s07",
+        "c19",
+        "c35",
+        "c29"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r49",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c41"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r50",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c26"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r51",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 9,
+      "ftsHits": [
+        "c38",
+        "c25",
+        "c22",
+        "s05",
+        "c20",
+        "c19",
+        "c32",
+        "c21"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r52",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r53",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c39"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r54",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c31"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r55",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 2,
+      "ftsHits": [
+        "c33",
+        "t07"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r56",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 2,
+      "ftsHits": [
+        "c23",
+        "s08"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r57",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r58",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r59",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 0,
+      "ftsHits": [],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r60",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 3,
+      "ftsHits": [
+        "c19",
+        "c29",
+        "c32"
+      ],
+      "lexicalAnchor": null
+    },
+    {
+      "id": "sr-r61",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "ftsCount": 1,
+      "ftsHits": [
+        "c14"
+      ],
+      "lexicalAnchor": null
+    }
+  ]
+}

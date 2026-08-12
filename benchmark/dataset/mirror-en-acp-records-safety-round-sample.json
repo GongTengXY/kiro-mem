@@ -1,0 +1,126 @@
+{
+  "provenance": {
+    "source": "acp",
+    "agent": "kiro-mem-compressor",
+    "kiroCli": "kiro-cli (see report)",
+    "target": "records",
+    "recordSet": "safety-round-sample",
+    "generatedAt": "2026-08-11T08:06:43.470Z",
+    "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+    "items": 8,
+    "failures": 0,
+    "retries": 1,
+    "wallTimeMs": 26067,
+    "itemLatencyMs": {
+      "p50": 20463,
+      "p95": 26063,
+      "max": 26063
+    }
+  },
+  "records": {
+    "s06": {
+      "title": "Default time window changed from 90 days to unbounded",
+      "summary": "The default window changed to positive infinity, clearing out the 90-day fallback that was previously scattered across four places: full-text search and the LIKE fallback, the bigram leg, the retrieval kernel, and the default value in the MCP schema — leaving the latter in place would falsely report default behavior to callers. Explicitly passing days can still narrow a single search.",
+      "outcome": "The searchable range now equals the range the index can show, and records from two years ago can also be found.",
+      "learned": "A default value written in the schema is equivalent to a public commitment; missing it when changing behavior is more dangerous than missing it in code, because callers reason based on it.",
+      "concepts": [
+        "default time window",
+        "unbounded search",
+        "schema default value",
+        "explicit narrowing",
+        "working set growth"
+      ]
+    },
+    "s05": {
+      "title": "Relative corpus-background normalization performs worse than absolute scores; this direction is abandoned",
+      "summary": "After normalizing by the mean and standard deviation of the candidate pool per query, separation dropped from 0.841 to 0.735; the relative threshold that preserves all positives would let in 29 negatives, while the absolute threshold lets in only 19. The mechanism runs in the opposite direction: the background mean for things that were never done is 0.095, lower than the 0.129 for things with answers, so the same absolute score gets divided out into a larger relative value, and the rule ends up rewarding queries where \"nothing is relevant\".",
+      "outcome": "This direction is abandoned on the spot; this round converges back to the single path of only tuning the absolute threshold and quota.",
+      "learned": "A rule premised on \"the background level represents this query's difficulty\" has that premise exactly inverted when \"asking about something that was never done\"; switching to a percentile or difference-based version would hit the same pitfall.",
+      "concepts": [
+        "relative admission",
+        "normalization",
+        "separation",
+        "background mean",
+        "falsification probe"
+      ]
+    },
+    "s02": {
+      "title": "Vector space identity is model, quantization, dimension, protocol — four segments, not the model name",
+      "summary": "Both text protocols produce 384-dim vectors from the same model, which looks harmless to mix, but testing shows it is not: when the two sides' protocols do not match, the reading is 0.613; when the two sides are consistent, it is 0.972. So the space identity key is built as a four-segment concatenation, written into the vector row's model column, and simultaneously serves as the read filter condition, letting the two protocols coexist in one table while being unable to rank against each other.",
+      "outcome": "Cross-protocol comparison went from \"needs discipline to avoid\" to \"cannot be expressed\".",
+      "learned": "The version key must cover every component that affects comparability; omitting the text protocol segment lets mixing happen silently and look completely normal.",
+      "concepts": [
+        "space identity",
+        "version key",
+        "quantization",
+        "protocol isolation",
+        "vector table"
+      ]
+    },
+    "s08": {
+      "title": "2 records per page is a semantic-only quota, not a whole-page false-recall guardrail",
+      "summary": "This cap only constrains results from the pure-semantic source; keyword hits and results hit by both legs are never bound by it — this is by design, not a defect. In the blind audit's 30 negative cases, 28 filled the quota, and the returned items were 100% pure-semantic-source with zero keyword hits, showing the quota was not breached, but rather that it simply does not govern other sources. Therefore the documentation wording is unified to call it a quota, and whole-page safety conclusions must come from a cross-source negative-case threshold.",
+      "outcome": "The terminology and scope of responsibility are written into the docs, avoiding treating one source's quota as a whole-page safety guarantee.",
+      "learned": "A guardrail's name should make clear which part it guards; when the name is vague, readers will automatically treat it as a global guarantee.",
+      "concepts": [
+        "semantic-only quota",
+        "guardrail scope",
+        "source label",
+        "whole-page safety",
+        "terminology wording"
+      ]
+    },
+    "s01": {
+      "title": "English semantic normalization must be done on both sides; translating only the record side tested worse",
+      "summary": "The missing cell was tested: record translated into English, query kept in Chinese, tuned MRR was only 0.437, below the 0.529 baseline where neither side is translated. One-sided translation puts the two ends of the comparison into different spaces, and the similarity value loses its meaning. Therefore the protocol specifies that either both sides are normalized, or the entire semantic leg does not run — when the English question form is missing, the original text must not be compared against English vectors.",
+      "outcome": "The engineering-saving one-sided scheme was vetoed by the readings; normalizing both sides became a hard precondition of the protocol.",
+      "learned": "In cross-lingual retrieval, \"translating one side\" is not a compromise but a wrong approach — it destroys comparability, at a cost greater than not translating at all.",
+      "concepts": [
+        "English normalization",
+        "one-sided translation",
+        "MRR",
+        "semantic leg admission",
+        "comparability"
+      ]
+    },
+    "s03": {
+      "title": "False-recall gate fails at 1.900, rollback time window cannot save it",
+      "summary": "The unbounded arm's hard-negative average return is 1.900, the criterion requires no more than 1, so this gate fails and the whole round does not pass. Rolling back the time window is excluded: the control arm itself is 1.800, dropping only 0.100 still fails to meet the standard, yet it would revoke the recall gains of old records already confirmed by independent blind audit. The remedy is set as opening a separate safety round that only touches the similarity threshold and quota.",
+      "outcome": "The public stable release remains blocked, the working branch retains the unbounded default to preserve already-confirmed gains.",
+      "learned": "When a threshold fails, first ask \"can a candidate fix make it pass\", then ask \"what is the cost\" — here the first question is already a no.",
+      "concepts": [
+        "false-recall gate",
+        "unbounded time window",
+        "rollback assessment",
+        "release blocking",
+        "safety round"
+      ]
+    },
+    "s07": {
+      "title": "LIMIT with a bound parameter flips the query plan, same SQL becomes over a thousand times slower",
+      "summary": "For the same retrieval SQL, the row limit as a literal takes 0.93 ms, but switched to a bound parameter it becomes 1506.57 ms, with the returned 50 rows identical. The cause is that, not knowing how many rows to fetch, the optimizer abandons the plan of \"driven by the full-text index, looking up the primary key\" and instead switches to scanning all records in the scope, probing the full-text index row by row, then sorting with a temporary B-tree.",
+      "outcome": "Classified as a pure cost defect and scheduled for a dedicated fix round, with the acceptance criterion being identical behavior row by row plus reduced latency, not an increase in some quality metric.",
+      "learned": "Parameterization is usually harmless, but it strips away the optimizer's row-count information; queries involving a row limit need the execution plan included in regression as well.",
+      "concepts": [
+        "query plan",
+        "bound parameter",
+        "temporary B-tree",
+        "full-text-index-driven",
+        "cost defect"
+      ]
+    },
+    "s04": {
+      "title": "Duplicate copies inflated the false-recall reading by 0.6, still failed to meet the bar after dedup",
+      "summary": "After deduplicating by distinct source text, the mean false-recall return dropped from 1.9 to 1.3, and neither reading passed the requirement of not exceeding 1. Of the 30 negative cases, 18 returned two copies of the same source text, accounting for six-tenths, and the similarity scores for these copy pairs matched digit-for-digit, directly confirming that the copies reused the vector. The apparatus thus accounted for the 0.6 difference, leaving the remaining count as the true number of distinct false leads.",
+      "outcome": "The official failing reading remains unchanged; the deduplicated reading is registered as a parallel supplementary reading, with both reported together.",
+      "learned": "The metric counts page rows, not distinct content; when the corpus contains near-duplicates or exact duplicates, these two things must be reported separately.",
+      "concepts": [
+        "duplicate copies",
+        "dedup reading",
+        "false recall",
+        "parallel readings",
+        "apparatus bias"
+      ]
+    }
+  }
+}

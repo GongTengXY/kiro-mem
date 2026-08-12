@@ -942,32 +942,8 @@ export class MemoryDB {
   }
 
   /**
-   * Fetch stored vectors for a candidate set.
-   *
-   * `model` / `dimensions` are filter arguments, not decoration: a stored blob
-   * from a different embedding model is not comparable to the current query
-   * vector, and comparing them anyway produces a *plausible but wrong* ranking
-   * rather than an error. Rows written by another model version are skipped so
-   * they fall back to keyword matching, which is honest, instead of being
-   * silently misranked.
-   *
-   * Queried in ONE statement, which is only safe because the candidate set is
-   * bounded: `semanticCandidatePool` ships at 20,000, so the id list plus the two
-   * filter parameters stays far below SQLite's ceiling. That ceiling is real and
-   * undocumented — measured on Bun 1.2.20 / SQLite 3.43.2, an `IN (?,?,…)` list
-   * accepts 65,535 bound parameters and fails at 65,536 with `expected 0 values,
-   * received 65536`, a uint16 wrap. `tests/db/embedding-versioning.test.ts` pins
-   * that boundary.
-   *
-   * Why this matters if the pool ever grows: the failure is a thrown error, and the
-   * retrieval kernel's catch turns it into `onDegrade` + FTS-only, i.e. semantic
-   * recall would disappear SILENTLY rather than loudly. Scope-wide scoring was
-   * measured in the pool round and did not ship (it needs ~720MB at 50,000
-   * records), so this path is unreachable today — see
-   * `benchmark/reports/pool-policy-criteria.md` §4.1 and `pool-policy-submission.md`
-   * §9.4. A future round that raises the pool past ~65,000 must handle it, and the
-   * right shape there is chunked read → score immediately → bounded Top-K, not a
-   * chunked fetch that still aggregates everything in memory.
+   * Fetch one vector chunk, filtering by the complete space identity and blob
+   * dimensions. The retrieval kernel keeps chunks below SQLite's bind limit.
    */
   getObservationEmbeddingsByIds(
     ids: number[],
@@ -1463,23 +1439,8 @@ export class MemoryDB {
   }
 
   /**
-   * How many Observations in this scope have a vector in ONE embedding space.
-   *
-   * The candidate-pool count the retrieval kernel already reports
-   * (`comparableVectors`) is bounded by "FTS hits ∪ the most recent
-   * `semanticCandidatePool`" (20,000 since the pool round), so it cannot answer the scope-level question plan §8.2 asks for: does this
-   * workspace have vectors under the active protocol at all? A zero here and a
-   * zero from "nothing was relevant" produce the same empty page, and only this
-   * number tells them apart — e.g. a `semantic-en-v1` rebuild that has not
-   * reached this workspace yet.
-   *
-   * NOT filtered by type or days on purpose: those narrow one request, while this
-   * describes the corpus the semantic leg could ever reach in this scope. Omitting
-   * `scopeKey` counts the whole dataDir, which is what an explicit all-scopes
-   * search actually searches.
-   *
-   * Returns a count only. The caller records a number; the scope key never leaves
-   * this call.
+   * Count vectors in one complete embedding space across the scope. Type and days
+   * are intentionally omitted because this is corpus coverage, not request reach.
    */
   countScopeVectors(opts: { scopeKey?: string; model: string; dimensions: number }): number {
     let sql = `SELECT COUNT(*) AS c FROM observation_embeddings e

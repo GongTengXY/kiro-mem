@@ -282,7 +282,7 @@ export interface ObservabilityStats {
      * mostly unreachable, no matter how good the offline numbers are.
      */
     protocolSemanticEn: number;
-    /** Requests that fell back to the `raw-v1` space. */
+    /** Requests without a usable English form; current search serves them FTS-only. */
     protocolRaw: number;
     /** protocolSemanticEn / requests, 0..1. */
     semanticEnRate: number;
@@ -310,12 +310,7 @@ export interface ObservabilityStats {
      * between "nothing relevant" and "nothing comparable".
      */
     comparableVectorsAvg: number;
-    /**
-     * Mean vectors in the ACTIVE space across the searched scope — the whole
-     * workspace, not the 200-row candidate pool (plan §8.2). On a large workspace
-     * `comparableVectorsAvg` saturates at the pool size and stops being able to
-     * say whether the scope is embedded; this does not.
-     */
+    /** Mean active-space vectors across the whole searched scope. */
     scopeVectorsAvg: number;
     /** Worst case in the window. 0 means some search ran against an unembedded scope. */
     scopeVectorsMin: number;

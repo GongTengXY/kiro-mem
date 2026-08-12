@@ -208,6 +208,26 @@ console.log(`[final-audit] 语料播种完成：${AUDIT_RECORDS} filler + ${gold
 const label = (id: number): string => datasetByObservation.get(id) ?? `filler:${id}`;
 const CONTROL_DAYS = 90;
 
+/**
+ * 同源折叠键：把装置里同一条原文的多个副本折成一条。
+ *
+ * 装置由 `sourceRecords` 条原文 × `copies` 份副本构成，副本复用向量，所以 `filler:N` 与
+ * `filler:N + sourceRecords` 是同一条原文、余弦逐位相同。误召回读数因此有两套口径，
+ * 后续轮次必须**同时**报告（安全策略轮次方案 §11 第 2 项）：
+ *
+ *   physicalRows   页面物理行数——现行 C1 口径，两个副本算两条线索；
+ *   distinctContent 按原文折叠——同一条原文只算一条。
+ *
+ * 两者在最终盲审上分别是 1.900 与 1.300，都没有通过 ≤1；差值 0.600 完全来自装置的副本
+ * 结构，不是真实的误召回差异。gold（`tXX`）互不同源，各自独立。
+ */
+const contentKey = (id: string): string => {
+  if (!id.startsWith('filler:')) return id;
+  const n = Number(id.slice('filler:'.length));
+  return `filler#${n % freeze.oldCorpus.sourceRecords}`;
+};
+const distinctContent = (ids: string[]): number => new Set(ids.map(contentKey)).size;
+
 interface Row {
   id: string; kind: string; cohort?: string; negativeType?: string;
   gold: string[];
@@ -219,6 +239,8 @@ interface Row {
   comparableVectors: number; aboveFloorCount: number; scopeVectors: number | null;
   protocol: string; rejectReason: string | null; degraded: boolean; embedCalls: number;
   goldRank: number | null; returned: number; semanticOnly: number;
+  /** 同 `returned` 的页面，按原文折叠后的条数。见 `contentKey`。 */
+  returnedDistinctContent: number;
 }
 
 async function runOne(
@@ -274,6 +296,7 @@ async function runOne(
     goldRank: goldIndex < 0 ? null : goldIndex + 1,
     returned: results.length,
     semanticOnly: results.filter((r) => r.match_source === 'semantic').length,
+    returnedDistinctContent: distinctContent(results.map((r) => label(r.id))),
   };
 }
 
@@ -416,6 +439,19 @@ const summary = {
     days90: { returnedMean: round(mean(negC.map((r) => r.returned))), returnedWorst: Math.max(0, ...negC.map((r) => r.returned)), semanticOnlyMean: round(mean(negC.map((r) => r.semanticOnly))), semanticOnlyMax: Math.max(0, ...negC.map((r) => r.semanticOnly)) },
     unbounded: { returnedMean: round(mean(negU.map((r) => r.returned))), returnedWorst: Math.max(0, ...negU.map((r) => r.returned)), semanticOnlyMean: round(mean(negU.map((r) => r.semanticOnly))), semanticOnlyMax: Math.max(0, ...negU.map((r) => r.semanticOnly)) },
   },
+  /**
+   * 第二套误召回口径，与 `hardNegative` 并列而**不是**替换它。
+   *
+   * `hardNegative.*.returnedMean` 永远是 C1 的正式读数（物理行）。这里按原文折叠，把装置
+   * 5 份副本造成的重复计数摘出来，供安全策略轮次同时报告两套数（方案 §11 第 2 项）。
+   * 最终盲审上两者分别是 1.900 与 1.300，都没有通过 ≤1。
+   */
+  hardNegativeDistinctContent: {
+    days90: { returnedMean: round(mean(negC.map((r) => r.returnedDistinctContent))), returnedWorst: Math.max(0, ...negC.map((r) => r.returnedDistinctContent)) },
+    unbounded: { returnedMean: round(mean(negU.map((r) => r.returnedDistinctContent))), returnedWorst: Math.max(0, ...negU.map((r) => r.returnedDistinctContent)) },
+    basis: 'distinctContent（同一条原文的多个副本只算一条）',
+    officialBasis: 'hardNegative.*.returnedMean 才是 C1 的正式读数',
+  },
   pageChurn: {
     mainPagesChanged: mainDiffs.filter((d) => !d.pageIdentical).length,
     mainQueries: mainDiffs.length,
@@ -450,4 +486,5 @@ console.log('\n[final-audit] 预登记门槛：');
 for (const g of gates) console.log(`  ${g.pass ? '✅' : '❌'} ${g.name}\n       ${g.reading}`);
 console.log(`\n[final-audit] 正例 hit@5 ${summary.relevance.days90.hitAt5 * 100}% → ${summary.relevance.unbounded.hitAt5 * 100}%；MRR ${summary.relevance.days90.mrr} → ${summary.relevance.unbounded.mrr}`);
 console.log(`[final-audit] 负例 返回均 ${summary.hardNegative.days90.returnedMean} → ${summary.hardNegative.unbounded.returnedMean}；最坏 ${summary.hardNegative.days90.returnedWorst} → ${summary.hardNegative.unbounded.returnedWorst}`);
+console.log(`[final-audit] 负例 折叠原文口径（并列参考，非 C1 正式读数）均 ${summary.hardNegativeDistinctContent.days90.returnedMean} → ${summary.hardNegativeDistinctContent.unbounded.returnedMean}`);
 console.log(`[final-audit] 报告：${jsonPath}`);

@@ -466,14 +466,9 @@ export function createApp(deps: AppDeps) {
   // the structured search text (§5.5) — never the full assistant_response or
   // raw tool output, to keep the vector space clean and free of noise/PII.
   //
-  // Writes one vector per PROTOCOL, not one per Observation:
-  //   raw-v1          — always, from the stored fields. This is the leg that
-  //                     still works when a caller cannot supply an English query.
-  //   semantic-en-v1  — only when the English derived value is `ready` AND still
-  //                     passes the guardrails here. The second check is not
-  //                     redundant: a row written by an older, looser build must
-  //                     not slip a non-compliant value into the space just
-  //                     because it was accepted once.
+  // Keep the locally rebuildable raw projection for compatibility, although
+  // current search never scores it. The semantic-en vector is written only after
+  // the derived value passes the current guardrails again.
   jobRunner.register('embed_observation', async (job) => {
     if (!enableEmbeddings) return;
     const { observation_id } = JSON.parse(job.payload_json) as { observation_id: number };

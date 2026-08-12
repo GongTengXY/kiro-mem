@@ -1,0 +1,578 @@
+{
+  "meta": {
+    "purpose": "安全策略轮次 P2 第 2 步：近重复 pilot。判据见 benchmark/reports/safety-round/p2-calibration-criteria.md §6。",
+    "scope_limit": "只用于（a）验证 embedding 对近重复的表现、（b）判断未来有没有可能自动筛查。不得作为本轮自动删除阈值的充分证据。",
+    "not_calibration_corpus": "本文件不是校准语料。它刻意含有成对的同一事实记录（role=rewrite），把它并入 turns-safety-round.json 会主动造出重复。",
+    "why_no_fixture_fields": "刻意不带 prompt / assistant_response / events。已核实 benchmark/dataset.ts 的 annotationToResult 只读 annotation，src/embedding-space.ts 的 buildObservationSearchText 只取 title / summary / outcome / learned / concepts / files——重建这三个字段对余弦零影响，写了只会让本文件看起来像可用的校准语料。",
+    "source_mode": "evidence_reconstructed",
+    "gold_only": true,
+    "roles": {
+      "base": "基准记录",
+      "rewrite": "同一事实的改写（模拟无意造出的重复）",
+      "sibling": "同区域但不同工作（应当保留）"
+    },
+    "authoring_honesty": "base 与 rewrite 由同一人在同一次会话内撰写，刻意变换措辞与叙述角度。真实的无意重复来自 ACP 压缩器在两个不同 turn 上记录同一件事，其相似度从未被测量过。因此本 pilot 的两个分布只是指示性的，不能代表生产分布。"
+  },
+  "records": [
+    {
+      "id": "p01a",
+      "group": "g1",
+      "area": "检索：语义腿的协议准入",
+      "role": "base",
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "line": 620,
+          "symbol": "semanticLegEligible",
+          "supports": "semanticLegEligible = protocol === SEMANTIC_EN_PROTOCOL，即语义腿只在英文空间下有资格运行"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "line": 533,
+          "supports": "protocol = useEnglish ? SEMANTIC_EN_PROTOCOL : RAW_PROTOCOL，协议由 query 侧英文形式是否可用决定"
+        },
+        {
+          "kind": "code",
+          "path": "src/semantic-en.ts",
+          "symbol": "checkSemanticEnQuery",
+          "supports": "护栏函数，拒绝未翻译 / 占位符等形状的 semantic_query_en"
+        }
+      ],
+      "annotation": {
+        "request": "确认 semantic_query_en 缺失或被护栏拒绝时检索走哪条路",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["src/server/observation-search.ts", "src/semantic-en.ts"],
+        "key_facts": ["semantic-en-v1", "raw-v1"],
+        "unfinished": [],
+        "title": "语义腿只在 semantic-en-v1 下有资格运行，raw-v1 一律不打分",
+        "summary": "查询协议由 query 侧的英文形式是否可用决定：semantic_query_en 缺失、或被 checkSemanticEnQuery 以未翻译 / 占位符为由拒绝时，协议落到 raw-v1，而 semanticLegEligible 要求协议必须是 semantic-en-v1，于是语义腿整条不运行——既不计算查询向量，也不读任何存储向量，该次请求退化为纯关键词。",
+        "outcome": "缺英文形式的请求同时失去语义重排与语义召回，只保留 FTS 结果。",
+        "learned": "raw-v1 空间里标注命中与纯噪声的分数区间重叠，没有可辩护的阈值，所以宁可让请求退化为纯关键词，也不要给它一个无意义的相似度分数。",
+        "concepts": ["语义腿", "协议准入", "semantic-en-v1", "raw-v1", "纯关键词退化"]
+      }
+    },
+    {
+      "id": "p01b",
+      "group": "g1",
+      "area": "检索：语义腿的协议准入",
+      "role": "rewrite",
+      "rewrite_of": "p01a",
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "line": 620,
+          "symbol": "semanticLegEligible",
+          "supports": "同一处判断：协议不是 semantic-en-v1 时语义腿无资格运行"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "line": 578,
+          "supports": "discoveryEffective = discoveryRequested && protocol === SEMANTIC_EN_PROTOCOL，独立语义召回同样被协议门挡住"
+        }
+      ],
+      "annotation": {
+        "request": "为什么一部分搜索完全没有语义结果",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["src/server/observation-search.ts"],
+        "key_facts": ["semantic-en-v1"],
+        "unfinished": [],
+        "title": "没有合法英文提问形式的搜索是纯关键词搜索",
+        "summary": "排查发现一部分请求根本没有语义结果，原因不是阈值也不是配额：调用方没有给出可用的英文提问形式，请求于是被判到 raw 协议上，而语义步骤要求协议必须是英文那一个。判断为假之后查询向量压根不会生成，存储向量也一次都不会读，semanticDiscovery 开着也不起作用。",
+        "outcome": "这类请求只剩全文检索的结果，语义重排和语义发现两样都没有。",
+        "learned": "把一个不可比的向量空间关掉，比给它一个假的门槛更安全——两侧文本不在同一空间时，相似度数值本身没有意义。",
+        "concepts": ["纯关键词", "英文提问形式", "协议判定", "语义发现", "向量空间"]
+      }
+    },
+    {
+      "id": "p01c",
+      "group": "g1",
+      "area": "检索：语义腿的协议准入",
+      "role": "sibling",
+      "sibling_of": "p01a",
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "line": 102,
+          "symbol": "DEFAULT_RETRIEVAL_POLICY.semanticCandidatePool",
+          "supports": "semanticCandidatePool = Number.POSITIVE_INFINITY，候选池是 scope 全量"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "line": 111,
+          "symbol": "DEFAULT_RETRIEVAL_POLICY.semanticTopK",
+          "supports": "semanticTopK = 1000，只有前 1000 名保留排名"
+        }
+      ],
+      "annotation": {
+        "request": "确认语义候选的池子边界与排名保留边界分别是什么",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["src/server/observation-search.ts"],
+        "key_facts": ["semanticTopK 1000"],
+        "unfinished": [],
+        "title": "候选池取 scope 全量，只有前 1000 名保留排名",
+        "summary": "语义候选池与排名保留是两件独立的事：池子设为 Infinity，意味着被搜索 scope 内的每条向量都会被打分，没有记录因为年龄而对语义腿不可见；被限制的是保留——候选分块读入、即时打分，只有最好的 1000 条留下名次。",
+        "outcome": "池子边界与保留边界分开表达，规模变化只影响后者。",
+        "learned": "名次在千位之外的记录不可能进入 10 条的页面，所以截断影响的是可观测性而不是页面内容。",
+        "concepts": ["候选池", "Top-K 保留", "语义打分", "scope 全量", "可观测性"]
+      }
+    },
+
+    {
+      "id": "p02a",
+      "group": "g2",
+      "area": "捕获：hook 预算与丢失计数",
+      "role": "base",
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/hooks/stop.ts",
+          "line": 28,
+          "supports": "AbortSignal.timeout(700)，stop hook 给 Worker 的上限"
+        },
+        {
+          "kind": "code",
+          "path": "src/hooks/capture-log.ts",
+          "line": 5,
+          "supports": "注释写明 hook 最多给 Worker ~700ms 就放弃，因为不能阻塞 Kiro 的一个 turn"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/worker.ts",
+          "line": 796,
+          "symbol": "capture_misses_24h",
+          "supports": "/health 暴露 capture_misses_24h，丢失按 hook 与原因计数"
+        }
+      ],
+      "annotation": {
+        "request": "确认捕获链路的时间预算，以及丢事件时会不会留下痕迹",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["src/hooks/stop.ts", "src/hooks/capture-log.ts", "src/server/worker.ts"],
+        "key_facts": ["700ms", "capture_misses_24h"],
+        "unfinished": [],
+        "title": "捕获是 best-effort：每个 hook 只给 Worker 700ms，丢失按 hook 与原因计数",
+        "summary": "每个 hook 都用 AbortSignal.timeout(700) 调 Worker，超时即放弃，绝不阻塞用户的 turn。代价是 Worker 重启或瞬时错误会真的丢掉一条原始事件，而丢掉的输入事后无法重建。为了不让这件事变成静默的，丢失按 hook 与原因分别计数，并经 /health 的 capture_misses_24h 暴露。",
+        "outcome": "用户 turn 的延迟被 700ms 封顶，记忆完整性不再被声称为保证，而是被计量。",
+        "learned": "无法保证的东西要么别声称，要么把它的失败次数摆到台面上；两者都不做才是问题。",
+        "concepts": ["捕获", "hook 超时", "best-effort", "丢失计数", "健康检查"]
+      }
+    },
+    {
+      "id": "p02b",
+      "group": "g2",
+      "area": "捕获：hook 预算与丢失计数",
+      "role": "rewrite",
+      "rewrite_of": "p02a",
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/hooks/prompt-save.ts",
+          "line": 28,
+          "supports": "同一个 700ms 预算出现在另一个 hook 上，确认这是链路口径而非单点写法"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/worker.ts",
+          "line": 796,
+          "symbol": "capture_misses_24h",
+          "supports": "丢失计数的读出口"
+        }
+      ],
+      "annotation": {
+        "request": "记忆会不会漏，漏了能不能看出来",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["src/hooks/prompt-save.ts", "src/server/worker.ts"],
+        "key_facts": ["700ms"],
+        "unfinished": [],
+        "title": "记忆不保证完整，但每次漏都被记一笔",
+        "summary": "确认了捕获链路的设计取舍：hook 只等 Worker 700ms，等不到就走，用户的一轮对话永远不会因为记忆系统而变慢。因此 Worker 重启、瞬时报错这类情况会真的漏掉原始事件，且漏掉的部分没有补救途径。设计上的补偿不是重试到成功，而是按 hook 与失败原因逐项计数，从健康接口读得到。",
+        "outcome": "完整性从承诺变成读数，漏了多少、因为什么漏，都能查。",
+        "learned": "宁可让用户看见一个不完美但真实的计数，也不要给一个做不到的完整性承诺。",
+        "concepts": ["原始事件", "超时放弃", "不阻塞对话", "漏采计数", "可观测"]
+      }
+    },
+    {
+      "id": "p02c",
+      "group": "g2",
+      "area": "捕获：hook 预算与丢失计数",
+      "role": "sibling",
+      "sibling_of": "p02a",
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/db/index.ts",
+          "line": 157,
+          "symbol": "MAX_PAYLOAD_STRING_BYTES",
+          "supports": "MAX_PAYLOAD_STRING_BYTES = 32 * 1024，单个字符串字段上限"
+        },
+        {
+          "kind": "code",
+          "path": "src/db/index.ts",
+          "line": 166,
+          "symbol": "MAX_TURN_PAYLOAD_BYTES",
+          "supports": "MAX_TURN_PAYLOAD_BYTES = 4 * 1024 * 1024，单 turn 原始负载上限"
+        }
+      ],
+      "annotation": {
+        "request": "给原始事件负载加上限，避免一条巨大的工具响应把库撑爆",
+        "completed": true,
+        "memory_type": "change",
+        "key_files": ["src/db/index.ts"],
+        "key_facts": ["32KB", "4MB"],
+        "unfinished": [],
+        "title": "原始负载分两级封顶：单字段 32KB，单 turn 4MB",
+        "summary": "工具响应里单个字符串字段超过 32KB 就地截断，一个 turn 存下的原始负载总量上限 4MB。截断在原位留下标记，被丢掉的字节不可恢复，但原始大小仍记录在 payload_size 里，确定性抽取继续在封顶后的负载上工作。",
+        "outcome": "巨大的工具响应不再决定单 turn 的存储量，抽取结果不受影响。",
+        "learned": "封顶必须留下两样东西才不算悄悄丢数据：截断标记，以及原始大小。",
+        "concepts": ["原始负载", "字段截断", "存储上限", "payload_size", "确定性抽取"]
+      }
+    },
+
+    {
+      "id": "p03a",
+      "group": "g3",
+      "area": "压缩：ACP 运行时纯度",
+      "role": "base",
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/acp/runtime.ts",
+          "line": 37,
+          "supports": "收到工具事件时抛出 ACP runtime contaminated，并说明压缩 agent 必须 tools: [] 且不得调用任何工具"
+        },
+        {
+          "kind": "code",
+          "path": "src/acp/runtime.ts",
+          "line": 59,
+          "symbol": "contamination",
+          "supports": "污染状态一旦置位，alive 判定即为假，该运行时不再可用"
+        },
+        {
+          "kind": "code",
+          "path": "src/acp/pool.ts",
+          "line": 141,
+          "supports": "池子累计 contamination 次数并上报指标"
+        }
+      ],
+      "annotation": {
+        "request": "保证压缩子 agent 不会调用工具，也不会在污染后继续被复用",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["src/acp/runtime.ts", "src/acp/pool.ts"],
+        "key_facts": ["tools: []", "contamination"],
+        "unfinished": [],
+        "title": "压缩运行时收到任何工具事件即判污染，槽位不再复用",
+        "summary": "压缩子 agent 以 tools: [] 声明，理论上不可能调用工具；运行时仍然监听工具事件，一旦收到就把当前 prompt 判为失败并把该运行时标记为污染。污染是终态：标记之后存活判定直接为假，池子回收这个槽位并累计一次污染计数。",
+        "outcome": "一次意外的工具调用只会损失当前这条压缩，不会把不纯的运行时留在池子里继续服务。",
+        "learned": "声明式的约束要配一个运行期的检测才算落地——声明说明意图，检测才发现意图没被遵守。",
+        "concepts": ["压缩子 agent", "工具隔离", "污染检测", "运行时池", "槽位回收"]
+      }
+    },
+    {
+      "id": "p03b",
+      "group": "g3",
+      "area": "压缩：ACP 运行时纯度",
+      "role": "rewrite",
+      "rewrite_of": "p03a",
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/acp/runtime.ts",
+          "line": 37,
+          "supports": "同一处：工具事件即污染，错误文本点明 tools: [] 的要求"
+        },
+        {
+          "kind": "code",
+          "path": "src/acp/pool.ts",
+          "line": 141,
+          "supports": "同一处：污染计数"
+        }
+      ],
+      "annotation": {
+        "request": "压缩过程里如果模型去调工具了，会发生什么",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["src/acp/runtime.ts", "src/acp/pool.ts"],
+        "key_facts": ["tools: []"],
+        "unfinished": [],
+        "title": "工具调用通知会让当前压缩失败并作废整个运行时",
+        "summary": "查清了压缩链路的纯度机制。负责压缩的子 agent 声明里工具列表是空的，但代码并不信任这一点：会话上出现任何工具调用类的通知，当前这条压缩立刻按失败处理，运行时本身也被打上不可恢复的标记。被打标之后它的存活检查恒为假，池子据此丢弃该槽位，同时累加一次计数供指标读取。",
+        "outcome": "受影响范围被限制在当前这一条压缩，被污染的会话不会再接下一条。",
+        "learned": "把不纯状态设成终态，比试图清理后复用更省心，也更容易解释。",
+        "concepts": ["纯度", "工具调用通知", "终态", "会话丢弃", "指标计数"]
+      }
+    },
+    {
+      "id": "p03c",
+      "group": "g3",
+      "area": "压缩：ACP 运行时纯度",
+      "role": "sibling",
+      "sibling_of": "p03a",
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/server/worker.ts",
+          "line": 416,
+          "supports": "quality: isFallback ? 'fallback' : 'normal'，压缩失败时写入的质量标记"
+        },
+        {
+          "kind": "code",
+          "path": "src/db/schema.ts",
+          "line": 212,
+          "supports": "schema 注释：quality 表达生成质量，不表示内容为假"
+        },
+        {
+          "kind": "code",
+          "path": "src/db/types.ts",
+          "line": 139,
+          "symbol": "ObservationQuality",
+          "supports": "取值只有 normal 与 fallback 两种"
+        }
+      ],
+      "annotation": {
+        "request": "压缩失败时不要编造结果，也不要什么都不写",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["src/server/worker.ts", "src/db/schema.ts", "src/db/types.ts"],
+        "key_facts": ["quality=fallback"],
+        "unfinished": [],
+        "title": "压缩失败降级为 quality=fallback，只带确定性证据",
+        "summary": "重试用尽之后不写模型产出，而是写一条标记为 fallback 的 Observation，内容只有确定性抽取得到的证据。质量字段只有 normal 与 fallback 两个取值，它表达的是这条记录怎么生成的，不是记录内容真不真。",
+        "outcome": "失败的那一轮仍然留下一条可查的记录，且它自己声明了自己是降级产物。",
+        "learned": "降级要么带着标记，要么就不该存在——不带标记的降级产物会被当成正常记录使用。",
+        "concepts": ["降级", "确定性证据", "质量标记", "不编造", "Observation"]
+      }
+    },
+
+    {
+      "id": "p04a",
+      "group": "g4",
+      "area": "运行时完整性：启动即校验",
+      "role": "base",
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/server/worker.ts",
+          "line": 1016,
+          "symbol": "checkRuntimeHome",
+          "supports": "Worker 启动路径上调用 checkRuntimeHome，问题非空即失败退出"
+        },
+        {
+          "kind": "code",
+          "path": "src/acp/integrity.ts",
+          "line": 51,
+          "supports": "agent 必须声明 tools: []，否则登记为完整性问题"
+        },
+        {
+          "kind": "code",
+          "path": "scripts/setup.ts",
+          "line": 846,
+          "supports": "安装链路调用同一个 checkRuntimeHome，两处共用一道检查"
+        }
+      ],
+      "annotation": {
+        "request": "kiro-runtime 布局不完整时不要让 Worker 带病启动",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["src/server/worker.ts", "src/acp/integrity.ts", "scripts/setup.ts"],
+        "key_facts": ["checkRuntimeHome"],
+        "unfinished": [],
+        "title": "Worker 启动时校验 kiro-runtime，缺件即 fail fast",
+        "summary": "Worker 启动路径先跑一遍运行时完整性检查：agent 文件缺失、压缩 prompt 缺失、或者 agent 的工具列表不为空，任一成立就打印问题并退出，不进入服务状态。安装链路调用的是同一个检查函数，所以修复动作就是重跑安装。",
+        "outcome": "布局损坏表现为启动失败而不是压缩质量悄悄变差。",
+        "learned": "一个会静默降低产出质量的错误，必须在启动时变成响亮的失败，否则它只会在指标里表现成噪声。",
+        "concepts": ["运行时完整性", "启动校验", "fail fast", "安装修复", "压缩纯度"]
+      }
+    },
+    {
+      "id": "p04b",
+      "group": "g4",
+      "area": "运行时完整性：启动即校验",
+      "role": "rewrite",
+      "rewrite_of": "p04a",
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/server/worker.ts",
+          "line": 1016,
+          "symbol": "checkRuntimeHome",
+          "supports": "同一处启动校验"
+        },
+        {
+          "kind": "code",
+          "path": "src/acp/integrity.ts",
+          "symbol": "checkRuntimeHome",
+          "supports": "检查项清单：agent 文件、prompt 文件、tools 是否为空"
+        }
+      ],
+      "annotation": {
+        "request": "为什么改坏了运行时目录之后服务直接起不来",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["src/server/worker.ts", "src/acp/integrity.ts"],
+        "key_facts": ["checkRuntimeHome"],
+        "unfinished": [],
+        "title": "隔离运行时目录缺件会让服务拒绝启动",
+        "summary": "服务起不来不是 bug，是设定：进入服务状态之前会检查隔离运行时的布局，压缩用的 agent 文件不在、系统 prompt 不在、或者那个 agent 意外带上了工具，都会被列成问题并终止启动。安装命令跑的是同一份检查，所以它既是诊断也是修复手段。",
+        "outcome": "布局问题在启动阶段暴露，不会拖到压缩结果上才被发现。",
+        "learned": "把同一道检查同时放在安装和启动两处，才能保证\"装好了\"和\"跑起来了\"说的是同一件事。",
+        "concepts": ["隔离运行时", "布局检查", "拒绝启动", "重装修复", "系统 prompt"]
+      }
+    },
+    {
+      "id": "p04c",
+      "group": "g4",
+      "area": "运行时完整性：启动即校验",
+      "role": "sibling",
+      "sibling_of": "p04a",
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/auth-token.ts",
+          "symbol": "ensureLocalAuthToken",
+          "supports": "randomBytes(32).toString('hex') 生成 token，写入时 mode 0o600 并再 chmod 一次"
+        },
+        {
+          "kind": "code",
+          "path": "src/auth-token.ts",
+          "symbol": "inspectLocalAuthToken",
+          "supports": "非破坏性检查返回 ok / missing / empty / weak / insecure，只返回权限位，从不返回 token 值"
+        }
+      ],
+      "annotation": {
+        "request": "本地 Worker 的凭据要能被诊断，但诊断不能把它打出来",
+        "completed": true,
+        "memory_type": "feature",
+        "key_files": ["src/auth-token.ts"],
+        "key_facts": ["0o600"],
+        "unfinished": [],
+        "title": "本地凭据：32 字节随机、仅属主可读、诊断只报状态不报值",
+        "summary": "本地 Worker 的 token 由 32 字节随机数的十六进制形式构成，落盘权限固定为仅属主可读写，已存在时保留原值并重新校正权限。诊断路径单独走一个非破坏性检查，返回缺失、空、格式不合、权限不安全这几种状态和权限位，永远不返回也不打印 token 本身。",
+        "outcome": "凭据问题可诊断，诊断输出里不含凭据。",
+        "learned": "凭据的检查函数和读取函数必须分开，否则诊断迟早会把值打进日志。",
+        "concepts": ["本地凭据", "文件权限", "非破坏性诊断", "不泄漏值", "重装保留"]
+      }
+    },
+
+    {
+      "id": "p05a",
+      "group": "g5",
+      "area": "隐私：落盘前脱敏",
+      "role": "base",
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/server/worker.ts",
+          "line": 50,
+          "supports": "注释标明这是 fail-closed 的 <private> 脱敏"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/worker.ts",
+          "line": 55,
+          "supports": "未闭合的 <private> 按\"脱敏到字符串末尾\"处理，并计嵌套深度使内层 </private> 无法提前结束"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/worker.ts",
+          "line": 47,
+          "symbol": "REDACTED",
+          "supports": "替换文本为 [REDACTED]"
+        }
+      ],
+      "annotation": {
+        "request": "私密标签没闭合时不能把后面的内容原样存下去",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["src/server/worker.ts"],
+        "key_facts": ["[REDACTED]", "<private>"],
+        "unfinished": [],
+        "title": "私密标签脱敏采用 fail-closed 扫描器，未闭合就脱敏到末尾",
+        "summary": "不用成对匹配的正则，而是自己扫一遍：遇到未闭合的开标签就一路脱敏到字符串结束，同时记嵌套深度，内层的结束标签不能提前解除脱敏。被脱敏的区段统一替换成 [REDACTED]。",
+        "outcome": "标签写残时的行为是多脱敏，而不是把私密内容原样落盘。",
+        "learned": "脱敏这类功能的默认失败方向必须朝安全一侧倒；成对匹配的正则默认朝相反方向倒。",
+        "concepts": ["脱敏", "fail-closed", "未闭合标签", "嵌套深度", "落盘前处理"]
+      }
+    },
+    {
+      "id": "p05b",
+      "group": "g5",
+      "area": "隐私：落盘前脱敏",
+      "role": "rewrite",
+      "rewrite_of": "p05a",
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/server/worker.ts",
+          "line": 55,
+          "supports": "同一处：未闭合视为脱敏到末尾，且计嵌套深度"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/worker.ts",
+          "line": 47,
+          "symbol": "REDACTED",
+          "supports": "同一处：替换为 [REDACTED]"
+        }
+      ],
+      "annotation": {
+        "request": "私密区段的边界解析写错会不会漏内容出去",
+        "completed": true,
+        "memory_type": "bugfix",
+        "key_files": ["src/server/worker.ts"],
+        "key_facts": ["<private>"],
+        "unfinished": [],
+        "title": "把私密区段的解析从正则换成手写扫描，缺结束标签时宁可多删",
+        "summary": "成对匹配的写法有个漏洞：开标签没有对应的结束标签时，整段都不算匹配，于是私密内容会原样留下。改成逐字符扫描后，开标签没闭合就一直脱敏到文本末尾，并且用深度计数保证嵌在里面的结束标签不会把外层的脱敏提前关掉，命中的区段一律换成固定占位串。",
+        "outcome": "写残的标签导致的结果是多删内容，不再是把私密内容留在库里。",
+        "learned": "解析用户标记时要先想清楚解析失败该往哪边倒，再选实现方式。",
+        "concepts": ["私密区段", "正则漏洞", "逐字符扫描", "宁可多删", "占位串"]
+      }
+    },
+    {
+      "id": "p05c",
+      "group": "g5",
+      "area": "隐私：落盘前脱敏",
+      "role": "sibling",
+      "sibling_of": "p05a",
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/db/index.ts",
+          "line": 1734,
+          "symbol": "recordSearchMetric",
+          "supports": "入参只有延迟、降级标记、协议、拒绝原因枚举与若干计数，没有任何文本字段"
+        },
+        {
+          "kind": "code",
+          "path": "src/db/index.ts",
+          "line": 1755,
+          "supports": "写入 metric_events 的列与入参一一对应，且计数被取整取非负"
+        }
+      ],
+      "annotation": {
+        "request": "检索指标要能定位问题，但不能存下用户问了什么",
+        "completed": true,
+        "memory_type": "feature",
+        "key_files": ["src/db/index.ts"],
+        "key_facts": ["metric_events"],
+        "unfinished": [],
+        "title": "检索指标只收计数、原因枚举与延迟，不收任何文本",
+        "summary": "指标写入函数的入参里没有文本字段：只有延迟、是否降级、运行在哪个向量空间、英文形式不可用的原因枚举，以及关键词命中数、语义命中数、可比向量数、scope 向量数、纯语义条数这些计数。落库的列与入参一一对应，计数统一取整并夹到非负。",
+        "outcome": "指标足以回答\"哪一步失效了\"，同时不含 query 文本、Observation 正文与工作区路径。",
+        "learned": "把\"不许存文本\"写进函数签名，比写进文档更可靠——签名里没有那个参数，就不会有人不小心传进来。",
+        "concepts": ["检索指标", "原因枚举", "不存文本", "延迟", "签名约束"]
+      }
+    }
+  ]
+}

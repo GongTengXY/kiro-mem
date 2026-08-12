@@ -1,0 +1,501 @@
+{
+  "step": "P2 重叠筛查 · safety-round-candidates",
+  "criteria": {
+    "path": "benchmark/reports/safety-round/p2-calibration-criteria.md",
+    "sha256": "dd61359bd938011eebe17eab6262cbc421fa818af2667b7e1a25fe597a0035a1",
+    "section": "§5"
+  },
+  "reviewBand": 0.45,
+  "autoDeleteEnabled": false,
+  "inputs": [
+    {
+      "path": "benchmark/dataset/turns-safety-round-candidates.json",
+      "sha256": "121c109de775a490856e349ac04e4244ba6b037b2b59d7083422f277e2d00bd9"
+    },
+    {
+      "path": "benchmark/dataset/mirror-en-acp-records-safety-round-candidates.json",
+      "sha256": "57ced9a8ee3e38e150e41cbce59485ef9100c409935c00ae170f98760b306f62"
+    }
+  ],
+  "counts": {
+    "newRecords": 40,
+    "oldGold": 26,
+    "pairs": 1040
+  },
+  "factSourceCheck": {
+    "passed": true,
+    "checked": 40
+  },
+  "layer1HardDuplicate": {
+    "count": 0,
+    "entries": []
+  },
+  "layer2ReviewBand": {
+    "distribution": {
+      "min": -0.09,
+      "p50": 0.155,
+      "p95": 0.336,
+      "max": 0.518
+    },
+    "count": 5,
+    "entries": [
+      {
+        "newId": "c35",
+        "oldId": "t20",
+        "cosine": 0.518,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "newId": "c09",
+        "oldId": "t21",
+        "cosine": 0.509,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "newId": "c31",
+        "oldId": "t18",
+        "cosine": 0.502,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "newId": "s06",
+        "oldId": "t06",
+        "cosine": 0.476,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "newId": "s03",
+        "oldId": "t26",
+        "cosine": 0.465,
+        "verdict": "PENDING-HUMAN"
+      }
+    ]
+  },
+  "withinNewSet": {
+    "pairs": 780,
+    "max": 0.759,
+    "count": 70,
+    "entries": [
+      {
+        "a": "s04",
+        "b": "c25",
+        "cosine": 0.759,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c25",
+        "b": "c39",
+        "cosine": 0.73,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s04",
+        "b": "c39",
+        "cosine": 0.709,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c31",
+        "b": "c32",
+        "cosine": 0.664,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s04",
+        "b": "c29",
+        "cosine": 0.654,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s03",
+        "b": "c23",
+        "cosine": 0.645,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c17",
+        "b": "c18",
+        "cosine": 0.644,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s08",
+        "b": "c26",
+        "cosine": 0.638,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c12",
+        "b": "c33",
+        "cosine": 0.637,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s05",
+        "b": "c38",
+        "cosine": 0.618,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c29",
+        "b": "c36",
+        "cosine": 0.564,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c20",
+        "b": "c22",
+        "cosine": 0.562,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c29",
+        "b": "c39",
+        "cosine": 0.548,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c24",
+        "b": "c29",
+        "cosine": 0.547,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c17",
+        "b": "c19",
+        "cosine": 0.547,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s04",
+        "b": "c24",
+        "cosine": 0.545,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c12",
+        "b": "c13",
+        "cosine": 0.542,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c20",
+        "b": "c21",
+        "cosine": 0.542,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c14",
+        "b": "c20",
+        "cosine": 0.542,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c25",
+        "b": "c29",
+        "cosine": 0.537,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c14",
+        "b": "c17",
+        "cosine": 0.532,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c28",
+        "b": "c39",
+        "cosine": 0.53,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c09",
+        "b": "c28",
+        "cosine": 0.529,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c21",
+        "b": "c39",
+        "cosine": 0.529,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c19",
+        "b": "c29",
+        "cosine": 0.528,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c21",
+        "b": "c25",
+        "cosine": 0.519,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s05",
+        "b": "c18",
+        "cosine": 0.515,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c11",
+        "b": "c13",
+        "cosine": 0.515,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c36",
+        "b": "c39",
+        "cosine": 0.513,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c29",
+        "b": "c30",
+        "cosine": 0.511,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s04",
+        "b": "c36",
+        "cosine": 0.511,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s05",
+        "b": "c17",
+        "cosine": 0.511,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c18",
+        "b": "c26",
+        "cosine": 0.508,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c35",
+        "b": "c36",
+        "cosine": 0.507,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s04",
+        "b": "c21",
+        "cosine": 0.507,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c27",
+        "b": "c29",
+        "cosine": 0.502,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s01",
+        "b": "c41",
+        "cosine": 0.494,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c13",
+        "b": "c33",
+        "cosine": 0.493,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s06",
+        "b": "c33",
+        "cosine": 0.492,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c28",
+        "b": "c29",
+        "cosine": 0.489,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c17",
+        "b": "c20",
+        "cosine": 0.487,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c10",
+        "b": "c29",
+        "cosine": 0.486,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c14",
+        "b": "c19",
+        "cosine": 0.486,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s03",
+        "b": "c21",
+        "cosine": 0.485,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s01",
+        "b": "c38",
+        "cosine": 0.484,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s05",
+        "b": "c20",
+        "cosine": 0.481,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c12",
+        "b": "c28",
+        "cosine": 0.48,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c14",
+        "b": "c21",
+        "cosine": 0.479,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c17",
+        "b": "c26",
+        "cosine": 0.475,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c14",
+        "b": "c18",
+        "cosine": 0.475,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s06",
+        "b": "c11",
+        "cosine": 0.475,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c28",
+        "b": "c36",
+        "cosine": 0.472,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s01",
+        "b": "c13",
+        "cosine": 0.472,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c25",
+        "b": "c28",
+        "cosine": 0.47,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s03",
+        "b": "s08",
+        "cosine": 0.466,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c23",
+        "b": "c25",
+        "cosine": 0.466,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s04",
+        "b": "c30",
+        "cosine": 0.462,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c24",
+        "b": "c28",
+        "cosine": 0.461,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s04",
+        "b": "c19",
+        "cosine": 0.461,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c19",
+        "b": "c28",
+        "cosine": 0.46,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s08",
+        "b": "c23",
+        "cosine": 0.459,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s01",
+        "b": "s05",
+        "cosine": 0.459,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c23",
+        "b": "c39",
+        "cosine": 0.458,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c17",
+        "b": "c29",
+        "cosine": 0.457,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c17",
+        "b": "c28",
+        "cosine": 0.457,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c10",
+        "b": "c28",
+        "cosine": 0.454,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s05",
+        "b": "c09",
+        "cosine": 0.453,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c10",
+        "b": "c36",
+        "cosine": 0.451,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "c17",
+        "b": "c27",
+        "cosine": 0.451,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s07",
+        "b": "c32",
+        "cosine": 0.451,
+        "verdict": "PENDING-HUMAN"
+      }
+    ]
+  }
+}

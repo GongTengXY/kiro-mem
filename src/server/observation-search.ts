@@ -34,89 +34,21 @@ import {
   type NormalizationRejectReason,
 } from '../semantic-en';
 
-/**
- * Server-side retrieval strategy. NOT user input.
- *
- * Every knob here changes what the retrieval kernel considers relevant, so they
- * are deliberately absent from the MCP tool schema: a caller that could raise
- * its own floor or cap could manufacture whatever result page it wanted, and the
- * quality gates in the benchmark would be measuring a strategy nobody shipped.
- * The injection channel is `ObservationSearchDeps.policy`, which benchmark arms
- * and tests use; production passes exactly one of the two frozen profiles picked
- * by {@link resolveRetrievalPolicy} from the gray-release switch.
- */
+/** Server-owned retrieval policy. It is injectable for evaluation, not MCP input. */
 export interface RetrievalPolicy {
   /**
-   * Whether the semantic leg may recall records FTS never matched.
-   *
-   * `true` is the production default since phase 2C: zero FTS candidates no
-   * longer short-circuit the search, so a query that shares no word with the
-   * work it is looking for can still find it. `false` restores the phase 1b
-   * lexical-anchor rule — zero FTS candidates in this scope => return empty
-   * WITHOUT computing a query embedding — and is reachable ONLY through the
-   * explicit rollback profile ({@link LEXICAL_ANCHOR_ROLLBACK_POLICY}); nothing
-   * in the code switches it back on its own.
-   *
-   * IT IS A REQUEST, NOT A GUARANTEE. Discovery additionally requires the search
-   * to be in the `semantic-en-v1` space — see the protocol boundary at the gate.
-   * `true` on a query with no legal `semantic_query_en` does NOT enable raw-v1
-   * discovery, because the only floor calibration that separates signal from
-   * noise is the English one. Plan §2.3 puts a missing or refused derived value
-   * in the "capability degraded" row, not the "normal recall topology" row.
+   * Allow semantic candidates without an FTS match. This is effective only for a
+   * valid `semantic-en-v1` query; otherwise the request is FTS-only.
    */
   semanticDiscovery: boolean;
   /**
-   * Cosine floor for semantic candidates. Compared with STRICT `>` — fixed here
-   * and mirrored in the tests and reports so the boundary case cannot mean one
-   * thing in a benchmark arm and another in a unit test (plan §4.2 item 5).
-   *
-   * The default `0.197` is the phase 2B selection: a full-pipeline scan of
-   * floor ∈ {0.197, 0.223, 0.275} × cap ∈ {1, 2, 3, 5} over 121 frozen
-   * `ftsCount=0` calibration queries, picked by a rule written down before any
-   * arm ran (`benchmark/reports/phase2b-selection.md`). It is a `semantic-en-v1`
-   * number and is meaningless in the `raw-v1` space, which is why the protocol
-   * boundary below refuses discovery outside the English space: under `raw-v1`
-   * annotated positives span cosine 0.080…0.607 while the worst noise on a query
-   * about work that never happened reaches 0.431 — overlapping distributions, no
-   * separating threshold. Under `semantic-en-v1` the same records and queries
-   * separate at AUC 0.998.
-   *
-   * Raising it is not "safer" in any free sense: at 0.223 the same calibration
-   * set loses ~10 points of hit@5 (50.0% → 40.3% at cap=2), at 0.275 it loses
-   * ~24. Lowering it below 0.197 was never calibrated.
+   * Strict cosine lower bound (`score > floor`) for `semantic-en-v1` candidates.
+   * The value is protocol-specific and must not be reused for raw vectors.
    */
   semanticFloor: number;
   /**
-   * Max semantic-only results per request, applied AFTER fusion. Default `2`
-   * (phase 2B selection). A non-finite value means no cap, which is phase 1b
-   * behavior — note that is NOT the same as "no semantic-only results": even
-   * with `semanticDiscovery: false` the semantic leg extends an FTS-anchored
-   * page (phase 1b measured 80 such results across 42 queries), so the cap is
-   * live on the anchored path too, not just on discovery.
-   *
-   * ## What this cap is, and what it is NOT (final recall audit correction)
-   *
-   * It bounds ONE source label: `match_source: "semantic"`. It is a **quota for
-   * unverified pure-semantic leads**, not a whole-page false-recall guardrail.
-   * `fts` and `hybrid` results have never been subject to it — see the cap walk
-   * below, which only counts `semantic`.
-   *
-   * The earlier wording here ("the only bound on false recall once the keyword
-   * gate is gone") was wrong in a way that mattered: once the default time window
-   * became unbounded, the FTS leg's candidate set grew from "the last 90 days" to
-   * the whole history, and additions on that path bypass this cap entirely. The
-   * final audit measured 136 page additions across 56 queries with 30 `hybrid` and
-   * 19 `fts` among them — 36% of additions outside this cap's reach.
-   *
-   * Whole-page false recall is therefore gated by the audit's C1/C2 thresholds
-   * across ALL sources, not by this field. Keeping cap=2 is still correct (the
-   * historical calibration holds: at cap=3 the expected-empty mean crosses ≤1 at
-   * 1.20), but it must not be described as complete page safety.
-   *
-   * One measurement bound worth stating: the frozen audit's main queries are all
-   * zero-FTS, so they fully exercise the semantic channel and CANNOT settle the
-   * FTS/hybrid exposure. That needs a separate frozen negative set with a lexical
-   * anchor whose claim is nonetheless false.
+   * Post-fusion quota for `match_source: "semantic"`. It does not bound `fts` or
+   * `hybrid`, so it is not a whole-page false-recall guardrail.
    */
   semanticOnlyLimit: number;
   /** RRF rank-fusion constant. */
@@ -124,269 +56,40 @@ export interface RetrievalPolicy {
   ftsWeight: number;
   semanticWeight: number;
   /**
-   * Order among candidates with an EXACTLY equal fused score.
-   *
-   * `recency` — newer `turn_stopped_at`, then smaller id. Phase 1b behavior.
-   * `source-confidence` — hybrid > semantic-only > fts-only, then recency, then
-   *   id. Registered in the plan because equal weights make `1/(60+1)` reachable
-   *   from both legs: a record ranked semantic #1 ties exactly with an unrelated
-   *   record ranked FTS #1, and recency then decides.
-   * `semantic-rank` — the phase 2D selection. `source-confidence`'s bucket order
-   *   FIRST, then better (smaller) semantic rank, then recency, then id.
-   *
-   * Why the extra step: the ties that actually cost a query its top spot are
-   * *same-bucket*. A target at (ftsRank 2, semRank 1) scores `1/62 + 1/61`, which
-   * is EXACTLY what a record at (ftsRank 1, semRank 2) scores — both are `hybrid`,
-   * so bucketing by match_source cannot separate them and recency decides after
-   * all. Measured on the 2D grid: `source-confidence` moves 2 of 145 benchmark
-   * rows and changes no metric, while resolving those transposed ties recovers
-   * q03/q14 from rank 2 to rank 1.
-   *
-   * Why the bucket step is kept AHEAD of semantic rank rather than replaced by it:
-   * cross-arity ties are reachable, contrary to what this comment claimed before
-   * Gate D. With `rrfK=60`, `1/93 + 1/186 === 1/62` in float64, i.e. a hybrid at
-   * (ftsRank 33, semRank 126) ties a single-leg candidate at rank 2 exactly; a scan
-   * of `ftsRank ≤ 50` (the internal FTS limit) × `semRank ≤ 250` (the candidate
-   * pool bound) finds 17 such solutions. Ordering by semantic rank first would
-   * hand those to the semantic-only candidate and thereby CONTRADICT the profile
-   * the plan registered — an uncalibrated new boundary. With the bucket first,
-   * `semantic-rank` decides every tie `source-confidence` decides, identically,
-   * and only adds an answer where `source-confidence` had none.
-   *
-   * Why semantic rank rather than FTS rank breaks the remaining ties: measured leg
-   * quality. The `semantic-en-v1` leg ranks at offline MRR 0.972 tuned / 0.833
-   * heldout (`benchmark/reports/phase1a-en-normalization-eval.md`), while an FTS
-   * rank is bm25 over trigram units — "lexical hit ≠ relevant" is the original
-   * diagnosis this whole effort started from.
+   * Exact-score tie-break. `semantic-rank` orders source confidence first
+   * (`hybrid > semantic > fts`), then semantic rank, recency and id.
    */
   tieBreak: 'recency' | 'source-confidence' | 'semantic-rank';
-  /**
-   * How many of the most recent Observations in scope enter the semantic
-   * candidate pool. `Infinity` = the whole scope (brute force).
-   *
-   * Phase 3B instrument, added at the frozen production value 200 so the default
-   * is byte-identical to the literal it replaces. It exists because the defect
-   * plan §11 describes cannot be measured without it: the pool is TRUNCATED by
-   * `turn_stopped_at DESC` and then RANKED by cosine, so an old but highly
-   * relevant record disappears BEFORE it is ever scored. That is not "its score
-   * was too low" — the comparison never happened.
-   *
-   * The 30-turn benchmark corpus is structurally blind to this: 30 < 200, so every
-   * record is always in the pool and the two settings cannot differ. Measuring it
-   * needs the phase 3B recall-scale fixture (2,000 records, targets deliberately
-   * placed outside the newest 200).
-   *
-   * Raising it is NOT free and phase 3B does not select a value. Two costs it must
-   * price first:
-   *
-   *  - the semantic leg scores 10x the vectors, so the opportunity for a plausible
-   *    noise record to reach the page scales with it. That is exactly the shape
-   *    phase 3A failed on — real gain, out-of-bounds false recall;
-   *  - full-scope brute force has to stay inside the p95 < 300ms budget.
-   *
-   * Note this pool is a UNION, not a filter: FTS hits (and bigram hits when that
-   * leg runs) are added to it regardless of age, so a lexically reachable old
-   * record is already scored today. The truncation only bounds what the semantic
-   * leg can find ON ITS OWN — which, since phase 2C, is the leg that carries
-   * zero-keyword recall.
-   */
+  /** Recent semantic pool size; `Infinity` scans the full filtered scope. */
   semanticCandidatePool: number;
   /**
-   * Whether the auxiliary CJK bigram leg runs (phase 3A).
-   *
-   * `false`, and it stays `false`: **Codex Gate E ruled phase 3A NOT PASSED**
-   * (2026-08-04). Zero of 15 arms satisfied both the quality and the false-recall
-   * gates registered before any arm ran. The code, tests, evidence trail and the
-   * third-leg architecture were accepted; the working point was not, because none
-   * exists yet.
-   *
-   * What it buys — and the gain is real, which is why the leg is kept rather than
-   * reverted: Chinese two-character words the trigram index cannot reach.
-   * `FTS_CJK_WINDOW=3` means 引号 is findable only when the 3-character windows
-   * line up on both sides, and measured on q32 they do not — the query yields
-   * `带引号`/`引号或`, the record `合引号`/`引号等`/`双引号`/`引号翻`. Turning the leg on
-   * moved the phase 2 calibration set from hit@5 50.0% to 68.1% and gave 68
-   * previously zero-keyword queries a candidate.
-   *
-   * What it costs, and why no setting shipped:
-   *
-   *  1. Unsegmented sliding windows emit generic words — 处理 / 配置 / 服务 / 字段 —
-   *     that create real lexical overlap carrying no relevance. On a 26-record
-   *     corpus a DF RATIO has 3.85 percentage points of resolution per step, and
-   *     「处理」(df 3) and 「引号」(df ≤2) have no separating point between them.
-   *  2. `bigramOnlyLimit` bounds only the discovery half. A record the semantic
-   *     leg already surfaced gets a third RRF vote and can be pushed on-page as
-   *     `hybrid`, where no cap applies.
-   *  3. Equal-weight fusion gives "how many distinct bigrams matched" the same
-   *     voting power as bm25 and cosine, and that signal is far coarser. Measured
-   *     both directions on one arm: q14 lost rank 1, q04 gained it.
-   *
-   * A later round must first freeze a calibration set where BOTH legs hit — the
-   * phase 2 set is all `ftsCount=0` and therefore structurally blind to a fusion
-   * change — and a larger empty / hard-negative set, then pre-register gates and
-   * calibrate `bigramWeight`, the co-occurrence condition, or whether this leg may
-   * vote for a record another leg already found. Full record:
-   * `benchmark/reports/phase3a-submission.md`.
-   *
-   * **That later round ran (phase 3A-R2) and the route is now CLOSED.** The gate
-   * ruling of 2026-08-04 (`benchmark/reports/phase3a-r2-submission.md`, top)
-   * answered all three of those knobs and stopped a fourth attempt:
-   *
-   *  - `bigramWeight` — cannot reduce the CANDIDATE COUNT, so it has no causal
-   *    path to false recall. Three weights (0.25 / 0.5 / 0.75) produced false-recall
-   *    readings identical to the digit.
-   *  - the co-occurrence condition (`bigramMinMatches`) — suppresses noise, but
-   *    suppresses real candidates alongside it, and regressed tuned R-precision.
-   *  - voting scope (`bigramVote: 'discovery-only'`) — removes the `hybrid`
-   *    amplification of cause 2 above, but discovery alone still leaves false
-   *    recall above baseline.
-   *
-   * The ruling calls this "mechanism convergence, not an under-scanned parameter
-   * space". The one knob never tried is the CANDIDATE ADMISSION condition, and it
-   * needs resolution this 26-record corpus does not have (3.85 percentage points
-   * per DF step) — which is why the next phase is 3B, building the recall-scale
-   * fixture. Phase 3B may not re-open a bigram arm.
+   * Optional CJK two-character discovery leg. It remains off: the measured arms
+   * improved recall but exceeded false-recall bounds.
    */
   bigramAux: boolean;
-  /**
-   * Max `df / scopeSize` for a bigram to be probed at all.
-   *
-   * A RATIO, not an absolute count, and that is not a style choice. On the
-   * 26-record benchmark corpus `df <= 1` is the only pure-DF setting that does
-   * not breach the false-recall bound, but an absolute 1 does not survive a
-   * change of scale: 「引号」 will not have df 1 in 10,000 records, so the feature
-   * would silently stop firing on exactly the corpora it matters for. A fraction
-   * transfers — 「测试」 takes 30-50% of any corpus, 「引号」 a few percent.
-   *
-   * Registered limitation: with primary=26 the resolution is 3.85 percentage
-   * points per step, so a value picked here is "a setting that does not breach",
-   * not "a calibrated optimum". Real calibration needs the phase 3B
-   * recall-scale fixture.
-   */
+  /** Maximum `document frequency / scope size` for an admitted bigram. */
   bigramDfRatioCeiling: number;
-  /**
-   * Min number of DISTINCT surviving bigrams a record must match to become a
-   * candidate.
-   *
-   * Measured effective but blunt: at 2 the worst-case false recall drops to 0-2,
-   * but reachable targets fall from 32/72 to 9/72 — worse than what the DF
-   * ceiling alone achieves, because it suppresses noise by suppressing real
-   * candidates alongside it. Default 1.
-   */
+  /** Minimum number of distinct admitted bigrams a record must match. */
   bigramMinMatches: number;
-  /**
-   * Max results per request that ONLY the bigram leg found, applied AFTER fusion.
-   *
-   * It bounds ONE of the two false-recall shapes, and phase 3A measured that the
-   * other one is the bigger problem. Read this before treating it as a safety
-   * guarantee:
-   *
-   *  - it DOES bound, by construction, how many results reach the page that no
-   *    other leg found — independent of corpus size and DF distribution, which is
-   *    what a DF threshold cannot promise;
-   *  - it does NOT bound anything about a record the semantic leg already
-   *    surfaced. The bigram leg adds a third RRF vote to such a record and can
-   *    push it from off-page to on-page, where it is labelled `hybrid` and this
-   *    cap never sees it. Measured: at `bigramOnlyLimit=1` the query
-   *    「Kubernetes Ingress 灰度发布配置」 — work this project never did — returned
-   *    5 records (`benchmark/reports/phase3a-submission.md` §5.2).
-   *
-   * Codex Gate E ruled on exactly this: "third leg + cap" is NOT a complete
-   * safety scheme, and a later round must separately calibrate `bigramWeight`,
-   * the co-occurrence condition, or whether the bigram leg may vote for a record
-   * another leg already found. Until one of those lands, do NOT enable
-   * `bigramAux` on the argument that the cap bounds the worst case.
-   *
-   * The shape is still the right one for the discovery half, and it is the same
-   * reasoning that made `semanticOnlyLimit` rather than a higher cosine floor the
-   * bound on the semantic leg in phase 2C.
-   */
+  /** Post-fusion quota for results found only by the bigram leg. */
   bigramOnlyLimit: number;
-  /** RRF weight of the bigram leg. Fixed at 1 for phase 3A (see plan §7.1). */
+  /** RRF weight of the bigram leg. */
   bigramWeight: number;
   /**
-   * Which candidates the bigram leg is allowed to vote for (phase 3A-R2).
-   *
-   * `always` — phase 3A behavior: every candidate the leg matched gets a third
-   *   RRF term.
-   * `discovery-only` — the leg contributes a term ONLY for candidates that
-   *   neither the trigram FTS leg nor the semantic leg found. A record another leg
-   *   already surfaced gets nothing from it.
-   *
-   * Why the switch exists: Codex Gate E ruled that "third leg + cap" is not a
-   * complete safety scheme, and both of phase 3A's root causes share ONE mechanism
-   * — the bigram leg voting for a record another leg already found:
-   *
-   *  - §5.2: at `bigramOnlyLimit=1`, a query about work this project never did
-   *    still returned 5 records, most labelled `hybrid`. The leg pushed
-   *    already-present semantic candidates from off-page to on-page, where the cap
-   *    (which only sees `bigram`) never applies.
-   *  - §5.3: q14's correct answer fell from rank 1 to 2 because another record
-   *    matched more two-character words. "How many bigrams matched" is a far
-   *    coarser signal than bm25 or cosine, and at equal weight its direction is
-   *    uncontrolled — q04 gained a rank on the same arm.
-   *
-   * `discovery-only` closes both structurally: nothing the leg does can move a
-   * record another leg found, so the ONLY thing it can still contribute is
-   * discovery — and discovery is entirely inside `bigramOnlyLimit`'s reach. That
-   * turns the cap from "bounds one of the two shapes" into "bounds everything this
-   * leg adds".
-   *
-   * The cost is real and is what the R2 grid measures: it gives up whatever the
-   * leg contributed to head-of-page ordering. On phase 3A's evidence that
-   * contribution had no reliable direction, but "no reliable direction" is not the
-   * same as "no value".
+   * `always` votes for every bigram match. `discovery-only` votes only when FTS
+   * and semantic search did not already find the record.
    */
   bigramVote: 'always' | 'discovery-only';
   /**
-   * How many top-scoring semantic candidates the streaming scorer keeps.
-   *
-   * The scorer reads candidate vectors in chunks, scores each chunk immediately and
-   * retains only a bounded set, so peak memory is `O(chunk + semanticTopK)` instead
-   * of `O(candidates)`. That is the whole point: the pool round measured scope-wide
-   * scoring at 50,000 records and it failed on MEMORY (+720MB against a 512MB
-   * budget) while passing on latency (p95 277ms), because the old path fetched every
-   * blob, converted every one to a `Float32Array` and aggregated every above-floor
-   * candidate before sorting.
-   *
-   * `Infinity` means "retain everything above the floor", which is exactly the old
-   * behavior and is the shipped default for phase 1 of the Top-K round: the
-   * streaming refactor must be provably result-identical BEFORE any truncation is
-   * introduced (`topk-criteria.md` §5). Phase 2 scans finite values.
-   *
-   * Two invariants hold at any K and are not negotiable (§3.1):
-   *
-   *  - a candidate the FTS or bigram leg matched is ALWAYS retained, whatever its
-   *    score rank. Dropping it would turn a `hybrid` result into `fts`, which is a
-   *    result change wearing a memory-optimization label;
-   *  - a retained candidate's rank is its TRUE global rank among above-floor
-   *    candidates, never `K + 1`. Ranks feed RRF and the `semantic-rank` tie-break,
-   *    so an approximated rank silently changes ordering.
+   * Number of top semantic candidates retained by the streaming scorer. Lexical
+   * candidates are always retained and keep their true global semantic rank.
    */
   semanticTopK: number;
 }
 
 /**
- * The frozen production strategy (phases 2C + 2D).
- *
- * `discovery on / floor 0.197 / cap 2` — the values Codex Gate B passed
- * (`benchmark/reports/phase2b-codex-gate-b-decision.md`): selected by the rule in
- * `benchmark/select-phase2b-arm.ts` over 12 full-pipeline arms on 121 frozen
- * `ftsCount=0` calibration queries, then confirmed on heldout, the existing
- * validation set, and a Codex-built blind audit set that had never seen this
- * policy's output (20 zero-FTS relevance queries: hit@5 100%, MRR 1.000;
- * 20 hard negatives: mean 0.30 returned, worst 2).
- *
- * `tieBreak: 'semantic-rank'` is the phase 2D selection
- * (`benchmark/reports/phase2d-selection.md`), and it is the ONLY field 2D moved:
- * `rrfK` and the weights stay at 60 / 1:1 because the weighted arms change
- * candidates that are NOT tied, which is a quality-tuning question with no legal
- * calibration set — every one of the 121 phase 2 calibration queries has
- * `ftsCount=0`, so a single-leg page cannot measure a fusion change at all.
- *
- * Changing any field here is a product change. It needs a new full-matrix run
- * and a new gate, not an edit — the numbers above stop describing the shipped
- * behavior the moment one value moves.
+ * Frozen production policy. Quality changes require a new calibrated evaluation;
+ * benchmark history belongs in reports, not in this runtime definition.
  */
 export const DEFAULT_RETRIEVAL_POLICY: RetrievalPolicy = {
   semanticDiscovery: true,
@@ -396,112 +99,21 @@ export const DEFAULT_RETRIEVAL_POLICY: RetrievalPolicy = {
   ftsWeight: 1,
   semanticWeight: 1,
   tieBreak: 'semantic-rank',
-  /**
-   * Scope-wide candidate pool — the Top-K round's phase 2 selection.
-   *
-   * 200 through phase 3B, 20,000 after the pool round, scope-wide now. The recall
-   * case was already settled by the pool round and has not changed: the 72
-   * `ftsCount=0` calibration queries go from **0/72 reachable** to 43/72 (hit@5
-   * 0% → 31.9%), overall semantic reach 35.8% → 80.0%, hit@5 36.8% → 65.8%, with
-   * zero gold answers leaving top-5 or the page.
-   *
-   * What changed is affordability. The pool round measured scope-wide scoring at
-   * +720MB against a 512MB budget, so it shipped 20,000 instead. Streaming the
-   * candidates (fetch a chunk → score it → keep a bounded top set → drop the chunk)
-   * removed that: at 50,000 records the search loop now needs +225…+324MB across
-   * five repetitions, and p95 stays 158–286ms against a 300ms budget.
-   *
-   * Pairs with `semanticTopK: 1000` and is only affordable because of it. Do not
-   * raise one without re-running the other's gates.
-   */
   semanticCandidatePool: Number.POSITIVE_INFINITY,
-  // Phase 3A arrives switched OFF. The knobs exist so the 3A matrix can scan
-  // them; the working point is not selected yet, so shipping it on would be a
-  // product change with no gate behind it. `bun run benchmark/run.ts` with no
-  // bigram flags must reproduce the 2D report query by query.
+  // The measured bigram arms exceeded false-recall bounds.
   bigramAux: false,
   bigramDfRatioCeiling: 1,
   bigramMinMatches: 1,
   bigramOnlyLimit: 2,
   bigramWeight: 1,
-  // `always` is phase 3A's behavior, and it is the default on purpose: writing
-  // `discovery-only` here would ship an R2 product change with no gate behind it.
-  // The R2 grid selects; this line follows the grid, not the other way round.
   bigramVote: 'always',
-  /**
-   * 1,000 — the Top-K round's phase 2 selection, and the ONLY feasible arm.
-   *
-   * `benchmark/select-topk.ts` applied the pre-registered gates to
-   * K ∈ {200, 1000, 5000, 20000} at 50,000 records under the ruling's strict
-   * aggregation rule (**every repetition must pass**, no median, no min):
-   *
-   * ```text
-   * K=  200  ❌ p95 181/192/372ms, p99 294/400/702ms, and 3 queries lose gold from
-   *             the rank map — a deterministic identity failure, not noise
-   * K= 1000  ✅ p95 158/183/193/216/286ms  p99 338/357/358/443/448ms  RSS +225…+324MB
-   * K= 5000  ❌ p95 250/257/536ms  p99 328/538/1376ms
-   * K=20000  ❌ p95 271/333/349ms  p99 410/449/524ms
-   * ```
-   *
-   * Returned pages are identical to full scoring at every K — on the 2,000-record
-   * fixture (276 queries) and, more importantly, at 50,000 records where truncation
-   * actually bites (K=200 retains 163 of 4,618 above-floor candidates and still
-   * produces the same 20 pages). That is the pre-registered prediction holding: a
-   * semantic rank in the thousands contributes 1/(60+n) to RRF, which cannot reach a
-   * page of 10 with a semantic-only cap of 2.
-   *
-   * `Infinity` is deliberately NOT the default even though its RSS reads inside the
-   * budget: it retains every above-floor candidate (measured 4,618 mean / 14,830
-   * worst at 50,000), so the retained set grows with the corpus and the promise of
-   * `O(chunk + K)` does not hold. A finite K is what makes the bound real.
-   */
+  // Full-scope vectors are streamed; only the best 1,000 semantic ranks survive.
   semanticTopK: 1000,
 };
 
 /**
- * The explicit rollback profile: phase 1b behavior, field for field — **with one
- * deliberate exception, documented below.**
- *
- * Reached only by setting `retrieval.semanticDiscovery: false` in
- * `~/.kiro-mem/config.json` — see `resolveRetrievalPolicy`. Nothing in the code
- * falls back to it: an embedding failure degrades to FTS-only for that ONE
- * request and is reported as `degraded`, which is a different event from an
- * operator deciding to turn discovery off.
- *
- * It restores ALL of phase 1b, not just the gate, because that is the only shape
- * with evidence behind it: phase 2A proved this exact profile reproduces the
- * phase 1b report query by query. `discovery off` combined with the 2C floor and
- * cap has never been measured, so shipping it as "the safe option" would be a
- * guess wearing a rollback label.
- *
- * ## The one thing this profile no longer restores (intentional safety fix)
- *
- * Phase 1b ran the semantic leg in the `raw-v1` space whenever `semantic_query_en`
- * was missing or refused, as long as FTS had at least one hit. **That no longer
- * happens, under this profile or any other**, and it is a deliberate correction
- * rather than an implementation gap in the rollback:
- *
- *  - measured on a 302-record fixture, one FTS hit was enough for the `raw-v1` leg
- *    to score the WHOLE scope and put a 900-day-old record with zero word overlap
- *    on the page as `match_source: "semantic"`
- *    (`benchmark/reports/raw-degrade-investigation.md`);
- *  - the three values that leg read — `semanticFloor`, `semanticCandidatePool`,
- *    `semanticTopK` — were every one of them calibrated in the ENGLISH space;
- *  - `raw-v1` has no defensible floor at all: annotated positives span cosine
- *    0.080–0.607 while worst-case noise reaches 0.431, so the distributions
- *    overlap and no threshold separates them;
- *  - phase 1b kept that ghost off the page with its 200-record recency pool, not
- *    with its 0.2 floor (0.30 passes 0.2 too) — i.e. by time truncation, not by a
- *    relevance guard. Restoring that is not restoring a safety property.
- *
- * So: a missing or refused English form is FTS-only, always. Setting this profile
- * still restores the lexical-anchor gate, the 0.2 floor, the uncapped
- * semantic-only count, the 200-record pool and the recency tie-break — all of
- * which apply to LEGAL `semantic-en-v1` queries, where phase 1b's numbers were
- * actually measured.
- *
- * Cost, stated plainly: a degraded request loses raw-v1 reranking, so its ordering
- * is bm25 plus the `id` total-order key. Accepted, not free.
+ * Explicit lexical-anchor rollback for valid English queries. Missing or rejected
+ * English forms remain FTS-only; unsafe raw-vector reranking is not restored.
  */
 export const LEXICAL_ANCHOR_ROLLBACK_POLICY: RetrievalPolicy = {
   semanticDiscovery: false,
@@ -511,19 +123,13 @@ export const LEXICAL_ANCHOR_ROLLBACK_POLICY: RetrievalPolicy = {
   ftsWeight: 1,
   semanticWeight: 1,
   tieBreak: 'recency',
-  // Phase 1b scored the most recent 200 too, so restoring 1b means 200 here.
   semanticCandidatePool: 200,
-  // Phase 1b had no bigram leg, so restoring phase 1b means off. Keeping it off
-  // here also means the rollback switch cannot silently carry a phase 3A change
-  // into a profile whose numbers were measured without one.
   bigramAux: false,
   bigramDfRatioCeiling: 1,
   bigramMinMatches: 1,
   bigramOnlyLimit: 2,
   bigramWeight: 1,
   bigramVote: 'always',
-  // Phase 1b scored and ranked every above-floor candidate, so restoring 1b means
-  // no truncation here either.
   semanticTopK: Number.POSITIVE_INFINITY,
 };
 
@@ -811,288 +417,75 @@ async function localEmbedding(text: string): Promise<Float32Array> {
 }
 
 export interface ObservationSearchOpts {
-  /** Hard scope filter (frozen scope_key). Omit only for explicit all-scopes. */
+  /** Omit only for an explicit all-scopes search. */
   scopeKey?: string;
   type?: string;
-  /**
-   * Narrow to the last N days. Omitted => {@link DEFAULT_SEARCH_DAYS} (unbounded,
-   * phase 3C), which is what makes the searchable range equal to the range
-   * bootstrap can inject.
-   */
+  /** Omitted means the unbounded default. */
   days?: number;
   limit?: number;
-  /**
-   * Caller-supplied English normalization of `query` (`semantic-en-v1`).
-   *
-   * Present => the semantic leg runs in the English space, against records whose
-   * own derived value passed the same protocol. Absent or refused by
-   * `checkSemanticEnQuery` => the leg falls back to the `raw-v1` space.
-   *
-   * There is no third option, and in particular the raw Chinese query is never
-   * embedded into the English space: that exact pairing was measured at MRR
-   * 0.437 against the 0.529 raw baseline — worse than doing nothing, and
-   * invisible at read time.
-   *
-   * It is a parameter rather than something computed here because computing it
-   * would mean a second LLM round trip on the interactive path. The agent that
-   * calls `search` has already read the user's question; it supplies the English
-   * form in the same tool call.
-   */
+  /** Valid English form enables the semantic leg; missing or rejected means FTS-only. */
   semanticQueryEn?: string;
 }
 
 export interface ObservationSearchDeps {
-  /**
-   * Retrieval strategy override, merged field-wise over
-   * {@link DEFAULT_RETRIEVAL_POLICY}.
-   *
-   * `Partial` on purpose: the phase 2B matrix varies one or two knobs across 12
-   * arms, and forcing each arm to restate all seven fields would make a typo in
-   * an unrelated field indistinguishable from the variable under test.
-   *
-   * Production passes one of the two frozen profiles from
-   * {@link resolveRetrievalPolicy} — never a hand-assembled combination. It lives
-   * in `deps` rather than in `ObservationSearchOpts` because `opts` is the shape
-   * the MCP tool forwards from its caller; putting policy there would put it one
-   * refactor away from being user-settable.
-   */
+  /** Evaluation/test override. Production passes a frozen complete profile. */
   policy?: Partial<RetrievalPolicy>;
-  /** Injectable for tests; defaults to the local MiniLM embedder. */
   generateEmbedding?: (text: string) => Promise<Float32Array>;
-  /**
-   * Identity of the vector space `generateEmbedding` produces. Stored vectors
-   * from any other model are skipped, because a cosine score across two
-   * different embedding spaces is meaningless but looks authoritative.
-   *
-   * These travel WITH the embedder rather than being hard-coded: a test that
-   * injects a fake embedder is describing a different vector space, and forcing
-   * it to claim the production model name would make the fixture lie about
-   * which space it is in.
-   */
+  /** Must identify the vector space produced by the injected embedder. */
   embeddingModel?: string;
   embeddingDimensions?: number;
-  /** Query embedding deadline; defaults to the interactive MCP budget. */
   embeddingTimeoutMs?: number;
-  /**
-   * Called once when the semantic step fails and the search degrades to
-   * FTS-only (query embedding unavailable). Lets the caller record an
-   * observability metric without coupling this pure kernel to the DB.
-   */
   onDegrade?: () => void;
-  /**
-   * Candidate-level observation exit. READ-ONLY: nothing here feeds back into
-   * ranking, so it cannot change a result.
-   *
-   * It exists because the four ways a query can miss are indistinguishable from
-   * the returned page: FTS recalled nothing / semantic recalled nothing / both
-   * recalled it but fusion ranked it badly / it was cut by the result limit.
-   * The retrieval benchmark has to tell them apart to attribute a regression to
-   * a stage, and the alternative — re-running `searchObservationsFts` inside the
-   * harness with a hand-copied `limit: 50` and opts — is a second source of
-   * truth that would drift away from this one.
-   *
-   * Fires exactly once per executed search, including on the lexical-anchor
-   * early return. On that path the semantic step never runs, so `semanticCount`
-   * is 0 by construction rather than by scoring — which is precisely the fact
-   * the `heldoutNoAnchor` metric needs to state. A blank query is not an
-   * executed search and does not fire.
-   */
+  /** Read-only candidate diagnostics; fires once for every non-blank search. */
   onCandidates?: (info: {
-    /** FTS candidate count (capped by the internal FTS limit), NOT the returned count. */
     ftsCount: number;
-    /** Semantic candidates above SEMANTIC_FLOOR. */
+    /** Retained semantic candidates; may be smaller than `aboveFloorCount`. */
     semanticCount: number;
-    /**
-     * Candidates above the floor, counted exactly during streaming.
-     *
-     * Equals `semanticCount` while `semanticTopK` is `Infinity`. Once truncation is
-     * on they diverge: `semanticCount` becomes the size of the RETAINED set, while
-     * this stays the true population — so a benchmark measuring "what fraction of the
-     * pool clears the floor" must read this one, or it will silently start measuring
-     * K instead.
-     */
+    /** Exact number of candidates above the floor before Top-K retention. */
     aboveFloorCount: number;
-    /**
-     * How many stored vectors in the ACTIVE space key were available to score.
-     *
-     * Not the same as "vectors in this workspace": it counts the candidate pool
-     * (FTS hits ∪ the most recent `policy.semanticCandidatePool` in
-     * scope/type/days) that had a vector under this protocol, so it is bounded by
-     * that pool. It answers the operational
-     * question a zero-result search cannot — "did the semantic leg have anything
-     * to compare against, or is the `semantic-en-v1` rebuild still pending in
-     * this scope?" — which otherwise looks identical to "nothing was relevant".
-     *
-     * 0 on the lexical-anchor early return and on a degraded request, because no
-     * vector was read in either case.
-     */
+    /** Stored vectors actually scored in the filtered candidate pool. */
     comparableVectors: number;
-    /**
-     * How many vectors exist in the ACTIVE space across the whole search scope —
-     * not just the candidate pool (plan §8.2 "scope 内向量数量").
-     *
-     * `comparableVectors` is capped by the 200-row pool, so on a large workspace
-     * it saturates and stops answering "has this scope been embedded under this
-     * protocol?". This one does, which is the difference between "nothing was
-     * relevant" and "the rebuild has not reached this workspace".
-     *
-     * `null` on the lexical-anchor early return: the semantic step never ran, so
-     * nothing was counted. Reporting 0 there would be indistinguishable from a
-     * scope with no vectors at all — the exact confusion this field exists to
-     * remove. Also `null` when the count itself fails.
-     */
+    /** Active-space vectors in the scope; null when the semantic step did not run. */
     scopeVectors: number | null;
-    /** observation id -> 1-based FTS rank. */
     ftsRank: ReadonlyMap<number, number>;
-    /** observation id -> 1-based semantic rank. */
     semanticRank: ReadonlyMap<number, number>;
-    /**
-     * Which vector space this search used. Without it, an English-normalized
-     * search and a silently degraded raw one are indistinguishable in the
-     * benchmark — and "the caller forgot semantic_query_en" would read as "the
-     * protocol did not help".
-     */
     protocol: NormalizationProtocol;
-    /** Why a supplied `semanticQueryEn` was refused, if it was. */
     semanticQueryRejected: NormalizationRejectReason | null;
-    /**
-     * The resolved policy this search ran under. Reported per query because a
-     * matrix report that states the policy only once in its provenance cannot
-     * prove that every row used it (plan §6.2 item 7).
-     */
     policy: RetrievalPolicy;
-    /** `policy.semanticDiscovery` as asked for. */
     discoveryRequested: boolean;
-    /**
-     * Whether discovery was actually available: requested AND in the
-     * `semantic-en-v1` space.
-     *
-     * Reported separately from `discoveryRequested` because the gap between them
-     * is the whole point — a 2B arm whose `semantic_query_en` coverage is poor
-     * would otherwise report "discovery on" while most of its queries never left
-     * the keyword gate, and the arm's recall would be blamed on the floor.
-     */
     discoveryEffective: boolean;
-    /**
-     * Bigram leg candidate count (phase 3A). 0 when `bigramAux` is off.
-     *
-     * Reported separately from `ftsCount` because plan §10 requires the phase 3A
-     * gain NOT be misattributed to `semantic-en`. Folding these into `ftsCount`
-     * would make "the trigram index found it" and "the bigram leg found it"
-     * indistinguishable, which is the same mistake as folding the leg into the
-     * FTS rank.
-     */
     bigramCount: number;
-    /** observation id -> 1-based bigram-leg rank. */
     bigramRank: ReadonlyMap<number, number>;
-    /**
-     * observation id -> the two-character words that matched it.
-     *
-     * The attribution plan §10 requires: a recall change has to point at a
-     * SPECIFIC two-character word, otherwise "the bigram leg helped" is
-     * indistinguishable from "something else moved". A benchmark exit, not a
-     * metrics one — the runtime path records counts only, because one
-     * two-character word can leak what the user asked (plan §14.10).
-     */
+    /** Benchmark-only attribution; runtime metrics must not persist these strings. */
     bigramMatched: ReadonlyMap<number, readonly string[]>;
-    /**
-     * Bigram units that actually ran, and why the rest did not.
-     *
-     * `dropped` carries the bigram TEXT because the benchmark has to attribute a
-     * recall change to a specific two-character word. That is a benchmark exit,
-     * not a metrics one: the runtime observability path records counts only, since
-     * a single two-character word can leak what the user asked (plan §14.10).
-     */
     bigramUnits: {
       probed: number;
-      /** Present in the corpus but over the DF ratio ceiling. */
       dropped: { bigram: string; df: number }[];
-      /** Absent from the corpus entirely. */
       zeroDf: number;
-      /** Rows the DF ratio was computed against. */
       scopeSize: number;
     };
   }) => void;
-  /**
-   * Post-fusion observation exit. READ-ONLY, same contract as `onCandidates`.
-   *
-   * Separate from `onCandidates` because the cap is applied after the full
-   * ranking exists, and the number it discards is not derivable from either
-   * candidate list or the returned page — the harness would have to re-implement
-   * fusion to recover it, which is the second source of truth this module
-   * exists to avoid.
-   *
-   * Does NOT fire on the lexical-anchor early return or on a blank query: no
-   * fusion happened, so there is nothing to report.
-   */
+  /** Read-only diagnostics after fusion and before result projection. */
   onFusion?: (info: {
-    /** semantic-only candidates dropped by `semanticOnlyLimit`. */
     semanticOnlyDropped: number;
-    /** semantic-only results that survived into the returned page. */
     semanticOnlyReturned: number;
-    /** bigram-only candidates dropped by `bigramOnlyLimit` (phase 3A). */
     bigramOnlyDropped: number;
-    /** bigram-only results that survived into the returned page. */
     bigramOnlyReturned: number;
-    /** `policy.bigramVote` as it actually ran (phase 3A-R2). */
     bigramVoteMode: RetrievalPolicy['bigramVote'];
-    /**
-     * bigram matches that did NOT get an RRF term because another leg had already
-     * found the record (`discovery-only`).
-     *
-     * The direct read on whether the switch took effect: zero here while
-     * `bigramCount` is positive means the suppression never fired. Always 0 under
-     * `always`, by construction.
-     */
     bigramVotesSuppressed: number;
-    /**
-     * The fully fused ranking BEFORE the semantic-only cap and before the result
-     * limit, carrying the fused score this kernel actually computed.
-     *
-     * It exists so "which candidate pairs entered the tie-break?" is a measurement
-     * rather than an inference. The question cannot be answered from the returned
-     * page (equal scores are not visible in it) and answering it by recomputing
-     * `w/(K+rank)` in the harness would put the fusion formula in two places —
-     * the drift risk `onCandidates` was written to avoid. A tie is `===` on these
-     * float64 values, which is the same comparison the comparator makes, so the
-     * enumerated set cannot disagree with the code by construction.
-     *
-     * An earlier 2D draft inferred the tie set from an infinitesimal weight
-     * perturbation (`w_sem = 1+ε`) instead. That is a finite perturbation and can
-     * in general flip strictly-ordered pairs that are merely close, so it is a
-     * diagnostic, not a proof. It is kept as a cross-check only.
-     */
+    /** Full fused order before source quotas and request limit. */
     ranked: readonly {
       id: number;
       score: number;
       matchSource: 'fts' | 'semantic' | 'hybrid' | 'bigram';
-      /** 1-based semantic rank, or null when the candidate has none. */
       semRank: number | null;
-      /** 1-based bigram-leg rank, or null when the candidate has none. */
       bigramRank: number | null;
     }[];
   }) => void;
 }
 
 export type ScoredObservation = Observation & {
-  /**
-   * Which legs supported this result.
-   *
-   * `hybrid` — lexical AND semantic. `fts` — a trigram substring matched (a
-   * bigram may have matched too; trigram is the stronger signal and names the
-   * source). `bigram` — ONLY the auxiliary CJK two-character leg, so no trigram
-   * substring and no vector over the floor. `semantic` — only the vector.
-   *
-   * Note `hybrid` deliberately does NOT mean "more than one leg". Trigram and
-   * bigram are both lexical, and a Chinese query's trigram hit necessarily also
-   * matches the bigrams inside that window — counting legs would relabel most
-   * Chinese `fts` results as `hybrid` and claim semantic evidence that never
-   * existed.
-   *
-   * `bigram` (phase 3A) is a lead of the same epistemic status as `semantic` —
-   * worth surfacing, worth verifying — and it is capped by `bigramOnlyLimit` for
-   * exactly that reason.
-   */
+  /** `hybrid` means semantic plus trigram FTS; bigram alone is not strong evidence. */
   match_source: 'fts' | 'semantic' | 'hybrid' | 'bigram';
   semantic_score: number | null;
 };
@@ -1179,63 +572,13 @@ export async function hybridSearchObservations(
     scopeSize: bigramLeg.scopeSize,
   };
 
-  // --- Discovery eligibility: protocol boundary ---
-  //
-  // Discovery (recalling records FTS never matched) is allowed ONLY in the
-  // `semantic-en-v1` space. Two reasons, both measured:
-  //
-  //  1. `raw-v1` has no floor that separates signal from noise. Chinese text fed
-  //     straight to MiniLM puts annotated positives at cosine 0.080…0.607 while
-  //     the worst noise on a query about work that never happened reaches 0.431 —
-  //     overlapping distributions. Under `semantic-en-v1` the same records and
-  //     queries separate at AUC 0.998. A floor picked for the English space is
-  //     meaningless in the raw one, and phase 2B calibrates only the English one.
-  //  2. A missing or refused `semantic_query_en` is a CAPABILITY DEGRADATION
-  //     (plan §2.3), not a retrieval topology. Letting it silently take the
-  //     discovery path would make "the protocol did not help" and "the caller
-  //     forgot the parameter" produce the same page.
-  //
-  // This is deliberately not expressed as a policy field: it is not a knob to
-  // scan, it is an invariant. A 2B arm cannot accidentally turn it off.
-  //
-  // Note the boundary only affects the ftsCount === 0 case. When FTS has
-  // candidates the semantic leg still reranks in whichever space it is in,
-  // including `raw-v1` — that is phase 1b behavior and must stay neutral.
+  // Independent semantic discovery is calibrated only for valid English queries.
+  // Missing or rejected English forms remain FTS-only.
   const discoveryRequested = policy.semanticDiscovery;
   const discoveryEffective = discoveryRequested && protocol === SEMANTIC_EN_PROTOCOL;
 
-  // Lexical anchor rule, now scoped by the boundary above.
-  //
-  // Since phase 2C this branch is NOT the production path: the default policy
-  // has discovery on, so a `semantic-en-v1` query reaches the semantic leg with
-  // zero FTS candidates. It stays reachable for exactly two situations, and they
-  // are different in kind:
-  //
-  //  1. the operator rolled back (`retrieval.semanticDiscovery: false`), which
-  //     restores the whole phase 1b profile deliberately;
-  //  2. the search is NOT in the English space — `semantic_query_en` missing or
-  //     refused. That is a capability degradation, not a topology choice: under
-  //     `raw-v1` there is no floor that separates signal from noise (annotated
-  //     positives 0.080…0.607 overlapping worst-case noise at 0.431), and the
-  //     candidate pool is "the most recent 200 Observations in this scope" with
-  //     every one of them scored, so opening discovery there filled the page with
-  //     plausible-looking noise — measured at a mean of 8.4 records (worst 10 =
-  //     the limit) on queries about work that never happened here.
-  //
-  // READ THE expected-empty METRIC WITH THIS IN MIND: on a run where
-  // `discoveryEffective` is false, "expected-empty returned 0.00 records" is
-  // structurally guaranteed for any query with no lexical overlap — a continuity
-  // reading, NOT evidence that a floor or cap controls false recall. The 2B/2C
-  // false-recall numbers all come from runs where discovery was effective.
-  // A bigram hit COUNTS AS A LEXICAL ANCHOR, so it is part of this condition.
-  //
-  // The gate's premise is "the semantic leg may not discover records with no
-  // lexical evidence behind them". A bigram match is lexical evidence in the
-  // plainest sense: the user typed 引号 and the record contains 引号. The reason
-  // the trigram index missed it is a window-alignment artifact, not an absence of
-  // overlap. Treating it as an anchor is also why the bigram leg needs no cosine
-  // floor calibration to be safe on the degraded path — it is not a similarity
-  // judgement.
+  // Rollback and non-English-space requests require lexical evidence. A bigram
+  // match counts as lexical evidence when that optional leg is enabled.
   if (!discoveryEffective && ftsResults.length === 0 && bigramRankMap.size === 0) {
     deps?.onCandidates?.({
       ftsCount: 0,
@@ -1272,43 +615,8 @@ export async function hybridSearchObservations(
   // managed to embed the query. Its own failure degrades to `null`, never to 0.
   let scopeVectors: number | null = null;
 
-  /**
-   * The semantic leg runs ONLY in the `semantic-en-v1` space. Outside it, this
-   * request is FTS-only: no query embedding is generated, no stored vector is read.
-   *
-   * This is an INVARIANT, not a policy field — no profile and no benchmark arm can
-   * turn it on. Written this way because the previous shape was subtly broken: the
-   * lexical-anchor gate above only covers `ftsCount === 0`, so a single FTS hit was
-   * enough to let the `raw-v1` semantic leg score the WHOLE scope and inject a
-   * lexically-unrelated record as `match_source: "semantic"`. Measured on a
-   * 302-record fixture: a 900-day-old record with zero word overlap reached the
-   * page at cosine 0.30 (`benchmark/reports/raw-degrade-investigation.md` §2).
-   *
-   * Why that was indefensible rather than merely aggressive: the three values the
-   * leg reads — `semanticFloor` 0.197, `semanticCandidatePool`, `semanticTopK` —
-   * were every one of them calibrated in the ENGLISH space (phase 2B for the floor,
-   * the pool round and the Top-K round for the other two, whose 121-query
-   * calibration set is entirely English-derived). `raw-v1` has no defensible floor
-   * at all: annotated positives span cosine 0.080–0.607 while the worst noise on a
-   * query about work that never happened here reaches 0.431 — OVERLAPPING
-   * distributions, so no threshold separates them.
-   *
-   * Note what the fix is NOT: it is not "restore the phase 1b raw policy". Phase 1b
-   * kept that ghost out with a 200-record recency pool, not with its 0.2 floor
-   * (0.30 > 0.2 passes it too) — i.e. by time truncation, not by a relevance guard.
-   * Restoring it would forfeit old-record recall AND fork the protocol parameters,
-   * the candidate pool and the time window three ways. Plan §2.3 already classifies
-   * a missing or refused English form as CAPABILITY DEGRADATION whose default is
-   * FTS-only, with a semantic leg allowed only under an independently calibrated
-   * raw policy — which does not exist.
-   *
-   * Consequence to state plainly: a degraded request loses raw-v1 RERANKING, so its
-   * ordering is bm25 plus the `id` total-order key. That is an accepted cost, not a
-   * free win.
-   *
-   * `scopeVectors` stays `null` here on purpose: "the semantic step never ran" is a
-   * different fact from "the scope has 0 vectors", and only `null` says the first.
-   */
+  // Raw vectors are never scored: their positive and noise distributions overlap,
+  // while every active semantic policy value was calibrated in the English space.
   const semanticLegEligible = protocol === SEMANTIC_EN_PROTOCOL;
   if (semanticLegEligible) {
   try {
@@ -1332,17 +640,9 @@ export async function hybridSearchObservations(
       limit: policy.semanticCandidatePool,
     });
     const candidateIds = [...new Set<number>([...ftsRankMap.keys(), ...bigramRankMap.keys(), ...recentIds])];
-    // Ascending order is what makes the streaming path provably equivalent to the
-    // old one, not a cosmetic choice. The old path issued ONE `IN (...)` query and
-    // sorted its rows with a stable sort, so equal scores kept the order SQLite
-    // returned them in — and SQLite returns `WHERE id IN (...)` rows in ascending
-    // rowid order regardless of the list order (measured on Bun 1.2.20 / SQLite
-    // 3.43.2). Streaming ascending chunks therefore visits candidates in the same
-    // sequence, and `(score desc, id asc)` reproduces the same tie order.
+    // Preserve the old stable equal-score order across streaming chunks.
     candidateIds.sort((a, b) => a - b);
-    // Candidates another leg already matched. They are retained at any K (§3.1):
-    // dropping one would turn a `hybrid` result into `fts`. Bounded by the internal
-    // FTS limit plus the bigram cap, so the per-item counters below are cheap.
+    // Lexical candidates survive semantic Top-K so their source cannot change.
     const mustKeep = new Set<number>([...ftsRankMap.keys(), ...bigramRankMap.keys()]);
     const {
       scored,
@@ -1418,46 +718,8 @@ export async function hybridSearchObservations(
     if (semRank !== null) score += policy.semanticWeight / (policy.rrfK + semRank);
     if (bigramVotes) score += policy.bigramWeight / (policy.rrfK + bigramRank);
 
-    // --- match_source ---
-    //
-    // Uses `bigramVotes`, NOT `bigramRank !== null`: a suppressed leg did nothing
-    // to this result, so claiming it as supporting evidence would be false.
-    //
-    // The criteria (§3.1) spelled this out only for the FTS+bigram case, where the
-    // label is `fts` either way. The case it left open is semantic+bigram, and the
-    // answer matters a lot, so it is decided here and disclosed in the criteria's
-    // amendment A1:
-    //
-    //   Under `discovery-only`, a record found by the semantic leg AND the bigram
-    //   leg is labelled `semantic` — which means `semanticOnlyLimit` applies to it.
-    //
-    // The alternative (keep calling it `hybrid` so it escapes the semantic cap)
-    // was rejected because it reopens §5.2 through a different door: a noisy
-    // bigram would still promote a hard negative, not by score but by lifting it
-    // out of the cap's reach. Closing that door is the entire point of R2, so the
-    // suppression has to be total — the leg either acted on this candidate or it
-    // did not.
-    //
-    // **RATIFIED by the 3A-R2 gate ruling (2026-08-04) as the formal three-tier
-    // definition, no longer an implementer's choice awaiting review:**
-    //
-    //   semantic + trigram FTS  => hybrid, exempt from semanticOnlyLimit
-    //   semantic + bigram only  => semantic, still bound by semanticOnlyLimit
-    //   bigram only             => bigram, bound by bigramOnlyLimit
-    //
-    // The reason given is about what `hybrid` MEANS: semantic evidence plus
-    // RELIABLE lexical evidence. A trigram hit qualifies; a two-character sliding
-    // window does not. 「配置 / 发布 / 处理 / 服务」 were measured to produce semantic
-    // neighbours and lexical noise AT THE SAME TIME, so the two legs' errors are
-    // correlated — agreeing does not make two independent signals.
-    //
-    // The cost is predicted and measurable: the S3 layer (FTS ✗, semantic ✓,
-    // bigram ✓, 19 queries) becomes semantic-only under `discovery-only` and is
-    // therefore capped at 2 per page. If that cap eats the S3 benefit, the grid
-    // will show it as S3 hit@5 failing to rise — which is exactly the reading
-    // §6.1 registered. It did, and the ruling reads that not as a tuning target
-    // but as proof this bigram mechanism cannot deliver the gain and the safety
-    // bound at once.
+    // A suppressed bigram vote is not evidence. Under `discovery-only`,
+    // semantic+bigram stays `semantic` and remains inside the semantic quota.
     const lexical = ftsRank !== null || bigramVotes;
     const matchSource: ScoredObservation['match_source'] =
       lexical && semRank !== null
@@ -1470,27 +732,11 @@ export async function hybridSearchObservations(
     return { id, score, semRank, bigramRank, matchSource };
   });
 
-  /**
-   * Tie-break rank: lower wins. Only consulted on an exactly equal score.
-   *
-   * `bigram` is APPENDED as the weakest bucket rather than inserted among the
-   * existing three. Phase 2D calibrated `hybrid > semantic > fts` and its
-   * evidence covers only those; changing their relative order here would be an
-   * uncalibrated boundary smuggled in under a different phase. Last place is also
-   * the honest ranking: a bigram-only hit is a two-character substring match with
-   * no trigram context and no vector support behind it.
-   */
+  // Lower is stronger. Bigram-only remains the weakest evidence bucket.
   const confidenceOf = (s: ScoredObservation['match_source']): number =>
     s === 'hybrid' ? 0 : s === 'semantic' ? 1 : s === 'fts' ? 2 : 3;
 
-  // Rank by fused score, then break exact ties per policy.
-  //
-  // The `b.score !== a.score` guard is what keeps a tie-break a tie-break: a
-  // candidate that lost on fused score can never be rescued by having a better
-  // semantic rank, so switching `tieBreak` cannot reorder anything the fusion
-  // already separated. That is the property phase 2D needed and re-weighting the
-  // semantic leg does NOT have — `w_sem > 1` moves non-tied candidates too, which
-  // is how it changed which records fit on q13's page.
+  // Tie-breaks apply only when fused scores are exactly equal.
   scored.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
     if (policy.tieBreak === 'source-confidence' || policy.tieBreak === 'semantic-rank') {
@@ -1516,16 +762,7 @@ export async function hybridSearchObservations(
     return a.id - b.id; // smaller id first
   });
 
-  // --- semantic-only cap, applied AFTER the full ranking ---
-  //
-  // Deliberately not applied before fusion. Truncating the semantic list first
-  // would change the semantic RANK of the hybrid candidates that survive, so the
-  // cap would silently interact with the fusion weights and a matrix arm could
-  // not attribute its result to either one.
-  //
-  // A capped candidate does not consume the request limit: the walk keeps going
-  // and backfills with whatever hybrid/fts results come next, so a small cap
-  // trades noise for depth rather than for a shorter page.
+  // Apply source quotas after ranking and backfill with later eligible results.
   const capSemanticOnly = Math.min(policy.semanticOnlyLimit, limit);
   const capBigramOnly = Math.min(policy.bigramOnlyLimit, limit);
   const picked: typeof scored = [];

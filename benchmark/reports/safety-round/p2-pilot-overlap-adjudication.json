@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "step": "P2 第 2 步的附带产出：复核带逐对裁决（第 5 步的格式演练）",
+    "criteria": "benchmark/reports/safety-round/p2-calibration-criteria.md §5.2",
+    "rule": "同一事实 / 同一修复 / 同一结果 → duplicate；同一领域但不同工作 → related；能共同回答同一 query → 加入 acceptable_gold",
+    "basis": "裁决依据 fact_source 与两侧 annotation 的事实内容，不依据余弦。余弦只决定哪几对进入本表。",
+    "band": 0.45,
+    "autoDeleteEnabled": false,
+    "completeness": "本表必须覆盖复核带内的每一对；分析脚本会校验完整性，缺一对即失败。"
+  },
+  "rulings": [
+    {
+      "pair": "p04c×t11",
+      "verdict": "duplicate",
+      "reason": "t11 的 summary 明写「安装器生成 256-bit token 并设 0600」，p04c 说的是「32 字节随机、仅属主可读」——256-bit 就是 32 字节，0o600 就是仅属主可读写，同一事实。两侧 key_files 都指向 src/auth-token.ts。",
+      "action": "p04c 的事实已被 t11 覆盖，不得作为第 4 步的新记录。若要保留本地凭据这一区域，只能取 t11 未涵盖的部分（例如 inspectLocalAuthToken 的状态枚举），并重新核验。"
+    },
+    {
+      "pair": "p03c×t08",
+      "verdict": "duplicate",
+      "reason": "t08 的 summary 明写「重试耗尽后写入 quality=fallback 的 Observation，outcome 为空、只带确定性证据」，p03c 说的是同一件事。t08 的载体是集成测试、p03c 的载体是行为描述，但被陈述的事实相同。",
+      "action": "p03c 不得作为第 4 步的新记录。"
+    },
+    {
+      "pair": "p04a×t09",
+      "verdict": "related",
+      "reason": "同为安装 / 启动区域，但 t09 是 purge → clean install 的闭环测试，p04a 是 Worker 启动时的运行时完整性校验。前者验证安装流程可重来，后者规定布局缺件即拒绝启动，不是同一项工作。",
+      "action": "保留。可考虑互为 acceptable_gold。"
+    },
+    {
+      "pair": "p04b×t14",
+      "verdict": "related",
+      "reason": "t14 修的是 install 覆盖源码后仍跑旧进程（改用 restart()），p04b 讲的是运行时目录缺件导致拒绝启动。都表现为「装完了却不对」，但成因与修法不同。",
+      "action": "保留。"
+    },
+    {
+      "pair": "p04b×t13",
+      "verdict": "related",
+      "reason": "t13 是安装器复制清单漏了 src/auth-token.ts 这一具体缺陷，p04b 是运行时完整性检查这一机制。形状相近（缺文件 → 起不来），事实不同。",
+      "action": "保留，但第 4 步撰写同区域记录时要复查是否与 t13 重述同一缺陷。"
+    },
+    {
+      "pair": "p04a×t14",
+      "verdict": "related",
+      "reason": "同上：t14 是 restart() 缺陷，p04a 是启动校验机制。",
+      "action": "保留。"
+    },
+    {
+      "pair": "p04a×t13",
+      "verdict": "related",
+      "reason": "同上：t13 是复制清单缺陷，p04a 是启动校验机制。",
+      "action": "保留。"
+    },
+    {
+      "pair": "p04a×t16",
+      "verdict": "related",
+      "reason": "t16 是真实环境干净安装的验收结论，p04a 是启动校验的机制决策。一个是验收读数，一个是代码行为。",
+      "action": "保留。"
+    },
+    {
+      "pair": "p04c×t25",
+      "verdict": "related",
+      "reason": "t25 记的是 typecheck 报 3 个类型错误尚未修复，与本地凭据无关；余弦偏高来自两侧都提到 src/server/worker.ts 与诊断类词汇。",
+      "action": "保留（p04c 另因与 t11 重复而被排除，与本对无关）。"
+    },
+    {
+      "pair": "p02a×t03",
+      "verdict": "related",
+      "reason": "同为 hook 区域，但 t03 修的是 AgentSpawn hook 误重启 Worker，p02a 讲的是 hook 的 700ms 预算与丢失计数。",
+      "action": "保留。"
+    },
+    {
+      "pair": "p02b×t03",
+      "verdict": "related",
+      "reason": "同上（p02b 是 p02a 的同一事实改写，因此与 t03 的关系相同）。",
+      "action": "保留。"
+    },
+    {
+      "pair": "p02a×t17",
+      "verdict": "related",
+      "reason": "t17 是端到端一轮 turn 的验收结论（Observation 与 embedding 正确），p02a 是捕获链路的时间预算。",
+      "action": "保留。"
+    },
+    {
+      "pair": "p01a×t21",
+      "verdict": "related",
+      "reason": "t21 记的是 RRF 融合与 0.2 语义地板线，p01a 记的是语义腿的协议准入（英文空间才跑）。同在检索层，是两项不同的机制决策。",
+      "action": "保留。可考虑互为 acceptable_gold。"
+    },
+    {
+      "pair": "p01b×t21",
+      "verdict": "related",
+      "reason": "同上（p01b 是 p01a 的同一事实改写）。",
+      "action": "保留。"
+    },
+    {
+      "pair": "p01c×t21",
+      "verdict": "related",
+      "reason": "t21 是融合与地板线，p01c 是候选池与 Top-K 保留的分离。同在检索层，不同工作。",
+      "action": "保留。"
+    },
+    {
+      "pair": "p03a×t08",
+      "verdict": "related",
+      "reason": "t08 是 fallback 降级的集成测试，p03a 是工具事件即污染、槽位不复用。同在 ACP 区域，事实不同。",
+      "action": "保留。"
+    },
+    {
+      "pair": "p03a×t07",
+      "verdict": "related",
+      "reason": "t07 修的是 ACPPool recycle 失败时移除死 slot，p03a 讲的是污染判定导致槽位回收。两者都以移除槽位收尾，但触发条件不同（recycle 失败 vs 收到工具事件）。这是本表里最接近 duplicate 的一对 related。",
+      "action": "保留，但第 4 步若要写 ACPPool 槽位管理，必须先确认不是在重述 t07。"
+    },
+    {
+      "pair": "p03c×t04",
+      "verdict": "related",
+      "reason": "t04 是 ACP 错误日志脱敏（只留错误类型与字节数），p03c 是压缩失败降级为 fallback。同在 ACP 失败路径上，事实不同。",
+      "action": "保留（p03c 另因与 t08 重复而被排除）。"
+    },
+    {
+      "pair": "p05a×t04",
+      "verdict": "related",
+      "reason": "两者都是脱敏，但 t04 脱敏的是 ACP 错误日志，p05a 脱敏的是用户 <private> 区段，机制与触发点都不同。",
+      "action": "保留。"
+    }
+  ]
+}

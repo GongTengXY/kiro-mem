@@ -1,0 +1,264 @@
+{
+  "step": "P2 第 4 步第 3 阶段：年龄与插入顺序的一次性随机化",
+  "ruling": "benchmark/reports/safety-round/p2-step3-review-and-step4-ruling.md §1.2",
+  "seed": {
+    "value": 3714135451,
+    "hex": "dd61359b",
+    "source": "p2-calibration-freeze.json 的 ageSeed（钉死值）",
+    "derivedFrom": "判据 r2 的 SHA-256 前 8 位（dd61359bd938011eebe17eab6262cbc421fa818af2667b7e1a25fe597a0035a1）",
+    "pinnedReason": "洗牌只发生一次（裁决 1.2）。判据后续修订会改变它自己的 SHA，若脚本继续从活的判据 SHA 派生种子，任何一次重跑都会产出另一套年龄——那在外观上与「看到结果后重新洗牌」无法区分。因此种子在此钉死为首次洗牌当时的值，脚本改为从本字段读取。"
+  },
+  "script": {
+    "path": "benchmark/assign-safety-round-ages.ts",
+    "sha256": "022230bec8ac637d6b23b86557f3a36f2ff69febcb30c75d493801df79f98fed"
+  },
+  "spanDays": 1095,
+  "records": 40,
+  "spearman": {
+    "ageVsSearchTextLength": -0.031,
+    "ageVsInsertionOrder": -0.146,
+    "note": "只作检查记录。判据与裁决都没有为它设阈值，因此不得据此重新洗牌——重洗等于用结果反向选装置。"
+  },
+  "assignment": [
+    {
+      "id": "s01",
+      "age_days": 432,
+      "insertion_index": 28,
+      "search_text_length": 321
+    },
+    {
+      "id": "s02",
+      "age_days": 752,
+      "insertion_index": 25,
+      "search_text_length": 260
+    },
+    {
+      "id": "s03",
+      "age_days": 580,
+      "insertion_index": 3,
+      "search_text_length": 271
+    },
+    {
+      "id": "s04",
+      "age_days": 943,
+      "insertion_index": 27,
+      "search_text_length": 310
+    },
+    {
+      "id": "s05",
+      "age_days": 743,
+      "insertion_index": 30,
+      "search_text_length": 339
+    },
+    {
+      "id": "s06",
+      "age_days": 532,
+      "insertion_index": 6,
+      "search_text_length": 318
+    },
+    {
+      "id": "s07",
+      "age_days": 57,
+      "insertion_index": 0,
+      "search_text_length": 310
+    },
+    {
+      "id": "s08",
+      "age_days": 463,
+      "insertion_index": 20,
+      "search_text_length": 339
+    },
+    {
+      "id": "c09",
+      "age_days": 346,
+      "insertion_index": 13,
+      "search_text_length": 264
+    },
+    {
+      "id": "c10",
+      "age_days": 325,
+      "insertion_index": 9,
+      "search_text_length": 260
+    },
+    {
+      "id": "c11",
+      "age_days": 102,
+      "insertion_index": 23,
+      "search_text_length": 254
+    },
+    {
+      "id": "c12",
+      "age_days": 921,
+      "insertion_index": 16,
+      "search_text_length": 265
+    },
+    {
+      "id": "c13",
+      "age_days": 205,
+      "insertion_index": 14,
+      "search_text_length": 290
+    },
+    {
+      "id": "c14",
+      "age_days": 202,
+      "insertion_index": 37,
+      "search_text_length": 276
+    },
+    {
+      "id": "c15",
+      "age_days": 730,
+      "insertion_index": 5,
+      "search_text_length": 193
+    },
+    {
+      "id": "c17",
+      "age_days": 902,
+      "insertion_index": 12,
+      "search_text_length": 224
+    },
+    {
+      "id": "c18",
+      "age_days": 885,
+      "insertion_index": 38,
+      "search_text_length": 225
+    },
+    {
+      "id": "c19",
+      "age_days": 229,
+      "insertion_index": 11,
+      "search_text_length": 213
+    },
+    {
+      "id": "c20",
+      "age_days": 120,
+      "insertion_index": 34,
+      "search_text_length": 206
+    },
+    {
+      "id": "c21",
+      "age_days": 742,
+      "insertion_index": 29,
+      "search_text_length": 228
+    },
+    {
+      "id": "c22",
+      "age_days": 881,
+      "insertion_index": 1,
+      "search_text_length": 224
+    },
+    {
+      "id": "c23",
+      "age_days": 175,
+      "insertion_index": 33,
+      "search_text_length": 193
+    },
+    {
+      "id": "c24",
+      "age_days": 18,
+      "insertion_index": 18,
+      "search_text_length": 200
+    },
+    {
+      "id": "c25",
+      "age_days": 263,
+      "insertion_index": 39,
+      "search_text_length": 229
+    },
+    {
+      "id": "c26",
+      "age_days": 533,
+      "insertion_index": 26,
+      "search_text_length": 226
+    },
+    {
+      "id": "c27",
+      "age_days": 876,
+      "insertion_index": 2,
+      "search_text_length": 211
+    },
+    {
+      "id": "c28",
+      "age_days": 756,
+      "insertion_index": 21,
+      "search_text_length": 234
+    },
+    {
+      "id": "c29",
+      "age_days": 762,
+      "insertion_index": 17,
+      "search_text_length": 218
+    },
+    {
+      "id": "c30",
+      "age_days": 442,
+      "insertion_index": 15,
+      "search_text_length": 193
+    },
+    {
+      "id": "c31",
+      "age_days": 506,
+      "insertion_index": 36,
+      "search_text_length": 222
+    },
+    {
+      "id": "c32",
+      "age_days": 314,
+      "insertion_index": 8,
+      "search_text_length": 223
+    },
+    {
+      "id": "c33",
+      "age_days": 781,
+      "insertion_index": 19,
+      "search_text_length": 239
+    },
+    {
+      "id": "c34",
+      "age_days": 1016,
+      "insertion_index": 31,
+      "search_text_length": 247
+    },
+    {
+      "id": "c35",
+      "age_days": 890,
+      "insertion_index": 22,
+      "search_text_length": 243
+    },
+    {
+      "id": "c36",
+      "age_days": 497,
+      "insertion_index": 24,
+      "search_text_length": 188
+    },
+    {
+      "id": "c37",
+      "age_days": 1068,
+      "insertion_index": 4,
+      "search_text_length": 218
+    },
+    {
+      "id": "c38",
+      "age_days": 484,
+      "insertion_index": 35,
+      "search_text_length": 247
+    },
+    {
+      "id": "c39",
+      "age_days": 735,
+      "insertion_index": 10,
+      "search_text_length": 254
+    },
+    {
+      "id": "c40",
+      "age_days": 718,
+      "insertion_index": 7,
+      "search_text_length": 219
+    },
+    {
+      "id": "c41",
+      "age_days": 14,
+      "insertion_index": 32,
+      "search_text_length": 269
+    }
+  ]
+}

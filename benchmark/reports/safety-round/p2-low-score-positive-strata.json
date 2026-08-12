@@ -1,0 +1,1072 @@
+{
+  "step": "P2 第 4 步第 5 阶段：低分正例分层",
+  "criteria": {
+    "path": "benchmark/reports/safety-round/p2-calibration-criteria.md",
+    "sha256": "b38f7e43e2871bda89a49aa87869c14fe49c6d3bfff2e0d170c8f54fa3b74726",
+    "section": "§7.2"
+  },
+  "procedure": {
+    "rule": "只允许补写、不允许删除",
+    "structuralGuarantee": "本脚本只读 query 文件、只写报告，没有任何写回 query 集的代码路径；并逐轮校验上一轮的 query 一个都没消失。",
+    "measured": "query → 自己 primary_gold 的最高余弦（成对属性，用于难度分层，不是相关性判断）",
+    "forbidden": [
+      "因得分太高或太低删除 query",
+      "因余弦更改 primary_gold / acceptable_gold",
+      "依据检索返回页面增删 query"
+    ]
+  },
+  "totalRelevance": 61,
+  "counts": {
+    "<0.200": 6,
+    "0.200-0.310": 9,
+    "0.310-0.400": 18,
+    ">=0.400": 28
+  },
+  "target": {
+    "band": "0.200-0.310",
+    "min": 8,
+    "actual": 9,
+    "met": true
+  },
+  "distribution": {
+    "min": 0.086,
+    "p50": 0.391,
+    "max": 0.602
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "at": "2026-08-11T11:21:45.142Z",
+      "addedIds": [
+        "sr-r01",
+        "sr-r02",
+        "sr-r03",
+        "sr-r04",
+        "sr-r05",
+        "sr-r06",
+        "sr-r07",
+        "sr-r08",
+        "sr-r09",
+        "sr-r10",
+        "sr-r11",
+        "sr-r12",
+        "sr-r13",
+        "sr-r14",
+        "sr-r15",
+        "sr-r16",
+        "sr-r17",
+        "sr-r18",
+        "sr-r19",
+        "sr-r20",
+        "sr-r21",
+        "sr-r22",
+        "sr-r23",
+        "sr-r24",
+        "sr-r25",
+        "sr-r26",
+        "sr-r27",
+        "sr-r28",
+        "sr-r29",
+        "sr-r30",
+        "sr-r31",
+        "sr-r32",
+        "sr-r33",
+        "sr-r34",
+        "sr-r35",
+        "sr-r36",
+        "sr-r37",
+        "sr-r38",
+        "sr-r39",
+        "sr-r40",
+        "sr-r41"
+      ],
+      "queryIds": [
+        "sr-r01",
+        "sr-r02",
+        "sr-r03",
+        "sr-r04",
+        "sr-r05",
+        "sr-r06",
+        "sr-r07",
+        "sr-r08",
+        "sr-r09",
+        "sr-r10",
+        "sr-r11",
+        "sr-r12",
+        "sr-r13",
+        "sr-r14",
+        "sr-r15",
+        "sr-r16",
+        "sr-r17",
+        "sr-r18",
+        "sr-r19",
+        "sr-r20",
+        "sr-r21",
+        "sr-r22",
+        "sr-r23",
+        "sr-r24",
+        "sr-r25",
+        "sr-r26",
+        "sr-r27",
+        "sr-r28",
+        "sr-r29",
+        "sr-r30",
+        "sr-r31",
+        "sr-r32",
+        "sr-r33",
+        "sr-r34",
+        "sr-r35",
+        "sr-r36",
+        "sr-r37",
+        "sr-r38",
+        "sr-r39",
+        "sr-r40",
+        "sr-r41"
+      ],
+      "counts": {
+        "<0.200": 2,
+        "0.200-0.310": 4,
+        "0.310-0.400": 12,
+        ">=0.400": 23
+      }
+    },
+    {
+      "round": 2,
+      "at": "2026-08-11T11:23:16.977Z",
+      "addedIds": [
+        "sr-r42",
+        "sr-r43",
+        "sr-r44",
+        "sr-r45",
+        "sr-r46",
+        "sr-r47"
+      ],
+      "queryIds": [
+        "sr-r01",
+        "sr-r02",
+        "sr-r03",
+        "sr-r04",
+        "sr-r05",
+        "sr-r06",
+        "sr-r07",
+        "sr-r08",
+        "sr-r09",
+        "sr-r10",
+        "sr-r11",
+        "sr-r12",
+        "sr-r13",
+        "sr-r14",
+        "sr-r15",
+        "sr-r16",
+        "sr-r17",
+        "sr-r18",
+        "sr-r19",
+        "sr-r20",
+        "sr-r21",
+        "sr-r22",
+        "sr-r23",
+        "sr-r24",
+        "sr-r25",
+        "sr-r26",
+        "sr-r27",
+        "sr-r28",
+        "sr-r29",
+        "sr-r30",
+        "sr-r31",
+        "sr-r32",
+        "sr-r33",
+        "sr-r34",
+        "sr-r35",
+        "sr-r36",
+        "sr-r37",
+        "sr-r38",
+        "sr-r39",
+        "sr-r40",
+        "sr-r41",
+        "sr-r42",
+        "sr-r43",
+        "sr-r44",
+        "sr-r45",
+        "sr-r46",
+        "sr-r47"
+      ],
+      "counts": {
+        "<0.200": 4,
+        "0.200-0.310": 4,
+        "0.310-0.400": 14,
+        ">=0.400": 25
+      }
+    },
+    {
+      "round": 3,
+      "at": "2026-08-11T11:24:54.461Z",
+      "addedIds": [
+        "sr-r48",
+        "sr-r49",
+        "sr-r50",
+        "sr-r51",
+        "sr-r52",
+        "sr-r53",
+        "sr-r54",
+        "sr-r55"
+      ],
+      "queryIds": [
+        "sr-r01",
+        "sr-r02",
+        "sr-r03",
+        "sr-r04",
+        "sr-r05",
+        "sr-r06",
+        "sr-r07",
+        "sr-r08",
+        "sr-r09",
+        "sr-r10",
+        "sr-r11",
+        "sr-r12",
+        "sr-r13",
+        "sr-r14",
+        "sr-r15",
+        "sr-r16",
+        "sr-r17",
+        "sr-r18",
+        "sr-r19",
+        "sr-r20",
+        "sr-r21",
+        "sr-r22",
+        "sr-r23",
+        "sr-r24",
+        "sr-r25",
+        "sr-r26",
+        "sr-r27",
+        "sr-r28",
+        "sr-r29",
+        "sr-r30",
+        "sr-r31",
+        "sr-r32",
+        "sr-r33",
+        "sr-r34",
+        "sr-r35",
+        "sr-r36",
+        "sr-r37",
+        "sr-r38",
+        "sr-r39",
+        "sr-r40",
+        "sr-r41",
+        "sr-r42",
+        "sr-r43",
+        "sr-r44",
+        "sr-r45",
+        "sr-r46",
+        "sr-r47",
+        "sr-r48",
+        "sr-r49",
+        "sr-r50",
+        "sr-r51",
+        "sr-r52",
+        "sr-r53",
+        "sr-r54",
+        "sr-r55"
+      ],
+      "counts": {
+        "<0.200": 6,
+        "0.200-0.310": 6,
+        "0.310-0.400": 17,
+        ">=0.400": 26
+      }
+    },
+    {
+      "round": 4,
+      "at": "2026-08-11T11:25:57.735Z",
+      "addedIds": [
+        "sr-r56",
+        "sr-r57",
+        "sr-r58",
+        "sr-r59",
+        "sr-r60",
+        "sr-r61"
+      ],
+      "queryIds": [
+        "sr-r01",
+        "sr-r02",
+        "sr-r03",
+        "sr-r04",
+        "sr-r05",
+        "sr-r06",
+        "sr-r07",
+        "sr-r08",
+        "sr-r09",
+        "sr-r10",
+        "sr-r11",
+        "sr-r12",
+        "sr-r13",
+        "sr-r14",
+        "sr-r15",
+        "sr-r16",
+        "sr-r17",
+        "sr-r18",
+        "sr-r19",
+        "sr-r20",
+        "sr-r21",
+        "sr-r22",
+        "sr-r23",
+        "sr-r24",
+        "sr-r25",
+        "sr-r26",
+        "sr-r27",
+        "sr-r28",
+        "sr-r29",
+        "sr-r30",
+        "sr-r31",
+        "sr-r32",
+        "sr-r33",
+        "sr-r34",
+        "sr-r35",
+        "sr-r36",
+        "sr-r37",
+        "sr-r38",
+        "sr-r39",
+        "sr-r40",
+        "sr-r41",
+        "sr-r42",
+        "sr-r43",
+        "sr-r44",
+        "sr-r45",
+        "sr-r46",
+        "sr-r47",
+        "sr-r48",
+        "sr-r49",
+        "sr-r50",
+        "sr-r51",
+        "sr-r52",
+        "sr-r53",
+        "sr-r54",
+        "sr-r55",
+        "sr-r56",
+        "sr-r57",
+        "sr-r58",
+        "sr-r59",
+        "sr-r60",
+        "sr-r61"
+      ],
+      "counts": {
+        "<0.200": 6,
+        "0.200-0.310": 9,
+        "0.310-0.400": 18,
+        ">=0.400": 28
+      }
+    },
+    {
+      "round": 5,
+      "at": "2026-08-11T11:32:30.263Z",
+      "addedIds": [],
+      "queryIds": [
+        "sr-r53",
+        "sr-r45",
+        "sr-r51",
+        "sr-r14",
+        "sr-r46",
+        "sr-r22",
+        "sr-r56",
+        "sr-r40",
+        "sr-r54",
+        "sr-r61",
+        "sr-r58",
+        "sr-r02",
+        "sr-r11",
+        "sr-r50",
+        "sr-r13",
+        "sr-r57",
+        "sr-r26",
+        "sr-r48",
+        "sr-r42",
+        "sr-r03",
+        "sr-r10",
+        "sr-r19",
+        "sr-r18",
+        "sr-r29",
+        "sr-r49",
+        "sr-r44",
+        "sr-r32",
+        "sr-r38",
+        "sr-r34",
+        "sr-r55",
+        "sr-r27",
+        "sr-r28",
+        "sr-r37",
+        "sr-r43",
+        "sr-r24",
+        "sr-r36",
+        "sr-r31",
+        "sr-r20",
+        "sr-r30",
+        "sr-r09",
+        "sr-r12",
+        "sr-r07",
+        "sr-r08",
+        "sr-r52",
+        "sr-r23",
+        "sr-r15",
+        "sr-r21",
+        "sr-r01",
+        "sr-r35",
+        "sr-r25",
+        "sr-r41",
+        "sr-r06",
+        "sr-r47",
+        "sr-r05",
+        "sr-r59",
+        "sr-r17",
+        "sr-r33",
+        "sr-r16",
+        "sr-r39",
+        "sr-r04",
+        "sr-r60"
+      ],
+      "counts": {
+        "<0.200": 6,
+        "0.200-0.310": 9,
+        "0.310-0.400": 18,
+        ">=0.400": 28
+      },
+      "note": "改写 33 条问法以满足零 FTS 声明后重测；relevance 总数不变，无删除"
+    },
+    {
+      "round": 6,
+      "at": "2026-08-11T11:32:36.288Z",
+      "addedIds": [],
+      "queryIds": [
+        "sr-r01",
+        "sr-r02",
+        "sr-r03",
+        "sr-r04",
+        "sr-r05",
+        "sr-r06",
+        "sr-r07",
+        "sr-r08",
+        "sr-r09",
+        "sr-r10",
+        "sr-r11",
+        "sr-r12",
+        "sr-r13",
+        "sr-r14",
+        "sr-r15",
+        "sr-r16",
+        "sr-r17",
+        "sr-r18",
+        "sr-r19",
+        "sr-r20",
+        "sr-r21",
+        "sr-r22",
+        "sr-r23",
+        "sr-r24",
+        "sr-r25",
+        "sr-r26",
+        "sr-r27",
+        "sr-r28",
+        "sr-r29",
+        "sr-r30",
+        "sr-r31",
+        "sr-r32",
+        "sr-r33",
+        "sr-r34",
+        "sr-r35",
+        "sr-r36",
+        "sr-r37",
+        "sr-r38",
+        "sr-r39",
+        "sr-r40",
+        "sr-r41",
+        "sr-r42",
+        "sr-r43",
+        "sr-r44",
+        "sr-r45",
+        "sr-r46",
+        "sr-r47",
+        "sr-r48",
+        "sr-r49",
+        "sr-r50",
+        "sr-r51",
+        "sr-r52",
+        "sr-r53",
+        "sr-r54",
+        "sr-r55",
+        "sr-r56",
+        "sr-r57",
+        "sr-r58",
+        "sr-r59",
+        "sr-r60",
+        "sr-r61"
+      ],
+      "counts": {
+        "<0.200": 6,
+        "0.200-0.310": 9,
+        "0.310-0.400": 18,
+        ">=0.400": 28
+      }
+    },
+    {
+      "round": 7,
+      "at": "2026-08-11T12:24:24.064Z",
+      "addedIds": [],
+      "queryIds": [
+        "sr-r01",
+        "sr-r02",
+        "sr-r03",
+        "sr-r04",
+        "sr-r05",
+        "sr-r06",
+        "sr-r07",
+        "sr-r08",
+        "sr-r09",
+        "sr-r10",
+        "sr-r11",
+        "sr-r12",
+        "sr-r13",
+        "sr-r14",
+        "sr-r15",
+        "sr-r16",
+        "sr-r17",
+        "sr-r18",
+        "sr-r19",
+        "sr-r20",
+        "sr-r21",
+        "sr-r22",
+        "sr-r23",
+        "sr-r24",
+        "sr-r25",
+        "sr-r26",
+        "sr-r27",
+        "sr-r28",
+        "sr-r29",
+        "sr-r30",
+        "sr-r31",
+        "sr-r32",
+        "sr-r33",
+        "sr-r34",
+        "sr-r35",
+        "sr-r36",
+        "sr-r37",
+        "sr-r38",
+        "sr-r39",
+        "sr-r40",
+        "sr-r41",
+        "sr-r42",
+        "sr-r43",
+        "sr-r44",
+        "sr-r45",
+        "sr-r46",
+        "sr-r47",
+        "sr-r48",
+        "sr-r49",
+        "sr-r50",
+        "sr-r51",
+        "sr-r52",
+        "sr-r53",
+        "sr-r54",
+        "sr-r55",
+        "sr-r56",
+        "sr-r57",
+        "sr-r58",
+        "sr-r59",
+        "sr-r60",
+        "sr-r61"
+      ],
+      "counts": {
+        "<0.200": 6,
+        "0.200-0.310": 9,
+        "0.310-0.400": 18,
+        ">=0.400": 28
+      }
+    }
+  ],
+  "perQuery": [
+    {
+      "id": "sr-r53",
+      "band": "<0.200",
+      "cosine": 0.086,
+      "primaryGold": [
+        "c39"
+      ]
+    },
+    {
+      "id": "sr-r45",
+      "band": "<0.200",
+      "cosine": 0.172,
+      "primaryGold": [
+        "c27"
+      ]
+    },
+    {
+      "id": "sr-r51",
+      "band": "<0.200",
+      "cosine": 0.185,
+      "primaryGold": [
+        "c22"
+      ]
+    },
+    {
+      "id": "sr-r14",
+      "band": "<0.200",
+      "cosine": 0.191,
+      "primaryGold": [
+        "c15"
+      ]
+    },
+    {
+      "id": "sr-r46",
+      "band": "<0.200",
+      "cosine": 0.192,
+      "primaryGold": [
+        "c30"
+      ]
+    },
+    {
+      "id": "sr-r22",
+      "band": "<0.200",
+      "cosine": 0.199,
+      "primaryGold": [
+        "c24"
+      ]
+    },
+    {
+      "id": "sr-r56",
+      "band": "0.200-0.310",
+      "cosine": 0.211,
+      "primaryGold": [
+        "c10"
+      ]
+    },
+    {
+      "id": "sr-r40",
+      "band": "0.200-0.310",
+      "cosine": 0.227,
+      "primaryGold": [
+        "c13"
+      ]
+    },
+    {
+      "id": "sr-r54",
+      "band": "0.200-0.310",
+      "cosine": 0.236,
+      "primaryGold": [
+        "c26"
+      ]
+    },
+    {
+      "id": "sr-r61",
+      "band": "0.200-0.310",
+      "cosine": 0.238,
+      "primaryGold": [
+        "c14"
+      ]
+    },
+    {
+      "id": "sr-r58",
+      "band": "0.200-0.310",
+      "cosine": 0.266,
+      "primaryGold": [
+        "c24"
+      ]
+    },
+    {
+      "id": "sr-r02",
+      "band": "0.200-0.310",
+      "cosine": 0.279,
+      "primaryGold": [
+        "s02"
+      ]
+    },
+    {
+      "id": "sr-r11",
+      "band": "0.200-0.310",
+      "cosine": 0.297,
+      "primaryGold": [
+        "c11"
+      ]
+    },
+    {
+      "id": "sr-r50",
+      "band": "0.200-0.310",
+      "cosine": 0.304,
+      "primaryGold": [
+        "c33"
+      ]
+    },
+    {
+      "id": "sr-r13",
+      "band": "0.200-0.310",
+      "cosine": 0.306,
+      "primaryGold": [
+        "c13"
+      ]
+    },
+    {
+      "id": "sr-r57",
+      "band": "0.310-0.400",
+      "cosine": 0.31,
+      "primaryGold": [
+        "c20"
+      ]
+    },
+    {
+      "id": "sr-r26",
+      "band": "0.310-0.400",
+      "cosine": 0.321,
+      "primaryGold": [
+        "c28"
+      ]
+    },
+    {
+      "id": "sr-r48",
+      "band": "0.310-0.400",
+      "cosine": 0.322,
+      "primaryGold": [
+        "c09"
+      ]
+    },
+    {
+      "id": "sr-r42",
+      "band": "0.310-0.400",
+      "cosine": 0.324,
+      "primaryGold": [
+        "c18"
+      ]
+    },
+    {
+      "id": "sr-r03",
+      "band": "0.310-0.400",
+      "cosine": 0.328,
+      "primaryGold": [
+        "s03"
+      ]
+    },
+    {
+      "id": "sr-r10",
+      "band": "0.310-0.400",
+      "cosine": 0.333,
+      "primaryGold": [
+        "c10"
+      ]
+    },
+    {
+      "id": "sr-r19",
+      "band": "0.310-0.400",
+      "cosine": 0.334,
+      "primaryGold": [
+        "c21"
+      ]
+    },
+    {
+      "id": "sr-r18",
+      "band": "0.310-0.400",
+      "cosine": 0.345,
+      "primaryGold": [
+        "c20"
+      ]
+    },
+    {
+      "id": "sr-r29",
+      "band": "0.310-0.400",
+      "cosine": 0.348,
+      "primaryGold": [
+        "c31"
+      ]
+    },
+    {
+      "id": "sr-r49",
+      "band": "0.310-0.400",
+      "cosine": 0.349,
+      "primaryGold": [
+        "c31"
+      ]
+    },
+    {
+      "id": "sr-r44",
+      "band": "0.310-0.400",
+      "cosine": 0.356,
+      "primaryGold": [
+        "s04"
+      ]
+    },
+    {
+      "id": "sr-r32",
+      "band": "0.310-0.400",
+      "cosine": 0.361,
+      "primaryGold": [
+        "c34"
+      ]
+    },
+    {
+      "id": "sr-r38",
+      "band": "0.310-0.400",
+      "cosine": 0.365,
+      "primaryGold": [
+        "c40"
+      ]
+    },
+    {
+      "id": "sr-r34",
+      "band": "0.310-0.400",
+      "cosine": 0.375,
+      "primaryGold": [
+        "c36"
+      ]
+    },
+    {
+      "id": "sr-r55",
+      "band": "0.310-0.400",
+      "cosine": 0.378,
+      "primaryGold": [
+        "c34"
+      ]
+    },
+    {
+      "id": "sr-r27",
+      "band": "0.310-0.400",
+      "cosine": 0.391,
+      "primaryGold": [
+        "c29"
+      ]
+    },
+    {
+      "id": "sr-r28",
+      "band": "0.310-0.400",
+      "cosine": 0.392,
+      "primaryGold": [
+        "c30"
+      ]
+    },
+    {
+      "id": "sr-r37",
+      "band": "0.310-0.400",
+      "cosine": 0.398,
+      "primaryGold": [
+        "c39"
+      ]
+    },
+    {
+      "id": "sr-r43",
+      "band": ">=0.400",
+      "cosine": 0.402,
+      "primaryGold": [
+        "c41"
+      ]
+    },
+    {
+      "id": "sr-r24",
+      "band": ">=0.400",
+      "cosine": 0.408,
+      "primaryGold": [
+        "c26"
+      ]
+    },
+    {
+      "id": "sr-r36",
+      "band": ">=0.400",
+      "cosine": 0.414,
+      "primaryGold": [
+        "c38"
+      ]
+    },
+    {
+      "id": "sr-r31",
+      "band": ">=0.400",
+      "cosine": 0.427,
+      "primaryGold": [
+        "c33"
+      ]
+    },
+    {
+      "id": "sr-r20",
+      "band": ">=0.400",
+      "cosine": 0.428,
+      "primaryGold": [
+        "c22"
+      ]
+    },
+    {
+      "id": "sr-r30",
+      "band": ">=0.400",
+      "cosine": 0.431,
+      "primaryGold": [
+        "c32"
+      ]
+    },
+    {
+      "id": "sr-r09",
+      "band": ">=0.400",
+      "cosine": 0.432,
+      "primaryGold": [
+        "c09"
+      ]
+    },
+    {
+      "id": "sr-r12",
+      "band": ">=0.400",
+      "cosine": 0.434,
+      "primaryGold": [
+        "c12"
+      ]
+    },
+    {
+      "id": "sr-r07",
+      "band": ">=0.400",
+      "cosine": 0.435,
+      "primaryGold": [
+        "s07"
+      ]
+    },
+    {
+      "id": "sr-r08",
+      "band": ">=0.400",
+      "cosine": 0.441,
+      "primaryGold": [
+        "s08"
+      ]
+    },
+    {
+      "id": "sr-r52",
+      "band": ">=0.400",
+      "cosine": 0.452,
+      "primaryGold": [
+        "c37"
+      ]
+    },
+    {
+      "id": "sr-r23",
+      "band": ">=0.400",
+      "cosine": 0.457,
+      "primaryGold": [
+        "c25"
+      ]
+    },
+    {
+      "id": "sr-r15",
+      "band": ">=0.400",
+      "cosine": 0.466,
+      "primaryGold": [
+        "c17"
+      ]
+    },
+    {
+      "id": "sr-r21",
+      "band": ">=0.400",
+      "cosine": 0.469,
+      "primaryGold": [
+        "c23"
+      ]
+    },
+    {
+      "id": "sr-r01",
+      "band": ">=0.400",
+      "cosine": 0.473,
+      "primaryGold": [
+        "s01"
+      ]
+    },
+    {
+      "id": "sr-r35",
+      "band": ">=0.400",
+      "cosine": 0.476,
+      "primaryGold": [
+        "c37"
+      ]
+    },
+    {
+      "id": "sr-r25",
+      "band": ">=0.400",
+      "cosine": 0.491,
+      "primaryGold": [
+        "c27"
+      ]
+    },
+    {
+      "id": "sr-r41",
+      "band": ">=0.400",
+      "cosine": 0.503,
+      "primaryGold": [
+        "c14"
+      ]
+    },
+    {
+      "id": "sr-r06",
+      "band": ">=0.400",
+      "cosine": 0.521,
+      "primaryGold": [
+        "s06"
+      ]
+    },
+    {
+      "id": "sr-r47",
+      "band": ">=0.400",
+      "cosine": 0.524,
+      "primaryGold": [
+        "c35"
+      ]
+    },
+    {
+      "id": "sr-r05",
+      "band": ">=0.400",
+      "cosine": 0.528,
+      "primaryGold": [
+        "s05"
+      ]
+    },
+    {
+      "id": "sr-r59",
+      "band": ">=0.400",
+      "cosine": 0.53,
+      "primaryGold": [
+        "c30"
+      ]
+    },
+    {
+      "id": "sr-r17",
+      "band": ">=0.400",
+      "cosine": 0.538,
+      "primaryGold": [
+        "c19"
+      ]
+    },
+    {
+      "id": "sr-r33",
+      "band": ">=0.400",
+      "cosine": 0.545,
+      "primaryGold": [
+        "c35"
+      ]
+    },
+    {
+      "id": "sr-r16",
+      "band": ">=0.400",
+      "cosine": 0.573,
+      "primaryGold": [
+        "c18"
+      ]
+    },
+    {
+      "id": "sr-r39",
+      "band": ">=0.400",
+      "cosine": 0.578,
+      "primaryGold": [
+        "c41"
+      ]
+    },
+    {
+      "id": "sr-r04",
+      "band": ">=0.400",
+      "cosine": 0.583,
+      "primaryGold": [
+        "s04"
+      ]
+    },
+    {
+      "id": "sr-r60",
+      "band": ">=0.400",
+      "cosine": 0.602,
+      "primaryGold": [
+        "c19"
+      ]
+    }
+  ]
+}

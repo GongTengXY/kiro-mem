@@ -1,0 +1,217 @@
+{
+  "provenance": {
+    "source": "acp",
+    "agent": "kiro-mem-compressor",
+    "kiroCli": "kiro-cli (see report)",
+    "target": "records",
+    "recordSet": "near-duplicate-pilot",
+    "generatedAt": "2026-08-11T07:52:32.020Z",
+    "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+    "items": 15,
+    "failures": 0,
+    "retries": 0,
+    "wallTimeMs": 17666,
+    "itemLatencyMs": {
+      "p50": 14419,
+      "p95": 17652,
+      "max": 17652
+    }
+  },
+  "records": {
+    "p02c": {
+      "title": "Raw payload has two caps: 32KB per field, 4MB per turn",
+      "summary": "A single string field in a tool response is truncated in place once it exceeds 32KB, and the total raw payload stored per turn is capped at 4MB. Truncation leaves a marker in place, and the dropped bytes are not recoverable, but the original size is still recorded in payload_size, and deterministic extraction continues to work on the capped payload.",
+      "outcome": "A huge tool response no longer determines the storage volume of a single turn, and the extraction result is not affected.",
+      "learned": "The cap must leave two things behind, or it counts as silently dropping data: the truncation marker, and the original size.",
+      "concepts": [
+        "raw payload",
+        "field truncation",
+        "storage cap",
+        "payload_size",
+        "deterministic extraction"
+      ]
+    },
+    "p01c": {
+      "title": "Candidate pool takes the full scope, only the top 1000 keep a rank",
+      "summary": "The semantic candidate pool and rank retention are two separate things: the pool is set to Infinity, meaning every vector within the searched scope gets scored, and no record is invisible to the semantic leg because of its age; what is restricted is retention — candidates are read in chunks, scored immediately, and only the best 1000 keep a rank.",
+      "outcome": "The pool boundary and the retention boundary are expressed separately, and a change in scale only affects the latter.",
+      "learned": "A record whose rank is outside the top thousand cannot possibly reach a page of 10, so truncation affects observability, not page content.",
+      "concepts": [
+        "candidate pool",
+        "Top-K retention",
+        "semantic scoring",
+        "full scope",
+        "observability"
+      ]
+    },
+    "p05a": {
+      "title": "Private tag redaction uses a fail-closed scanner, redacting to the end when unclosed",
+      "summary": "Instead of a regex that matches pairs, scan through manually: when an unclosed opening tag is encountered, redact all the way to the end of the string, while tracking nesting depth so an inner closing tag cannot prematurely lift the redaction. Redacted segments are uniformly replaced with [REDACTED].",
+      "outcome": "When a tag is left malformed, the behavior is over-redaction, not writing private content to disk as-is.",
+      "learned": "For functionality like redaction, the default failure direction must lean toward the safe side; a regex that matches pairs defaults to leaning the opposite direction.",
+      "concepts": [
+        "redaction",
+        "fail-closed",
+        "unclosed tag",
+        "nesting depth",
+        "pre-storage processing"
+      ]
+    },
+    "p01a": {
+      "title": "The semantic leg is only eligible to run under semantic-en-v1; raw-v1 is never scored",
+      "summary": "The query protocol is determined by whether the English form on the query side is available: when semantic_query_en is missing, or is rejected by checkSemanticEnQuery for being untranslated / a placeholder, the protocol falls to raw-v1, while semanticLegEligible requires the protocol to be semantic-en-v1, so the entire semantic leg does not run — neither computing a query vector, nor reading any stored vector, and that request degrades to pure keyword.",
+      "outcome": "Requests lacking the English form lose both semantic reranking and semantic recall at the same time, keeping only FTS results.",
+      "learned": "In the raw-v1 space, the score ranges of annotated matches and pure noise overlap, with no defensible threshold, so it is better to let the request degrade to pure keyword than to give it a meaningless similarity score.",
+      "concepts": [
+        "semantic leg",
+        "protocol eligibility",
+        "semantic-en-v1",
+        "raw-v1",
+        "pure keyword degradation"
+      ]
+    },
+    "p03a": {
+      "title": "The compression runtime treats receiving any tool event as contamination, and the slot is no longer reused",
+      "summary": "The compressor sub-agent is declared with tools: [], theoretically making tool calls impossible; the runtime still listens for tool events, and once one is received, it judges the current prompt as failed and marks that runtime as contaminated. Contamination is a terminal state: after marking, the aliveness check is directly false, the pool recycles this slot, and a contamination count is accumulated.",
+      "outcome": "One unexpected tool call only loses the current compression; it does not leave an impure runtime in the pool to keep serving.",
+      "learned": "A declarative constraint only counts as implemented if it is paired with a runtime check — the declaration states the intent, but the check is what discovers the intent was not followed.",
+      "concepts": [
+        "compressor sub-agent",
+        "tool isolation",
+        "contamination detection",
+        "runtime pool",
+        "slot recycling"
+      ]
+    },
+    "p05c": {
+      "title": "Retrieval metrics only collect counts, reason enums and latency, no text at all",
+      "summary": "The input parameters of the metrics-writing function contain no text fields: only latency, whether it degraded, which vector space it ran in, the reason enum for why the English form is unavailable, plus counts such as keyword hits, semantic hits, comparable vectors, scope vectors, and pure-semantic-only entries. The columns written to the database correspond one-to-one with the input parameters, and counts are uniformly rounded to integers and clamped to non-negative.",
+      "outcome": "The metrics are sufficient to answer \"which step failed\", while containing no query text, Observation body text, or workspace paths.",
+      "learned": "Writing \"text must not be stored\" into the function signature is more reliable than writing it into documentation — if that parameter isn't in the signature, no one can accidentally pass it in.",
+      "concepts": [
+        "retrieval metrics",
+        "reason enum",
+        "no text storage",
+        "latency",
+        "signature constraint"
+      ]
+    },
+    "p01b": {
+      "title": "A search with no legal English query form is a pure keyword search",
+      "summary": "Investigation found that some requests get no semantic results at all, and the cause is neither the threshold nor the quota: the caller did not supply a usable English query form, so the request is judged onto the raw protocol, and the semantic step requires the protocol to be that English one. Once the judgment comes back false, the query vector is never generated at all, and stored vectors are never read even once — semanticDiscovery being on has no effect.",
+      "outcome": "For this class of requests, only full-text search results remain; neither semantic reranking nor semantic discovery is present.",
+      "learned": "Turning off an incomparable vector space is safer than giving it a fake threshold — when the two sides of text are not in the same space, the similarity number itself has no meaning.",
+      "concepts": [
+        "pure keyword",
+        "English query form",
+        "protocol judgment",
+        "semantic discovery",
+        "vector space"
+      ]
+    },
+    "p02a": {
+      "title": "Capture is best-effort: each hook gives the Worker only 700ms, misses are counted per hook and reason",
+      "summary": "Every hook calls the Worker with AbortSignal.timeout(700), giving up on timeout, never blocking the user's turn. The cost is that a Worker restart or a transient error can really drop a raw event, and the dropped input cannot be reconstructed afterward. To keep this from becoming silent, misses are counted separately by hook and reason, and exposed via /health's capture_misses_24h.",
+      "outcome": "The user turn's latency is capped at 700ms, and memory completeness is no longer claimed as a guarantee, but measured instead.",
+      "learned": "Something that cannot be guaranteed should either not be claimed, or its failure count should be put on the table; doing neither is the problem.",
+      "concepts": [
+        "capture",
+        "hook timeout",
+        "best-effort",
+        "miss counting",
+        "health check"
+      ]
+    },
+    "p05b": {
+      "title": "Switched private-section parsing from regex to a hand-written scanner, prefer over-deleting when the closing tag is missing",
+      "summary": "The paired-matching approach has a flaw: when an opening tag has no corresponding closing tag, the whole segment doesn't count as a match, so the private content is left as-is. After switching to a character-by-character scan, an unclosed opening tag keeps redacting all the way to the end of the text, and a depth counter ensures a closing tag nested inside can't prematurely close the outer redaction; matched segments are uniformly replaced with a fixed placeholder string.",
+      "outcome": "A malformed tag now results in over-deleting content, no longer in leaving private content in the store.",
+      "learned": "When parsing user-provided markers, first decide which direction a parse failure should lean toward, then choose the implementation.",
+      "concepts": [
+        "private section",
+        "regex flaw",
+        "character-by-character scan",
+        "prefer over-deleting",
+        "placeholder string"
+      ]
+    },
+    "p04a": {
+      "title": "Worker validates kiro-runtime on startup, missing pieces fail fast",
+      "summary": "The Worker startup path runs a runtime integrity check first: agent file missing, compression prompt missing, or the agent's tool list not empty — if any holds true, it prints the problem and exits, never entering serving state. The install pipeline calls the same check function, so the fix action is to rerun install.",
+      "outcome": "Layout corruption manifests as startup failure rather than compression quality quietly degrading.",
+      "learned": "An error that would silently degrade output quality must become a loud failure at startup, otherwise it will only show up as noise in the metrics.",
+      "concepts": [
+        "runtime integrity",
+        "startup validation",
+        "fail fast",
+        "install repair",
+        "compression purity"
+      ]
+    },
+    "p04b": {
+      "title": "Missing files in isolated runtime directory make the service refuse to start",
+      "summary": "The service failing to start is not a bug, it's by design: before entering the service state, it checks the layout of the isolated runtime — if the compression agent file is missing, the system prompt is missing, or that agent unexpectedly carries tools, all of these are listed as problems and startup is terminated. The install command runs the same check, so it serves as both diagnosis and repair.",
+      "outcome": "Layout problems are exposed at the startup stage, not discovered later in the compression results.",
+      "learned": "Only by placing the same check in both install and startup can you guarantee that \"installed\" and \"running\" are describing the same thing.",
+      "concepts": [
+        "isolated runtime",
+        "layout check",
+        "refuse to start",
+        "reinstall repair",
+        "system prompt"
+      ]
+    },
+    "p03b": {
+      "title": "A tool-call notification fails the current compression and invalidates the whole runtime",
+      "summary": "Clarified the purity mechanism of the compression pipeline. The sub-agent responsible for compression declares an empty tools list, but the code does not trust this: if any tool-call-type notification appears on the session, the current compression is immediately treated as a failure, and the runtime itself is also marked as unrecoverable. After being marked, its liveness check always evaluates to false, based on which the pool discards that slot, while also incrementing a count for metrics to read.",
+      "outcome": "The affected scope is limited to this one compression; the contaminated session will not pick up another one.",
+      "learned": "Setting an impure state as a terminal state is less trouble than trying to clean up and reuse it, and is also easier to explain.",
+      "concepts": [
+        "purity",
+        "tool-call notification",
+        "terminal state",
+        "session discard",
+        "metric count"
+      ]
+    },
+    "p04c": {
+      "title": "Local credential: 32-byte random, owner-read-only, diagnostics report status only, never the value",
+      "summary": "The local Worker's token is composed of the hexadecimal form of a 32-byte random number, with on-disk permissions fixed to owner-read-write-only; when it already exists, the original value is preserved and permissions are re-corrected. The diagnostic path takes a separate non-destructive check, returning states such as missing, empty, malformed, or insecure permissions along with the permission bits, but never returns or prints the token itself.",
+      "outcome": "Credential issues can be diagnosed, and the diagnostic output does not contain the credential.",
+      "learned": "The credential's check function and read function must be kept separate, otherwise diagnostics will sooner or later log the value.",
+      "concepts": [
+        "local credential",
+        "file permissions",
+        "non-destructive diagnostics",
+        "no value leakage",
+        "preserved on reinstall"
+      ]
+    },
+    "p02b": {
+      "title": "Memory is not guaranteed to be complete, but every miss is counted",
+      "summary": "Confirmed the design trade-off of the capture pipeline: the hook only waits 700ms for the Worker, and moves on if it doesn't get a response in time, so a user's turn is never slowed down by the memory system. As a result, situations like Worker restarts or transient errors will genuinely drop the raw event, and there is no way to recover the dropped portion. The compensation in the design is not retrying until success, but counting per hook and failure reason, readable from the health endpoint.",
+      "outcome": "Completeness changed from a promise into a readable metric — how much was missed and why can be checked.",
+      "learned": "Better to let the user see an imperfect but honest count than to give a completeness promise that cannot be kept.",
+      "concepts": [
+        "raw event",
+        "timeout abandonment",
+        "non-blocking conversation",
+        "capture miss count",
+        "observable"
+      ]
+    },
+    "p03c": {
+      "title": "Compression failure degrades to quality=fallback, carrying only deterministic evidence",
+      "summary": "After retries are exhausted, the model output is not written; instead, an Observation marked as fallback is written, containing only evidence obtained from deterministic extraction. The quality field has only two values, normal and fallback, and it expresses how this record was generated, not whether the record content is true.",
+      "outcome": "The failed turn still leaves behind a queryable record, and it declares itself to be a degraded artifact.",
+      "learned": "A degraded artifact must either carry a marker or not exist at all — an unmarked degraded artifact will be used as if it were a normal record.",
+      "concepts": [
+        "degradation",
+        "deterministic evidence",
+        "quality marker",
+        "no fabrication",
+        "Observation"
+      ]
+    }
+  }
+}

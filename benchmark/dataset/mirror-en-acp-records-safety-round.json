@@ -1,0 +1,610 @@
+{
+  "provenance": {
+    "source": "merged-acp-runs",
+    "target": "records",
+    "inputs": [
+      {
+        "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-records-safety-round-candidates.json",
+        "provenance": {
+          "source": "merged-acp-runs",
+          "target": "records",
+          "inputs": [
+            {
+              "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-records-safety-round-sample.json",
+              "provenance": {
+                "source": "acp",
+                "agent": "kiro-mem-compressor",
+                "kiroCli": "kiro-cli (see report)",
+                "target": "records",
+                "recordSet": "safety-round-sample",
+                "generatedAt": "2026-08-11T08:06:43.470Z",
+                "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+                "items": 8,
+                "failures": 0,
+                "retries": 1,
+                "wallTimeMs": 26067,
+                "itemLatencyMs": {
+                  "p50": 20463,
+                  "p95": 26063,
+                  "max": 26063
+                }
+              }
+            },
+            {
+              "path": "/tmp/acp-cand-new.json",
+              "provenance": {
+                "source": "acp",
+                "agent": "kiro-mem-compressor",
+                "kiroCli": "kiro-cli (see report)",
+                "target": "records",
+                "recordSet": "safety-round-candidates",
+                "generatedAt": "2026-08-11T09:26:29.752Z",
+                "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+                "items": 33,
+                "failures": 0,
+                "retries": 0,
+                "wallTimeMs": 26368,
+                "itemLatencyMs": {
+                  "p50": 16744,
+                  "p95": 22605,
+                  "max": 26358
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "path": "/tmp/acp-c12.json",
+        "provenance": {
+          "source": "acp",
+          "agent": "kiro-mem-compressor",
+          "kiroCli": "kiro-cli (see report)",
+          "target": "records",
+          "recordSet": "safety-round-candidates",
+          "generatedAt": "2026-08-11T09:30:56.011Z",
+          "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+          "items": 1,
+          "failures": 0,
+          "retries": 0,
+          "wallTimeMs": 12296,
+          "itemLatencyMs": {
+            "p50": 12295,
+            "p95": 12295,
+            "max": 12295
+          }
+        }
+      }
+    ],
+    "postFreezeCorrection": {
+      "at": "2026-08-11T12:30:00Z",
+      "removed": [
+        "c16"
+      ],
+      "reason": "c16 在 P2 复核中被判与 s06 同一事实并移除（p2-overlap-adjudication-safety-round.json），但英文镜像当时未同步删除，导致镜像 41 项 / 记录 40 条。当前脚本只遍历最终记录因此未用到它，但 P3 runner 若直接遍历镜像会多播一条。按复审裁定第 3 项删除并重算 SHA。",
+      "authority": "P2 复审裁定第 3 项"
+    }
+  },
+  "records": {
+    "s06": {
+      "title": "Default time window changed from 90 days to unbounded",
+      "summary": "The default window changed to positive infinity, clearing out the 90-day fallback that was previously scattered across four places: full-text search and the LIKE fallback, the bigram leg, the retrieval kernel, and the default value in the MCP schema — leaving the latter in place would falsely report default behavior to callers. Explicitly passing days can still narrow a single search.",
+      "outcome": "The searchable range now equals the range the index can show, and records from two years ago can also be found.",
+      "learned": "A default value written in the schema is equivalent to a public commitment; missing it when changing behavior is more dangerous than missing it in code, because callers reason based on it.",
+      "concepts": [
+        "default time window",
+        "unbounded search",
+        "schema default value",
+        "explicit narrowing",
+        "working set growth"
+      ]
+    },
+    "s05": {
+      "title": "Relative corpus-background normalization performs worse than absolute scores; this direction is abandoned",
+      "summary": "After normalizing by the mean and standard deviation of the candidate pool per query, separation dropped from 0.841 to 0.735; the relative threshold that preserves all positives would let in 29 negatives, while the absolute threshold lets in only 19. The mechanism runs in the opposite direction: the background mean for things that were never done is 0.095, lower than the 0.129 for things with answers, so the same absolute score gets divided out into a larger relative value, and the rule ends up rewarding queries where \"nothing is relevant\".",
+      "outcome": "This direction is abandoned on the spot; this round converges back to the single path of only tuning the absolute threshold and quota.",
+      "learned": "A rule premised on \"the background level represents this query's difficulty\" has that premise exactly inverted when \"asking about something that was never done\"; switching to a percentile or difference-based version would hit the same pitfall.",
+      "concepts": [
+        "relative admission",
+        "normalization",
+        "separation",
+        "background mean",
+        "falsification probe"
+      ]
+    },
+    "s02": {
+      "title": "Vector space identity is model, quantization, dimension, protocol — four segments, not the model name",
+      "summary": "Both text protocols produce 384-dim vectors from the same model, which looks harmless to mix, but testing shows it is not: when the two sides' protocols do not match, the reading is 0.613; when the two sides are consistent, it is 0.972. So the space identity key is built as a four-segment concatenation, written into the vector row's model column, and simultaneously serves as the read filter condition, letting the two protocols coexist in one table while being unable to rank against each other.",
+      "outcome": "Cross-protocol comparison went from \"needs discipline to avoid\" to \"cannot be expressed\".",
+      "learned": "The version key must cover every component that affects comparability; omitting the text protocol segment lets mixing happen silently and look completely normal.",
+      "concepts": [
+        "space identity",
+        "version key",
+        "quantization",
+        "protocol isolation",
+        "vector table"
+      ]
+    },
+    "s08": {
+      "title": "2 records per page is a semantic-only quota, not a whole-page false-recall guardrail",
+      "summary": "This cap only constrains results from the pure-semantic source; keyword hits and results hit by both legs are never bound by it — this is by design, not a defect. In the blind audit's 30 negative cases, 28 filled the quota, and the returned items were 100% pure-semantic-source with zero keyword hits, showing the quota was not breached, but rather that it simply does not govern other sources. Therefore the documentation wording is unified to call it a quota, and whole-page safety conclusions must come from a cross-source negative-case threshold.",
+      "outcome": "The terminology and scope of responsibility are written into the docs, avoiding treating one source's quota as a whole-page safety guarantee.",
+      "learned": "A guardrail's name should make clear which part it guards; when the name is vague, readers will automatically treat it as a global guarantee.",
+      "concepts": [
+        "semantic-only quota",
+        "guardrail scope",
+        "source label",
+        "whole-page safety",
+        "terminology wording"
+      ]
+    },
+    "s01": {
+      "title": "English semantic normalization must be done on both sides; translating only the record side tested worse",
+      "summary": "The missing cell was tested: record translated into English, query kept in Chinese, tuned MRR was only 0.437, below the 0.529 baseline where neither side is translated. One-sided translation puts the two ends of the comparison into different spaces, and the similarity value loses its meaning. Therefore the protocol specifies that either both sides are normalized, or the entire semantic leg does not run — when the English question form is missing, the original text must not be compared against English vectors.",
+      "outcome": "The engineering-saving one-sided scheme was vetoed by the readings; normalizing both sides became a hard precondition of the protocol.",
+      "learned": "In cross-lingual retrieval, \"translating one side\" is not a compromise but a wrong approach — it destroys comparability, at a cost greater than not translating at all.",
+      "concepts": [
+        "English normalization",
+        "one-sided translation",
+        "MRR",
+        "semantic leg admission",
+        "comparability"
+      ]
+    },
+    "s03": {
+      "title": "False-recall gate fails at 1.900, rollback time window cannot save it",
+      "summary": "The unbounded arm's hard-negative average return is 1.900, the criterion requires no more than 1, so this gate fails and the whole round does not pass. Rolling back the time window is excluded: the control arm itself is 1.800, dropping only 0.100 still fails to meet the standard, yet it would revoke the recall gains of old records already confirmed by independent blind audit. The remedy is set as opening a separate safety round that only touches the similarity threshold and quota.",
+      "outcome": "The public stable release remains blocked, the working branch retains the unbounded default to preserve already-confirmed gains.",
+      "learned": "When a threshold fails, first ask \"can a candidate fix make it pass\", then ask \"what is the cost\" — here the first question is already a no.",
+      "concepts": [
+        "false-recall gate",
+        "unbounded time window",
+        "rollback assessment",
+        "release blocking",
+        "safety round"
+      ]
+    },
+    "s07": {
+      "title": "LIMIT with a bound parameter flips the query plan, same SQL becomes over a thousand times slower",
+      "summary": "For the same retrieval SQL, the row limit as a literal takes 0.93 ms, but switched to a bound parameter it becomes 1506.57 ms, with the returned 50 rows identical. The cause is that, not knowing how many rows to fetch, the optimizer abandons the plan of \"driven by the full-text index, looking up the primary key\" and instead switches to scanning all records in the scope, probing the full-text index row by row, then sorting with a temporary B-tree.",
+      "outcome": "Classified as a pure cost defect and scheduled for a dedicated fix round, with the acceptance criterion being identical behavior row by row plus reduced latency, not an increase in some quality metric.",
+      "learned": "Parameterization is usually harmless, but it strips away the optimizer's row-count information; queries involving a row limit need the execution plan included in regression as well.",
+      "concepts": [
+        "query plan",
+        "bound parameter",
+        "temporary B-tree",
+        "full-text-index-driven",
+        "cost defect"
+      ]
+    },
+    "s04": {
+      "title": "Duplicate copies inflated the false-recall reading by 0.6, still failed to meet the bar after dedup",
+      "summary": "After deduplicating by distinct source text, the mean false-recall return dropped from 1.9 to 1.3, and neither reading passed the requirement of not exceeding 1. Of the 30 negative cases, 18 returned two copies of the same source text, accounting for six-tenths, and the similarity scores for these copy pairs matched digit-for-digit, directly confirming that the copies reused the vector. The apparatus thus accounted for the 0.6 difference, leaving the remaining count as the true number of distinct false leads.",
+      "outcome": "The official failing reading remains unchanged; the deduplicated reading is registered as a parallel supplementary reading, with both reported together.",
+      "learned": "The metric counts page rows, not distinct content; when the corpus contains near-duplicates or exact duplicates, these two things must be reported separately.",
+      "concepts": [
+        "duplicate copies",
+        "dedup reading",
+        "false recall",
+        "parallel readings",
+        "apparatus bias"
+      ]
+    },
+    "c20": {
+      "title": "Floor 0.32 zeroes out out-of-domain negatives, at the cost of losing the lowest-scoring positive",
+      "summary": "Raising the floor to 0.32 zeroes out all ten fully out-of-domain negatives, average return drops to zero; but that same value is higher than 0.308, the score of the lowest-scoring positive, so it gets cut along with them. Zeroing out out-of-domain negatives and keeping all positives conflict with each other on this corpus.",
+      "outcome": "This tradeoff has been explicitly recorded, no longer treated as a cost-free tightening.",
+      "learned": "The cost of tightening a threshold is often concentrated on one or two of the hardest samples; looking only at the mean makes it seem free.",
+      "concepts": [
+        "out-of-domain negatives",
+        "zeroing out",
+        "lowest-scoring positive",
+        "tradeoff",
+        "threshold tightening"
+      ]
+    },
+    "c30": {
+      "title": "Filler corpus uses banlist plus mechanical check, literal violations at zero",
+      "summary": "Seventy-eight unique concepts and thirty-three file basenames go into the banlist; after generation each entry is checked line by line for literal violations, and the reading is zero; ten thousand titles are pairwise non-duplicate. The random seed is written into the metadata, so the entire corpus batch can be replayed verbatim.",
+      "outcome": "The filler corpus will not create unexpected keyword hits for calibration queries, and the experiment is replayable.",
+      "learned": "The credibility of a generative device comes from two things: a reproducible seed, and a mechanically decidable definition of violation.",
+      "concepts": [
+        "filler corpus",
+        "banlist",
+        "literal violation",
+        "seed",
+        "replayable"
+      ]
+    },
+    "c36": {
+      "title": "Ranking evidence is a separate round, can run in parallel but must be adjudicated separately",
+      "summary": "The ranking evidence, decoupled from age and length, is a separate round on its own. It compares the technical total order key against explicit recency-first, and is unrelated to the choice of similarity threshold and quota. It can gather evidence in parallel with the safety round, but must be reported separately and adjudicated separately, and must not be mixed into the same round.",
+      "outcome": "The variables of the two rounds do not overlap with each other, and each round's readings can be attributed.",
+      "learned": "Parallel does not mean merged. Two things can be done at the same time, but sharing one report is equivalent to moving two variables at the same time.",
+      "concepts": [
+        "round attribution",
+        "variable isolation",
+        "total order key",
+        "recency-first",
+        "separate adjudication"
+      ]
+    },
+    "c12": {
+      "title": "The rollback profile is made as a whole-group strategy: floor 0.2, no quota, pool 200, ranking not truncated",
+      "summary": "When the semantic discovery switch is turned off, the whole group switches to the keyword-anchor profile, rather than overriding parameters item by item: floor 0.2, no quota on pure-semantic results, candidate pool of 200 entries, ranking not truncated. What the user rolls back to is a tested combination, not an arbitrary pairing of four knobs.",
+      "outcome": "The rollback can be switched back and forth without needing to rebuild data, and the switch takes effect in a newly started session.",
+      "learned": "A rollback should give one overall profile. Letting the user assemble parameters themselves is equivalent to treating an \"untested combination\" as the fallback.",
+      "concepts": [
+        "rollback profile",
+        "whole-group strategy",
+        "keyword anchor",
+        "switch",
+        "tested combination"
+      ]
+    },
+    "c15": {
+      "title": "Second round of ten combinations for the dual-character split auxiliary leg all infeasible, kept closed",
+      "summary": "Ten combinations were entered in the second round, zero feasible. The criteria pre-wrote the handling for this situation: the auxiliary leg remains closed, and \"returning to the original state\" must not be described as a phase success. This direction is accordingly registered as mechanistic convergence, and a third round will not be opened.",
+      "outcome": "The auxiliary leg remains closed, and this direction is removed from the to-do list rather than continuing to be scheduled.",
+      "learned": "Writing \"what to do when all are infeasible\" into the criteria in advance avoids packaging a return to the starting point as progress after the fact.",
+      "concepts": [
+        "auxiliary leg",
+        "feasible arm",
+        "mechanistic convergence",
+        "pre-written criteria",
+        "kept closed"
+      ]
+    },
+    "c26": {
+      "title": "Quota lowered to 1 is arithmetically tautological, pre-registered as a diagnostic arm",
+      "summary": "The negative-example page with zero keyword hits consists entirely of pure-semantic results, so once the per-page quota is set to one, the average returned being no more than one holds necessarily, regardless of retrieval quality. This value is pre-registered as a diagnostic arm, on equal footing with quota zero, and must not be treated as a success candidate; nor can page-wide safety be claimed based solely on the quota's arithmetic upper bound.",
+      "outcome": "The degenerate solution is excluded before the first arm runs, avoiding after-the-fact disputes.",
+      "learned": "When pre-writing criteria, first identify the values that make the threshold tautologically true and mark them as diagnostic items, otherwise they will appear in the form of a \"pass\".",
+      "concepts": [
+        "arithmetically tautological",
+        "diagnostic arm",
+        "quota",
+        "degenerate solution",
+        "pre-written criteria"
+      ]
+    },
+    "c41": {
+      "title": "Benchmark text retrieval changed to reuse the production concatenator, eliminating a second source of truth",
+      "summary": "The benchmark side no longer assembles its own embedding text: it first goes through the mapping from annotation to result, then calls the production concatenator, so if either end changes its rules both sides change together. The two text protocols also share the same concatenator, differing only in the source of the fields fed into it, which turns the two-tier comparison into a pure text difference rather than an implementation difference.",
+      "outcome": "The benchmark-embedded text is byte-for-byte identical to production, and concatenation rule drift is no longer possible.",
+      "learned": "When the same rule is written separately in two places, drift is only a matter of time, and it will report the difference as the score of the object under test.",
+      "concepts": [
+        "single source of truth",
+        "concatenator reuse",
+        "pure text comparison",
+        "rule drift",
+        "benchmark fidelity"
+      ]
+    },
+    "c24": {
+      "title": "Page replacement has two counting standards: 109/105 physical lines, 55/53 after folding",
+      "summary": "By page physical line count, 109 lines were added and 105 removed; folded by distinct original text, it is 55 and 53. The two sets differ by nearly half, consistent with the structure where each original text has five copies in the apparatus. Page replacement must report both standards together.",
+      "outcome": "The reading of replacement magnitude no longer depends on the reader guessing which standard was used.",
+      "learned": "When duplicates exist in the corpus, any \"count\" type metric has two values; reporting only one leaves the reader to choose for themselves.",
+      "concepts": [
+        "page replacement",
+        "dual standards",
+        "folding",
+        "copy structure",
+        "metric ambiguity"
+      ]
+    },
+    "c29": {
+      "title": "The 50,000-record apparatus is 10,000 original records copied 5 times, spanning 1,095 days",
+      "summary": "The apparatus is composed of 10,000 original records copied 5 times, with a seeding span of 1,095 days. Copies reuse the same vector, so similarity scores for same-origin copy pairs are identical bit-for-bit, which is a direct trace left by the construction method. While the physical row count meets the target, multiple copies of the same original record may appear on the page.",
+      "outcome": "The apparatus structure was explicitly recorded, becoming the premise for subsequently explaining the dual-criteria readings.",
+      "learned": "When using duplication to scale up corpus size, one must think through in advance which metrics will be altered by the copy structure, and present both sets of criteria side by side in the report.",
+      "concepts": [
+        "apparatus construction",
+        "copies",
+        "reused vector",
+        "seeding span",
+        "dual criteria"
+      ]
+    },
+    "c38": {
+      "title": "All relative corpus-context normalization writings share the same wrong premise, disabled as a whole",
+      "summary": "Both the quantile version and the delta-from-median version share the same premise: that the background level can represent the difficulty of this query. But when asking about something the project never did, this premise is exactly reversed — the most extreme negative example has an absolute score of only 0.391, but with a background mean of 0.015 and standard deviation of 0.056, the computed relative value is higher than all twenty-two positive examples that actually have answers.",
+      "outcome": "This direction as a whole goes on the ban list, subsequent rounds will not retry by switching writings.",
+      "learned": "When a class of methods shares the same premise, refuting the premise refutes the whole class; trying variants one by one is just repeating the same mistake.",
+      "concepts": [
+        "relative normalization",
+        "shared premise",
+        "background mean",
+        "ban list",
+        "whole-class refutation"
+      ]
+    },
+    "c11": {
+      "title": "Retrieval strategy self-check: floor bound the domain, quota and pool limit the type",
+      "summary": "The floor must be a finite number between negative one and one, because cosine cannot go beyond that range — filling in a larger value is equivalent to permanently turning off the semantic leg with no way to find out why; the semantic-only quota must be a non-negative integer or unbounded; the candidate pool and retention count must be an integer of at least one or unbounded. Each violation returns an error string carrying the actual value.",
+      "outcome": "Illegal strategies now error out at assembly time, no longer showing up as \"the feature seems to not be working\".",
+      "learned": "Parameters outside the domain do not error out, they just make the feature quietly disappear; the self-check for this kind of parameter needs to include the domain as well.",
+      "concepts": [
+        "parameter self-check",
+        "domain",
+        "cosine",
+        "quota",
+        "silent failure"
+      ]
+    },
+    "c23": {
+      "title": "Independent blind review confirms recall gain: hit rate zero to eighty percent, zero regression",
+      "summary": "The hit rate for old records rose from zero to 80.77 percent, 21 out of 26 entered the top five, and not a single one regressed. This half of recall has been completed and independently verified; the only part that did not pass is the false-recall gate. Any subsequent remediation plan must preserve this gain.",
+      "outcome": "The gain-side conclusion holds independently, becoming the baseline for evaluating the cost of remediation plans.",
+      "learned": "Record confirmed gains separately, so that when discussing rollback later there is something to compare the cost against.",
+      "concepts": [
+        "recall gain",
+        "independent blind review",
+        "hit rate",
+        "zero regression",
+        "baseline"
+      ]
+    },
+    "c37": {
+      "title": "An already-consumed acceptance set can only be used for descriptive measurement, not for parameter selection",
+      "summary": "This set has already been consumed as an acceptance set; using it to select thresholds is equivalent to practicing with the exam paper. It can still be used for descriptive measurement, provided that no threshold is selected from it. After the policy is frozen, it will be rerun as a whole once and explicitly labeled as a consumed regression confirmation set; final release evidence requires building a separate independent confirmation set.",
+      "outcome": "The boundary between parameter selection and acceptance has been fixed in place, avoiding the same data serving both roles at once.",
+      "learned": "Once a piece of data has been used for acceptance, it loses eligibility for parameter selection; labeling it clearly is more reliable than counting on remembering later.",
+      "concepts": [
+        "consumed set",
+        "descriptive measurement",
+        "parameter-selection prohibition",
+        "regression confirmation",
+        "independent confirmation set"
+      ]
+    },
+    "c18": {
+      "title": "The Floor Barely Filters Anything: Queries Average 16% of the Corpus Crossing the Line",
+      "summary": "At a fifty-thousand scale, queries with answers cross the line on an average of sixteen percent of the corpus, with a maximum of forty-eight point seven percent; queries without answers average six point two percent, with a maximum of forty-five point three percent. The page still looks fairly clean, but that is due to ranking and per-page quota, not this threshold.",
+      "outcome": "Overturned the assumption that \"the threshold is filtering things,\" making clear that what actually works is ranking and quota.",
+      "learned": "The filter rate of an absolute similarity threshold collapses as the corpus grows; to read whether it's working, you have to look at the crossing-the-line count, not the final page.",
+      "concepts": [
+        "crossing-the-line count",
+        "filter rate",
+        "scale drift",
+        "quota",
+        "ranking"
+      ]
+    },
+    "c13": {
+      "title": "The degrade path was a third, never-calibrated shape, now deleted whole",
+      "summary": "The degrade flag only blocked the zero-keyword-hit case. As long as one keyword hit landed, the semantic leg in the other vector space still scored the entire scope, using a floor calibrated for the English space. This was neither pure keyword nor any frozen old profile, but an uncalibrated third combination. The fix deletes that path whole; the semantic leg no longer runs when the protocol does not match.",
+      "outcome": "Requests missing the English query form are now genuinely keyword-only, with no uncalibrated semantic results mixed into the page.",
+      "learned": "The word \"degrade\" is easy to mistake for a master switch; it actually only covers one specific condition, and other paths must be checked one by one.",
+      "concepts": [
+        "degrade path",
+        "uncalibrated",
+        "cross-space threshold",
+        "pure keyword",
+        "path deletion"
+      ]
+    },
+    "c27": {
+      "title": "p95 at max corpus tier with top-1000 retained is 158 to 286ms",
+      "summary": "Across five corpus tiers, p95 with top-1000 retained falls between one hundred fifty-eight and two hundred eighty-six milliseconds, p99 reaches at most four hundred forty-eight milliseconds, and the search-loop resident memory increase ranges between two hundred twenty-five and three hundred twenty-four megabytes. Both are within budget, and the retained count is not the current bottleneck.",
+      "outcome": "Performance gate passed, the retained count value does not need to be lowered for latency.",
+      "learned": "Latency must be reported together with the tier: a single p95 number alone does not show which corpus scale it was measured on.",
+      "concepts": [
+        "latency",
+        "resident memory",
+        "corpus tier",
+        "performance gate",
+        "retained count"
+      ]
+    },
+    "c31": {
+      "title": "Injected index budget set to 8192 bytes, kept under the interface ceiling",
+      "summary": "The budget is set at 8192 bytes, deliberately below the injection interface's 10000-byte ceiling to leave margin. What is injected is an index, not content: pinned items, a few recent entries with a short outcome, and a longer recent index, each line carrying an approximate read cost, with no model synthesis and no topic clustering.",
+      "outcome": "Injected content never hits the ceiling, and what to read is decided by the agent on demand.",
+      "learned": "The budget must stay under the hard ceiling, not hug it; hugging it turns the ceiling into a target value.",
+      "concepts": [
+        "injection budget",
+        "byte ceiling",
+        "index catalog",
+        "on-demand reading",
+        "leaving margin"
+      ]
+    },
+    "c32": {
+      "title": "Detail response cap set at 32KB, defined separately from the injected index budget",
+      "summary": "The response for fetching details by id is set with a 32KB upper limit. This is separate from the budget for the index injected at session start: the latter is constrained by the injection interface limit, the former is constrained by the tool reply itself, the two numbers are defined separately and do not share a constant.",
+      "outcome": "The limits from two different sources can each be adjusted independently, changing one will not unexpectedly affect the other.",
+      "learned": "Two values happening to be close does not mean they are the same constraint; merging them into one constant would lead later people to change the wrong place.",
+      "concepts": [
+        "detail response",
+        "byte cap",
+        "constant separation",
+        "tool reply",
+        "injection budget"
+      ]
+    },
+    "c34": {
+      "title": "Health endpoint reads the profile from disk on every call, and reports the next session's profile",
+      "summary": "The health endpoint reads the current profile from disk every time it is called, so you can confirm whether the config took effect without reading code. Note that it reports the profile the next session will use, not the one currently running — an already-started session keeps the setting it started with.",
+      "outcome": "Whether the config took effect becomes self-checkable, and the easily misunderstood point of \"when it takes effect\" is written in the same place.",
+      "learned": "When exposing a config reading, explain which moment it describes together with it, otherwise the user will assume it describes the current process.",
+      "concepts": [
+        "health endpoint",
+        "profile reading",
+        "when it takes effect",
+        "self-check",
+        "session-level setting"
+      ]
+    },
+    "c17": {
+      "title": "The floor line was chosen on thirty corpus turns, when a single query had at most eleven candidates",
+      "summary": "When this floor and quota were chosen, the corpus had only thirty turns, a single query had at most eleven semantic candidates, and forty-nine expected-empty queries averaged 0.592 returned, which looked very safe. It is an absolute value with no corpus reference, so it no longer holds once scale changes.",
+      "outcome": "Record \"why it looked safe at the time\" as a starting point for explaining scale drift later.",
+      "learned": "A threshold's credibility ceiling is determined by the corpus scale it was calibrated on; the scale must be reported together with the reading.",
+      "concepts": [
+        "floor line",
+        "calibration scale",
+        "expected-empty",
+        "absolute threshold",
+        "corpus reference"
+      ]
+    },
+    "c09": {
+      "title": "Fusion only uses rank not score, so score magnitude is completely discarded in the ranking",
+      "summary": "The fusion formula adds one term for each leg: weight divided by (constant plus rank). What enters the formula is the rank. The similarity score is only used to compare against the floor line and to sort in order to determine the rank, never participating in the ranking itself. The consequence is that the most similar item among real questions and the most similar item among fake questions, as long as both rank first, contribute identically to the fusion score.",
+      "outcome": "The mechanism of \"taking the highest semantic score for hybrid scoring would filter out low relevance\" has been confirmed not to exist.",
+      "learned": "Rank is ordered but unscaled: it preserves who is more similar, but discards how similar. To use the latter, a separate absolute threshold must be set.",
+      "concepts": [
+        "fusion formula",
+        "rank",
+        "score scale",
+        "ranking",
+        "floor line"
+      ]
+    },
+    "c33": {
+      "title": "Rollback switch only changes retrieval, not database schema or stored vectors",
+      "summary": "The switch only decides which set of retrieval strategies to use, while the database schema, stored vectors and embedding protocol all stay unchanged, so it can be flipped back and forth with no rebuild needed and no data loss. It takes effect for newly started sessions; a session already running keeps the tier it started with.",
+      "outcome": "Rollback becomes a low-risk action, at the cost of only waiting for the next session.",
+      "learned": "Rollbackability must rest on \"not touching persisted state\"; as soon as a change touches the storage format, rollback is no longer just flipping a switch.",
+      "concepts": [
+        "rollback scope",
+        "persistence unchanged",
+        "effective timing",
+        "session-level",
+        "no rebuild needed"
+      ]
+    },
+    "c10": {
+      "title": "Candidate pool and rank retention split into two policy fields",
+      "summary": "Previously two concepts were expressed conflated in one place, changed into two independent fields: the pool takes the full set of the searched scope, so no record is invisible to the semantic leg because of its age; retention truncates to the best one thousand, candidates read in chunks and scored immediately. After splitting, they can separately answer \"how much is visible\" and \"how many keep a rank\".",
+      "outcome": "The impact of scale growth can be attributed to the correct side — it moves retention, not visibility.",
+      "learned": "When two boundaries share one name, any discussion about scale slides onto the other one; splitting the names is more effective than writing comments.",
+      "concepts": [
+        "candidate pool",
+        "Top-K retention",
+        "policy field",
+        "visibility",
+        "chunked scoring"
+      ]
+    },
+    "c28": {
+      "title": "Only 163 of over 4,600-plus candidates kept, returned page unchanged item by item",
+      "summary": "Under the most aggressive tier, only 163 out of 4,618 above-threshold candidates were kept, and the ordered results were identical item by item to full scoring. Mechanistically consistent: at a rank of several thousand, the contribution to the fusion score is one divided by sixty plus rank, not enough to reach a page of ten. What was truly sacrificed was observability — records outside the retained set have no readable semantic rank.",
+      "outcome": "The cost of truncation was localized to observability, not to page content.",
+      "learned": "Proving an optimization \"does not change behavior\" requires item-by-item diffs, not aggregate metrics — aggregates being the same can still hide an internal order swap.",
+      "concepts": [
+        "truncation",
+        "item-by-item diff",
+        "fusion contribution",
+        "observability",
+        "full scoring"
+      ]
+    },
+    "c39": {
+      "title": "Result deduplication deferred as a separate item because it affects both usability and false-recall readings simultaneously",
+      "summary": "Retrieval currently has no content-based deduplication step at all, only source labeling and quota trimming, and in real corpora the same thing leaves multiple near-duplicate records across multiple turns. Adding deduplication would both improve page usability and lower false-recall readings — precisely because it affects both of these at once, mixing it into this round would make the reason the threshold passed unattributable.",
+      "outcome": "This change is deferred to after this round as a separate item with its own separate gate.",
+      "learned": "A change that improves two metrics at once is a burden rather than a bonus in a round that requires attribution.",
+      "concepts": [
+        "result deduplication",
+        "attribution",
+        "near-duplicates",
+        "turn isolation",
+        "page usability"
+      ]
+    },
+    "c25": {
+      "title": "Duplicates filling the page do not mask recall gains, dedup cannot save a single positive",
+      "summary": "Of the five unretrieved positives, four had their entire page filled by same-source duplicates, but dedup cannot save a single one: for three, the correct answer is not in the retained set, so its rank must be beyond one thousand; for one, the rank is six hundred forty-one, one hundred twenty-nine after folding, still cannot fit into a page of two positions; the last one is unrelated to duplicates, its position occupied by two other real answers.",
+      "outcome": "The device's duplicate structure only inflates the false-recall reading, the gain conclusion is unaffected.",
+      "learned": "When suspecting a device has bias, calculate the bias's effect on both-side metrics separately — it may only contaminate one side.",
+      "concepts": [
+        "duplicate occupancy",
+        "retained set",
+        "rank",
+        "fair competition",
+        "bias attribution"
+      ]
+    },
+    "c40": {
+      "title": "Change candidate grid to evenly spaced layout, avoid singling out any one value",
+      "summary": "One value in the grid was originally a heuristic value derived from a post-hoc sweep of the already-consumed acceptance set. If it were ultimately selected, it would have to answer whether the candidate list itself had been shaped by the acceptance set, and the answer is yes. After switching to evenly spaced layout with a fixed step size, no single value sits in a singled-out position.",
+      "outcome": "The cost of running a few more arms replaced a candidate source that could not be explained.",
+      "learned": "Fairness in parameter selection depends not just on how selection is done, but on where the candidate list came from; a candidate specially added in contaminates the entire table.",
+      "concepts": [
+        "candidate grid",
+        "evenly spaced layout",
+        "heuristic value",
+        "candidate source",
+        "parameter selection fairness"
+      ]
+    },
+    "c19": {
+      "title": "Corrected reading: the semantic candidate count of 200 is a truncation artifact, not the over-threshold count",
+      "summary": "The 200 that stably appears in the report is the retained-set length: for 43 out of 56 queries, the physical row count lands exactly at the retention cap of 1000, divided by 5 replicas gives 200. This number looks like a conclusion, but it is actually a side effect of truncation. The over-threshold count has its own dedicated field, and the median there is in the thousands.",
+      "outcome": "The metric definition was written into the warning block, to prevent this misreading from recurring in later rounds.",
+      "learned": "When a metric hits the same value across multiple samples, first suspect it hit some upper limit, rather than assuming a pattern has been discovered.",
+      "concepts": [
+        "retained set",
+        "over-threshold count",
+        "truncation artifact",
+        "metric definition",
+        "misreading"
+      ]
+    },
+    "c21": {
+      "title": "Technically similar negatives can't be suppressed, an order of magnitude apart from the cross-domain type",
+      "summary": "Raising the floor from 0.197 to 0.32, the average for technically similar negatives after dedup only dropped from 1.50 to 1.15, still above one; under the same batch of values the fully cross-domain type can reach zero. The reachability of the two types differs by an order of magnitude, and holding them to the same average threshold effectively sets an empirically unreachable target for the former.",
+      "outcome": "The false-recall gate is split by negative type into a to-do, with separate criteria defined for each type.",
+      "learned": "Mixing two sample types whose reachability differs by an order of magnitude under one threshold makes the threshold lose both strictness and informativeness at the same time.",
+      "concepts": [
+        "technically similar",
+        "fully cross-domain",
+        "tiered threshold",
+        "reachability",
+        "dedup criterion"
+      ]
+    },
+    "c35": {
+      "title": "Ascending id in the order key actually encodes a bias toward older, not a neutral tie-break",
+      "summary": "After the default became unbounded, the primary key correlates with insertion time, so ascending by primary key implicitly means older-first. It was previously described as a tie-break that carries no ranking opinion, and that claim no longer holds. The disposition is to leave the order key unchanged for now, schedule the evidence-gathering that decouples age from length as a separate round, and not touch it until that evidence is in.",
+      "outcome": "The terminology was corrected, and the change was deferred until after isolated evidence exists.",
+      "learned": "A \"field used for stable sorting\" stops being neutral once that field correlates with time; whether a tie-break is neutral depends on what it correlates with, not on what it is called.",
+      "concepts": [
+        "order key",
+        "tie-break",
+        "older-first bias",
+        "neutrality",
+        "deferred evidence-gathering"
+      ]
+    },
+    "c14": {
+      "title": "Positive examples and noise intervals overlap in the raw space, no defensible floor can be matched",
+      "summary": "Annotated hit scores in this space span from 0.080 to 0.607, with a noise upper bound of 0.431 — the two segments overlap, so any threshold either cuts true answers or lets noise through. This matches the shape seen with Chinese sentence pairs: unrelated sentence pairs can reach above 0.42, while the lowest true positive is only 0.08. Therefore the fix is not to keep tuning the threshold, but to exclude this space from scoring.",
+      "outcome": "The path of \"give it its own threshold\" was ruled out by the data, changed instead to not scoring when the protocol doesn't match.",
+      "learned": "When two distributions overlap, the threshold tool itself is not applicable; continuing to tune it is just picking an error ratio you happen to like.",
+      "concepts": [
+        "distribution overlap",
+        "threshold unusable",
+        "noise upper bound",
+        "true positive lower bound",
+        "no scoring"
+      ]
+    },
+    "c22": {
+      "title": "Two calibration sets give opposite cost answers for the same floor line",
+      "summary": "The same floor line drops the hit rate from fifty percent to twenty-six percent on one set, and costs zero on another. The reason is that the positive scores on the latter are all above 0.308, so the threshold below 0.30 is free for it. Therefore, if the calibration set has no low-scoring positives, it will select a threshold that looks free but actually cuts off hard queries.",
+      "outcome": "\"The new calibration set must contain low-scoring positives and report by stratum\" becomes a hard requirement.",
+      "learned": "The difficulty distribution of the calibration set determines whether it can see the cost; when the set has no hard samples, any tightening looks free.",
+      "concepts": [
+        "calibration set",
+        "low-scoring positive",
+        "hit rate",
+        "false free",
+        "difficulty distribution"
+      ]
+    }
+  }
+}

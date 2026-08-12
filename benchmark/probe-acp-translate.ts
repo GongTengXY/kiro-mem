@@ -54,9 +54,9 @@ if (target !== 'records' && target !== 'queries') {
   process.exit(2);
 }
 const querySet = flag('query-set', 'tuned') as
-  'tuned' | 'heldout' | 'empty' | 'leakage' | 'validation' | 'phase2' | 'r2';
-if (!['tuned', 'heldout', 'empty', 'leakage', 'validation', 'phase2', 'r2'].includes(querySet)) {
-  console.error('unknown --query-set (expected tuned|heldout|empty|leakage|validation|phase2|r2)');
+  'tuned' | 'heldout' | 'empty' | 'leakage' | 'validation' | 'phase2' | 'r2' | 'safety-round';
+if (!['tuned', 'heldout', 'empty', 'leakage', 'validation', 'phase2', 'r2', 'safety-round'].includes(querySet)) {
+  console.error('unknown --query-set (expected tuned|heldout|empty|leakage|validation|phase2|r2|safety-round)');
   process.exit(2);
 }
 /**
@@ -71,14 +71,35 @@ if (recordScope !== 'primary' && recordScope !== 'all') {
   console.error('unknown --record-scope (expected primary|all)');
   process.exit(2);
 }
+/**
+ * 记录来源。`turns`（默认）是 `turns.json`；`near-duplicate-pilot` 是安全策略轮次 P2
+ * 第 2 步的近重复 pilot（`benchmark/dataset/near-duplicate-pilot.json`）。
+ *
+ * 为什么复用这个脚本而不新写一个：pilot 要测的分布必须与判据 §5.3 的 0.450 复核带
+ * 同源，而那条带子实测由 `mirror-en-acp-records.json` 在 `semantic-en-v1` 下产出
+ * （26 条两两 325 对，min −0.072 / p50 0.246 / p95 0.450 / max 0.614 逐位复现）。
+ * 换一个译者或换一份 prompt，pilot 的读数就跟那条带子不可比了。复用这里的
+ * `recordPrompt` 与 `RECORD_RULES` 是"同一个译者"的构造保证。
+ */
+const recordSet = flag('record-set', 'turns') as 'turns' | 'near-duplicate-pilot' | 'safety-round-sample';
+const RECORD_SET_FILES: Record<string, string> = {
+  'near-duplicate-pilot': 'near-duplicate-pilot.json',
+  'safety-round-sample': 'turns-safety-round-sample.json',
+  'safety-round': 'turns-safety-round.json',
+};
+if (recordSet !== 'turns' && !RECORD_SET_FILES[recordSet]) {
+  console.error(`unknown --record-set (expected turns|${Object.keys(RECORD_SET_FILES).join('|')})`);
+  process.exit(2);
+}
 const limit = Number(flag('limit', '0'));
 const concurrency = Number(flag('concurrency', '0'));
 const onlyIds = new Set((flag('ids', '') || '').split(',').map((x) => x.trim()).filter(Boolean));
 const timeoutMs = Number(flag('timeout-ms', '0'));
 const mergeInputs = (flag('merge-inputs', '') || '').split(',').map((x) => x.trim()).filter(Boolean);
 const defaultSuffix = target === 'queries' && querySet !== 'tuned' ? `-${querySet}` : '';
+const defaultRecordSuffix = target === 'records' && recordSet !== 'turns' ? `-${recordSet}` : '';
 const outPath = resolve(
-  flag('out', join(DATASET_DIR, `mirror-en-acp-${target}${defaultSuffix}.json`))!,
+  flag('out', join(DATASET_DIR, `mirror-en-acp-${target}${defaultSuffix}${defaultRecordSuffix}.json`))!,
 );
 
 // 部分失败后可把 fail-fast 留下的 payload 与定向重试 payload 合成完整固定输入。
@@ -227,10 +248,20 @@ interface Item {
 
 let items: Item[];
 if (target === 'records') {
-  const ids = mirroredRecordIds();
-  const picked = turns.filter((t: DatasetTurn) =>
-    recordScope === 'all' ? true : ids.has(t.id),
-  );
+  // pilot 只带 annotation（它刻意不重建 prompt / events，见该文件的 meta 说明），
+  // 所以这里取的就是 `{ id, annotation }` 这个最小形状，与 turns 分支共用同一个
+  // `recordPrompt` 和同一套 parse 判据。
+  const picked: { id: string; annotation: Annotation }[] =
+    recordSet !== 'turns'
+      ? (
+          JSON.parse(
+            readFileSync(join(DATASET_DIR, RECORD_SET_FILES[recordSet]!), 'utf-8'),
+          ) as { records: { id: string; annotation: Annotation }[] }
+        ).records
+      : (() => {
+          const ids = mirroredRecordIds();
+          return turns.filter((t: DatasetTurn) => (recordScope === 'all' ? true : ids.has(t.id)));
+        })();
   items = picked.map((t) => ({
     id: t.id,
     prompt: recordPrompt(t.annotation),
@@ -251,7 +282,16 @@ if (target === 'records') {
     },
   }));
 } else {
-  const picked = queries.filter((q: DatasetQuery) =>
+  // 安全策略轮次的 query 集在自己的文件里（判据 §7.1 的三个 cohort 都在同一份），
+  // 与 turns.json 的 query 无关，因此不走 loadDataset。
+  const picked: { id: string; query: string }[] =
+    querySet === 'safety-round'
+      ? (
+          JSON.parse(
+            readFileSync(join(DATASET_DIR, 'queries-safety-round.json'), 'utf-8'),
+          ) as { queries: { id: string; query: string }[] }
+        ).queries
+      : queries.filter((q: DatasetQuery) =>
     querySet === 'empty'
       ? q.kind === 'empty'
       : querySet === 'leakage'
@@ -359,7 +399,7 @@ function buildProvenance() {
     agent: 'kiro-mem-compressor',
     kiroCli: process.env.KIRO_MEM_BENCH_CLI_VERSION ?? 'kiro-cli (see report)',
     target,
-    ...(target === 'queries' ? { querySet } : {}),
+    ...(target === 'queries' ? { querySet } : { recordSet }),
     generatedAt: new Date().toISOString(),
     // 独立性的凭据：两个 target 是分开的进程调用，prompt 里不含对侧文本。
     independence: 'records 与 queries 由两次独立运行产出，prompt 互不含对侧文本',

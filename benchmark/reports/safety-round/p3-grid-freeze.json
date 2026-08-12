@@ -1,0 +1,197 @@
+{
+  "frozen": true,
+  "frozenAt": "2026-08-11T12:55:00Z",
+  "frozenNote": "冻结于第一个 arm 之前。本记录一经写入，criteria 文件与本文件的网格 / 装置 / 门 / 选择规则字段都不得修改；看过任何 arm 读数后的修改等于用结果反向选参数。",
+  "round": "retrieval-safety-round-2026-08-10",
+  "phase": "P3",
+  "criteria": "benchmark/reports/safety-round/p3-grid-criteria.md",
+  "criteriaSha256": "349ce1aefb85f90e4f42a038f9e75db0581937e410746ec9d93b4293adae47af",
+  "upstream": {
+    "plan": "plan/V3/retrieval-safety-round-plan-2026-08-10.md",
+    "planSection": "§8（变量、网格来源处理、选择规则）",
+    "ruling": "benchmark/reports/final-recall/codex-p6-ruling.md",
+    "rulingSections": "§3（矩阵变量与 cap=0/1 的地位）、§4（新校准集）、§5（词面锚点失败的归属）",
+    "p2Criteria": "benchmark/reports/safety-round/p2-calibration-criteria.md",
+    "p2CriteriaRevision": "r3",
+    "p2CriteriaSha256": "b38f7e43e2871bda89a49aa87869c14fe49c6d3bfff2e0d170c8f54fa3b74726",
+    "p2Freeze": "benchmark/reports/safety-round/p2-calibration-freeze.json",
+    "p2FreezeSha256": "2c315ac97bf471ba9b87e098422d4234aec3cf514ab0da51f8eb100aa02bc9c9",
+    "p2Clearance": "benchmark/reports/safety-round/p2-review-clearance.md",
+    "p2ClearanceSha256": "f901b712da7dd89f1c0c20955e9ef4182fc5af6882e0ceae79d35521ffb54c8a"
+  },
+  "grid": {
+    "semanticFloor": [0.197, 0.223, 0.25, 0.275, 0.3, 0.325],
+    "semanticOnlyLimit": [1, 2],
+    "arms": 12,
+    "armIdFormat": "f<floor>-c<cap>",
+    "baselineArm": "f0.197-c2",
+    "baselineNote": "f0.197-c2 就是当前生产策略值，因此它既是网格成员，又是「低分正例分层不得回退」的参照。",
+    "provenance": {
+      "clean": {
+        "values": [0.197, 0.223, 0.275],
+        "source": "phase 1a 离线校准"
+      },
+      "ladderGenerated": {
+        "values": [0.25, 0.325],
+        "source": "本判据按「0.197 起、约 0.025 步长」铺开产生，未被任何数据单独指出"
+      },
+      "registeredHeuristic": {
+        "value": 0.3,
+        "source": "2026-08-10 曾在已消耗盲审集上事后横扫得出过这个启发值（方案 D3）",
+        "handling": "它出现在网格里是等距铺开规则的结果，不是那次横扫的挑选结果。方案 §8 给的两条路（等距铺开 / 书面登记）本判据两条都做。"
+      },
+      "stepsMeasured": [0.026, 0.027, 0.025, 0.025, 0.025],
+      "stepsNote": "不是精确等距：三个干净来源值必须原样保留在网格里，而它们本身不等距。"
+    }
+  },
+  "diagnosticOnlyArms": {
+    "semanticOnlyLimit": [0, 1],
+    "reason": "零 FTS 的 hard-negative 页面完全由 semantic-only 构成，因此 cap=1 让「平均返回 ≤1」成为算术恒真，与检索质量无关。",
+    "requirement": "cap=1 的 6 个 arm 必须跑（读出压到底的收益损失），但选择脚本必须在结构上排除 cap ≤ 1 进入成功候选集。",
+    "capZeroNote": "cap=0 未纳入网格：诊断价值可由 cap=1 与 cap=2 的差读出，方案 §8 的变量表只列了 {1,2}。若复核要求补，另跑并单独报告。",
+    "source": "上游裁定 §3 + 方案 §8 + P2 判据 r3 §4.5"
+  },
+  "frozenPolicyFields": {
+    "semanticDiscovery": true,
+    "rrfK": 60,
+    "ftsWeight": 1,
+    "semanticWeight": 1,
+    "tieBreak": "semantic-rank",
+    "semanticCandidatePool": "Infinity",
+    "semanticTopK": 1000,
+    "bigramAux": false,
+    "days": "unbounded（不传 days）",
+    "ftsTokenizer": "生产 trigram，不改",
+    "limit": 10,
+    "note": "12 个 arm 之间只差 semanticFloor 与 semanticOnlyLimit 两个值；任一项其他变化即本轮作废。"
+  },
+  "fixture": {
+    "contract": "P2 判据 r3 §4.6",
+    "newGold": {
+      "path": "benchmark/dataset/turns-safety-round.json",
+      "sha256": "75c8b711b5dc8998fd4dfefa19d60fa4cd550ce8a314e7126d6b3ec76bf88b50",
+      "records": 40,
+      "ageDaysRange": [14, 1068],
+      "ageSource": "各记录的 age_days 字段（P2 一次性随机化，种子 ageSeed.hex = dd61359b）",
+      "insertionOrder": "按 insertion_index 升序（0…39 连续），因此 observation id 顺序与年龄无关"
+    },
+    "oldPrimary": {
+      "path": "benchmark/dataset/turns.json",
+      "sha256": "aa8f9beda2a4f90320455ff2756815d5b6271977044d5820a76df489bdb533e0",
+      "records": 26,
+      "scope": "primary",
+      "ageDays": 400,
+      "ageReason": "与已消耗盲审装置逐位相同的位置，使本装置与审计装置只差「新增 40 条新 gold」这一项。旧 26 条不是本轮主指标（primary_gold 只含新记录），acceptable_gold 引用了其中 7 条。"
+    },
+    "filler": {
+      "path": "benchmark/dataset/pool-policy-filler-10k.json",
+      "sha256": "bbb3a6739cd4bed8cff349525d9cc41006caab3beb66789e8711410ad90d3d41",
+      "sourceRecords": 10000,
+      "copies": 5,
+      "records": 50000,
+      "spreadDays": 1095,
+      "encodings": 10000,
+      "encodingNote": "只做 10,000 次真实编码，5 份副本复用向量（与审计、候选池轮次同口径）。副本标题加 [copy N]。"
+    },
+    "totalPhysicalRows": 50066,
+    "space": "semantic-en-v1",
+    "semanticEnRecords": {
+      "new": "benchmark/dataset/mirror-en-acp-records-safety-round.json",
+      "newSha256": "f5a71e854b863f624bf919c5ef74bfb0a98fd560b6b20a1fa02a2b2079ce796a",
+      "old": "benchmark/dataset/mirror-en-acp-records.json",
+      "oldSha256": "cf44a10339c58b767debf585d457a70d3480bbca6901dc266f5954abd9112119"
+    },
+    "queries": {
+      "path": "benchmark/dataset/queries-safety-round.json",
+      "sha256": "5958d5ce7a21d9f5e654d4db3c2b66408c885e17ccc362860a5070d3a1c1be5e",
+      "total": 131,
+      "semanticQueryEnSource": "query 集内联的 semantic_query_en，实测与 mirror-en-acp-queries-safety-round.json 131/131 逐字相同"
+    }
+  },
+  "readings": {
+    "relevance": [
+      "primary hit@5 / MRR（只认 primary_gold，本轮主指标）",
+      "acceptable hit@5 / MRR（认 acceptable_gold 全集）",
+      "非 acceptable 返回数（均值与最坏值）"
+    ],
+    "lowScorePositiveBands": {
+      "bands": ["<0.200", "0.200-0.310", "0.310-0.400", ">=0.400"],
+      "frozenCounts": { "<0.200": 6, "0.200-0.310": 9, "0.310-0.400": 18, ">=0.400": 28 },
+      "requirement": "每档给出条数与 primary hit@5；<0.200 那 6 条必须单独列出，不得合并或省略。"
+    },
+    "falseRecallBases": {
+      "physicalRows": "页面物理行数（C1 口径）",
+      "distinctContent": "按原文折叠：filler:N → filler#(N mod 10000)；gold 各自独立",
+      "judgedBy": "distinctContent（r3 §4.5）；两套都必须报告"
+    },
+    "perQuery": [
+      "resultIds", "resultSources", "semanticScores", "ftsRank", "semanticRank",
+      "ageDays", "comparableVectors", "aboveFloorCount", "scopeVectors", "protocol",
+      "degraded", "primaryRank", "acceptableRank"
+    ],
+    "aboveFloorNote": "aboveFloorCount 是 Top-K 截断之前的精确过线数。semanticIds 的长度是 Top-K 保留集，不是过线数量（方案 D1 的纠正）。"
+  },
+  "gates": {
+    "definedBy": "benchmark/reports/safety-round/p2-calibration-criteria.md r3 §4.5（本判据只落计算口径，不重新定义）",
+    "layers": {
+      "foreignDomain": { "emptyZeroFts": 17, "lexicalAnchor": 8, "total": 25 },
+      "nearDomain": { "emptyZeroFts": 23, "lexicalAnchor": 22, "total": 45 }
+    },
+    "F1": "25 条 foreign-domain 的逐条 physicalRows 与逐条 distinctContent 两套都必须为 0",
+    "N1": "45 条 near-domain 页面上所有返回项的 match_source 必须全为 semantic；出现 fts / hybrid 即失败",
+    "N2": "45 条 near-domain 的 distinctContent 平均必须 ≤ 1",
+    "N3": "61 条 relevance 上，非 acceptable 结果排在第一个 primary_gold 之前的次数必须为 0（页面上没有 primary_gold 的 query 不产生计数）"
+  },
+  "preRegisteredPredictions": [
+    {
+      "id": "预测一",
+      "claim": "N2 大概率不通过",
+      "basis": "方案 D3 在已消耗集上实测：near-domain 去重后平均返回在 floor 0.197→0.320 之间只从 1.50 降到 1.15，始终 >1",
+      "branch": "若复现该形状，结论是「floor × cap 不足以约束 near-domain，需要另开轮次」（r3 §4.5 预写分支），不得放宽门槛"
+    },
+    {
+      "id": "预测二",
+      "claim": "N1 在词面锚点那 22 条 near-domain 上结构性不可通过",
+      "basis": "那 30 条锚点 query 的定义就是实测会命中 FTS（P2 §4.1，ftsCount 实测 1…50），页面必然含 fts / hybrid 来源",
+      "handling": "判定按 r3 原文覆盖全部 45 条 near-domain，同时必须按 cohort 拆开报告；若失败只在词面锚点一侧，即裁定 §5 预登记的分支——需要另开 FTS 安全策略轮次，不得调语义参数掩盖"
+    }
+  ],
+  "structuralSelfChecks": {
+    "S1": "p2-calibration-freeze.json 的 14 个可校验 SHA-256 逐项一致且 frozen === true",
+    "S2": "scope 向量数 = 50066；跨 scope 泄漏 = 0；degraded = 0；协议全部 semantic-en-v1",
+    "S3": "本装置上实测 40 条 empty 的 ftsCount 全为 0、30 条锚点全部 ≥1（r3 §4.6 要求在实际装置上确认）",
+    "S4": "每个 arm 逐 query 的 semanticOnly ≤ 该 arm 的 cap",
+    "S5": "低分正例四档条数复现 P2 冻结值 6 / 9 / 18 / 28",
+    "S6": "f0.197-c2 的策略对象与 DEFAULT_RETRIEVAL_POLICY 逐字段相等",
+    "failureHandling": "任一项失败则该次运行的全部读数作废"
+  },
+  "selectionRule": {
+    "script": "benchmark/select-safety-round-arm.ts",
+    "manualSelectionForbidden": true,
+    "steps": [
+      "1 结构排除：candidates = { arm : cap >= 2 }",
+      "2 安全过滤：feasible = { arm ∈ candidates : F1 ∧ N1 ∧ N2 ∧ N3 全部通过 }",
+      "3 分层不回退：eligible = { arm ∈ feasible : 四档 primary hit@5 均 >= baseline(f0.197-c2) 同档值 }",
+      "4 eligible 为空 → 输出「本轮没有安全 arm」，结束，不得放宽任何门",
+      "5 否则字典序取最大：① primary hit@5 ② primary MRR ③ floor 最大 ④ arm id 字典序最小"
+    ],
+    "step3Rationale": "写成过滤器而不是排序键：D4 的坑是「看起来免费、实际砍掉难查询」，排序键会允许用容易档的收益换难档的损失。",
+    "step5cRationale": "走到这一步说明安全门与召回读数完全相同，此时更高的 floor 让过线候选更少，在历史上失败过的那一侧留更多余量。"
+  },
+  "allowedOptimizations": [
+    "query 向量按文本缓存（同一段英文在 12 个 arm 上编码逐位相同，策略参数不进编码器）",
+    "语料播种一次，12 个 arm 复用同一个数据库文件，arm 之间只换策略对象"
+  ],
+  "forbiddenAfterFreeze": [
+    "修改 P2 的任何冻结物（14 项 SHA 在启动时校验）",
+    "修改判据 r3 的四个门或 cap ≤ 1 排除项",
+    "修改 DEFAULT_RETRIEVAL_POLICY（P5 才做）",
+    "看过任何 arm 读数后修改 P3 判据或本记录的网格 / 装置 / 门 / 选择规则字段",
+    "引入第三个变量",
+    "重判 C1（正式读数永远 1.900）、P6 或 Phase 3C（永远不通过）",
+    "用最终盲审集的 query 选参",
+    "手工挑 arm",
+    "用 physicalRows 替换 distinctContent 作为 N2 的判定口径",
+    "跳过 query、抽样、或复用上一个 arm 的页面"
+  ]
+}

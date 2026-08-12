@@ -366,10 +366,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (!scope.ok) return scope.error;
     const scopeKey = scope.scopeKey;
 
-    // A missing or refused English form is NOT a tool error: the search still
-    // runs, in the raw-v1 space (or FTS-only). Failing the call would turn a
-    // ranking-quality degradation into a broken feature. It is logged, because
-    // the alternative is a silent quality loss nobody can attribute.
+    // A missing or refused English form is not a tool error. Search continues as
+    // FTS-only, and the reason is logged so the quality loss remains attributable.
     const semanticQueryEn = typeof a.semantic_query_en === 'string' ? a.semantic_query_en : '';
     if (semanticQueryEn.trim()) {
       const check = checkSemanticEnQuery(semanticQueryEn, a.query);

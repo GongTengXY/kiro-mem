@@ -1,0 +1,303 @@
+{
+  "step": "P2 step 2 · near-duplicate pilot",
+  "criteria": {
+    "path": "benchmark/reports/safety-round/p2-calibration-criteria.md",
+    "sha256": "dd61359bd938011eebe17eab6262cbc421fa818af2667b7e1a25fe597a0035a1",
+    "section": "§6"
+  },
+  "discipline": {
+    "thresholdSelection": "none — 本步不选任何阈值",
+    "autoDeleteEnabled": false,
+    "reviewBandFrozenAt": 0.45
+  },
+  "inputs": [
+    {
+      "path": "benchmark/dataset/near-duplicate-pilot.json",
+      "sha256": "5a87c116ba22f6e3c8b9016770be4e6d55ff8a99deecd7decf30bb9e47ab9d9b"
+    },
+    {
+      "path": "benchmark/dataset/mirror-en-acp-records-near-duplicate-pilot.json",
+      "sha256": "c83532dee1cf174b07ab0115ded00c88c7f1cf949b0061e1b6da4f20b7297ecf"
+    },
+    {
+      "path": "benchmark/dataset/mirror-en-acp-records.json",
+      "sha256": "cf44a10339c58b767debf585d457a70d3480bbca6901dc266f5954abd9112119"
+    },
+    {
+      "path": "benchmark/dataset/turns.json",
+      "sha256": "aa8f9beda2a4f90320455ff2756815d5b6271977044d5820a76df489bdb533e0"
+    }
+  ],
+  "selfCheck": {
+    "criteriaBaseline": {
+      "min": -0.072,
+      "p50": 0.246,
+      "p90": 0.384,
+      "p95": 0.45,
+      "p99": 0.545,
+      "max": 0.614
+    },
+    "recomputed": {
+      "pairs": 325,
+      "min": -0.072,
+      "p50": 0.246,
+      "p90": 0.384,
+      "p95": 0.45,
+      "p99": 0.545,
+      "max": 0.614
+    },
+    "passed": true
+  },
+  "perGroup": [
+    {
+      "group": "g1",
+      "area": "检索：语义腿的协议准入",
+      "sameFact": 0.723,
+      "sibling": 0.442,
+      "margin": 0.282,
+      "orderedCorrectly": true
+    },
+    {
+      "group": "g2",
+      "area": "捕获：hook 预算与丢失计数",
+      "sameFact": 0.85,
+      "sibling": 0.386,
+      "margin": 0.464,
+      "orderedCorrectly": true
+    },
+    {
+      "group": "g3",
+      "area": "压缩：ACP 运行时纯度",
+      "sameFact": 0.737,
+      "sibling": 0.451,
+      "margin": 0.285,
+      "orderedCorrectly": true
+    },
+    {
+      "group": "g4",
+      "area": "运行时完整性：启动即校验",
+      "sameFact": 0.611,
+      "sibling": 0.368,
+      "margin": 0.243,
+      "orderedCorrectly": true
+    },
+    {
+      "group": "g5",
+      "area": "隐私：落盘前脱敏",
+      "sameFact": 0.774,
+      "sibling": 0.232,
+      "margin": 0.542,
+      "orderedCorrectly": true
+    }
+  ],
+  "distributions": {
+    "sameFactRewrite": {
+      "n": 5,
+      "min": 0.611,
+      "p50": 0.737,
+      "max": 0.85,
+      "mean": 0.739
+    },
+    "sameAreaDifferentWork": {
+      "n": 5,
+      "min": 0.232,
+      "p50": 0.386,
+      "max": 0.451,
+      "mean": 0.376
+    },
+    "separated": true,
+    "overlap": null
+  },
+  "crossSetSeparation": {
+    "note": "同一事实对 = pilot rewrite 对 + 裁决为 duplicate 的跨集对；不同工作对 = pilot sibling 对 + 判据 §5.3 的旧 gold 两两分布",
+    "sameFactAll": {
+      "n": 7,
+      "min": 0.558,
+      "p50": 0.723,
+      "max": 0.85,
+      "mean": 0.703
+    },
+    "differentWorkAll": {
+      "n": 330,
+      "min": -0.072,
+      "p50": 0.247,
+      "max": 0.614,
+      "mean": 0.247
+    },
+    "separated": false,
+    "overlap": {
+      "from": 0.558,
+      "to": 0.614
+    },
+    "samplesInOverlap": {
+      "sameFact": 2,
+      "diffWork": 3
+    }
+  },
+  "adjudication": {
+    "path": "benchmark/reports/safety-round/p2-pilot-overlap-adjudication.json",
+    "sha256": "29a618425dc74ca439b8c883f71b6155cd04b9d75b2ae9437f1a25db56855060",
+    "pairsRuled": 19,
+    "duplicate": [
+      {
+        "pair": "p04c×t11",
+        "cosine": 0.67,
+        "reason": "t11 的 summary 明写「安装器生成 256-bit token 并设 0600」，p04c 说的是「32 字节随机、仅属主可读」——256-bit 就是 32 字节，0o600 就是仅属主可读写，同一事实。两侧 key_files 都指向 src/auth-token.ts。",
+        "action": "p04c 的事实已被 t11 覆盖，不得作为第 4 步的新记录。若要保留本地凭据这一区域，只能取 t11 未涵盖的部分（例如 inspectLocalAuthToken 的状态枚举），并重新核验。"
+      },
+      {
+        "pair": "p03c×t08",
+        "cosine": 0.558,
+        "reason": "t08 的 summary 明写「重试耗尽后写入 quality=fallback 的 Observation，outcome 为空、只带确定性证据」，p03c 说的是同一件事。t08 的载体是集成测试、p03c 的载体是行为描述，但被陈述的事实相同。",
+        "action": "p03c 不得作为第 4 步的新记录。"
+      }
+    ],
+    "related": 17
+  },
+  "crossWithOldGold": {
+    "pairs": 390,
+    "min": -0.043,
+    "p50": 0.222,
+    "p95": 0.439,
+    "max": 0.67,
+    "aboveReviewBand": 19,
+    "aboveReviewBandRate": 0.049,
+    "projectedAt40Records": 51,
+    "entries": [
+      {
+        "pilot": "p04c",
+        "old": "t11",
+        "cosine": 0.67,
+        "area": "运行时完整性：启动即校验",
+        "verdict": "duplicate"
+      },
+      {
+        "pilot": "p04a",
+        "old": "t09",
+        "cosine": 0.569,
+        "area": "运行时完整性：启动即校验",
+        "verdict": "related"
+      },
+      {
+        "pilot": "p03c",
+        "old": "t08",
+        "cosine": 0.558,
+        "area": "压缩：ACP 运行时纯度",
+        "verdict": "duplicate"
+      },
+      {
+        "pilot": "p04b",
+        "old": "t14",
+        "cosine": 0.554,
+        "area": "运行时完整性：启动即校验",
+        "verdict": "related"
+      },
+      {
+        "pilot": "p02a",
+        "old": "t03",
+        "cosine": 0.546,
+        "area": "捕获：hook 预算与丢失计数",
+        "verdict": "related"
+      },
+      {
+        "pilot": "p02b",
+        "old": "t03",
+        "cosine": 0.544,
+        "area": "捕获：hook 预算与丢失计数",
+        "verdict": "related"
+      },
+      {
+        "pilot": "p04b",
+        "old": "t13",
+        "cosine": 0.543,
+        "area": "运行时完整性：启动即校验",
+        "verdict": "related"
+      },
+      {
+        "pilot": "p01a",
+        "old": "t21",
+        "cosine": 0.532,
+        "area": "检索：语义腿的协议准入",
+        "verdict": "related"
+      },
+      {
+        "pilot": "p04a",
+        "old": "t14",
+        "cosine": 0.515,
+        "area": "运行时完整性：启动即校验",
+        "verdict": "related"
+      },
+      {
+        "pilot": "p01c",
+        "old": "t21",
+        "cosine": 0.51,
+        "area": "检索：语义腿的协议准入",
+        "verdict": "related"
+      },
+      {
+        "pilot": "p04c",
+        "old": "t25",
+        "cosine": 0.509,
+        "area": "运行时完整性：启动即校验",
+        "verdict": "related"
+      },
+      {
+        "pilot": "p04a",
+        "old": "t13",
+        "cosine": 0.495,
+        "area": "运行时完整性：启动即校验",
+        "verdict": "related"
+      },
+      {
+        "pilot": "p04a",
+        "old": "t16",
+        "cosine": 0.495,
+        "area": "运行时完整性：启动即校验",
+        "verdict": "related"
+      },
+      {
+        "pilot": "p03a",
+        "old": "t08",
+        "cosine": 0.494,
+        "area": "压缩：ACP 运行时纯度",
+        "verdict": "related"
+      },
+      {
+        "pilot": "p01b",
+        "old": "t21",
+        "cosine": 0.493,
+        "area": "检索：语义腿的协议准入",
+        "verdict": "related"
+      },
+      {
+        "pilot": "p03c",
+        "old": "t04",
+        "cosine": 0.469,
+        "area": "压缩：ACP 运行时纯度",
+        "verdict": "related"
+      },
+      {
+        "pilot": "p03a",
+        "old": "t07",
+        "cosine": 0.465,
+        "area": "压缩：ACP 运行时纯度",
+        "verdict": "related"
+      },
+      {
+        "pilot": "p05a",
+        "old": "t04",
+        "cosine": 0.456,
+        "area": "隐私：落盘前脱敏",
+        "verdict": "related"
+      },
+      {
+        "pilot": "p02a",
+        "old": "t17",
+        "cosine": 0.455,
+        "area": "捕获：hook 预算与丢失计数",
+        "verdict": "related"
+      }
+    ]
+  },
+  "verdict": "overlapping-cannot-automate"
+}

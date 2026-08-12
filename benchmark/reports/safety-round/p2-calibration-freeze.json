@@ -1,0 +1,394 @@
+{
+  "frozen": true,
+  "frozenNote": "P2 全部五步完成并一次性冻结。按执行裁定（p2-step3-review-and-step4-ruling.md §2.2），复核在冻结之前完成，因此冻结物在冻结那一刻即为终态，不需要事后修补。",
+  "round": "retrieval-safety-round",
+  "phase": "P2",
+  "criteria": "benchmark/reports/safety-round/p2-calibration-criteria.md",
+  "criteriaSha256": "b38f7e43e2871bda89a49aa87869c14fe49c6d3bfff2e0d170c8f54fa3b74726",
+  "criteriaRevision": "r3",
+  "criteriaFrozenAt": "2026-08-11T07:20:52Z",
+  "criteriaRevisionNote": "r1→r2 在产出任何记录之前补了三个缺口（负例分层与门形状、低分正例的只增不删程序、ftsCount=0 的语料口径）。r2→r3 由 **P2 复审裁定授权**：判据自己写着「冻结之后不得修订，只能作废整轮重开」，r3 推翻了这条自我约束——授权来自复审，不来自作者。复审同时裁定核心数据基本合格、无需重写 40 条记录与 131 条 query，因此不作废整轮。r3 只改门槛定义，不改任何数据、标注、gold 或 query。",
+  "upstream": {
+    "plan": "plan/V3/retrieval-safety-round-plan-2026-08-10.md",
+    "ruling": "benchmark/reports/final-recall/codex-p6-ruling.md",
+    "voidedBranch": "benchmark/reports/safety-round/p40-relative-score-probe.md"
+  },
+  "goldOnly": true,
+  "steps": {
+    "1": {
+      "name": "冻结判据",
+      "status": "frozen",
+      "frozenAt": "2026-08-11T07:20:52Z",
+      "artifacts": [
+        {
+          "path": "benchmark/reports/safety-round/p2-calibration-criteria.md",
+          "sha256": "b38f7e43e2871bda89a49aa87869c14fe49c6d3bfff2e0d170c8f54fa3b74726"
+        }
+      ]
+    },
+    "2": {
+      "name": "近重复 pilot（4–5 组）",
+      "status": "frozen",
+      "frozenAt": "2026-08-11T07:52:00Z",
+      "conclusion": "不能自动化。同一事实对与不同工作对在 semantic-en-v1 下重叠，重叠区间 [0.558, 0.614]：一对无意误写的同一事实只有 0.558，而判据 §5.3 已裁定为不同工作的旧 gold 对高到 0.614。按判据 §6 的分支登记，本轮及后续都不得据此建立自动删除阈值。",
+      "sideFinding": "作者在明知要避免重复的前提下写的 5 条同区域记录里，有 2 条（p04c / p03c）撞上既有 gold（分别与 t11 / t08 同一事实，余弦 0.670 / 0.558）。第 4 步的复核带必须逐对穷举，不得抽样，也不得依赖作者自觉。",
+      "screeningVolume": "19 / 390 对进 0.450 复核带（4.9%），按同比例外推到 40 × 26 = 1040 对约 51 对，与判据 §5.3 估的量级一致。",
+      "artifacts": [
+        {
+          "path": "benchmark/dataset/near-duplicate-pilot.json",
+          "sha256": "5a87c116ba22f6e3c8b9016770be4e6d55ff8a99deecd7decf30bb9e47ab9d9b",
+          "note": "5 组 × 3 条（base / rewrite / sibling）。不是校准语料——它刻意含成对的同一事实记录。"
+        },
+        {
+          "path": "benchmark/dataset/mirror-en-acp-records-near-duplicate-pilot.json",
+          "sha256": "c83532dee1cf174b07ab0115ded00c88c7f1cf949b0061e1b6da4f20b7297ecf",
+          "note": "英文派生值，由生产 ACP 译者 kiro-mem-compressor 用与旧 26 条同一份 prompt 产出，15/15 成功。"
+        },
+        {
+          "path": "benchmark/reports/safety-round/p2-pilot-overlap-adjudication.json",
+          "sha256": "29a618425dc74ca439b8c883f71b6155cd04b9d75b2ae9437f1a25db56855060",
+          "note": "复核带内 19 对的逐对裁决（duplicate 2 / related 17），按 fact_source 判，不按余弦。"
+        },
+        {
+          "path": "benchmark/reports/safety-round/p2-near-duplicate-pilot.md",
+          "sha256": "ecbcd1d86f7aeb73f1c858c866794d7ab81ff5b2f709e365b4a9d30ec29086b6"
+        },
+        {
+          "path": "benchmark/reports/safety-round/p2-near-duplicate-pilot.json",
+          "sha256": "bccbd61fe24be0f7ba88e0bc8b21383dffdb4b9ea0beae3410f4b7a709e43447"
+        },
+        {
+          "path": "benchmark/analyze-near-duplicate-pilot.ts",
+          "sha256": "18b03ae71fbe94d6622c5cf1ec3bed374b27b01b62e862fcd030859476d05abc",
+          "note": "自证：复算 26 条旧 gold 的 325 对，逐位复现判据 §5.3 的六个分位数，证明 pilot 与 0.450 复核带同空间同译者。"
+        }
+      ],
+      "selfCheck": "passed — 325 对复算 min -0.072 / p50 0.246 / p90 0.384 / p95 0.450 / p99 0.545 / max 0.614，与判据 §5.3 逐位一致",
+      "regression": "bun test 539 pass / 0 fail；bun run typecheck 干净"
+    },
+    "3": {
+      "name": "8–10 条新记录样本（不冻结，供审口径）",
+      "status": "review-passed",
+      "reviewedAt": "2026-08-11T09:16:22Z",
+      "reviewRuling": "benchmark/reports/safety-round/p2-step3-review-and-step4-ruling.md",
+      "notFrozenReason": "判据 §7 明确第 3 步不冻结，只供审 annotation 与 fact_source 的写法；此处只登记产物路径与读数，不写 SHA-256，也不作为后续步骤的冻结依据。",
+      "producedAt": "2026-08-11T08:10:00Z",
+      "records": 8,
+      "artifactPaths": [
+        "benchmark/dataset/turns-safety-round-sample.json",
+        "benchmark/dataset/mirror-en-acp-records-safety-round-sample.json",
+        "benchmark/screen-safety-round-overlap.ts",
+        "benchmark/reports/safety-round/p2-overlap-screen-safety-round-sample.json",
+        "benchmark/reports/safety-round/p2-overlap-adjudication-safety-round-sample.json",
+        "benchmark/reports/safety-round/p2-sample-records.md"
+      ],
+      "readings": {
+        "factSourceMechanicalCheck": "passed 8/8：路径全部存在，decision 三条均 ≥2 来源，report/code 必填字段齐全",
+        "layer1HardDuplicate": 0,
+        "newVsOldPairs": 208,
+        "newVsOldDistribution": "min -0.073 / p50 0.174 / p95 0.354 / max 0.476",
+        "reviewBandNewVsOld": 2,
+        "reviewBandWithinNewSet": 2,
+        "adjudication": "4 对全部 related，0 对 duplicate",
+        "comparisonWithPilot": "pilot 的 5 条同区域记录里 2 条撞上既有 gold（0.670 / 0.558）；本批最高 0.476。先列旧 gold 覆盖面再选事实这个顺序有效。"
+      },
+      "openQuestionsBeforeStep4": [
+        "commit 这一种 fact_source 本批未使用——建议不强制每批出现三种 kind，但 40 条里至少几条用 commit（尤其\"某行为已被删除\"这类事实）",
+        "age_days 目前是占位；第 4 步必须用记录在案的种子一次性重排 40 条年龄，并报告年龄 vs 文本长度、年龄 vs 插入序的相关系数（判据 §8.8）",
+        "prompt / assistant_response / events 维持简短重建，并在冻结记录里写明这是刻意的（它们不进 Observation 也不进向量）",
+        "本批已暴露两个天然多 gold 关系（s03×t26、s03×s08），第 4 步的 query 标注要默认往多 gold 方向查一遍（判据 §3.4）"
+      ]
+    },
+    "4": {
+      "name": "40 条记录候选 → 复核 → 确认 → query 与英文派生值 → 只增不删 → 一次性冻结",
+      "status": "frozen",
+      "executionRuling": {
+        "path": "benchmark/reports/safety-round/p2-step3-review-and-step4-ruling.md",
+        "sha256": "0782b971152a44f764cd89cdaf9b61fc8aa30713389618d3655d22381ed3e99a",
+        "frozenAt": "2026-08-11T09:16:22Z",
+        "note": "复审指出判据 §7 的顺序缺陷：第 4 步冻结在第 5 步复核之前，而复核可能删记录、改 acceptable_gold，冻结物会被改。裁定为：第 4 步只产出候选，冻结点后移到复核完成之后一次性进行。判据本身未修改；该执行解释在产出任何一条候选记录之前落盘。"
+      },
+      "phases": [
+        {
+          "n": 1,
+          "name": "产出 40 条记录候选（不冻结）",
+          "status": "done",
+          "readings": "41 条候选落盘（s01–s08 搬自已过审样本，c09–c41 新撰）。fact_source 机械校验挡下 3 条 decision 只有 1 个来源（c32/c36/c40），已各补第 2 个来源。memory_type 六类齐全；fact_source 三种 kind 齐全，commit ×3 全部用于「已被删除的行为」（b1df06f 删掉四处 ?? 90 与 schema default: 90、删掉 raw 协议下的语义腿）。"
+        },
+        {
+          "n": 2,
+          "name": "硬重复检查 + 全量 >0.450 复核（逐对穷举）",
+          "status": "done",
+          "readings": "第 1 层硬重复 0 对。新 41 × 旧 26 = 1066 对：min -0.090 / p50 0.158 / p95 0.337 / max 0.518，进复核带 6 对。新集内部 820 对，max 0.759，进复核带 71 对。合计 77 对逐对裁决：duplicate 1（s06×c16）、related-with-correction 1（c12×c33）、related 75。",
+          "method": "裁决按判据 §5.2 的事实来源判，不按余弦。为使「是不是同一事实」可审计，给每条记录写下它唯一回答的问题；两条回答同一问题即 duplicate。生成器在任何两条记录的问题写重时硬失败。"
+        },
+        {
+          "n": 3,
+          "name": "确认最终 40 条记录及其 fact_source",
+          "status": "done",
+          "readings": "处置生效后 41 → 40 条。c16 因与 s06 同一事实被移除（s06 已过审，保留 s06）；c12 删掉复述 c33 核心事实的那句，该对余弦从 0.752 降到 0.637。复筛：新 40 × 旧 26 = 1040 对进带 5，新集内部 780 对进带 70，duplicate 0。",
+          "ageAssignment": {
+            "seedHex": "dd61359b",
+            "seedDerivedFrom": "冻结判据 SHA-256 的前 8 位十六进制——在任何洗牌结果可见之前就已确定，因此不可能是挑出来的",
+            "script": "benchmark/assign-safety-round-ages.ts",
+            "spanDays": 1095,
+            "actualRange": "14…1068 天",
+            "spearmanAgeVsSearchTextLength": -0.031,
+            "spearmanAgeVsInsertionOrder": -0.146,
+            "note": "相关系数只作检查记录，未设阈值，未重洗。年龄在复核之后才赋值，因此洗牌只发生一次。"
+          }
+        },
+        {
+          "n": 4,
+          "name": "写 relevance / hard-negative / 英文派生值",
+          "status": "done",
+          "readings": "131 条 query：relevance 61（下限 40）、empty 零 FTS 40（下限 40）、词面锚点 30（下限 30）。negative_type 分层：empty 里 foreign 17 / near 23（foreign 下限 12）；锚点里 foreign 8 / near 22（foreign 下限 8）。英文形式由生产 ACP 译者产出并全部通过生产 checkSemanticEnQuery。首轮成功率 88/111（79.3%），失败形状全为「模型回解释而不是 JSON」，与阶段 1b 实测一致，定向重试后补齐。",
+          "zeroFtsVerification": {
+            "report": "benchmark/reports/safety-round/p2-zero-fts-verification.json",
+            "emptyAllZero": true,
+            "lexicalAnchorAllHit": true,
+            "anchorFtsCountRange": "1…50",
+            "finding": "首次验证 40 条 empty 里有 25 条实际命中、30 条锚点里有 8 条未命中。机制：FTS 是 trigram，(一) 中文口语功能词三字串（有没有 / 能不能 / 怎么选 / 返回的）在任何 query 里都出现，因此几乎必然命中；(二) 两字词（余弦 / 模型 / 维度 / 队列 / 内存 / 副本 / 排名 / 重试）单独永远匹配不上。据此改写 33 条问法：empty 侧改用书面式（是否 / 有无 / 可否）避开功能词三字串，锚点侧改用语料里真实存在的 ≥3 字锚点。事实一条未改，只改表层问法——这正是 cohort 的定义所在。",
+            "corpusNote": "确认语料 = 新 40 + 旧 26 primary + filler 10,000 条原文 = 10,066 行。判据 §4.6 的装置是 filler ×5 副本；副本是同一段文本，命中数按份数成倍但零/非零判定与份数无关，故播 1 份，结论为零时播 5 份仍为零。全程未建向量、未跑语义腿。"
+          }
+        },
+        {
+          "n": 5,
+          "name": "低分正例的只增不删程序（判据 §7.2）",
+          "status": "done",
+          "readings": "四轮补写：relevance 41 → 47 → 55 → 61，零删除。目标档 [0.200,0.310) 达到 9 条（下限 8）。四档分布 <0.200:6 / 0.200-0.310:9 / 0.310-0.400:18 / >=0.400:28；余弦 min 0.086 / p50 0.391 / max 0.602。",
+          "structuralGuarantee": "stratify-low-score-positives.ts 只读 query 文件、只写报告，没有任何写回 query 集的代码路径；并逐轮校验上一轮的 query 一个都没消失，减少即硬失败。因此「看到分数不好就删掉」在这里做不到。",
+          "honestBoundary": "[<0.200) 这一档有 6 条，它们在任何候选 floor 下都会被砍掉。这是必须被看见的代价，报告里单独列出，不得为了好看而删除。",
+          "recipeFinding": "落在 [0.200,0.310) 的问法有共同形状：具体主语 + 二选一式追问，且避开记录自己的名词。过于口语化的问法会掉到 <0.200，直接使用记录术语会升到 >0.310。带子只有 0.11 宽，命中率约 1/10，因此需要超额补写。"
+        },
+        {
+          "n": 6,
+          "name": "一次性冻结数据与 query",
+          "status": "done",
+          "frozenAt": "2026-08-11T11:40:00Z"
+        }
+      ],
+      "countsAreLowerBounds": "40 条记录 / 110 条 query 是下限不是精确值。低分正例补写可能让 relevance 超过 40；冻结记录填实际数量，不得为了对上数字而删任何 query 或记录。",
+      "artifacts": [],
+      "renamedAtFreeze": {
+        "note": "第 1–5 阶段用 *-candidates 文件名产出，第 6 阶段一次性改成正式名并重跑三项验证（重叠筛查 / 零 FTS / 低分分层），报告随之重生成。正式 SHA 见本记录顶层的 turns / queries / semanticEn / verification。",
+        "mapping": {
+          "turns-safety-round-candidates.json": "turns-safety-round.json",
+          "queries-safety-round-candidates.json": "queries-safety-round.json",
+          "mirror-en-acp-records-safety-round-candidates.json": "mirror-en-acp-records-safety-round.json",
+          "p2-overlap-screen-safety-round-candidates.json": "p2-overlap-screen-safety-round.json",
+          "p2-overlap-adjudication-safety-round-candidates.json": "p2-overlap-adjudication-safety-round.json"
+        }
+      },
+      "frozenAt": "2026-08-11T11:40:00Z"
+    },
+    "5": {
+      "name": "硬重复检查 + >0.450 人工复核",
+      "status": "merged-into-step-4",
+      "note": "按执行裁定，复核已并入第 4 步的第 2 阶段，在最终冻结之前完成。原判据 §7 把它排在冻结之后，那个顺序会让冻结物被复核结果修改。",
+      "artifacts": []
+    }
+  },
+  "adoptedRulings": {
+    "source": "benchmark/reports/safety-round/p2-step3-review-and-step4-ruling.md",
+    "sha256": "0782b971152a44f764cd89cdaf9b61fc8aa30713389618d3655d22381ed3e99a",
+    "commitFactSource": "凡「某行为曾经存在、后来被删除或替换」的事实必须用对应 commit 佐证；当前状态可由代码或报告支持。不设配额，不得为凑三种 kind 硬造 commit 记录。",
+    "ageDays": "固定种子 + 固定脚本独立打乱年龄与插入顺序；报告年龄vs文本长度、年龄vs插入顺序的 Spearman 秩相关系数。相关系数只作检查记录，不得临时设阈值、不得看到结果后重新洗牌。种子、脚本 SHA、最终排列进冻结记录。",
+    "reconstructedFields": "prompt / assistant_response / events 只满足 fixture 结构，不得刻意补成像真实对话的长记录。它们不参与 Observation、向量、FTS，也不用于 ACP 质量评估。",
+    "multiGold": "related 不等于自动进入 acceptable_gold，必须针对每条 query 单独判断该记录能否回答这个具体问题；检查范围含新 40 条与旧 26 条；每条新记录至少要在一个 query 中作为 primary_gold。"
+  },
+  "gates": {
+    "F1": "foreign-domain hard-negative 逐条返回数必须为 0，physicalRows 与 distinctContent 两套口径都为 0",
+    "N1": "near-domain hard-negative 的返回项必须 100% 带 match_source=\"semantic\"，出现 fts / hybrid 即失败",
+    "N2": "near-domain 的 distinctContent 平均返回必须 ≤ 1（r3 恢复；与 C1 同量级的有效数量门，两套口径都要报，判定用 distinctContent）",
+    "N3": "全体 relevance query 上，非 acceptable 结果排在 primary_gold 之前的次数必须为 0"
+  },
+  "gatesNote": "F1/N1–N3 是新校准集上的新门，与 C1 并列。C1 的正式读数永远是 1.900，P6 与 Phase 3C 永远是不通过；本轮不重判它们。若当前参数达不到 N2，如实判「本轮没有安全 arm」——不得因达不到而取消或放宽门槛。方案 D3 的实测（near-domain 去重后在 floor 0.197→0.320 之间只从 1.50 降到 1.15）说明这很可能就是本轮的结局，而那本身是有信息量的结论：floor × cap 不足以约束 near-domain。",
+  "ftsZeroCorpus": {
+    "note": "ftsCount=0 的确认语料 = P3 装置本身（判据 §4.6）。若 P3 实际装置与此不同，必须重新确认全部零 FTS 声明。",
+    "newGold": "benchmark/dataset/turns-safety-round.json",
+    "oldPrimary": "benchmark/dataset/turns.json",
+    "oldPrimarySha256": "aa8f9beda2a4f90320455ff2756815d5b6271977044d5820a76df489bdb533e0",
+    "filler": "benchmark/dataset/pool-policy-filler-10k.json",
+    "fillerSha256": "bbb3a6739cd4bed8cff349525d9cc41006caab3beb66789e8711410ad90d3d41",
+    "copies": 5
+  },
+  "overlapReview": {
+    "band": 0.45,
+    "autoDeleteEnabled": false,
+    "hardDuplicateRule": "同 turn_id，或文本逐字相同",
+    "screen": {
+      "path": "benchmark/reports/safety-round/p2-overlap-screen-safety-round.json",
+      "sha256": "10c42861ba8d47df0602f1fff5b424f0ada5cbcbd4c521f6a515140efd55be1c"
+    },
+    "adjudication": {
+      "path": "benchmark/reports/safety-round/p2-overlap-adjudication-safety-round.json",
+      "sha256": "02191aa4b2d699577aea336c59f12fd15100bbb2508535006d5f9048f09265e5"
+    },
+    "result": "新 40 × 旧 26 = 1040 对进带 5；新集内部 780 对进带 70；合计 75 对逐对裁决，duplicate 0（c16 已在复核中移除，c12 的复述句已删）。"
+  },
+  "forbiddenAfterFreeze": [
+    "修订本判据（含 r2 修订记录一节所列的任何进一步改动）",
+    "事后补标 negative_type，或在看过 arm 读数后调整负例分层",
+    "因余弦或检索返回删除 query、更改 primary_gold / acceptable_gold",
+    "使用 codex-blind-audit-input.json 的任何 query",
+    "启用余弦自动删除",
+    "把 turns-safety-round.json 称为真实捕获的对话或生产数据，或用它做 ACP 压缩质量评估",
+    "为了让门通过而下调 F1 或删掉低分正例分层",
+    "在第 4 步冻结完成之前运行 P3 的任何 arm"
+  ],
+  "frozenAt": "2026-08-11T11:40:00Z",
+  "turns": {
+    "path": "benchmark/dataset/turns-safety-round.json",
+    "sha256": "75c8b711b5dc8998fd4dfefa19d60fa4cd550ce8a314e7126d6b3ec76bf88b50",
+    "records": 40
+  },
+  "queries": {
+    "path": "benchmark/dataset/queries-safety-round.json",
+    "sha256": "5958d5ce7a21d9f5e654d4db3c2b66408c885e17ccc362860a5070d3a1c1be5e",
+    "counts": {
+      "total": 131,
+      "relevance": 61,
+      "emptyHardNegative": 40,
+      "lexicalAnchorHardNegative": 30,
+      "emptyForeignDomain": 17,
+      "emptyNearDomain": 23,
+      "lexicalAnchorForeignDomain": 8,
+      "lexicalAnchorNearDomain": 22
+    },
+    "countsNote": "40 条记录 / 110 条 query 是下限。低分正例补写让 relevance 从 41 增到 61，因此实际总数 131。填的是实际数量，未为对上数字删除任何 query。",
+    "lowScorePositiveBands": {
+      "<0.200": 6,
+      "0.200-0.310": 9,
+      "0.310-0.400": 18,
+      ">=0.400": 28
+    },
+    "lowScorePositiveRounds": [
+      {
+        "round": 1,
+        "relevance": 41,
+        "targetBand": 4
+      },
+      {
+        "round": 2,
+        "relevance": 47,
+        "targetBand": 4
+      },
+      {
+        "round": 3,
+        "relevance": 55,
+        "targetBand": 6
+      },
+      {
+        "round": 4,
+        "relevance": 61,
+        "targetBand": 9
+      }
+    ],
+    "coverage": {
+      "everyRecordIsPrimaryGoldAtLeastOnce": true,
+      "primaryGoldAllNewRecords": true,
+      "primarySubsetOfAcceptable": true
+    }
+  },
+  "semanticEn": {
+    "records": {
+      "path": "benchmark/dataset/mirror-en-acp-records-safety-round.json",
+      "sha256": "f5a71e854b863f624bf919c5ef74bfb0a98fd560b6b20a1fa02a2b2079ce796a"
+    },
+    "queries": {
+      "path": "benchmark/dataset/mirror-en-acp-queries-safety-round.json",
+      "sha256": "d82be6a1dc78a11ccf7698cff59c037152690f75c55bc62aa676c496c4ea07c6"
+    },
+    "translator": "生产 ACP 运行时的 kiro-mem-compressor 子 agent；记录侧与 query 侧是分开的进程调用，prompt 互不含对侧文本",
+    "generator": {
+      "path": "benchmark/probe-acp-translate.ts",
+      "sha256": "20406f45285aedef1422535e53d501a7b9d25434c46722f3474faa3392dd9b5d"
+    },
+    "guardrail": "131/131 query 通过生产 checkSemanticEnQuery"
+  },
+  "verification": {
+    "zeroFts": {
+      "path": "benchmark/reports/safety-round/p2-zero-fts-verification.json",
+      "sha256": "65ed38d409d64962081afe8e12c84209b2d9f3642557c1178e3a534adf43e4bd"
+    },
+    "lowScoreStrata": {
+      "path": "benchmark/reports/safety-round/p2-low-score-positive-strata.json",
+      "sha256": "b295b3c510d8232e45de06afeae4f103f5a2bc82703edc9950c57450f0007516"
+    },
+    "ageAssignment": {
+      "path": "benchmark/reports/safety-round/p2-age-assignment.json",
+      "sha256": "ad2be371e444a64c935b4b2cfbea4f927192144c7757283d2da94a4dd27ea7a1",
+      "script": "benchmark/assign-safety-round-ages.ts",
+      "scriptSha256": "022230bec8ac637d6b23b86557f3a36f2ff69febcb30c75d493801df79f98fed",
+      "seedHex": "dd61359b"
+    }
+  },
+  "reconstructedFields": "prompt / assistant_response / events 是为满足 fixture 结构重建的，刻意保持简短。它们不进 Observation、不进向量、不进 FTS，也不得用于 ACP 压缩质量评估或任何依赖其真实性的实验（判据 §2.1、裁决 1.3）。",
+  "regression": "bun test 539 pass / 0 fail；bun run typecheck 干净（复审修正后重跑）",
+  "ageSeed": {
+    "hex": "dd61359b",
+    "value": 3714135451,
+    "derivedFrom": "判据 r2 的 SHA-256 前 8 位（dd61359bd938011eebe17eab6262cbc421fa818af2667b7e1a25fe597a0035a1）",
+    "pinnedReason": "洗牌只发生一次（裁决 1.2）。判据后续修订会改变它自己的 SHA，若脚本继续从活的判据 SHA 派生种子，任何一次重跑都会产出另一套年龄——那在外观上与「看到结果后重新洗牌」无法区分。因此种子在此钉死为首次洗牌当时的值，脚本改为从本字段读取。",
+    "pinnedAt": "2026-08-11T12:20:00Z"
+  },
+  "criteriaRevisionHistory": [
+    {
+      "revision": "r2",
+      "sha256": "dd61359bd938011eebe17eab6262cbc421fa818af2667b7e1a25fe597a0035a1",
+      "frozenAt": "2026-08-11T07:20:52Z",
+      "note": "初次冻结"
+    },
+    {
+      "revision": "r3",
+      "sha256": "b38f7e43e2871bda89a49aa87869c14fe49c6d3bfff2e0d170c8f54fa3b74726",
+      "frozenAt": "2026-08-11T12:30:00Z",
+      "authority": "P2 复审裁定第 1、2 项",
+      "changes": [
+        "阻塞①：N2 从「平均 ≤ 该 arm 的 cap」恢复为「distinctContent 平均 ≤ 1」，并删除只报告不判定的 N4。r2 的写法让 cap=2 时每条 near-domain 返回 2 条不相关语义结果仍可通过——正好保留了上一轮失败的形状。N4 那个放宽是作者自行加入的，不是上游要求。",
+        "阻塞②：在冻结判据里落地「cap=1 与 cap=0 同为诊断臂，不得作为成功候选」，并要求选择脚本在结构上排除 cap ≤ 1。"
+      ]
+    }
+  ],
+  "diagnosticOnlyArms": {
+    "semanticOnlyLimit": [
+      0,
+      1
+    ],
+    "reason": "零 FTS 的 hard-negative 页面完全由 semantic-only 构成，因此 cap=1 让「平均返回 ≤ 1」成为算术恒真，与检索质量无关。cap=1 与 cap=0 同为诊断基线。",
+    "requirement": "P3 的选择脚本必须在结构上排除 cap ≤ 1 进入成功候选集，而不是靠人记得。",
+    "source": "上游裁定 §3 + 方案 §8；判据 r3 §4.5 落地"
+  },
+  "postFreezeCorrections": {
+    "authority": "P2 复审裁定",
+    "at": "2026-08-11T12:30:00Z",
+    "items": [
+      {
+        "n": 1,
+        "kind": "blocking",
+        "fix": "判据 r3：N2 恢复为 distinctContent 平均 ≤ 1，删除 N4"
+      },
+      {
+        "n": 2,
+        "kind": "blocking",
+        "fix": "判据 r3 + 本记录 diagnosticOnlyArms：排除 cap ≤ 1"
+      },
+      {
+        "n": 3,
+        "kind": "blocking",
+        "fix": "从 mirror-en-acp-records-safety-round.json 删除已被复核移除的 c16（41 → 40 项），重算 SHA"
+      },
+      {
+        "n": 4,
+        "kind": "fix",
+        "fix": "年龄种子钉死为 ageSeed.hex（原先从活的判据 SHA 现算，r3 改判据后会导致重跑即重新洗牌）；脚本 SHA 在 turns / 年龄报告 / 本记录三处对齐。复算确认 40 条年龄与插入顺序逐条不变"
+      },
+      {
+        "n": 5,
+        "kind": "minor",
+        "fix": "queries-safety-round.json 的 meta 同步为最终状态：131 条、正式文件路径、分批译文的成功率说明"
+      }
+    ]
+  }
+}

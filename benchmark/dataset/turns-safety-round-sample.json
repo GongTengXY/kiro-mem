@@ -1,0 +1,354 @@
+{
+  "meta": {
+    "step": "P2 第 3 步：8–10 条新记录样本。判据 §7 明确本步**不冻结**，只供审 annotation 与 fact_source 的写法；口径未通过不得进入第 4 步。",
+    "criteria": "benchmark/reports/safety-round/p2-calibration-criteria.md",
+    "criteriaSha256": "dd61359bd938011eebe17eab6262cbc421fa818af2667b7e1a25fe597a0035a1",
+    "formal_name": "基于真实产物重建的 gold fixture",
+    "not_real_capture": "不得在任何报告、代码注释或对外文档中称其为真实捕获的对话、真实会话记录或生产数据（判据 §8.1）。",
+    "gold_only_limit": "prompt / assistant_response / events 是为满足 fixture 结构重建的，不是历史原文。本语料不得用于 ACP 压缩质量评估或任何依赖这三个字段真实性的实验（判据 §2.1）。Observation 与向量只从 annotation 生成，已核实 benchmark/dataset.ts 的 annotationToResult 只读 annotation。",
+    "age_days_note": "本步的 age_days 只是占位，用来展示字段形状。第 4 步必须用一个记录在案的随机种子一次性重排全部 40 条的年龄，并保证年龄、文本长度、插入顺序三者独立（判据 §8.8）。",
+    "excluded_facts": [
+      "本地凭据的 32 字节随机 / 0o600（与 t11 同一事实，pilot 裁决 p04c×t11 = 0.670 duplicate）",
+      "压缩失败降级为 quality=fallback 且只带确定性证据（与 t08 同一事实，pilot 裁决 p03c×t08 = 0.558 duplicate）"
+    ]
+  },
+  "records": [
+    {
+      "id": "s01",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "age_days": 512,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/probe-en-normalization.md",
+          "section": "§「query zh」一行（第 37 行）与结论第 1 条（第 179 行）",
+          "supports": "只译记录侧、query 保持中文，tuned MRR 实测 0.437，低于 0.529 的原始基线；结论明写「只译记录的廉价版被否掉，query 侧翻译是必需项」"
+        },
+        {
+          "kind": "code",
+          "path": "src/semantic-en.ts",
+          "line": 15,
+          "supports": "文件头把这条读数登记为协议的载荷前提：缺失或非法的英文 query 绝不能与 semantic-en-v1 向量比较"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "line": 620,
+          "symbol": "semanticLegEligible",
+          "supports": "落地形式：协议不是 semantic-en-v1 时语义腿整条不运行"
+        }
+      ],
+      "prompt": "只在入库时把记忆译成英文、query 一个字不改，这样最省事，能不能就这么干？",
+      "assistant_response": "补测了这一格：只译记录侧、query 保持中文，tuned MRR 是 0.437，比什么都不译的 0.529 还低。单侧翻译把两侧放进了不同的空间，相似度数值不再可比。所以英文归一化必须两侧同时做，且缺英文 query 时要让语义腿整条停掉，而不是拿中文 query 去比英文向量。",
+      "events": [
+        { "tool": "shell", "input": { "command": "bun run benchmark/probe-semantic-rank.ts --lang=zh2en" }, "response": { "exit_status": 0, "stdout": "tuned MRR 0.437" } },
+        { "tool": "write", "input": { "path": "benchmark/reports/probe-en-normalization.md", "command": "strReplace" }, "response": { "success": true } }
+      ],
+      "annotation": {
+        "request": "评估\"只译记录侧、query 不译\"这个省事方案能不能用",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["src/semantic-en.ts", "src/server/observation-search.ts"],
+        "key_facts": ["0.437", "0.529"],
+        "unfinished": [],
+        "title": "英文语义归一化必须两侧同时做，只译记录侧实测更差",
+        "summary": "补测了缺的那一格：记录译成英文、query 保持中文，tuned MRR 只有 0.437，低于两侧都不译的 0.529 基线。单侧翻译把比较的两端放进了不同空间，相似度数值失去意义。因此协议规定要么两侧都归一化，要么整条语义腿不运行，缺英文提问形式时不得拿原文去比英文向量。",
+        "outcome": "省工程量的单侧方案被读数否掉，两侧归一化成为协议的硬前提。",
+        "learned": "跨语言检索里\"翻译一侧\"不是折中方案而是错误方案——它把可比性破坏掉了，代价比不翻译更大。",
+        "concepts": ["英文归一化", "单侧翻译", "MRR", "语义腿准入", "可比性"]
+      }
+    },
+    {
+      "id": "s02",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "age_days": 88,
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/semantic-en.ts",
+          "symbol": "embeddingSpaceKey",
+          "supports": "空间身份键由模型名、量化方式、维度、文本协议四段拼成，写入 observation_embeddings.model 并作为读取过滤条件"
+        },
+        {
+          "kind": "report",
+          "path": "benchmark/reports/probe-en-normalization.md",
+          "section": "§混合空间对照（第 125 行「未翻译 / 英文」一行）",
+          "supports": "同一模型、同一维度，两侧协议不一致时读数 0.613，与两侧一致时的 0.972 相差 0.359"
+        }
+      ],
+      "prompt": "两个协议都是同一个模型出来的 384 维向量，存一张表里按模型名过滤不就行了？",
+      "assistant_response": "不行。实测同一模型、同一维度，两侧协议对不上时读数 0.613，两侧一致时 0.972，差 0.359——模型名和维度相同并不意味着可比。所以空间身份键做成模型:量化:维度:协议四段，写进 observation_embeddings.model 并当读取过滤器用，两个协议因此能共存于同一张表却无法互相排名。",
+      "events": [
+        { "tool": "write", "input": { "path": "src/semantic-en.ts", "command": "strReplace" }, "response": { "success": true } },
+        { "tool": "shell", "input": { "command": "bun test tests/integration/semantic-en-search.test.ts" }, "response": { "exit_status": 0 } }
+      ],
+      "annotation": {
+        "request": "确定向量空间的版本键该包含哪些成分",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["src/semantic-en.ts"],
+        "key_facts": ["0.613", "0.972"],
+        "unfinished": [],
+        "title": "向量空间身份是模型、量化、维度、协议四段，不是模型名",
+        "summary": "两个文本协议都产出同一模型的 384 维向量，看起来混用无害，实测不是：两侧协议对不上时读数 0.613，两侧一致时 0.972。于是空间身份键做成四段拼接，写入向量行的模型列并同时充当读取过滤条件，让两个协议共存于一张表却无法互相排名。",
+        "outcome": "跨协议比较从\"要靠纪律避免\"变成\"表达不出来\"。",
+        "learned": "版本键要覆盖所有影响可比性的成分；漏掉文本协议这一段，混用就会静默发生而且看起来很正常。",
+        "concepts": ["空间身份", "版本键", "量化", "协议隔离", "向量表"]
+      }
+    },
+    {
+      "id": "s03",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "age_days": 731,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/codex-p6-ruling.md",
+          "section": "§1 正式结论",
+          "supports": "冻结判据 C1 要求无界臂 hard-negative 平均返回 ≤1，实测 1.900，因此 P6 不通过、Phase 3C 最终状态为不通过"
+        },
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/codex-blind-audit-report.md",
+          "section": "§4.1 与 §4.3",
+          "supports": "无界臂 1.900 的逐条读数；days=90 对照臂自身 1.800，回滚只降 0.100"
+        }
+      ],
+      "prompt": "最终盲审结果出来了，误召回这一门到底过没过？如果没过，回滚时间窗能不能救？",
+      "assistant_response": "没过：无界臂 hard-negative 平均返回 1.900，判据要求 ≤1。回滚救不了——days=90 对照臂自身是 1.800，只降 0.100，仍然不达标，却会撤掉独立盲审确认的旧记录召回收益。所以正式结论是 P6 不通过、Phase 3C 最终不通过，补救方式是另开安全策略轮次，不回滚默认时间窗。",
+      "events": [
+        { "tool": "read", "input": { "path": "benchmark/reports/final-recall/codex-blind-audit-result.json" }, "response": { "exit_status": 0 } },
+        { "tool": "write", "input": { "path": "benchmark/reports/final-recall/codex-p6-ruling.md", "command": "create" }, "response": { "success": true } }
+      ],
+      "annotation": {
+        "request": "对最终盲审的误召回门给出正式裁定，并决定要不要回滚时间窗",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": [],
+        "key_facts": ["1.900", "1.800"],
+        "unfinished": ["另开安全策略轮次，同时扫 floor 与 cap"],
+        "title": "误召回门以 1.900 不通过，回滚时间窗救不了",
+        "summary": "无界臂的 hard-negative 平均返回 1.900，判据要求不超过 1，因此这一门失败、整轮不通过。回滚时间窗被排除：对照臂自身 1.800，只降 0.100 仍不达标，却会撤掉已被独立盲审确认的旧记录召回收益。补救方式定为另开一个只动相似度门槛与配额的安全轮次。",
+        "outcome": "对外稳定发布继续阻塞，工作分支保留默认无界以保留已确认收益。",
+        "learned": "一个门槛失败时，先问\"候选修法能不能让它通过\"，再问\"代价是什么\"——这里第一问就已经是否定的。",
+        "concepts": ["误召回门", "无界时间窗", "回滚评估", "发布阻塞", "安全轮次"]
+      }
+    },
+    {
+      "id": "s04",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "age_days": 203,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/duplicate-supplement.md",
+          "section": "§3.1 双口径读数",
+          "supports": "无界臂 physicalRows 均值 1.9、distinctContent 均值 1.3；两套口径都没有通过 ≤1"
+        },
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/duplicate-supplement.md",
+          "section": "§4 复印件命中分布",
+          "supports": "无界臂 30 条 hard-negative 里 18 条返回了同一原文的副本（60.0%），所有同源副本对的余弦分数逐位相同"
+        }
+      ],
+      "prompt": "5 万条那个装置是 1 万条原文复制五份来的，误召回读数会不会因此虚高？",
+      "assistant_response": "会，但没高到能翻盘。按不同原文去重后，无界臂的平均返回从 1.9 降到 1.3，仍然超过 ≤1 的要求。30 条负例里 18 条确实返回了同一原文的两个副本，占 60%，且这些副本对的余弦逐位相同，直接确认了副本复用向量。所以装置贡献了 0.6，剩下的 1.3 是真实的不同假线索数量；正式读数保持 1.900 不变，1.300 只作并列的补充读数。",
+      "events": [
+        { "tool": "write", "input": { "path": "benchmark/analyze-duplicate-supplement.ts", "command": "create" }, "response": { "success": true } },
+        { "tool": "shell", "input": { "command": "bun run benchmark/analyze-duplicate-supplement.ts" }, "response": { "exit_status": 0 } }
+      ],
+      "annotation": {
+        "request": "量化装置里的复印件对误召回读数的贡献",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["benchmark/analyze-duplicate-supplement.ts"],
+        "key_facts": ["1.3", "18 / 30"],
+        "unfinished": [],
+        "title": "复印件让误召回读数虚高 0.6，去重后仍未达标",
+        "summary": "按不同原文去重后，误召回的平均返回从 1.9 降到 1.3，两套口径都没有通过不超过 1 的要求。30 条负例里 18 条返回的是同一原文的两个副本，占六成，且这些副本对的相似度分数逐位相同，直接确认副本复用了向量。装置因此解释了 0.6 的差值，剩下的是真实的不同假线索数量。",
+        "outcome": "正式失败读数保持不变，去重口径作为并列的补充读数登记，两套同时报告。",
+        "learned": "指标数的是页面行数而不是不同内容数；语料里存在近似或精确重复时，这两件事必须分开报。",
+        "concepts": ["复印件", "去重口径", "误召回", "并列读数", "装置偏差"]
+      }
+    },
+    {
+      "id": "s05",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "age_days": 37,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/safety-round/p40-relative-score-probe.md",
+          "section": "§分离度对照表（AUC 一节）",
+          "supports": "原始 top1 分数 AUC 0.841，z(top1) AUC 0.735；保全全部正例的 z 阈值放进 29/30 条负例，绝对分数阈值只放进 19/30"
+        },
+        {
+          "kind": "report",
+          "path": "benchmark/reports/safety-round/p40-relative-score-probe.md",
+          "section": "§μ_q 分层表",
+          "supports": "负例的 μ_q 中位 0.095，低于正例的 0.129——问一件没做过的事，整个语料对它都更不像，均值被拉低"
+        }
+      ],
+      "prompt": "把相似度换成\"相对这次查询的语料背景有多突出\"，是不是就能把没做过的事挡掉？",
+      "assistant_response": "方向是反的。按查询在候选池上的均值与标准差做标准化之后，分离度从 0.841 掉到 0.735：负例的背景均值中位 0.095，比正例的 0.129 更低，因为问一件项目没做过的事时整个语料对它都更不像，均值被拉低，同一个绝对分数于是被除出更大的相对值。这条规则系统性地奖励\"语料里什么都不相关\"的查询，所以作废，不要换一种归一化再试一遍。",
+      "events": [
+        { "tool": "write", "input": { "path": "benchmark/analyze-relative-score-probe.ts", "command": "create" }, "response": { "success": true } },
+        { "tool": "shell", "input": { "command": "bun run benchmark/analyze-relative-score-probe.ts" }, "response": { "exit_status": 0, "stdout": "self-check 56/56" } }
+      ],
+      "annotation": {
+        "request": "证伪\"用相对语料背景的突出程度做准入\"这条规则",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["benchmark/analyze-relative-score-probe.ts"],
+        "key_facts": ["0.841", "0.735", "0.095"],
+        "unfinished": [],
+        "title": "相对语料背景归一化比绝对分数更差，该方向作废",
+        "summary": "按查询在候选池上的均值与标准差做标准化后，分离度从 0.841 掉到 0.735；保全全部正例的相对阈值会放进 29 条负例，而绝对阈值只放进 19 条。机制是方向相反：没做过的事对应的背景均值中位 0.095，比有答案的 0.129 更低，同一个绝对分数被除出更大的相对值，规则于是奖励\"什么都不相关\"的查询。",
+        "outcome": "该方向当场作废，本轮收敛回只调绝对门槛与配额的单一路径。",
+        "learned": "以\"背景水平能代表这次查询的难度\"为前提的规则，在\"问一件没做过的事\"上前提恰好是反的；换成分位数或差值版本会踩同一个坑。",
+        "concepts": ["相对准入", "标准化", "分离度", "背景均值", "证伪探针"]
+      }
+    },
+    {
+      "id": "s06",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "age_days": 149,
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/db/index.ts",
+          "line": 72,
+          "symbol": "DEFAULT_SEARCH_DAYS",
+          "supports": "DEFAULT_SEARCH_DAYS = Number.POSITIVE_INFINITY，默认不设时间窗"
+        },
+        {
+          "kind": "report",
+          "path": "benchmark/reports/phase3c-criteria.md",
+          "section": "§改动点表（默认 search 一行）与 §4.1「无界」的表达方式",
+          "supports": "改动前默认是 90 天，落在四处：FTS 与 LIKE 兜底、bigram 腿、检索内核、MCP schema 的 default: 90；判据要求改完之后 src/ 下不得再有任何一处 ?? 90 或等价兜底"
+        }
+      ],
+      "prompt": "search 默认只查最近 90 天，两年前的记录就搜不到了，把这个默认窗去掉。",
+      "assistant_response": "去掉了。默认值改成正无穷，四处 90 天兜底全部清掉，包括 MCP schema 里的 default: 90——那个值留着会向 agent 谎报默认行为。显式传 days=N 仍可收窄。代价是语义腿的工作集随语料增长，而且没有任何东西会过期。",
+      "events": [
+        { "tool": "write", "input": { "path": "src/db/index.ts", "command": "strReplace" }, "response": { "success": true } },
+        { "tool": "write", "input": { "path": "src/server/mcp-server.ts", "command": "strReplace" }, "response": { "success": true } },
+        { "tool": "shell", "input": { "command": "grep -rn '?? 90' src/" }, "response": { "exit_status": 1, "stdout": "" } }
+      ],
+      "annotation": {
+        "request": "去掉 search 的 90 天默认时间窗，让整段历史都可检索",
+        "completed": true,
+        "memory_type": "change",
+        "key_files": ["src/db/index.ts", "src/server/mcp-server.ts", "src/server/observation-search.ts"],
+        "key_facts": ["DEFAULT_SEARCH_DAYS"],
+        "unfinished": [],
+        "title": "默认时间窗从 90 天改为无界",
+        "summary": "默认窗改为正无穷，原先分散在四处的 90 天兜底全部清掉：全文检索与 LIKE 兜底、bigram 腿、检索内核，以及 MCP schema 里的默认值——后者留着会向调用方谎报默认行为。显式传天数仍然可以收窄单次检索。",
+        "outcome": "可检索范围等于索引能展示的范围，两年前的记录也能被找到。",
+        "learned": "默认值写在 schema 里等于对外承诺，改行为时漏掉它比漏掉代码更危险，因为调用方会照着它推理。",
+        "concepts": ["默认时间窗", "无界检索", "schema 默认值", "显式收窄", "工作集增长"]
+      }
+    },
+    {
+      "id": "s07",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "age_days": 604,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/fix-fts-limit-criteria.md",
+          "section": "§缺陷证据（文首引言）",
+          "supports": "同一条 SQL，LIMIT 50 字面量 0.93ms、LIMIT ? 绑定参数 1506.57ms，返回行数都是 50；计划从「FTS 驱动 + 按 rowid 取回」翻转成「扫 scope 内全部 Observation + 逐行探 FTS + 临时 B 树排序」"
+        },
+        {
+          "kind": "report",
+          "path": "benchmark/reports/phase3b-submission.md",
+          "section": "§4",
+          "supports": "该缺陷的原始测量出处，以及\"只把这一处作为必修项、其余 11 处先审计再决定\"的裁定"
+        }
+      ],
+      "prompt": "同一条检索 SQL，参数化之后慢了一千多倍，返回行数还一样，这怎么可能？",
+      "assistant_response": "是查询计划翻转了。把 LIMIT 写成字面量时优化器选\"全文索引驱动、按 rowid 回表\"，0.93ms；换成绑定参数后它不知道要取多少行，改成\"扫 scope 内全部记录、逐行探全文索引、再用临时 B 树排序\"，1506.57ms。返回的 50 行完全一样，所以这是纯代价缺陷，不是行为差异——修法目标是把代价从 O(语料) 恢复成 O(命中行)，且返回结果逐条不变。",
+      "events": [
+        { "tool": "shell", "input": { "command": "sqlite3 bench.db 'EXPLAIN QUERY PLAN ...'" }, "response": { "exit_status": 0, "stdout": "SCAN observations / USE TEMP B-TREE FOR ORDER BY" } },
+        { "tool": "write", "input": { "path": "benchmark/reports/fix-fts-limit-criteria.md", "command": "create" }, "response": { "success": true } }
+      ],
+      "annotation": {
+        "request": "查清检索主查询参数化后慢一千多倍的原因",
+        "completed": true,
+        "memory_type": "bugfix",
+        "key_files": ["src/db/index.ts"],
+        "key_facts": ["0.93ms", "1506.57ms"],
+        "unfinished": [],
+        "title": "LIMIT 用绑定参数让查询计划翻转，同一条 SQL 慢一千多倍",
+        "summary": "同一条检索 SQL，行数上限写成字面量时是 0.93 毫秒，换成绑定参数后变成 1506.57 毫秒，返回的 50 行一模一样。原因是优化器在不知道取多少行的情况下放弃了「全文索引驱动、按主键回表」的计划，改成扫遍 scope 内全部记录、逐行探全文索引、再用临时 B 树排序。",
+        "outcome": "定为纯代价缺陷单开一轮修复，判定标准是行为逐条不变加延迟下降，而不是某个质量指标上升。",
+        "learned": "参数化通常无害，但它会抽掉优化器的行数信息；涉及行数上限的查询要把执行计划一起纳入回归。",
+        "concepts": ["查询计划", "绑定参数", "临时 B 树", "全文索引驱动", "代价缺陷"]
+      }
+    },
+    {
+      "id": "s08",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "age_days": 421,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/codex-p6-ruling.md",
+          "section": "§6 护栏语义",
+          "supports": "semanticOnlyLimit=2 是纯语义来源的完整数量约束，但不是整页误召回护栏；FTS 与 hybrid 不经过它是既有设计事实，后续文档必须称其为「semantic-only 配额」"
+        },
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/codex-blind-audit-report.md",
+          "section": "§4.2",
+          "supports": "30 条负例中 28 条把配额填满，且返回项 100% 为 semantic，零 fts / hybrid——配额没有被穿透，是它本身管不到别的来源"
+        }
+      ],
+      "prompt": "每页最多 2 条的限制，是不是就等于\"一页最多 2 条误召回\"？",
+      "assistant_response": "不等于。它只约束纯语义来源那一类，关键词命中和两腿都命中的结果从来不受它限制，这是既有设计。盲审里 30 条负例有 28 条把这个配额填满，且返回项 100% 是纯语义来源、一条关键词命中都没有——说明配额没被穿透，是它本身管不到别的来源。所以它应当被称为\"semantic-only 配额\"，整页安全结论必须由跨来源的负例门槛给出。",
+      "events": [
+        { "tool": "read", "input": { "path": "benchmark/reports/final-recall/codex-blind-audit-report.md" }, "response": { "exit_status": 0 } },
+        { "tool": "write", "input": { "path": "README.md", "command": "strReplace" }, "response": { "success": true } }
+      ],
+      "annotation": {
+        "request": "厘清每页 2 条的限制到底约束什么",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["src/server/observation-search.ts", "README.md"],
+        "key_facts": ["28 条", "semantic-only"],
+        "unfinished": [],
+        "title": "每页 2 条是 semantic-only 配额，不是整页误召回护栏",
+        "summary": "这个上限只约束纯语义来源的结果，关键词命中与两腿都命中的结果从不受它限制，这是既有设计而非缺陷。盲审的 30 条负例里有 28 条把配额填满，返回项百分之百是纯语义来源、零关键词命中，说明配额没有被穿透，而是它本身管不到别的来源。因此文档口径统一改称配额，整页安全结论必须由跨来源的负例门槛给出。",
+        "outcome": "术语与责任边界写进文档，避免把一个来源的配额当成整页的安全保证。",
+        "learned": "护栏的名字要说清它护的是哪一部分；名字含糊时，读者会自动把它当成全局保证。",
+        "concepts": ["semantic-only 配额", "护栏边界", "来源标签", "整页安全", "术语口径"]
+      }
+    }
+  ]
+}
