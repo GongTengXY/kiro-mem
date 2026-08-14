@@ -1,0 +1,1046 @@
+{
+  "purpose": "F2 第二段：装置构建 + S2–S4 自证（判据 r3 §3、§7）。",
+  "generatedAt": "2026-08-14T03:09:39.046Z",
+  "freeze": {
+    "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/reports/fts-round/f1-freeze.json",
+    "verify": "判据 1/1 + 输入 14/14"
+  },
+  "fixture": {
+    "dbPath": "/var/folders/m8/2nqfmnqd7mnfdz5q5vc33lmc0000gn/T/fts-round-f2.db",
+    "scopeKey": "/fts-round/primary",
+    "rows": 60066,
+    "scopeVectors": 60066,
+    "embeddingModel": "all-MiniLM-L6-v2",
+    "spaceKey": "all-MiniLM-L6-v2:q8:384:semantic-en-v1",
+    "dimensions": 384,
+    "composition": {
+      "newGold": 40,
+      "oldGold": 26,
+      "fillerEn": 50000,
+      "fillerEnSourceRows": 10000,
+      "fillerZh": 10000
+    },
+    "realEncodes": 20066,
+    "spreadDays": 1095,
+    "oldGoldAgeDays": 400
+  },
+  "layout": {
+    "seed": 15867942,
+    "note": "年龄与插入顺序刻意解耦（判据 §3.2）",
+    "ageDays": [
+      {
+        "id": "n01",
+        "ageDays": 40
+      },
+      {
+        "id": "n02",
+        "ageDays": 833
+      },
+      {
+        "id": "n03",
+        "ageDays": 628
+      },
+      {
+        "id": "n04",
+        "ageDays": 410
+      },
+      {
+        "id": "n05",
+        "ageDays": 709
+      },
+      {
+        "id": "n06",
+        "ageDays": 822
+      },
+      {
+        "id": "n07",
+        "ageDays": 808
+      },
+      {
+        "id": "n08",
+        "ageDays": 227
+      },
+      {
+        "id": "n09",
+        "ageDays": 889
+      },
+      {
+        "id": "n10",
+        "ageDays": 642
+      },
+      {
+        "id": "n11",
+        "ageDays": 184
+      },
+      {
+        "id": "n12",
+        "ageDays": 135
+      },
+      {
+        "id": "n13",
+        "ageDays": 319
+      },
+      {
+        "id": "n14",
+        "ageDays": 760
+      },
+      {
+        "id": "n15",
+        "ageDays": 40
+      },
+      {
+        "id": "n16",
+        "ageDays": 243
+      },
+      {
+        "id": "n17",
+        "ageDays": 428
+      },
+      {
+        "id": "n18",
+        "ageDays": 755
+      },
+      {
+        "id": "n19",
+        "ageDays": 859
+      },
+      {
+        "id": "n20",
+        "ageDays": 617
+      },
+      {
+        "id": "n21",
+        "ageDays": 718
+      },
+      {
+        "id": "n22",
+        "ageDays": 51
+      },
+      {
+        "id": "n23",
+        "ageDays": 237
+      },
+      {
+        "id": "n24",
+        "ageDays": 309
+      },
+      {
+        "id": "n25",
+        "ageDays": 122
+      },
+      {
+        "id": "n26",
+        "ageDays": 565
+      },
+      {
+        "id": "n27",
+        "ageDays": 566
+      },
+      {
+        "id": "n28",
+        "ageDays": 543
+      },
+      {
+        "id": "n29",
+        "ageDays": 413
+      },
+      {
+        "id": "n30",
+        "ageDays": 159
+      },
+      {
+        "id": "n31",
+        "ageDays": 41
+      },
+      {
+        "id": "n32",
+        "ageDays": 814
+      },
+      {
+        "id": "n33",
+        "ageDays": 503
+      },
+      {
+        "id": "n34",
+        "ageDays": 73
+      },
+      {
+        "id": "n35",
+        "ageDays": 456
+      },
+      {
+        "id": "n36",
+        "ageDays": 302
+      },
+      {
+        "id": "n37",
+        "ageDays": 711
+      },
+      {
+        "id": "n38",
+        "ageDays": 365
+      },
+      {
+        "id": "n39",
+        "ageDays": 287
+      },
+      {
+        "id": "n40",
+        "ageDays": 70
+      }
+    ],
+    "insertionOrder": [
+      "n11",
+      "n31",
+      "n27",
+      "n22",
+      "n06",
+      "n36",
+      "n07",
+      "n39",
+      "n09",
+      "n24",
+      "n13",
+      "n29",
+      "n21",
+      "n14",
+      "n37",
+      "n03",
+      "n19",
+      "n28",
+      "n12",
+      "n01",
+      "n33",
+      "n32",
+      "n02",
+      "n18",
+      "n26",
+      "n30",
+      "n16",
+      "n40",
+      "n35",
+      "n17",
+      "n34",
+      "n10",
+      "n20",
+      "n05",
+      "n08",
+      "n23",
+      "n38",
+      "n25",
+      "n15",
+      "n04"
+    ]
+  },
+  "s2": {
+    "rows": 60066,
+    "totalRows": 60066,
+    "scopeVectors": 60066,
+    "protocols": [
+      "semantic-en-v1"
+    ],
+    "zhRows": 10066
+  },
+  "s3": {
+    "zhRecords": 10000,
+    "functionWords": [
+      {
+        "word": "能不能",
+        "df": 1000,
+        "target": 0.1,
+        "dfOverZhRecords": 0.1,
+        "dfOverScope": 0.0166,
+        "relativeDeviation": 0,
+        "pass": true
+      },
+      {
+        "word": "有没有",
+        "df": 1001,
+        "target": 0.1,
+        "dfOverZhRecords": 0.1001,
+        "dfOverScope": 0.0167,
+        "relativeDeviation": 0.001,
+        "pass": true
+      },
+      {
+        "word": "是不是",
+        "df": 800,
+        "target": 0.08,
+        "dfOverZhRecords": 0.08,
+        "dfOverScope": 0.0133,
+        "relativeDeviation": 0,
+        "pass": true
+      },
+      {
+        "word": "为什么",
+        "df": 801,
+        "target": 0.08,
+        "dfOverZhRecords": 0.0801,
+        "dfOverScope": 0.0133,
+        "relativeDeviation": 0.0013,
+        "pass": true
+      },
+      {
+        "word": "的时候",
+        "df": 2501,
+        "target": 0.25,
+        "dfOverZhRecords": 0.2501,
+        "dfOverScope": 0.0416,
+        "relativeDeviation": 0.0004,
+        "pass": true
+      },
+      {
+        "word": "的模型",
+        "df": 500,
+        "target": 0.05,
+        "dfOverZhRecords": 0.05,
+        "dfOverScope": 0.0083,
+        "relativeDeviation": 0,
+        "pass": true
+      },
+      {
+        "word": "会不会",
+        "df": 601,
+        "target": 0.06,
+        "dfOverZhRecords": 0.0601,
+        "dfOverScope": 0.01,
+        "relativeDeviation": 0.0017,
+        "pass": true
+      },
+      {
+        "word": "什么时候",
+        "df": 500,
+        "target": 0.05,
+        "dfOverZhRecords": 0.05,
+        "dfOverScope": 0.0083,
+        "relativeDeviation": 0,
+        "pass": true
+      }
+    ],
+    "note": "比对口径是 df / 中文记录数；df / scopeSize 单独报，不参与比对（判据 §7 S3 第 2–3 条）"
+  },
+  "s4": {
+    "negatives": [
+      {
+        "id": "fr-a01",
+        "cls": "false-premise",
+        "ftsCount": 2
+      },
+      {
+        "id": "fr-a02",
+        "cls": "same-word-other-thing",
+        "ftsCount": 403
+      },
+      {
+        "id": "fr-a03",
+        "cls": "stale-state-confusion",
+        "ftsCount": 4
+      },
+      {
+        "id": "fr-a04",
+        "cls": "false-premise",
+        "ftsCount": 2
+      },
+      {
+        "id": "fr-a05",
+        "cls": "false-premise",
+        "ftsCount": 3
+      },
+      {
+        "id": "fr-a06",
+        "cls": "false-premise",
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-a07",
+        "cls": "false-premise",
+        "ftsCount": 1
+      },
+      {
+        "id": "fr-a08",
+        "cls": "false-premise",
+        "ftsCount": 2502
+      },
+      {
+        "id": "fr-a09",
+        "cls": "false-premise",
+        "ftsCount": 3
+      },
+      {
+        "id": "fr-a10",
+        "cls": "false-premise",
+        "ftsCount": 673
+      },
+      {
+        "id": "fr-a11",
+        "cls": "false-premise",
+        "ftsCount": 415
+      },
+      {
+        "id": "fr-a12",
+        "cls": "false-premise",
+        "ftsCount": 6
+      },
+      {
+        "id": "fr-a13",
+        "cls": "false-premise",
+        "ftsCount": 2
+      },
+      {
+        "id": "fr-a14",
+        "cls": "false-premise",
+        "ftsCount": 7
+      },
+      {
+        "id": "fr-a15",
+        "cls": "false-premise",
+        "ftsCount": 10
+      },
+      {
+        "id": "fr-a16",
+        "cls": "false-premise",
+        "ftsCount": 2
+      },
+      {
+        "id": "fr-a17",
+        "cls": "false-premise",
+        "ftsCount": 5
+      },
+      {
+        "id": "fr-a18",
+        "cls": "same-word-other-thing",
+        "ftsCount": 618
+      },
+      {
+        "id": "fr-a19",
+        "cls": "same-word-other-thing",
+        "ftsCount": 198
+      },
+      {
+        "id": "fr-a20",
+        "cls": "same-word-other-thing",
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-a21",
+        "cls": "same-word-other-thing",
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-a22",
+        "cls": "same-word-other-thing",
+        "ftsCount": 196
+      },
+      {
+        "id": "fr-a23",
+        "cls": "same-word-other-thing",
+        "ftsCount": 2504
+      },
+      {
+        "id": "fr-a24",
+        "cls": "same-word-other-thing",
+        "ftsCount": 2
+      },
+      {
+        "id": "fr-a25",
+        "cls": "same-word-other-thing",
+        "ftsCount": 2899
+      },
+      {
+        "id": "fr-a26",
+        "cls": "same-word-other-thing",
+        "ftsCount": 500
+      },
+      {
+        "id": "fr-a27",
+        "cls": "same-word-other-thing",
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-a28",
+        "cls": "same-word-other-thing",
+        "ftsCount": 1
+      },
+      {
+        "id": "fr-a29",
+        "cls": "same-word-other-thing",
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-a30",
+        "cls": "same-word-other-thing",
+        "ftsCount": 1
+      },
+      {
+        "id": "fr-a31",
+        "cls": "same-word-other-thing",
+        "ftsCount": 2
+      },
+      {
+        "id": "fr-a32",
+        "cls": "stale-state-confusion",
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-a33",
+        "cls": "stale-state-confusion",
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-a34",
+        "cls": "stale-state-confusion",
+        "ftsCount": 2
+      },
+      {
+        "id": "fr-a35",
+        "cls": "stale-state-confusion",
+        "ftsCount": 4
+      },
+      {
+        "id": "fr-a36",
+        "cls": "stale-state-confusion",
+        "ftsCount": 4
+      },
+      {
+        "id": "fr-a37",
+        "cls": "stale-state-confusion",
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-a38",
+        "cls": "stale-state-confusion",
+        "ftsCount": 3
+      },
+      {
+        "id": "fr-a39",
+        "cls": "stale-state-confusion",
+        "ftsCount": 2
+      },
+      {
+        "id": "fr-a40",
+        "cls": "stale-state-confusion",
+        "ftsCount": 0
+      }
+    ],
+    "positives": [
+      {
+        "id": "fr-r01",
+        "cohort": "new-relevance",
+        "units": 21,
+        "ftsCount": 7
+      },
+      {
+        "id": "fr-r02",
+        "cohort": "new-relevance",
+        "units": 15,
+        "ftsCount": 3
+      },
+      {
+        "id": "fr-r03",
+        "cohort": "new-relevance",
+        "units": 26,
+        "ftsCount": 806
+      },
+      {
+        "id": "fr-r04",
+        "cohort": "new-relevance",
+        "units": 18,
+        "ftsCount": 2507
+      },
+      {
+        "id": "fr-p01",
+        "cohort": "protection",
+        "units": 0,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-p02",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 1
+      },
+      {
+        "id": "fr-p03",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 8
+      },
+      {
+        "id": "fr-p04",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 1
+      },
+      {
+        "id": "fr-p05",
+        "cohort": "protection",
+        "units": 14,
+        "ftsCount": 7
+      },
+      {
+        "id": "fr-r05",
+        "cohort": "new-relevance",
+        "units": 24,
+        "ftsCount": 805
+      },
+      {
+        "id": "fr-r06",
+        "cohort": "new-relevance",
+        "units": 20,
+        "ftsCount": 163
+      },
+      {
+        "id": "fr-r07",
+        "cohort": "new-relevance",
+        "units": 18,
+        "ftsCount": 4
+      },
+      {
+        "id": "fr-r08",
+        "cohort": "new-relevance",
+        "units": 19,
+        "ftsCount": 602
+      },
+      {
+        "id": "fr-r09",
+        "cohort": "new-relevance",
+        "units": 28,
+        "ftsCount": 3
+      },
+      {
+        "id": "fr-r10",
+        "cohort": "new-relevance",
+        "units": 22,
+        "ftsCount": 1000
+      },
+      {
+        "id": "fr-r11",
+        "cohort": "new-relevance",
+        "units": 20,
+        "ftsCount": 602
+      },
+      {
+        "id": "fr-r12",
+        "cohort": "new-relevance",
+        "units": 21,
+        "ftsCount": 801
+      },
+      {
+        "id": "fr-r13",
+        "cohort": "new-relevance",
+        "units": 22,
+        "ftsCount": 525
+      },
+      {
+        "id": "fr-r14",
+        "cohort": "new-relevance",
+        "units": 16,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-r15",
+        "cohort": "new-relevance",
+        "units": 20,
+        "ftsCount": 3
+      },
+      {
+        "id": "fr-r16",
+        "cohort": "new-relevance",
+        "units": 22,
+        "ftsCount": 1
+      },
+      {
+        "id": "fr-r17",
+        "cohort": "new-relevance",
+        "units": 18,
+        "ftsCount": 5
+      },
+      {
+        "id": "fr-r18",
+        "cohort": "new-relevance",
+        "units": 21,
+        "ftsCount": 6
+      },
+      {
+        "id": "fr-r19",
+        "cohort": "new-relevance",
+        "units": 15,
+        "ftsCount": 1000
+      },
+      {
+        "id": "fr-r20",
+        "cohort": "new-relevance",
+        "units": 22,
+        "ftsCount": 601
+      },
+      {
+        "id": "fr-r21",
+        "cohort": "new-relevance",
+        "units": 22,
+        "ftsCount": 1
+      },
+      {
+        "id": "fr-r22",
+        "cohort": "new-relevance",
+        "units": 19,
+        "ftsCount": 4
+      },
+      {
+        "id": "fr-r23",
+        "cohort": "new-relevance",
+        "units": 17,
+        "ftsCount": 1004
+      },
+      {
+        "id": "fr-r24",
+        "cohort": "new-relevance",
+        "units": 21,
+        "ftsCount": 269
+      },
+      {
+        "id": "fr-r25",
+        "cohort": "new-relevance",
+        "units": 15,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-r26",
+        "cohort": "new-relevance",
+        "units": 22,
+        "ftsCount": 3
+      },
+      {
+        "id": "fr-r27",
+        "cohort": "new-relevance",
+        "units": 24,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-r28",
+        "cohort": "new-relevance",
+        "units": 17,
+        "ftsCount": 1
+      },
+      {
+        "id": "fr-r29",
+        "cohort": "new-relevance",
+        "units": 23,
+        "ftsCount": 242
+      },
+      {
+        "id": "fr-r30",
+        "cohort": "new-relevance",
+        "units": 22,
+        "ftsCount": 7
+      },
+      {
+        "id": "fr-r31",
+        "cohort": "new-relevance",
+        "units": 17,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-r32",
+        "cohort": "new-relevance",
+        "units": 15,
+        "ftsCount": 4
+      },
+      {
+        "id": "fr-r33",
+        "cohort": "new-relevance",
+        "units": 26,
+        "ftsCount": 10005
+      },
+      {
+        "id": "fr-r34",
+        "cohort": "new-relevance",
+        "units": 16,
+        "ftsCount": 602
+      },
+      {
+        "id": "fr-r35",
+        "cohort": "new-relevance",
+        "units": 22,
+        "ftsCount": 804
+      },
+      {
+        "id": "fr-r36",
+        "cohort": "new-relevance",
+        "units": 19,
+        "ftsCount": 2
+      },
+      {
+        "id": "fr-r37",
+        "cohort": "new-relevance",
+        "units": 19,
+        "ftsCount": 6
+      },
+      {
+        "id": "fr-r38",
+        "cohort": "new-relevance",
+        "units": 17,
+        "ftsCount": 1004
+      },
+      {
+        "id": "fr-r39",
+        "cohort": "new-relevance",
+        "units": 19,
+        "ftsCount": 802
+      },
+      {
+        "id": "fr-r40",
+        "cohort": "new-relevance",
+        "units": 18,
+        "ftsCount": 806
+      },
+      {
+        "id": "fr-p06",
+        "cohort": "protection",
+        "units": 0,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-p07",
+        "cohort": "protection",
+        "units": 0,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-p08",
+        "cohort": "protection",
+        "units": 0,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-p09",
+        "cohort": "protection",
+        "units": 0,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-p10",
+        "cohort": "protection",
+        "units": 0,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-p11",
+        "cohort": "protection",
+        "units": 0,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-p12",
+        "cohort": "protection",
+        "units": 0,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-p13",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-p14",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-p15",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-p16",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 1
+      },
+      {
+        "id": "fr-p17",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-p18",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-p19",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-p20",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 9
+      },
+      {
+        "id": "fr-p21",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 9
+      },
+      {
+        "id": "fr-p22",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 1
+      },
+      {
+        "id": "fr-p23",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 2
+      },
+      {
+        "id": "fr-p24",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 1
+      },
+      {
+        "id": "fr-p25",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 1
+      },
+      {
+        "id": "fr-p26",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 5
+      },
+      {
+        "id": "fr-p27",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 2
+      },
+      {
+        "id": "fr-p28",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-p29",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-p30",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-p31",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 1
+      },
+      {
+        "id": "fr-p32",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 1
+      },
+      {
+        "id": "fr-p33",
+        "cohort": "protection",
+        "units": 1,
+        "ftsCount": 0
+      },
+      {
+        "id": "fr-p34",
+        "cohort": "protection",
+        "units": 19,
+        "ftsCount": 1
+      },
+      {
+        "id": "fr-p35",
+        "cohort": "protection",
+        "units": 12,
+        "ftsCount": 3
+      },
+      {
+        "id": "fr-p36",
+        "cohort": "protection",
+        "units": 11,
+        "ftsCount": 2
+      },
+      {
+        "id": "fr-p37",
+        "cohort": "protection",
+        "units": 18,
+        "ftsCount": 802
+      },
+      {
+        "id": "fr-p38",
+        "cohort": "protection",
+        "units": 19,
+        "ftsCount": 2
+      },
+      {
+        "id": "fr-p39",
+        "cohort": "protection",
+        "units": 19,
+        "ftsCount": 801
+      },
+      {
+        "id": "fr-p40",
+        "cohort": "protection",
+        "units": 23,
+        "ftsCount": 175
+      }
+    ]
+  },
+  "checks": [
+    {
+      "name": "S2 物理行数",
+      "pass": true,
+      "detail": "60066 / 期望 60066"
+    },
+    {
+      "name": "S2 无跨域行",
+      "pass": true,
+      "detail": "全库 60066 = 作用域内 60066"
+    },
+    {
+      "name": "S2 向量齐全",
+      "pass": true,
+      "detail": "60066 / 60066"
+    },
+    {
+      "name": "S2 协议单一",
+      "pass": true,
+      "detail": "semantic-en-v1"
+    },
+    {
+      "name": "S3 中文行数",
+      "pass": true,
+      "detail": "含中文 10066（≥ 10000，gold 也含中文）"
+    },
+    {
+      "name": "S3 功能词占比",
+      "pass": true,
+      "detail": "全部在 ±20% 内"
+    },
+    {
+      "name": "S4 负例词面命中",
+      "pass": false,
+      "detail": "9 条命中 <1：fr-a06 fr-a20 fr-a21 fr-a27 fr-a29 fr-a32 fr-a33 fr-a37 fr-a40"
+    }
+  ],
+  "pass": false
+}

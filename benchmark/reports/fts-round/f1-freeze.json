@@ -1,0 +1,260 @@
+{
+  "frozen": true,
+  "frozenAt": "2026-08-14T02:56:32.823Z",
+  "round": "fts-safety-round-2026-08-12",
+  "phase": "F1",
+  "criteria": {
+    "name": "criteria",
+    "path": "benchmark/reports/fts-round/f1-criteria.md",
+    "sha256": "18be34b1e15285874074a10252c2d3a7f6d51227851090de6803ce2b8219e7aa",
+    "bytes": 47644
+  },
+  "inputs": [
+    {
+      "name": "sampleGate",
+      "path": "benchmark/reports/fts-round/f1-sample.md",
+      "sha256": "f6e27c464da0aa05d79055114c1e4c278a5973fd09ee26fc47148acc6c628a07",
+      "bytes": 6613
+    },
+    {
+      "name": "implProbe",
+      "path": "benchmark/reports/fts-round/f1-impl-probe.md",
+      "sha256": "e73e74ff22000fdabc4180e0702ce72489c10aade473b56114729545a85bbe25",
+      "bytes": 9246
+    },
+    {
+      "name": "implProbeData",
+      "path": "benchmark/reports/fts-round/f1-impl-probe.json",
+      "sha256": "763dcb54ec4a1b5251fcb26c5af14442acb18cc6e9603724cc969c3b15f156c1",
+      "bytes": 321448
+    },
+    {
+      "name": "records",
+      "path": "benchmark/dataset/turns-fts-round.json",
+      "sha256": "5346b8b9b05f25071b9785bfda5ce29c9e84d4683ef2c09005e9dcc77e549c32",
+      "bytes": 112612
+    },
+    {
+      "name": "queries",
+      "path": "benchmark/dataset/queries-fts-round.json",
+      "sha256": "2b1625b2afe62313b611a983179762dcc166d1ec7368af4b562e129869f70312",
+      "bytes": 82410
+    },
+    {
+      "name": "recordsMirrorEn",
+      "path": "benchmark/dataset/mirror-en-acp-records-fts-round.json",
+      "sha256": "e35568d36f8784cbadcf52f44aebfe3b5c00b562d0e1ccd788db0b8d6ef7a568",
+      "bytes": 46935
+    },
+    {
+      "name": "queriesMirrorEn",
+      "path": "benchmark/dataset/mirror-en-acp-queries-fts-round.json",
+      "sha256": "a24bf66114c331275a5ac185662aebbb5bfa4f17e4b33cf2bacab28dc7fd2ceb",
+      "bytes": 13018
+    },
+    {
+      "name": "corpusZh",
+      "path": "benchmark/dataset/fts-round-filler-zh-10k.json",
+      "sha256": "f8661c7a49bc04ac84f9e838386dd5fa793589f4aa90fdc9588a09c08c525838",
+      "bytes": 15924605
+    },
+    {
+      "name": "corpusZhMeta",
+      "path": "benchmark/dataset/fts-round-filler-zh-10k-meta.json",
+      "sha256": "cf6f331d5db77713c7b382238dc5efded44249541482158f4e617c818438a0e4",
+      "bytes": 2399
+    },
+    {
+      "name": "corpusZhBuilder",
+      "path": "benchmark/build-fts-round-filler-zh.ts",
+      "sha256": "b9636ce390a40ae2d363e2c71727481833dc0951869dc178728706f9cc5eff91",
+      "bytes": 39987
+    },
+    {
+      "name": "corpusEn",
+      "path": "benchmark/dataset/pool-policy-filler-10k.json",
+      "sha256": "bbb3a6739cd4bed8cff349525d9cc41006caab3beb66789e8711410ad90d3d41",
+      "bytes": 9032760
+    },
+    {
+      "name": "oldGold",
+      "path": "benchmark/dataset/turns.json",
+      "sha256": "aa8f9beda2a4f90320455ff2756815d5b6271977044d5820a76df489bdb533e0",
+      "bytes": 55127
+    },
+    {
+      "name": "validator",
+      "path": "benchmark/validate-fts-round-dataset.ts",
+      "sha256": "cc56ef921e2e6ef7681d6d3cb0abfe1d3f9aa60747f0cc7d22ecd7f23102110f",
+      "bytes": 11486
+    },
+    {
+      "name": "freezeUtil",
+      "path": "benchmark/freeze-util.ts",
+      "sha256": "89542a873b8c3318c5e28c2ed341dbdf18af55112111cb95174e72bac2cf4ca5",
+      "bytes": 9803
+    }
+  ],
+  "itemCountLabel": "1 + 14",
+  "itemCount": 15,
+  "note": "冻结于 F2 之前。此后不得修订判据、数据、语料与镜像；作废重开须换新路径或新 round id。K 不在本记录内——它由 F2 按判据 §2.2.1 的阶梯选定，单独冻结为 f2-freeze.json。",
+  "payload": {
+    "grid": {
+      "windowCoverageRatio": [
+        0,
+        0.1,
+        0.2,
+        0.3
+      ],
+      "unitDfRatioCeiling": [
+        1,
+        0.3,
+        0.1,
+        0.03
+      ],
+      "arms": 16,
+      "armIdFormat": "r<r>-d<d>",
+      "baselineArm": "r0-d1.00",
+      "provenance": "r 由 0 起 0.10 等距铺开；d 由 1.00 关闭臂起约 √10 等比铺开。均不引用 F0 / F1 探针的任何数字（判据 §2.4）。"
+    },
+    "kLadder": {
+      "ladder": [
+        200,
+        1000,
+        5000,
+        "EXACT"
+      ],
+      "rule": "取最小的 K，使 16 个 (r,d) 设置 × 120 条 query 与 EXACT 的候选差集逐 query 为 0（判据 §2.2.1）",
+      "selectedIn": "F2（单独冻结为 f2-freeze.json）",
+      "gate": "S7a 前置门：不通过不得跑网格"
+    },
+    "frozenPolicyFields": {
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "semanticDiscovery": true,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "semanticCandidatePool": "Infinity",
+      "semanticTopK": 1000,
+      "bigramAux": false,
+      "defaultSearchDays": "Infinity",
+      "ftsMinUnitLen": 3,
+      "ftsCjkWindow": 3,
+      "ftsMaxUnits": 32,
+      "ftsOrderBy": "fts.rank, o.id ASC",
+      "internalCandidateLimit": 50
+    },
+    "gates": {
+      "G1": "全体 80 条正例：非 acceptable 结果排在任一 primary_gold 之前的次数 = 0（判据 §6.1）",
+      "G2": "40 条词面负例：整页跨来源 distinctContent ≤ 2，逐条判定不取平均（§6.2）",
+      "G3": "120 条全体：match_source 机械重算一致 + semantic-only ≤ 2（§6.3）",
+      "G4": "80 条正例四档分层 primary hit@5 / MRR 逐档不得低于基线（§6.4）",
+      "protection": "五类各 8 条，逐类不得回退（§6.5）",
+      "perf": "完整 search p95 < 300ms；基线已超预算时改为 arm.p95 ≤ baseline.p95 并单独登记缺陷（§6.6）",
+      "S7": "K 的语义资格门，逐 query 候选差集 = 0（§2.2.1、§7 S7a/S7b）"
+    },
+    "selection": "前置 P0（S7a）+ P1（S1–S4）→ 结构排除基线 → G1∧G2∧G3 → G4 ∧ 保护线 ∧ 性能门 → 字典序 (hit@5, MRR, 准入更强, arm id)（§8）",
+    "fixture": {
+      "newGold": 40,
+      "oldGold": 26,
+      "fillerEn": 50000,
+      "fillerEnSourceRows": 10000,
+      "fillerZh": 10000,
+      "totalPhysicalRows": 60066,
+      "spreadDays": 1095,
+      "oldGoldAgeDays": 400
+    },
+    "dataset": {
+      "queries": 120,
+      "relevance": 40,
+      "lexicalNegatives": {
+        "false-premise": 15,
+        "same-word-other-thing": 15,
+        "stale-state-confusion": 10
+      },
+      "protectionPerClass": 8,
+      "selfReferentialRecords": 0,
+      "sourcePriority": "P3 / 门形状裁定 / F0 / Q6；本轮自身事实未被动用"
+    },
+    "mirror": {
+      "queriesViaAcp": 96,
+      "queriesIdentity": 24,
+      "recordsViaAcp": 40,
+      "guardrailRejects": 0,
+      "translator": "kiro-mem-compressor（生产 ACP 运行时）",
+      "note": "query 与记录两侧由两次独立运行产出，prompt 互不含对侧文本；纯拉丁/路径/数字 query 走恒等归一化，不经 ACP。"
+    },
+    "corpusZh": {
+      "seed": 15802406,
+      "count": 10000,
+      "domains": 10,
+      "functionWords": [
+        {
+          "word": "能不能",
+          "target": 1000,
+          "actual": 1000,
+          "share": 0.1,
+          "actualShare": 0.1
+        },
+        {
+          "word": "有没有",
+          "target": 1000,
+          "actual": 1000,
+          "share": 0.1,
+          "actualShare": 0.1
+        },
+        {
+          "word": "是不是",
+          "target": 800,
+          "actual": 800,
+          "share": 0.08,
+          "actualShare": 0.08
+        },
+        {
+          "word": "为什么",
+          "target": 800,
+          "actual": 800,
+          "share": 0.08,
+          "actualShare": 0.08
+        },
+        {
+          "word": "的时候",
+          "target": 2500,
+          "actual": 2500,
+          "share": 0.25,
+          "actualShare": 0.25
+        },
+        {
+          "word": "的模型",
+          "target": 500,
+          "actual": 500,
+          "share": 0.05,
+          "actualShare": 0.05
+        },
+        {
+          "word": "会不会",
+          "target": 600,
+          "actual": 600,
+          "share": 0.06,
+          "actualShare": 0.06
+        },
+        {
+          "word": "什么时候",
+          "target": 500,
+          "actual": 500,
+          "share": 0.05,
+          "actualShare": 0.05
+        }
+      ],
+      "lexicalViolations": 0,
+      "note": "功能词按「恰好 N 条」注入，每词三变体以打散窗口相关性；S3 用 df / 中文记录数 比对生成占比（判据 §3.1.1、§7 S3）。"
+    },
+    "strata": {
+      "status": "未测",
+      "rule": "判据 §4.4：80 条正例并集四档 ≥8 条/档，另冻结 relevance 与保护线各自四档；由 F2 一次性测量后写入 f2-freeze.json"
+    }
+  },
+  "generatedBy": "benchmark/freeze-util.ts"
+}

@@ -1,0 +1,167 @@
+{
+  "batch": "q3",
+  "queries": [
+    {
+      "id": "fr-r23",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "某个试次失败了，能不能临时补跑一个补上",
+      "primary_gold": ["n27"],
+      "acceptable_gold": ["n27", "n22"],
+      "annotation_basis": "n27 是直接答案：补跑必须走预登记状态机，每格十个有效试次、失败即启用预排替补、同格失败超两次整轮作废。n22 提供了什么算装置失败的判定依据。"
+    },
+    {
+      "id": "fr-r24",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "两边都没出现问题，可以说这套做法本身是安全的吗",
+      "primary_gold": ["n28"],
+      "acceptable_gold": ["n28", "n23"],
+      "annotation_basis": "n28 是直接答案：登记口径写死为未见不安全行为但因果效果未获证成，禁止写成两边都安全。n23 补充零观测只能给上界这条同源纪律。"
+    },
+    {
+      "id": "fr-r25",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "只记下用的是哪个模型，够别人复现吗",
+      "primary_gold": ["n29"],
+      "acceptable_gold": ["n29"],
+      "annotation_basis": "n29 是唯一相关记录：必须显式固定模型、档位与引擎并逐项记录版本、提示、清单与源码摘要，且结论随模型版本失效。"
+    },
+    {
+      "id": "fr-r26",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "加一个只在实验里生效的开关来切换行为，有什么问题",
+      "primary_gold": ["n30"],
+      "acceptable_gold": ["n30", "n07"],
+      "annotation_basis": "n30 是直接答案：开关会在被测代码里留下只在实验里走的分支，测到的就不是生产行为，因此改写放在转发层。n07 是同一条纪律在取值域上的应用。"
+    },
+    {
+      "id": "fr-r27",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "证据不足的功能，可以直接定成以后一直由用户手动开启吗",
+      "primary_gold": ["n31"],
+      "acceptable_gold": ["n31", "n38"],
+      "annotation_basis": "n31 是直接答案：不接受永久表述，只能裁定当前架构与当前证据下不得默认开启，且不得据此停掉全部安全工作。n38 给出同一决定在阻塞关系上的另一面。"
+    },
+    {
+      "id": "fr-r28",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "结论是口头转达来的，证据链上要注意什么",
+      "primary_gold": ["n32"],
+      "acceptable_gold": ["n32"],
+      "annotation_basis": "n32 是唯一相关记录：记录复述的是转达全文、原文未落盘，可核对性靠逐项理由与两处已复核的行号级引用支撑，必要时需补录原文。"
+    },
+    {
+      "id": "fr-r29",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "怎么确认一次读数不是因为向量没建全或者中途降级了",
+      "primary_gold": ["n33"],
+      "acceptable_gold": ["n33", "n34"],
+      "annotation_basis": "n33 是直接答案：向量数等于行数、无跨域泄漏、降级为零、协议单一，外加护栏零拒绝。n34 补充向量与冻结值逐位一致这条更强的确认。"
+    },
+    {
+      "id": "fr-r30",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "分档是这次重新算出来的，还是复现了之前冻结的结果",
+      "primary_gold": ["n34"],
+      "acceptable_gold": ["n34"],
+      "annotation_basis": "n34 是唯一相关记录：重建向量与冻结值逐位相同、余弦差为零，所以分档是复现而非重算，参照因此稳定。"
+    },
+    {
+      "id": "fr-r31",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "一道判定失败得有多严重，需要分开对待吗",
+      "primary_gold": ["n35"],
+      "acceptable_gold": ["n35", "n10"],
+      "annotation_basis": "n35 是直接答案：二十五条里失败二十四条、两个口径都在两条以上，说明是方向不可行而不是差一点。n10 是另一种失败形状（曲线几乎水平）的对照。"
+    },
+    {
+      "id": "fr-r32",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "那批不相关的返回主要是从哪儿来的",
+      "primary_gold": ["n36"],
+      "acceptable_gold": ["n36", "n05"],
+      "annotation_basis": "n36 是直接答案：一百零九行里只有十三行来自填充语料且靠拉丁与数字单元命中，其余来自六十六条真实记录互相干扰。n05 给出这个语料构成的成因。"
+    },
+    {
+      "id": "fr-r33",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "两件事放在同一轮里一起改，读数还能说明是哪一件起了作用吗",
+      "primary_gold": ["n37"],
+      "acceptable_gold": ["n37"],
+      "annotation_basis": "n37 是唯一相关记录：两条取证轨道必须分开进行、分别归因，合并成一轮会让任何改善都无法归因到其中一件事上。"
+    },
+    {
+      "id": "fr-r34",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "取证还没做完，会不会把冻结也一起卡住",
+      "primary_gold": ["n38"],
+      "acceptable_gold": ["n38", "n31"],
+      "annotation_basis": "n38 是直接答案：不阻塞冻结，但构成默认开启前的发布条件，冻结不等于放行。n31 是同一决定在措辞与重审条件上的部分。"
+    },
+    {
+      "id": "fr-r35",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "要求两次返回内容完全一致的那种检查，为什么做不到",
+      "primary_gold": ["n39"],
+      "acceptable_gold": ["n39"],
+      "annotation_basis": "n39 是唯一相关记录：不同会话生成不同检索参数，逐字节相同永远失败或被迫放宽，因此改为对同一份已捕获响应做投影预检并解析后比较。"
+    },
+    {
+      "id": "fr-r36",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "判据和判定都由同一个人做，这种偏差怎么处理",
+      "primary_gold": ["n40"],
+      "acceptable_gold": ["n40"],
+      "annotation_basis": "n40 是唯一相关记录：本轮未解决，只做缓解——主判据只用机械比对，依赖人读文本的编码不进主判据，局限如实登记。"
+    },
+    {
+      "id": "fr-r37",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "语义那一路被关掉以后，返回的位置会空出来吗",
+      "primary_gold": ["n01"],
+      "acceptable_gold": ["n01", "n09"],
+      "annotation_basis": "n01 是直接答案：语义贡献清零后页面照样十行，全部由词面命中补满。n09 给出同一现象在分层判定上的表现。这条与 fr-r01 是同一记录的不同角度，问的是空位去哪了而不是门槛有没有用。"
+    },
+    {
+      "id": "fr-r38",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "有没有哪个方向存在可以谈判的取舍空间",
+      "primary_gold": ["n18"],
+      "acceptable_gold": ["n18", "n02"],
+      "annotation_basis": "n18 是直接答案：覆盖度要求存在真实取舍曲线（109→12 对 22→14）。n02 提供对照——相似度门槛方向没有曲线可谈，因为两侧分布重叠。"
+    },
+    {
+      "id": "fr-r39",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "为什么必须先补一份新的语料才能开始扫参数",
+      "primary_gold": ["n05"],
+      "acceptable_gold": ["n05", "n36", "n19"],
+      "annotation_basis": "n05 是直接答案：竞争池只有六十六行，三类读数都不是真实规模读数。n36 给出返回来源的拆解证据，n19 给出频率上限因此测不出效果的实例。这条与 fr-r03 是同一记录的不同角度，问的是前置条件而不是旧读数能不能用。"
+    },
+    {
+      "id": "fr-r40",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "对照实验里为什么不用一个折中的中间取值",
+      "primary_gold": ["n07"],
+      "acceptable_gold": ["n07", "n30"],
+      "annotation_basis": "n07 是直接答案：中间取值不在生产取值域内，助手可能因未知值走异常处理，于是测到的是异常反应而不是标记本身。n30 是同一条证据纯度纪律在实现方式上的应用。"
+    }
+  ]
+}

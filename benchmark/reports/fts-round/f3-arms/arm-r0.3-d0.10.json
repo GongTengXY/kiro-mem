@@ -1,0 +1,9345 @@
+{
+  "purpose": "F3 门读数（判据 r3 §5.1–§5.5、§7 S5–S8）。门判定在 collect-fts-round-f3.ts。",
+  "round": "fts-safety-round-2026-08-12-r2",
+  "phase": "F3-gates",
+  "arm": "r0.3-d0.10",
+  "policy": {
+    "windowCoverageRatio": 0.3,
+    "unitDfRatioCeiling": 0.1
+  },
+  "generatedAt": "2026-08-14T06:43:28.878Z",
+  "freeze": {
+    "path": "benchmark/reports/fts-round/f2-freeze-r3.json",
+    "verify": "判据 1/1 + 输入 19/19",
+    "selectedK": 200
+  },
+  "fixture": {
+    "dbPath": "/var/folders/m8/2nqfmnqd7mnfdz5q5vc33lmc0000gn/T//fts-round-f2-r2.db",
+    "rows": 60066
+  },
+  "pageLimit": 10,
+  "internalCandidateLimit": 50,
+  "ftsLegCalls": 120,
+  "s6Identity": null,
+  "wallMs": 24287,
+  "rows": [
+    {
+      "id": "fr-r01",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "0.310-0.400",
+      "primaryGold": [
+        "n01"
+      ],
+      "acceptableGold": [
+        "n01",
+        "n02"
+      ],
+      "resultIds": [
+        "n02",
+        "n17"
+      ],
+      "resultRawIds": [
+        23,
+        30
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.462,
+        0.381
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        833,
+        428
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 5368,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 7,
+        "admitted": 0,
+        "W": 18,
+        "required": 6,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 7,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r02",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n06"
+      ],
+      "acceptableGold": [
+        "n06"
+      ],
+      "resultIds": [
+        "n06",
+        "n05"
+      ],
+      "resultRawIds": [
+        5,
+        34
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.6,
+        0.541
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        822,
+        709
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1180,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 3,
+        "admitted": 0,
+        "W": 14,
+        "required": 5,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 3,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r03",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "0.200-0.310",
+      "primaryGold": [
+        "n05"
+      ],
+      "acceptableGold": [
+        "n05",
+        "n06"
+      ],
+      "resultIds": [
+        "n14",
+        "filler:59246"
+      ],
+      "resultRawIds": [
+        14,
+        59246
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.423,
+        0.38
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        760,
+        90
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 8152,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 23,
+        "required": 7,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r04",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n08"
+      ],
+      "acceptableGold": [
+        "n08"
+      ],
+      "resultIds": [
+        "n08",
+        "n23"
+      ],
+      "resultRawIds": [
+        35,
+        36
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.408,
+        0.396
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        227,
+        237
+      ],
+      "ftsCount": 0,
+      "semanticCount": 935,
+      "aboveFloorCount": 935,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 933,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 15,
+        "required": 5,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a01",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "false-premise",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n04",
+        "n03"
+      ],
+      "resultRawIds": [
+        40,
+        16
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.539,
+        0.481
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        410,
+        628
+      ],
+      "ftsCount": 0,
+      "semanticCount": 417,
+      "aboveFloorCount": 417,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 415,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 5,
+        "admitted": 0,
+        "W": 23,
+        "required": 7,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 5,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a02",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "same-word-other-thing",
+      "patched": false,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n19",
+        "filler:52810"
+      ],
+      "resultRawIds": [
+        17,
+        52810
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.394,
+        0.332
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        859,
+        795
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1873,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 15,
+        "required": 5,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a03",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "stale-state-confusion",
+      "patched": false,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n07",
+        "n14"
+      ],
+      "resultRawIds": [
+        7,
+        14
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.42,
+        0.35
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        808,
+        760
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1462,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 4,
+        "admitted": 0,
+        "W": 17,
+        "required": 6,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 4,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p01",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "short-query",
+      "band": "0.200-0.310",
+      "primaryGold": [
+        "n01"
+      ],
+      "acceptableGold": [
+        "n01",
+        "n02"
+      ],
+      "resultIds": [
+        "n10",
+        "n01",
+        "t21",
+        "filler:8133",
+        "filler:18133",
+        "n11"
+      ],
+      "resultRawIds": [
+        32,
+        20,
+        61,
+        8133,
+        18133,
+        1
+      ],
+      "resultSources": [
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "semantic",
+        "semantic",
+        "fts"
+      ],
+      "semanticScores": [
+        0.274,
+        0.254,
+        0.242,
+        0.299,
+        0.299,
+        null
+      ],
+      "ftsRanks": [
+        4,
+        1,
+        3,
+        null,
+        null,
+        2
+      ],
+      "semanticRanks": [
+        66,
+        212,
+        348,
+        1,
+        2,
+        null
+      ],
+      "ageDays": [
+        642,
+        40,
+        400,
+        918,
+        699,
+        184
+      ],
+      "ftsCount": 4,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1322,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 995,
+      "physicalRows": 6,
+      "distinctContent": 5,
+      "primaryRank": 2,
+      "acceptableRank": 2,
+      "nonAcceptable": 5,
+      "nonAcceptableBeforePrimary": 1,
+      "admission": {
+        "branch": "like",
+        "candidates": 4,
+        "admitted": 4,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 0,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p02",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "proper-noun",
+      "band": "0.200-0.310",
+      "primaryGold": [
+        "n30"
+      ],
+      "acceptableGold": [
+        "n30",
+        "n07"
+      ],
+      "resultIds": [
+        "t06",
+        "t24",
+        "n30",
+        "t16",
+        "n15",
+        "n07",
+        "filler:8778"
+      ],
+      "resultRawIds": [
+        46,
+        64,
+        26,
+        56,
+        39,
+        7,
+        8778
+      ],
+      "resultSources": [
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "semantic",
+        "fts",
+        "fts",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.394,
+        0.322,
+        0.234,
+        0.258,
+        null,
+        null,
+        0.206
+      ],
+      "ftsRanks": [
+        1,
+        2,
+        5,
+        null,
+        3,
+        4,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2,
+        4,
+        3,
+        null,
+        null,
+        5
+      ],
+      "ageDays": [
+        400,
+        400,
+        159,
+        400,
+        40,
+        808,
+        904
+      ],
+      "ftsCount": 5,
+      "semanticCount": 19,
+      "aboveFloorCount": 19,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 14,
+      "physicalRows": 7,
+      "distinctContent": 7,
+      "primaryRank": 3,
+      "acceptableRank": 3,
+      "nonAcceptable": 5,
+      "nonAcceptableBeforePrimary": 2,
+      "admission": {
+        "branch": "fts",
+        "candidates": 5,
+        "admitted": 5,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 5,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p03",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "path",
+      "band": "<0.200",
+      "primaryGold": [
+        "n04"
+      ],
+      "acceptableGold": [
+        "n04"
+      ],
+      "resultIds": [
+        "n11",
+        "n34",
+        "n35",
+        "n03",
+        "n33",
+        "n12",
+        "n09",
+        "n18",
+        "n10",
+        "n04"
+      ],
+      "resultRawIds": [
+        1,
+        31,
+        29,
+        16,
+        21,
+        19,
+        9,
+        24,
+        32,
+        40
+      ],
+      "resultSources": [
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "semantic",
+        "semantic",
+        "fts"
+      ],
+      "semanticScores": [
+        0.463,
+        0.374,
+        0.395,
+        0.376,
+        0.347,
+        0.325,
+        0.254,
+        0.441,
+        0.427,
+        null
+      ],
+      "ftsRanks": [
+        6,
+        1,
+        3,
+        8,
+        5,
+        2,
+        4,
+        null,
+        null,
+        7
+      ],
+      "semanticRanks": [
+        1,
+        6,
+        4,
+        5,
+        9,
+        34,
+        1062,
+        2,
+        3,
+        null
+      ],
+      "ageDays": [
+        184,
+        73,
+        456,
+        628,
+        503,
+        135,
+        889,
+        755,
+        642,
+        410
+      ],
+      "ftsCount": 8,
+      "semanticCount": 1001,
+      "aboveFloorCount": 5841,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 1,
+      "physicalRows": 10,
+      "distinctContent": 10,
+      "primaryRank": 10,
+      "acceptableRank": 10,
+      "nonAcceptable": 9,
+      "nonAcceptableBeforePrimary": 9,
+      "admission": {
+        "branch": "fts",
+        "candidates": 8,
+        "admitted": 8,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 8,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p04",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "number",
+      "band": "<0.200",
+      "primaryGold": [
+        "n02"
+      ],
+      "acceptableGold": [
+        "n02"
+      ],
+      "resultIds": [
+        "filler:6039",
+        "n02",
+        "filler:16039"
+      ],
+      "resultRawIds": [
+        6039,
+        23,
+        16039
+      ],
+      "resultSources": [
+        "semantic",
+        "fts",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.249,
+        null,
+        0.249
+      ],
+      "ftsRanks": [
+        null,
+        1,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        null,
+        2
+      ],
+      "ageDays": [
+        964,
+        833,
+        745
+      ],
+      "ftsCount": 1,
+      "semanticCount": 116,
+      "aboveFloorCount": 116,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 114,
+      "physicalRows": 3,
+      "distinctContent": 2,
+      "primaryRank": 2,
+      "acceptableRank": 2,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 1,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 1,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 1,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p05",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "historical-state",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n03"
+      ],
+      "acceptableGold": [
+        "n03",
+        "n04"
+      ],
+      "resultIds": [
+        "n03",
+        "filler:57245"
+      ],
+      "resultRawIds": [
+        16,
+        57245
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.491,
+        0.454
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        628,
+        309
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 8207,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 7,
+        "admitted": 0,
+        "W": 13,
+        "required": 4,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 7,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r05",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "0.310-0.400",
+      "primaryGold": [
+        "n09"
+      ],
+      "acceptableGold": [
+        "n09",
+        "n01"
+      ],
+      "resultIds": [
+        "n21",
+        "filler:3880"
+      ],
+      "resultRawIds": [
+        13,
+        3880
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.392,
+        0.364
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        718,
+        1012
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 27391,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 21,
+        "required": 7,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r06",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n10"
+      ],
+      "acceptableGold": [
+        "n10",
+        "n19"
+      ],
+      "resultIds": [
+        "n10",
+        "filler:53911"
+      ],
+      "resultRawIds": [
+        32,
+        53911
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.435,
+        0.349
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        642,
+        674
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 9580,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 163,
+        "admitted": 0,
+        "W": 17,
+        "required": 6,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r07",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "0.200-0.310",
+      "primaryGold": [
+        "n11"
+      ],
+      "acceptableGold": [
+        "n11",
+        "n09"
+      ],
+      "resultIds": [
+        "n40",
+        "n29"
+      ],
+      "resultRawIds": [
+        28,
+        12
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.528,
+        0.353
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        70,
+        413
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 2011,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 4,
+        "admitted": 0,
+        "W": 15,
+        "required": 5,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 4,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r08",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n12"
+      ],
+      "acceptableGold": [
+        "n12"
+      ],
+      "resultIds": [
+        "n12",
+        "n14"
+      ],
+      "resultRawIds": [
+        19,
+        14
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.567,
+        0.325
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        135,
+        760
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 4189,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 18,
+        "required": 6,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r09",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n13"
+      ],
+      "acceptableGold": [
+        "n13",
+        "n05"
+      ],
+      "resultIds": [
+        "n13",
+        "n17"
+      ],
+      "resultRawIds": [
+        11,
+        30
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.468,
+        0.298
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        319,
+        428
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 3528,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 3,
+        "admitted": 0,
+        "W": 25,
+        "required": 8,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 3,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r10",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "0.310-0.400",
+      "primaryGold": [
+        "n14"
+      ],
+      "acceptableGold": [
+        "n14"
+      ],
+      "resultIds": [
+        "n19",
+        "n16"
+      ],
+      "resultRawIds": [
+        17,
+        27
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.431,
+        0.389
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        859,
+        243
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 8078,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 19,
+        "required": 6,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r11",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "0.200-0.310",
+      "primaryGold": [
+        "n15"
+      ],
+      "acceptableGold": [
+        "n15"
+      ],
+      "resultIds": [
+        "n36",
+        "n15"
+      ],
+      "resultRawIds": [
+        6,
+        39
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.346,
+        0.297
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        302,
+        40
+      ],
+      "ftsCount": 0,
+      "semanticCount": 429,
+      "aboveFloorCount": 429,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 427,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 2,
+      "acceptableRank": 2,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 1,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 19,
+        "required": 6,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r12",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n16"
+      ],
+      "acceptableGold": [
+        "n16",
+        "n02"
+      ],
+      "resultIds": [
+        "filler:6046",
+        "filler:16046"
+      ],
+      "resultRawIds": [
+        6046,
+        16046
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.432,
+        0.432
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        964,
+        745
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 3306,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 1,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 18,
+        "required": 6,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r13",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n17"
+      ],
+      "acceptableGold": [
+        "n17",
+        "n06"
+      ],
+      "resultIds": [
+        "n01",
+        "n37"
+      ],
+      "resultRawIds": [
+        20,
+        15
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.439,
+        0.433
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        40,
+        711
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 19866,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 19,
+        "required": 6,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r14",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "<0.200",
+      "primaryGold": [
+        "n18"
+      ],
+      "acceptableGold": [
+        "n18",
+        "n17"
+      ],
+      "resultIds": [
+        "n36",
+        "n05"
+      ],
+      "resultRawIds": [
+        6,
+        34
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.339,
+        0.327
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        302,
+        709
+      ],
+      "ftsCount": 0,
+      "semanticCount": 657,
+      "aboveFloorCount": 657,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 655,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 0,
+        "admitted": 0,
+        "W": 13,
+        "required": 4,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r15",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n19"
+      ],
+      "acceptableGold": [
+        "n19",
+        "n05"
+      ],
+      "resultIds": [
+        "n19",
+        "n06"
+      ],
+      "resultRawIds": [
+        17,
+        5
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.485,
+        0.401
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        859,
+        822
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1876,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 3,
+        "admitted": 0,
+        "W": 17,
+        "required": 6,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 3,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r16",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "0.310-0.400",
+      "primaryGold": [
+        "n20"
+      ],
+      "acceptableGold": [
+        "n20"
+      ],
+      "resultIds": [
+        "n21",
+        "t08"
+      ],
+      "resultRawIds": [
+        13,
+        48
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.363,
+        0.343
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        718,
+        400
+      ],
+      "ftsCount": 0,
+      "semanticCount": 32,
+      "aboveFloorCount": 32,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 30,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 0,
+        "W": 19,
+        "required": 6,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 1,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r17",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n21"
+      ],
+      "acceptableGold": [
+        "n21"
+      ],
+      "resultIds": [
+        "n21",
+        "t12"
+      ],
+      "resultRawIds": [
+        13,
+        52
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.549,
+        0.464
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        718,
+        400
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 27412,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 5,
+        "admitted": 0,
+        "W": 17,
+        "required": 6,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 5,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r18",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "0.200-0.310",
+      "primaryGold": [
+        "n22"
+      ],
+      "acceptableGold": [
+        "n22"
+      ],
+      "resultIds": [
+        "n25",
+        "n31"
+      ],
+      "resultRawIds": [
+        38,
+        2
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.39,
+        0.343
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        122,
+        41
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1031,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 6,
+        "admitted": 0,
+        "W": 18,
+        "required": 6,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 6,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r19",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "0.200-0.310",
+      "primaryGold": [
+        "n23"
+      ],
+      "acceptableGold": [
+        "n23"
+      ],
+      "resultIds": [
+        "n35",
+        "n28"
+      ],
+      "resultRawIds": [
+        29,
+        18
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.316,
+        0.299
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        456,
+        543
+      ],
+      "ftsCount": 0,
+      "semanticCount": 209,
+      "aboveFloorCount": 209,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 207,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 12,
+        "required": 4,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r20",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n24"
+      ],
+      "acceptableGold": [
+        "n24"
+      ],
+      "resultIds": [
+        "n24",
+        "t20"
+      ],
+      "resultRawIds": [
+        10,
+        60
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.474,
+        0.348
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        309,
+        400
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 6838,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 19,
+        "required": 6,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r21",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n25"
+      ],
+      "acceptableGold": [
+        "n25",
+        "n22"
+      ],
+      "resultIds": [
+        "n25",
+        "n29"
+      ],
+      "resultRawIds": [
+        38,
+        12
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.505,
+        0.452
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        122,
+        413
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 5592,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 0,
+        "W": 19,
+        "required": 6,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 1,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r22",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "0.310-0.400",
+      "primaryGold": [
+        "n26"
+      ],
+      "acceptableGold": [
+        "n26"
+      ],
+      "resultIds": [
+        "n40",
+        "n26"
+      ],
+      "resultRawIds": [
+        28,
+        25
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.481,
+        0.397
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        70,
+        565
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 3822,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 2,
+      "acceptableRank": 2,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 1,
+      "admission": {
+        "branch": "fts",
+        "candidates": 4,
+        "admitted": 0,
+        "W": 16,
+        "required": 5,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 4,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r23",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "0.310-0.400",
+      "primaryGold": [
+        "n27"
+      ],
+      "acceptableGold": [
+        "n27",
+        "n22"
+      ],
+      "resultIds": [
+        "n21",
+        "n27"
+      ],
+      "resultRawIds": [
+        13,
+        3
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.424,
+        0.374
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        718,
+        566
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 4316,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 2,
+      "acceptableRank": 2,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 1,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 14,
+        "required": 5,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r24",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "0.200-0.310",
+      "primaryGold": [
+        "n28"
+      ],
+      "acceptableGold": [
+        "n28",
+        "n23"
+      ],
+      "resultIds": [
+        "n28",
+        "n31"
+      ],
+      "resultRawIds": [
+        18,
+        2
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.281,
+        0.233
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        543,
+        41
+      ],
+      "ftsCount": 0,
+      "semanticCount": 4,
+      "aboveFloorCount": 4,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 2,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 18,
+        "required": 6,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r25",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "0.310-0.400",
+      "primaryGold": [
+        "n29"
+      ],
+      "acceptableGold": [
+        "n29"
+      ],
+      "resultIds": [
+        "n29",
+        "filler:57792"
+      ],
+      "resultRawIds": [
+        12,
+        57792
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.312,
+        0.219
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        413,
+        249
+      ],
+      "ftsCount": 0,
+      "semanticCount": 49,
+      "aboveFloorCount": 49,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 47,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 0,
+        "admitted": 0,
+        "W": 12,
+        "required": 4,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r26",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "0.200-0.310",
+      "primaryGold": [
+        "n30"
+      ],
+      "acceptableGold": [
+        "n30",
+        "n07"
+      ],
+      "resultIds": [
+        "t17",
+        "n21"
+      ],
+      "resultRawIds": [
+        57,
+        13
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.304,
+        0.279
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        400,
+        718
+      ],
+      "ftsCount": 0,
+      "semanticCount": 802,
+      "aboveFloorCount": 802,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 800,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 3,
+        "admitted": 0,
+        "W": 19,
+        "required": 6,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 3,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r27",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n31"
+      ],
+      "acceptableGold": [
+        "n31",
+        "n38"
+      ],
+      "resultIds": [
+        "n31",
+        "filler:2596"
+      ],
+      "resultRawIds": [
+        2,
+        2596
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.488,
+        0.289
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        41,
+        1040
+      ],
+      "ftsCount": 0,
+      "semanticCount": 719,
+      "aboveFloorCount": 719,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 717,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 0,
+        "admitted": 0,
+        "W": 21,
+        "required": 7,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r28",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n32"
+      ],
+      "acceptableGold": [
+        "n32"
+      ],
+      "resultIds": [
+        "n32",
+        "n37"
+      ],
+      "resultRawIds": [
+        22,
+        15
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.464,
+        0.429
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        814,
+        711
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1512,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 0,
+        "W": 14,
+        "required": 5,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 1,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r29",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "0.310-0.400",
+      "primaryGold": [
+        "n33"
+      ],
+      "acceptableGold": [
+        "n33",
+        "n34"
+      ],
+      "resultIds": [
+        "n33",
+        "n34"
+      ],
+      "resultRawIds": [
+        21,
+        31
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.365,
+        0.351
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        503,
+        73
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1266,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 0,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 22,
+        "required": 7,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r30",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n34"
+      ],
+      "acceptableGold": [
+        "n34"
+      ],
+      "resultIds": [
+        "n34",
+        "filler:51670"
+      ],
+      "resultRawIds": [
+        31,
+        51670
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.605,
+        0.444
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        73,
+        920
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 43347,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 7,
+        "admitted": 0,
+        "W": 19,
+        "required": 6,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 7,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r31",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "0.200-0.310",
+      "primaryGold": [
+        "n35"
+      ],
+      "acceptableGold": [
+        "n35",
+        "n10"
+      ],
+      "resultIds": [
+        "n09",
+        "n11"
+      ],
+      "resultRawIds": [
+        9,
+        1
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.445,
+        0.433
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        889,
+        184
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 13914,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 0,
+        "admitted": 0,
+        "W": 14,
+        "required": 5,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r32",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "0.310-0.400",
+      "primaryGold": [
+        "n36"
+      ],
+      "acceptableGold": [
+        "n36",
+        "n05"
+      ],
+      "resultIds": [
+        "filler:171",
+        "filler:10171"
+      ],
+      "resultRawIds": [
+        171,
+        10171
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.41,
+        0.41
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        1093,
+        874
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 32362,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 1,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 4,
+        "admitted": 0,
+        "W": 14,
+        "required": 5,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 4,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r33",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "0.200-0.310",
+      "primaryGold": [
+        "n37"
+      ],
+      "acceptableGold": [
+        "n37"
+      ],
+      "resultIds": [
+        "filler:57177",
+        "filler:50107"
+      ],
+      "resultRawIds": [
+        57177,
+        50107
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.369,
+        0.368
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        316,
+        1091
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 4262,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 3,
+        "admitted": 0,
+        "W": 22,
+        "required": 7,
+        "exactUnits": 3,
+        "dropped": [
+          {
+            "unit": "在同一",
+            "df": 10002,
+            "dfRatio": 0.16651683148536608
+          }
+        ],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 3,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r34",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n38"
+      ],
+      "acceptableGold": [
+        "n38",
+        "n31"
+      ],
+      "resultIds": [
+        "n38",
+        "n21"
+      ],
+      "resultRawIds": [
+        37,
+        13
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.513,
+        0.402
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        365,
+        718
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 7839,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 13,
+        "required": 4,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r35",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n39"
+      ],
+      "acceptableGold": [
+        "n39"
+      ],
+      "resultIds": [
+        "n39",
+        "n27"
+      ],
+      "resultRawIds": [
+        8,
+        3
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.464,
+        0.389
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        287,
+        566
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 8920,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 19,
+        "required": 6,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r36",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n40"
+      ],
+      "acceptableGold": [
+        "n40"
+      ],
+      "resultIds": [
+        "n40",
+        "n37"
+      ],
+      "resultRawIds": [
+        28,
+        15
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.674,
+        0.37
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        70,
+        711
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1908,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 2,
+        "admitted": 0,
+        "W": 16,
+        "required": 5,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 2,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r37",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n01"
+      ],
+      "acceptableGold": [
+        "n01",
+        "n09"
+      ],
+      "resultIds": [
+        "n01",
+        "n31"
+      ],
+      "resultRawIds": [
+        20,
+        2
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.417,
+        0.279
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        40,
+        41
+      ],
+      "ftsCount": 0,
+      "semanticCount": 788,
+      "aboveFloorCount": 788,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 786,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 6,
+        "admitted": 0,
+        "W": 16,
+        "required": 5,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 6,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r38",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "<0.200",
+      "primaryGold": [
+        "n18"
+      ],
+      "acceptableGold": [
+        "n18",
+        "n02"
+      ],
+      "resultIds": [
+        "filler:7479",
+        "filler:17479"
+      ],
+      "resultRawIds": [
+        7479,
+        17479
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.225,
+        0.225
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        933,
+        714
+      ],
+      "ftsCount": 0,
+      "semanticCount": 736,
+      "aboveFloorCount": 736,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 734,
+      "physicalRows": 2,
+      "distinctContent": 1,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 16,
+        "required": 5,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r39",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "0.310-0.400",
+      "primaryGold": [
+        "n05"
+      ],
+      "acceptableGold": [
+        "n05",
+        "n36",
+        "n19"
+      ],
+      "resultIds": [
+        "n13",
+        "n05"
+      ],
+      "resultRawIds": [
+        11,
+        34
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.457,
+        0.4
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        319,
+        709
+      ],
+      "ftsCount": 0,
+      "semanticCount": 281,
+      "aboveFloorCount": 281,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 279,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 2,
+      "acceptableRank": 2,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 1,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 18,
+        "required": 6,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-r40",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "band": "<0.200",
+      "primaryGold": [
+        "n07"
+      ],
+      "acceptableGold": [
+        "n07",
+        "n30"
+      ],
+      "resultIds": [
+        "n08",
+        "n40"
+      ],
+      "resultRawIds": [
+        35,
+        28
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.371,
+        0.341
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        227,
+        70
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1077,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 17,
+        "required": 6,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a04",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "false-premise",
+      "patched": false,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n03",
+        "n35"
+      ],
+      "resultRawIds": [
+        16,
+        29
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.498,
+        0.402
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        628,
+        456
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 7986,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 2,
+        "admitted": 0,
+        "W": 17,
+        "required": 6,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 2,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a05",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "false-premise",
+      "patched": false,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n22",
+        "n21"
+      ],
+      "resultRawIds": [
+        4,
+        13
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.576,
+        0.416
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        51,
+        718
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 10125,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 3,
+        "admitted": 0,
+        "W": 15,
+        "required": 5,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 3,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a06",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "false-premise",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n06",
+        "n01"
+      ],
+      "resultRawIds": [
+        5,
+        20
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.37,
+        0.359
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        822,
+        40
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1222,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 7,
+        "admitted": 0,
+        "W": 23,
+        "required": 7,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 7,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a07",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "false-premise",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "filler:52219",
+        "filler:56879"
+      ],
+      "resultRawIds": [
+        52219,
+        56879
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.33,
+        0.329
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        859,
+        349
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 2150,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 4,
+        "admitted": 0,
+        "W": 23,
+        "required": 7,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 4,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a08",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "false-premise",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n23",
+        "n14",
+        "n13"
+      ],
+      "resultRawIds": [
+        36,
+        14,
+        11
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.582,
+        0.297,
+        0.295
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2,
+        3
+      ],
+      "ageDays": [
+        237,
+        760,
+        319
+      ],
+      "ftsCount": 1,
+      "semanticCount": 14,
+      "aboveFloorCount": 14,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 11,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 3,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 1,
+        "W": 20,
+        "required": 6,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 49,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a09",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "false-premise",
+      "patched": false,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n30",
+        "n39"
+      ],
+      "resultRawIds": [
+        26,
+        8
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.434,
+        0.353
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        159,
+        287
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 3056,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 3,
+        "admitted": 0,
+        "W": 18,
+        "required": 6,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 3,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a10",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "false-premise",
+      "patched": false,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "filler:53238",
+        "filler:51940"
+      ],
+      "resultRawIds": [
+        53238,
+        51940
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.427,
+        0.427
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        748,
+        890
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 11346,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 14,
+        "required": 5,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a11",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "false-premise",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "filler:50257",
+        "filler:56437"
+      ],
+      "resultRawIds": [
+        50257,
+        56437
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.652,
+        0.649
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        1074,
+        398
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 4715,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 14,
+        "required": 5,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a12",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "false-premise",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n10",
+        "n18"
+      ],
+      "resultRawIds": [
+        32,
+        24
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.35,
+        0.293
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        642,
+        755
+      ],
+      "ftsCount": 0,
+      "semanticCount": 16,
+      "aboveFloorCount": 16,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 14,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 8,
+        "admitted": 0,
+        "W": 22,
+        "required": 7,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 8,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a13",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "false-premise",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n12",
+        "filler:3249"
+      ],
+      "resultRawIds": [
+        19,
+        3249
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.469,
+        0.4
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        135,
+        1025
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 14803,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 198,
+        "admitted": 0,
+        "W": 20,
+        "required": 6,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a14",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "foreign-domain",
+      "lexicalNegativeClass": "false-premise",
+      "patched": false,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n17",
+        "filler:51225"
+      ],
+      "resultRawIds": [
+        30,
+        51225
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.45,
+        0.362
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        428,
+        968
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 18913,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 7,
+        "admitted": 0,
+        "W": 12,
+        "required": 4,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 7,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a15",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "foreign-domain",
+      "lexicalNegativeClass": "false-premise",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n39",
+        "n12"
+      ],
+      "resultRawIds": [
+        8,
+        19
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.481,
+        0.474
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        287,
+        135
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 21624,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 23,
+        "required": 7,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a16",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "false-premise",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n29",
+        "n39",
+        "n32"
+      ],
+      "resultRawIds": [
+        12,
+        8,
+        22
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.404,
+        0.331,
+        0.317
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2,
+        3
+      ],
+      "ageDays": [
+        413,
+        287,
+        814
+      ],
+      "ftsCount": 1,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1061,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 997,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 3,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 1,
+        "W": 21,
+        "required": 7,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 49,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a17",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "false-premise",
+      "patched": false,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "filler:7156",
+        "filler:17156"
+      ],
+      "resultRawIds": [
+        7156,
+        17156
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.518,
+        0.518
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        940,
+        721
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 3360,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 1,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 5,
+        "admitted": 0,
+        "W": 15,
+        "required": 5,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 5,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a18",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "same-word-other-thing",
+      "patched": false,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "t20",
+        "filler:55421"
+      ],
+      "resultRawIds": [
+        60,
+        55421
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.488,
+        0.441
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        400,
+        509
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 14669,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 14,
+        "required": 5,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a19",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "same-word-other-thing",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n34",
+        "filler:7832",
+        "filler:17832"
+      ],
+      "resultRawIds": [
+        31,
+        7832,
+        17832
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.437,
+        0.368,
+        0.368
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2,
+        3
+      ],
+      "ageDays": [
+        73,
+        925,
+        706
+      ],
+      "ftsCount": 1,
+      "semanticCount": 1000,
+      "aboveFloorCount": 16079,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 997,
+      "physicalRows": 3,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 3,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 1,
+        "W": 19,
+        "required": 6,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a20",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "same-word-other-thing",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n21",
+        "n24",
+        "n22"
+      ],
+      "resultRawIds": [
+        13,
+        10,
+        4
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.577,
+        0.378,
+        0.355
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2,
+        3
+      ],
+      "ageDays": [
+        718,
+        309,
+        51
+      ],
+      "ftsCount": 1,
+      "semanticCount": 1000,
+      "aboveFloorCount": 2030,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 997,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 3,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 4,
+        "admitted": 1,
+        "W": 27,
+        "required": 9,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 1,
+        "droppedEmpty": false
+      },
+      "pageShrink": 3,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a21",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "same-word-other-thing",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n17",
+        "n01"
+      ],
+      "resultRawIds": [
+        30,
+        20
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.403,
+        0.395
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        428,
+        40
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 17723,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 8,
+        "admitted": 0,
+        "W": 22,
+        "required": 7,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 8,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a22",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "same-word-other-thing",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n27",
+        "t20",
+        "filler:5127"
+      ],
+      "resultRawIds": [
+        3,
+        60,
+        5127
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.619,
+        0.415,
+        0.387
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2,
+        3
+      ],
+      "ageDays": [
+        566,
+        400,
+        984
+      ],
+      "ftsCount": 1,
+      "semanticCount": 1000,
+      "aboveFloorCount": 10451,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 997,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 3,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 199,
+        "admitted": 1,
+        "W": 27,
+        "required": 9,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 1,
+        "droppedEmpty": false
+      },
+      "pageShrink": 49,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a23",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "same-word-other-thing",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n26",
+        "n40",
+        "n32"
+      ],
+      "resultRawIds": [
+        25,
+        28,
+        22
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.385,
+        0.56,
+        0.505
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        4,
+        1,
+        2
+      ],
+      "ageDays": [
+        565,
+        70,
+        814
+      ],
+      "ftsCount": 1,
+      "semanticCount": 1000,
+      "aboveFloorCount": 3688,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 997,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 3,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 6,
+        "admitted": 1,
+        "W": 24,
+        "required": 8,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 5,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a24",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "same-word-other-thing",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "t08",
+        "filler:4809"
+      ],
+      "resultRawIds": [
+        48,
+        4809
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.403,
+        0.378
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        400,
+        991
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 18465,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 3,
+        "admitted": 0,
+        "W": 25,
+        "required": 8,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 3,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a25",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "same-word-other-thing",
+      "patched": false,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "filler:56597",
+        "filler:58417"
+      ],
+      "resultRawIds": [
+        56597,
+        58417
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.429,
+        0.42
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        380,
+        181
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 13795,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 20,
+        "required": 6,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a26",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "same-word-other-thing",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n34",
+        "n13"
+      ],
+      "resultRawIds": [
+        31,
+        11
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.451,
+        0.375
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        73,
+        319
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 3859,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 22,
+        "required": 7,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a27",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "same-word-other-thing",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n38",
+        "n24",
+        "n21"
+      ],
+      "resultRawIds": [
+        37,
+        10,
+        13
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.586,
+        0.411,
+        0.392
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2,
+        3
+      ],
+      "ageDays": [
+        365,
+        309,
+        718
+      ],
+      "ftsCount": 1,
+      "semanticCount": 1000,
+      "aboveFloorCount": 16603,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 997,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 3,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 1,
+        "W": 27,
+        "required": 9,
+        "exactUnits": 4,
+        "dropped": [],
+        "exemptHits": 1,
+        "droppedEmpty": false
+      },
+      "pageShrink": 49,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a28",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "same-word-other-thing",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "filler:56306",
+        "filler:58216"
+      ],
+      "resultRawIds": [
+        56306,
+        58216
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.298,
+        0.292
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        412,
+        203
+      ],
+      "ftsCount": 0,
+      "semanticCount": 780,
+      "aboveFloorCount": 780,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 778,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 3,
+        "admitted": 0,
+        "W": 22,
+        "required": 7,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 3,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a29",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "foreign-domain",
+      "lexicalNegativeClass": "same-word-other-thing",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "filler:56713",
+        "filler:50353"
+      ],
+      "resultRawIds": [
+        56713,
+        50353
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.401,
+        0.393
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        367,
+        1064
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 14099,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 182,
+        "admitted": 0,
+        "W": 17,
+        "required": 6,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a30",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "same-word-other-thing",
+      "patched": false,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "filler:4087",
+        "filler:14087"
+      ],
+      "resultRawIds": [
+        4087,
+        14087
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.316,
+        0.316
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        1007,
+        788
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1450,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 1,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 0,
+        "W": 16,
+        "required": 5,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 1,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a31",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "same-word-other-thing",
+      "patched": false,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n22",
+        "n18"
+      ],
+      "resultRawIds": [
+        4,
+        24
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.347,
+        0.335
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        51,
+        755
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1874,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 2,
+        "admitted": 0,
+        "W": 15,
+        "required": 5,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 2,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a32",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "stale-state-confusion",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n19",
+        "n05"
+      ],
+      "resultRawIds": [
+        17,
+        34
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.39,
+        0.332
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        859,
+        709
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 2086,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 2,
+        "admitted": 0,
+        "W": 14,
+        "required": 5,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 2,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a33",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "stale-state-confusion",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "filler:55653",
+        "filler:58883"
+      ],
+      "resultRawIds": [
+        55653,
+        58883
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.321,
+        0.319
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        483,
+        130
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 2662,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 0,
+        "W": 20,
+        "required": 6,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 1,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a34",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "stale-state-confusion",
+      "patched": false,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n07",
+        "filler:7218"
+      ],
+      "resultRawIds": [
+        7,
+        7218
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.415,
+        0.365
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        808,
+        938
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 6358,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 2,
+        "admitted": 0,
+        "W": 14,
+        "required": 5,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 2,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a35",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "stale-state-confusion",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n27",
+        "n12"
+      ],
+      "resultRawIds": [
+        3,
+        19
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.529,
+        0.464
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        566,
+        135
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 4232,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 7,
+        "admitted": 0,
+        "W": 21,
+        "required": 7,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 7,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a36",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "stale-state-confusion",
+      "patched": false,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n12",
+        "n33"
+      ],
+      "resultRawIds": [
+        19,
+        21
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.456,
+        0.407
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        135,
+        503
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 5643,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 4,
+        "admitted": 0,
+        "W": 11,
+        "required": 4,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 4,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a37",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "stale-state-confusion",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n34",
+        "filler:6030",
+        "filler:16030"
+      ],
+      "resultRawIds": [
+        31,
+        6030,
+        16030
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.419,
+        0.349,
+        0.349
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2,
+        3
+      ],
+      "ageDays": [
+        73,
+        965,
+        745
+      ],
+      "ftsCount": 1,
+      "semanticCount": 1000,
+      "aboveFloorCount": 7094,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 997,
+      "physicalRows": 3,
+      "distinctContent": 2,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 3,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 2,
+        "admitted": 1,
+        "W": 20,
+        "required": 6,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 1,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a38",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "stale-state-confusion",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n36",
+        "n05",
+        "n13"
+      ],
+      "resultRawIds": [
+        6,
+        34,
+        11
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.645,
+        0.439,
+        0.352
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2,
+        3
+      ],
+      "ageDays": [
+        302,
+        709,
+        319
+      ],
+      "ftsCount": 1,
+      "semanticCount": 1000,
+      "aboveFloorCount": 6120,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 997,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 3,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 3,
+        "admitted": 1,
+        "W": 23,
+        "required": 7,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 2,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a39",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "near-domain",
+      "lexicalNegativeClass": "stale-state-confusion",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n37",
+        "n16",
+        "n32"
+      ],
+      "resultRawIds": [
+        15,
+        27,
+        22
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.719,
+        0.522,
+        0.489
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2,
+        3
+      ],
+      "ageDays": [
+        711,
+        243,
+        814
+      ],
+      "ftsCount": 1,
+      "semanticCount": 1000,
+      "aboveFloorCount": 8160,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 997,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 3,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 2,
+        "admitted": 1,
+        "W": 23,
+        "required": 7,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 1,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-a40",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negativeType": "foreign-domain",
+      "lexicalNegativeClass": "stale-state-confusion",
+      "patched": true,
+      "primaryGold": [],
+      "acceptableGold": [],
+      "resultIds": [
+        "n13",
+        "filler:54163",
+        "filler:55533"
+      ],
+      "resultRawIds": [
+        11,
+        54163,
+        55533
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.565,
+        0.427,
+        0.42
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2,
+        3
+      ],
+      "ageDays": [
+        319,
+        647,
+        497
+      ],
+      "ftsCount": 1,
+      "semanticCount": 1000,
+      "aboveFloorCount": 14395,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 997,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 3,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 1,
+        "W": 27,
+        "required": 9,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p06",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "short-query",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n04"
+      ],
+      "acceptableGold": [
+        "n04",
+        "n03"
+      ],
+      "resultIds": [
+        "n04",
+        "n03",
+        "n16"
+      ],
+      "resultRawIds": [
+        40,
+        16,
+        27
+      ],
+      "resultSources": [
+        "hybrid",
+        "hybrid",
+        "fts"
+      ],
+      "semanticScores": [
+        0.44,
+        0.247,
+        null
+      ],
+      "ftsRanks": [
+        2,
+        3,
+        1
+      ],
+      "semanticRanks": [
+        1,
+        2,
+        null
+      ],
+      "ageDays": [
+        410,
+        628,
+        243
+      ],
+      "ftsCount": 3,
+      "semanticCount": 2,
+      "aboveFloorCount": 2,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 0,
+      "semanticOnlyDropped": 0,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "like",
+        "candidates": 3,
+        "admitted": 3,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 0,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p07",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "short-query",
+      "band": "0.200-0.310",
+      "primaryGold": [
+        "n06"
+      ],
+      "acceptableGold": [
+        "n06",
+        "n17",
+        "n18"
+      ],
+      "resultIds": [
+        "n06",
+        "filler:60025",
+        "filler:57905"
+      ],
+      "resultRawIds": [
+        5,
+        60025,
+        57905
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.222,
+        0.293,
+        0.292
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        994,
+        1,
+        2
+      ],
+      "ageDays": [
+        822,
+        5,
+        237
+      ],
+      "ftsCount": 1,
+      "semanticCount": 1000,
+      "aboveFloorCount": 2068,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 997,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "like",
+        "candidates": 1,
+        "admitted": 1,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 0,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p08",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "short-query",
+      "band": "<0.200",
+      "primaryGold": [
+        "n22"
+      ],
+      "acceptableGold": [
+        "n22"
+      ],
+      "resultIds": [
+        "n22",
+        "t17",
+        "filler:60058",
+        "filler:2033",
+        "filler:60048",
+        "filler:60028",
+        "filler:60018",
+        "filler:60008",
+        "filler:59978",
+        "filler:59948"
+      ],
+      "resultRawIds": [
+        4,
+        57,
+        60058,
+        2033,
+        60048,
+        60028,
+        60018,
+        60008,
+        59978,
+        59948
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "fts",
+        "semantic",
+        "fts",
+        "fts",
+        "fts",
+        "fts",
+        "fts",
+        "fts"
+      ],
+      "semanticScores": [
+        0.197,
+        0.217,
+        null,
+        0.21,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "ftsRanks": [
+        24,
+        null,
+        1,
+        null,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "semanticRanks": [
+        27,
+        1,
+        null,
+        2,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "ageDays": [
+        51,
+        400,
+        1,
+        1052,
+        2,
+        4,
+        5,
+        6,
+        10,
+        13
+      ],
+      "ftsCount": 50,
+      "semanticCount": 27,
+      "aboveFloorCount": 27,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 5,
+      "physicalRows": 10,
+      "distinctContent": 10,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 9,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "like",
+        "candidates": 50,
+        "admitted": 50,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 0,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p09",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "short-query",
+      "band": "<0.200",
+      "primaryGold": [
+        "n27"
+      ],
+      "acceptableGold": [
+        "n27"
+      ],
+      "resultIds": [
+        "n30",
+        "n22",
+        "filler:51432",
+        "n27"
+      ],
+      "resultRawIds": [
+        26,
+        4,
+        51432,
+        3
+      ],
+      "resultSources": [
+        "semantic",
+        "fts",
+        "semantic",
+        "fts"
+      ],
+      "semanticScores": [
+        0.22,
+        null,
+        0.213,
+        null
+      ],
+      "ftsRanks": [
+        null,
+        1,
+        null,
+        2
+      ],
+      "semanticRanks": [
+        1,
+        null,
+        2,
+        null
+      ],
+      "ageDays": [
+        159,
+        51,
+        946,
+        566
+      ],
+      "ftsCount": 2,
+      "semanticCount": 3,
+      "aboveFloorCount": 3,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 1,
+      "physicalRows": 4,
+      "distinctContent": 4,
+      "primaryRank": 4,
+      "acceptableRank": 4,
+      "nonAcceptable": 3,
+      "nonAcceptableBeforePrimary": 3,
+      "admission": {
+        "branch": "like",
+        "candidates": 2,
+        "admitted": 2,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 0,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p10",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "short-query",
+      "band": "<0.200",
+      "primaryGold": [
+        "n33"
+      ],
+      "acceptableGold": [
+        "n33"
+      ],
+      "resultIds": [
+        "t19",
+        "t04",
+        "filler:50768",
+        "t22",
+        "filler:51988",
+        "n33"
+      ],
+      "resultRawIds": [
+        59,
+        44,
+        50768,
+        62,
+        51988,
+        21
+      ],
+      "resultSources": [
+        "hybrid",
+        "hybrid",
+        "semantic",
+        "fts",
+        "semantic",
+        "fts"
+      ],
+      "semanticScores": [
+        0.236,
+        0.2,
+        0.267,
+        null,
+        0.263,
+        null
+      ],
+      "ftsRanks": [
+        2,
+        3,
+        null,
+        1,
+        null,
+        4
+      ],
+      "semanticRanks": [
+        108,
+        711,
+        1,
+        null,
+        2,
+        null
+      ],
+      "ageDays": [
+        400,
+        400,
+        1018,
+        400,
+        885,
+        503
+      ],
+      "ftsCount": 4,
+      "semanticCount": 784,
+      "aboveFloorCount": 784,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 780,
+      "physicalRows": 6,
+      "distinctContent": 6,
+      "primaryRank": 6,
+      "acceptableRank": 6,
+      "nonAcceptable": 5,
+      "nonAcceptableBeforePrimary": 5,
+      "admission": {
+        "branch": "like",
+        "candidates": 4,
+        "admitted": 4,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 0,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p11",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "short-query",
+      "band": "<0.200",
+      "primaryGold": [
+        "n32"
+      ],
+      "acceptableGold": [
+        "n32"
+      ],
+      "resultIds": [
+        "filler:51001",
+        "n32",
+        "filler:50141"
+      ],
+      "resultRawIds": [
+        51001,
+        22,
+        50141
+      ],
+      "resultSources": [
+        "semantic",
+        "fts",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.342,
+        null,
+        0.338
+      ],
+      "ftsRanks": [
+        null,
+        1,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        null,
+        2
+      ],
+      "ageDays": [
+        993,
+        814,
+        1087
+      ],
+      "ftsCount": 1,
+      "semanticCount": 986,
+      "aboveFloorCount": 986,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 984,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": 2,
+      "acceptableRank": 2,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 1,
+      "admission": {
+        "branch": "like",
+        "candidates": 1,
+        "admitted": 1,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 0,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p12",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "short-query",
+      "band": "0.200-0.310",
+      "primaryGold": [
+        "n37"
+      ],
+      "acceptableGold": [
+        "n37",
+        "n09"
+      ],
+      "resultIds": [
+        "n28",
+        "n37",
+        "n20",
+        "n40",
+        "n09"
+      ],
+      "resultRawIds": [
+        18,
+        15,
+        33,
+        28,
+        9
+      ],
+      "resultSources": [
+        "hybrid",
+        "hybrid",
+        "fts",
+        "semantic",
+        "fts"
+      ],
+      "semanticScores": [
+        0.242,
+        0.22,
+        null,
+        0.217,
+        null
+      ],
+      "ftsRanks": [
+        1,
+        3,
+        2,
+        null,
+        4
+      ],
+      "semanticRanks": [
+        1,
+        2,
+        null,
+        3,
+        null
+      ],
+      "ageDays": [
+        543,
+        711,
+        617,
+        70,
+        889
+      ],
+      "ftsCount": 4,
+      "semanticCount": 3,
+      "aboveFloorCount": 3,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 1,
+      "semanticOnlyDropped": 0,
+      "physicalRows": 5,
+      "distinctContent": 5,
+      "primaryRank": 2,
+      "acceptableRank": 2,
+      "nonAcceptable": 3,
+      "nonAcceptableBeforePrimary": 1,
+      "admission": {
+        "branch": "like",
+        "candidates": 4,
+        "admitted": 4,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 0,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p13",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "proper-noun",
+      "band": "<0.200",
+      "primaryGold": [
+        "n04"
+      ],
+      "acceptableGold": [
+        "n04"
+      ],
+      "resultIds": [
+        "n11",
+        "n35",
+        "n03",
+        "n33",
+        "n34",
+        "n12",
+        "n09",
+        "n18",
+        "filler:58579",
+        "n04"
+      ],
+      "resultRawIds": [
+        1,
+        29,
+        16,
+        21,
+        31,
+        19,
+        9,
+        24,
+        58579,
+        40
+      ],
+      "resultSources": [
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "semantic",
+        "semantic",
+        "fts"
+      ],
+      "semanticScores": [
+        0.384,
+        0.34,
+        0.382,
+        0.319,
+        0.284,
+        0.253,
+        0.202,
+        0.353,
+        0.329,
+        null
+      ],
+      "ftsRanks": [
+        6,
+        3,
+        8,
+        5,
+        1,
+        2,
+        4,
+        null,
+        null,
+        7
+      ],
+      "semanticRanks": [
+        1,
+        4,
+        2,
+        7,
+        75,
+        383,
+        3070,
+        3,
+        5,
+        null
+      ],
+      "ageDays": [
+        184,
+        456,
+        628,
+        503,
+        73,
+        135,
+        889,
+        755,
+        163,
+        410
+      ],
+      "ftsCount": 8,
+      "semanticCount": 1001,
+      "aboveFloorCount": 3648,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 1,
+      "physicalRows": 10,
+      "distinctContent": 10,
+      "primaryRank": 10,
+      "acceptableRank": 10,
+      "nonAcceptable": 9,
+      "nonAcceptableBeforePrimary": 9,
+      "admission": {
+        "branch": "fts",
+        "candidates": 8,
+        "admitted": 8,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 8,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p14",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "proper-noun",
+      "band": "0.200-0.310",
+      "primaryGold": [
+        "n01"
+      ],
+      "acceptableGold": [
+        "n01"
+      ],
+      "resultIds": [
+        "t21",
+        "n37",
+        "n10",
+        "n14",
+        "n02",
+        "n18",
+        "filler:54403",
+        "n07",
+        "t02",
+        "n31"
+      ],
+      "resultRawIds": [
+        61,
+        15,
+        32,
+        14,
+        23,
+        24,
+        54403,
+        7,
+        42,
+        2
+      ],
+      "resultSources": [
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "semantic",
+        "semantic",
+        "hybrid",
+        "hybrid",
+        "fts"
+      ],
+      "semanticScores": [
+        0.36,
+        0.352,
+        0.304,
+        0.228,
+        0.258,
+        0.324,
+        0.323,
+        0.201,
+        0.24,
+        null
+      ],
+      "ftsRanks": [
+        4,
+        3,
+        2,
+        1,
+        5,
+        null,
+        null,
+        6,
+        9,
+        7
+      ],
+      "semanticRanks": [
+        1,
+        2,
+        38,
+        3578,
+        968,
+        3,
+        4,
+        6983,
+        2155,
+        null
+      ],
+      "ageDays": [
+        400,
+        711,
+        642,
+        760,
+        833,
+        755,
+        620,
+        808,
+        400,
+        41
+      ],
+      "ftsCount": 9,
+      "semanticCount": 1004,
+      "aboveFloorCount": 7543,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 3,
+      "physicalRows": 10,
+      "distinctContent": 10,
+      "primaryRank": null,
+      "acceptableRank": null,
+      "nonAcceptable": 10,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 9,
+        "admitted": 9,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 9,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p15",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "proper-noun",
+      "band": "0.310-0.400",
+      "primaryGold": [
+        "n20"
+      ],
+      "acceptableGold": [
+        "n20"
+      ],
+      "resultIds": [
+        "n20",
+        "t02",
+        "t21"
+      ],
+      "resultRawIds": [
+        33,
+        42,
+        61
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.345,
+        0.313,
+        0.281
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2,
+        3
+      ],
+      "ageDays": [
+        617,
+        400,
+        400
+      ],
+      "ftsCount": 1,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1939,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 997,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 1,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 1,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p16",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "proper-noun",
+      "band": "0.200-0.310",
+      "primaryGold": [
+        "n15"
+      ],
+      "acceptableGold": [
+        "n15"
+      ],
+      "resultIds": [
+        "n15",
+        "t18",
+        "filler:2143"
+      ],
+      "resultRawIds": [
+        39,
+        58,
+        2143
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.28,
+        0.421,
+        0.283
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        7,
+        1,
+        2
+      ],
+      "ageDays": [
+        40,
+        400,
+        1050
+      ],
+      "ftsCount": 1,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1238,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 997,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 1,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 1,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p17",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "proper-noun",
+      "band": "<0.200",
+      "primaryGold": [
+        "n34"
+      ],
+      "acceptableGold": [
+        "n34"
+      ],
+      "resultIds": [
+        "t23",
+        "t02",
+        "t17",
+        "n34"
+      ],
+      "resultRawIds": [
+        63,
+        42,
+        57,
+        31
+      ],
+      "resultSources": [
+        "hybrid",
+        "hybrid",
+        "fts",
+        "fts"
+      ],
+      "semanticScores": [
+        0.402,
+        0.265,
+        null,
+        null
+      ],
+      "ftsRanks": [
+        2,
+        1,
+        3,
+        4
+      ],
+      "semanticRanks": [
+        1,
+        2,
+        null,
+        null
+      ],
+      "ageDays": [
+        400,
+        400,
+        400,
+        73
+      ],
+      "ftsCount": 4,
+      "semanticCount": 2,
+      "aboveFloorCount": 2,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 0,
+      "semanticOnlyDropped": 0,
+      "physicalRows": 4,
+      "distinctContent": 4,
+      "primaryRank": 4,
+      "acceptableRank": 4,
+      "nonAcceptable": 3,
+      "nonAcceptableBeforePrimary": 3,
+      "admission": {
+        "branch": "fts",
+        "candidates": 4,
+        "admitted": 4,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 4,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p18",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "proper-noun",
+      "band": "0.200-0.310",
+      "primaryGold": [
+        "n23"
+      ],
+      "acceptableGold": [
+        "n23"
+      ],
+      "resultIds": [
+        "n26",
+        "n29",
+        "n40",
+        "n27",
+        "n23",
+        "n08",
+        "n28",
+        "n25",
+        "n16",
+        "n24"
+      ],
+      "resultRawIds": [
+        25,
+        12,
+        28,
+        3,
+        36,
+        35,
+        18,
+        38,
+        27,
+        10
+      ],
+      "resultSources": [
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "semantic",
+        "fts"
+      ],
+      "semanticScores": [
+        0.405,
+        0.38,
+        0.416,
+        0.307,
+        0.286,
+        0.341,
+        0.291,
+        0.287,
+        0.346,
+        null
+      ],
+      "ftsRanks": [
+        3,
+        5,
+        8,
+        2,
+        1,
+        9,
+        6,
+        7,
+        null,
+        4
+      ],
+      "semanticRanks": [
+        2,
+        3,
+        1,
+        7,
+        12,
+        6,
+        10,
+        11,
+        4,
+        null
+      ],
+      "ageDays": [
+        565,
+        413,
+        70,
+        566,
+        237,
+        227,
+        543,
+        122,
+        243,
+        309
+      ],
+      "ftsCount": 9,
+      "semanticCount": 613,
+      "aboveFloorCount": 613,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 1,
+      "semanticOnlyDropped": 0,
+      "physicalRows": 10,
+      "distinctContent": 10,
+      "primaryRank": 5,
+      "acceptableRank": 5,
+      "nonAcceptable": 9,
+      "nonAcceptableBeforePrimary": 4,
+      "admission": {
+        "branch": "fts",
+        "candidates": 9,
+        "admitted": 9,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 9,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p19",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "proper-noun",
+      "band": "0.200-0.310",
+      "primaryGold": [
+        "n39"
+      ],
+      "acceptableGold": [
+        "n39"
+      ],
+      "resultIds": [
+        "n39",
+        "t17",
+        "n27"
+      ],
+      "resultRawIds": [
+        8,
+        57,
+        3
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.286,
+        0.32,
+        0.317
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        3,
+        1,
+        2
+      ],
+      "ageDays": [
+        287,
+        400,
+        566
+      ],
+      "ftsCount": 1,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1031,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 997,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 1,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 1,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p20",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "path",
+      "band": "<0.200",
+      "primaryGold": [
+        "n01"
+      ],
+      "acceptableGold": [
+        "n01",
+        "n10"
+      ],
+      "resultIds": [
+        "n10",
+        "n37",
+        "t02",
+        "t21",
+        "n14",
+        "n07",
+        "n02",
+        "t20",
+        "n20",
+        "n31"
+      ],
+      "resultRawIds": [
+        32,
+        15,
+        42,
+        61,
+        14,
+        7,
+        23,
+        60,
+        33,
+        2
+      ],
+      "resultSources": [
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "semantic",
+        "semantic",
+        "fts"
+      ],
+      "semanticScores": [
+        0.358,
+        0.337,
+        0.41,
+        0.336,
+        0.282,
+        0.333,
+        0.259,
+        0.405,
+        0.368,
+        null
+      ],
+      "ftsRanks": [
+        2,
+        3,
+        9,
+        4,
+        1,
+        6,
+        5,
+        null,
+        null,
+        7
+      ],
+      "semanticRanks": [
+        4,
+        6,
+        1,
+        7,
+        11,
+        8,
+        13,
+        2,
+        3,
+        null
+      ],
+      "ageDays": [
+        642,
+        711,
+        400,
+        400,
+        760,
+        808,
+        833,
+        400,
+        617,
+        41
+      ],
+      "ftsCount": 9,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1612,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 1,
+      "physicalRows": 10,
+      "distinctContent": 10,
+      "primaryRank": null,
+      "acceptableRank": 1,
+      "nonAcceptable": 9,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 9,
+        "admitted": 9,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 9,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p21",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "path",
+      "band": "<0.200",
+      "primaryGold": [
+        "n06"
+      ],
+      "acceptableGold": [
+        "n06",
+        "n17",
+        "n18",
+        "n19"
+      ],
+      "resultIds": [
+        "n20",
+        "t01",
+        "t20",
+        "n37",
+        "n17",
+        "t22",
+        "n19",
+        "n18",
+        "t10",
+        "n06"
+      ],
+      "resultRawIds": [
+        33,
+        41,
+        60,
+        15,
+        30,
+        62,
+        17,
+        24,
+        50,
+        5
+      ],
+      "resultSources": [
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "fts",
+        "semantic",
+        "fts",
+        "fts",
+        "semantic",
+        "fts"
+      ],
+      "semanticScores": [
+        0.303,
+        0.322,
+        0.281,
+        0.209,
+        null,
+        0.309,
+        null,
+        null,
+        0.255,
+        null
+      ],
+      "ftsRanks": [
+        5,
+        8,
+        9,
+        3,
+        1,
+        null,
+        2,
+        4,
+        null,
+        6
+      ],
+      "semanticRanks": [
+        3,
+        1,
+        4,
+        11,
+        null,
+        2,
+        null,
+        null,
+        5,
+        null
+      ],
+      "ageDays": [
+        617,
+        400,
+        400,
+        711,
+        428,
+        400,
+        859,
+        755,
+        400,
+        822
+      ],
+      "ftsCount": 9,
+      "semanticCount": 41,
+      "aboveFloorCount": 41,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 1,
+      "physicalRows": 10,
+      "distinctContent": 10,
+      "primaryRank": 10,
+      "acceptableRank": 5,
+      "nonAcceptable": 6,
+      "nonAcceptableBeforePrimary": 6,
+      "admission": {
+        "branch": "fts",
+        "candidates": 9,
+        "admitted": 9,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 9,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p22",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "path",
+      "band": "0.200-0.310",
+      "primaryGold": [
+        "n15"
+      ],
+      "acceptableGold": [
+        "n15"
+      ],
+      "resultIds": [
+        "n15",
+        "t18",
+        "filler:3403"
+      ],
+      "resultRawIds": [
+        39,
+        58,
+        3403
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.285,
+        0.367,
+        0.299
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        82,
+        1,
+        2
+      ],
+      "ageDays": [
+        40,
+        400,
+        1022
+      ],
+      "ftsCount": 1,
+      "semanticCount": 1000,
+      "aboveFloorCount": 2909,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 997,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 1,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 1,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p23",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "path",
+      "band": "0.310-0.400",
+      "primaryGold": [
+        "n36"
+      ],
+      "acceptableGold": [
+        "n36",
+        "n05"
+      ],
+      "resultIds": [
+        "n05",
+        "n36",
+        "filler:51693",
+        "filler:55413"
+      ],
+      "resultRawIds": [
+        34,
+        6,
+        51693,
+        55413
+      ],
+      "resultSources": [
+        "hybrid",
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.437,
+        0.374,
+        0.36,
+        0.36
+      ],
+      "ftsRanks": [
+        2,
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "ageDays": [
+        709,
+        302,
+        917,
+        510
+      ],
+      "ftsCount": 2,
+      "semanticCount": 1000,
+      "aboveFloorCount": 15484,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 996,
+      "physicalRows": 4,
+      "distinctContent": 4,
+      "primaryRank": 2,
+      "acceptableRank": 1,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 2,
+        "admitted": 2,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 2,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p24",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "path",
+      "band": "0.310-0.400",
+      "primaryGold": [
+        "n39"
+      ],
+      "acceptableGold": [
+        "n39"
+      ],
+      "resultIds": [
+        "n39",
+        "t26",
+        "filler:56426"
+      ],
+      "resultRawIds": [
+        8,
+        66,
+        56426
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.371,
+        0.379,
+        0.373
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        3,
+        1,
+        2
+      ],
+      "ageDays": [
+        287,
+        400,
+        399
+      ],
+      "ftsCount": 1,
+      "semanticCount": 1000,
+      "aboveFloorCount": 14490,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 997,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 1,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 1,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p25",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "path",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n13"
+      ],
+      "acceptableGold": [
+        "n13"
+      ],
+      "resultIds": [
+        "n13",
+        "n20",
+        "n35"
+      ],
+      "resultRawIds": [
+        11,
+        33,
+        29
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.445,
+        0.415,
+        0.393
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2,
+        3
+      ],
+      "ageDays": [
+        319,
+        617,
+        456
+      ],
+      "ftsCount": 1,
+      "semanticCount": 1000,
+      "aboveFloorCount": 12193,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 997,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 1,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 1,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p26",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "path",
+      "band": "0.200-0.310",
+      "primaryGold": [
+        "n30"
+      ],
+      "acceptableGold": [
+        "n30",
+        "n07"
+      ],
+      "resultIds": [
+        "t24",
+        "t06",
+        "n07",
+        "n30",
+        "n15",
+        "t05",
+        "t25"
+      ],
+      "resultRawIds": [
+        64,
+        46,
+        7,
+        26,
+        39,
+        45,
+        65
+      ],
+      "resultSources": [
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.362,
+        0.339,
+        0.294,
+        0.309,
+        0.206,
+        0.403,
+        0.317
+      ],
+      "ftsRanks": [
+        1,
+        5,
+        3,
+        4,
+        2,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        2,
+        3,
+        6,
+        5,
+        13,
+        1,
+        4
+      ],
+      "ageDays": [
+        400,
+        400,
+        808,
+        159,
+        40,
+        400,
+        400
+      ],
+      "ftsCount": 5,
+      "semanticCount": 14,
+      "aboveFloorCount": 14,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 7,
+      "physicalRows": 7,
+      "distinctContent": 7,
+      "primaryRank": 4,
+      "acceptableRank": 3,
+      "nonAcceptable": 5,
+      "nonAcceptableBeforePrimary": 2,
+      "admission": {
+        "branch": "fts",
+        "candidates": 5,
+        "admitted": 5,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 5,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p27",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "number",
+      "band": "<0.200",
+      "primaryGold": [
+        "n01"
+      ],
+      "acceptableGold": [
+        "n01",
+        "n10"
+      ],
+      "resultIds": [
+        "n10",
+        "filler:9369",
+        "filler:19369",
+        "n01"
+      ],
+      "resultRawIds": [
+        32,
+        9369,
+        19369,
+        20
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic",
+        "fts"
+      ],
+      "semanticScores": [
+        0.208,
+        0.285,
+        0.285,
+        null
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null,
+        2
+      ],
+      "semanticRanks": [
+        377,
+        1,
+        2,
+        null
+      ],
+      "ageDays": [
+        642,
+        891,
+        672,
+        40
+      ],
+      "ftsCount": 2,
+      "semanticCount": 530,
+      "aboveFloorCount": 530,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 527,
+      "physicalRows": 4,
+      "distinctContent": 3,
+      "primaryRank": 4,
+      "acceptableRank": 1,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 2,
+      "admission": {
+        "branch": "fts",
+        "candidates": 2,
+        "admitted": 2,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 2,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p28",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "number",
+      "band": "<0.200",
+      "primaryGold": [
+        "n08"
+      ],
+      "acceptableGold": [
+        "n08"
+      ],
+      "resultIds": [
+        "filler:6069",
+        "n08",
+        "filler:16069"
+      ],
+      "resultRawIds": [
+        6069,
+        35,
+        16069
+      ],
+      "resultSources": [
+        "semantic",
+        "fts",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.298,
+        null,
+        0.298
+      ],
+      "ftsRanks": [
+        null,
+        1,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        null,
+        2
+      ],
+      "ageDays": [
+        964,
+        227,
+        745
+      ],
+      "ftsCount": 1,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1252,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 3,
+      "distinctContent": 2,
+      "primaryRank": 2,
+      "acceptableRank": 2,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 1,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 1,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 1,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p29",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "number",
+      "band": "<0.200",
+      "primaryGold": [
+        "n10"
+      ],
+      "acceptableGold": [
+        "n10"
+      ],
+      "resultIds": [
+        "filler:8559",
+        "n10",
+        "filler:18559"
+      ],
+      "resultRawIds": [
+        8559,
+        32,
+        18559
+      ],
+      "resultSources": [
+        "semantic",
+        "fts",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.223,
+        null,
+        0.223
+      ],
+      "ftsRanks": [
+        null,
+        1,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        null,
+        2
+      ],
+      "ageDays": [
+        909,
+        642,
+        690
+      ],
+      "ftsCount": 1,
+      "semanticCount": 25,
+      "aboveFloorCount": 25,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 23,
+      "physicalRows": 3,
+      "distinctContent": 2,
+      "primaryRank": 2,
+      "acceptableRank": 2,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 1,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 1,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 1,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p30",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "number",
+      "band": "<0.200",
+      "primaryGold": [
+        "n11"
+      ],
+      "acceptableGold": [
+        "n11"
+      ],
+      "resultIds": [
+        "filler:5424",
+        "n11",
+        "filler:15424"
+      ],
+      "resultRawIds": [
+        5424,
+        1,
+        15424
+      ],
+      "resultSources": [
+        "semantic",
+        "fts",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.249,
+        null,
+        0.249
+      ],
+      "ftsRanks": [
+        null,
+        1,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        null,
+        2
+      ],
+      "ageDays": [
+        978,
+        184,
+        759
+      ],
+      "ftsCount": 1,
+      "semanticCount": 50,
+      "aboveFloorCount": 50,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 48,
+      "physicalRows": 3,
+      "distinctContent": 2,
+      "primaryRank": 2,
+      "acceptableRank": 2,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 1,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 1,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 1,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p31",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "number",
+      "band": "<0.200",
+      "primaryGold": [
+        "n35"
+      ],
+      "acceptableGold": [
+        "n35"
+      ],
+      "resultIds": [
+        "filler:6838",
+        "n35",
+        "filler:16838"
+      ],
+      "resultRawIds": [
+        6838,
+        29,
+        16838
+      ],
+      "resultSources": [
+        "semantic",
+        "fts",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.264,
+        null,
+        0.264
+      ],
+      "ftsRanks": [
+        null,
+        1,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        null,
+        2
+      ],
+      "ageDays": [
+        947,
+        456,
+        728
+      ],
+      "ftsCount": 1,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1361,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 3,
+      "distinctContent": 2,
+      "primaryRank": 2,
+      "acceptableRank": 2,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 1,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 1,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 1,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p32",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "number",
+      "band": "<0.200",
+      "primaryGold": [
+        "n08"
+      ],
+      "acceptableGold": [
+        "n08"
+      ],
+      "resultIds": [
+        "filler:6684",
+        "n08",
+        "filler:16684"
+      ],
+      "resultRawIds": [
+        6684,
+        35,
+        16684
+      ],
+      "resultSources": [
+        "semantic",
+        "fts",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.292,
+        null,
+        0.292
+      ],
+      "ftsRanks": [
+        null,
+        1,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        null,
+        2
+      ],
+      "ageDays": [
+        950,
+        227,
+        731
+      ],
+      "ftsCount": 1,
+      "semanticCount": 878,
+      "aboveFloorCount": 878,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 876,
+      "physicalRows": 3,
+      "distinctContent": 2,
+      "primaryRank": 2,
+      "acceptableRank": 2,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 1,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 1,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 1,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p33",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "number",
+      "band": "<0.200",
+      "primaryGold": [
+        "n16"
+      ],
+      "acceptableGold": [
+        "n16"
+      ],
+      "resultIds": [
+        "filler:59354",
+        "n16",
+        "filler:8559"
+      ],
+      "resultRawIds": [
+        59354,
+        27,
+        8559
+      ],
+      "resultSources": [
+        "semantic",
+        "fts",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.221,
+        null,
+        0.219
+      ],
+      "ftsRanks": [
+        null,
+        1,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        null,
+        2
+      ],
+      "ageDays": [
+        78,
+        243,
+        909
+      ],
+      "ftsCount": 1,
+      "semanticCount": 26,
+      "aboveFloorCount": 26,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 24,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": 2,
+      "acceptableRank": 2,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 1,
+      "admission": {
+        "branch": "fts",
+        "candidates": 1,
+        "admitted": 1,
+        "W": 0,
+        "required": 0,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 1,
+        "droppedEmpty": false
+      },
+      "pageShrink": 0,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p34",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "historical-state",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n03"
+      ],
+      "acceptableGold": [
+        "n03",
+        "n09"
+      ],
+      "resultIds": [
+        "n03",
+        "n17"
+      ],
+      "resultRawIds": [
+        16,
+        30
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.557,
+        0.444
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        628,
+        428
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 4838,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 8,
+        "admitted": 0,
+        "W": 12,
+        "required": 4,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 8,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p35",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "historical-state",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n35"
+      ],
+      "acceptableGold": [
+        "n35",
+        "n03"
+      ],
+      "resultIds": [
+        "n35",
+        "n13",
+        "n06"
+      ],
+      "resultRawIds": [
+        29,
+        11,
+        5
+      ],
+      "resultSources": [
+        "hybrid",
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.404,
+        0.354,
+        0.251
+      ],
+      "ftsRanks": [
+        1,
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2,
+        3
+      ],
+      "ageDays": [
+        456,
+        319,
+        822
+      ],
+      "ftsCount": 1,
+      "semanticCount": 24,
+      "aboveFloorCount": 24,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 21,
+      "physicalRows": 3,
+      "distinctContent": 3,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 2,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 3,
+        "admitted": 1,
+        "W": 11,
+        "required": 4,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 2,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p36",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "historical-state",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n07"
+      ],
+      "acceptableGold": [
+        "n07"
+      ],
+      "resultIds": [
+        "n07",
+        "n24"
+      ],
+      "resultRawIds": [
+        7,
+        10
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.423,
+        0.38
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        808,
+        309
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 3476,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 2,
+        "admitted": 0,
+        "W": 10,
+        "required": 3,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 2,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p37",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "historical-state",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n23"
+      ],
+      "acceptableGold": [
+        "n23"
+      ],
+      "resultIds": [
+        "n23",
+        "n14"
+      ],
+      "resultRawIds": [
+        36,
+        14
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.661,
+        0.421
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        237,
+        760
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 1466,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 17,
+        "required": 6,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p38",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "historical-state",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n39"
+      ],
+      "acceptableGold": [
+        "n39"
+      ],
+      "resultIds": [
+        "n39",
+        "n33"
+      ],
+      "resultRawIds": [
+        8,
+        21
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.608,
+        0.409
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        287,
+        503
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 2074,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 2,
+        "admitted": 0,
+        "W": 18,
+        "required": 6,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 2,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p39",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "historical-state",
+      "band": "0.310-0.400",
+      "primaryGold": [
+        "n31"
+      ],
+      "acceptableGold": [
+        "n31",
+        "n38"
+      ],
+      "resultIds": [
+        "n31",
+        "filler:2191"
+      ],
+      "resultRawIds": [
+        2,
+        2191
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.328,
+        0.318
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        41,
+        1049
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 6229,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 200,
+        "admitted": 0,
+        "W": 18,
+        "required": 6,
+        "exactUnits": 1,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    },
+    {
+      "id": "fr-p40",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protectionClass": "historical-state",
+      "band": ">=0.400",
+      "primaryGold": [
+        "n13"
+      ],
+      "acceptableGold": [
+        "n13"
+      ],
+      "resultIds": [
+        "n13",
+        "filler:6669"
+      ],
+      "resultRawIds": [
+        11,
+        6669
+      ],
+      "resultSources": [
+        "semantic",
+        "semantic"
+      ],
+      "semanticScores": [
+        0.567,
+        0.42
+      ],
+      "ftsRanks": [
+        null,
+        null
+      ],
+      "semanticRanks": [
+        1,
+        2
+      ],
+      "ageDays": [
+        319,
+        951
+      ],
+      "ftsCount": 0,
+      "semanticCount": 1000,
+      "aboveFloorCount": 29674,
+      "comparableVectors": 60066,
+      "scopeVectors": 60066,
+      "protocol": "semantic-en-v1",
+      "rejectReason": null,
+      "degraded": false,
+      "semanticOnly": 2,
+      "semanticOnlyDropped": 998,
+      "physicalRows": 2,
+      "distinctContent": 2,
+      "primaryRank": 1,
+      "acceptableRank": 1,
+      "nonAcceptable": 1,
+      "nonAcceptableBeforePrimary": 0,
+      "admission": {
+        "branch": "fts",
+        "candidates": 175,
+        "admitted": 0,
+        "W": 20,
+        "required": 6,
+        "exactUnits": 3,
+        "dropped": [],
+        "exemptHits": 0,
+        "droppedEmpty": false
+      },
+      "pageShrink": 50,
+      "s7bMissing": 0,
+      "s7bExtra": 0,
+      "sourceRecomputeMismatch": 0
+    }
+  ]
+}

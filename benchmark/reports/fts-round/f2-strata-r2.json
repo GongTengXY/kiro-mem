@@ -1,0 +1,966 @@
+{
+  "purpose": "F2 第一段：四档分层测量（判据 r3 §4.4）。",
+  "generatedAt": "2026-08-14T04:23:01.466Z",
+  "freeze": {
+    "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/reports/fts-round/f1-freeze-r2.json",
+    "verify": "跳过（--pre-freeze：冻结记录尚未生成，本次读数将进入该记录）",
+    "ok": true
+  },
+  "space": {
+    "protocol": "semantic-en-v1",
+    "spaceKey": "all-MiniLM-L6-v2:q8:384:semantic-en-v1",
+    "dimensions": 384
+  },
+  "bands": [
+    "<0.200",
+    "0.200-0.310",
+    "0.310-0.400",
+    ">=0.400"
+  ],
+  "counts": {
+    "union": {
+      "<0.200": 20,
+      "0.200-0.310": 19,
+      "0.310-0.400": 14,
+      ">=0.400": 27
+    },
+    "relevance": {
+      "<0.200": 3,
+      "0.200-0.310": 9,
+      "0.310-0.400": 10,
+      ">=0.400": 18
+    },
+    "protection": {
+      "<0.200": 17,
+      "0.200-0.310": 10,
+      "0.310-0.400": 4,
+      ">=0.400": 9
+    }
+  },
+  "requirement": "并集每档 ≥ 8 条（判据 §4.4 第 3 条）",
+  "pass": true,
+  "shortBands": [],
+  "identityEnQueries": 24,
+  "rows": [
+    {
+      "id": "fr-p31",
+      "cohort": "protection",
+      "protectionClass": "number",
+      "identityEn": true,
+      "en": "2.720",
+      "cosine": 0.028,
+      "band": "<0.200",
+      "primary": [
+        "n35"
+      ]
+    },
+    {
+      "id": "fr-p21",
+      "cohort": "protection",
+      "protectionClass": "path",
+      "identityEn": true,
+      "en": "src/db/index.ts",
+      "cosine": 0.029,
+      "band": "<0.200",
+      "primary": [
+        "n06"
+      ]
+    },
+    {
+      "id": "fr-p27",
+      "cohort": "protection",
+      "protectionClass": "number",
+      "identityEn": true,
+      "en": "0.197",
+      "cosine": 0.035,
+      "band": "<0.200",
+      "primary": [
+        "n01"
+      ]
+    },
+    {
+      "id": "fr-p09",
+      "cohort": "protection",
+      "protectionClass": "short-query",
+      "identityEn": false,
+      "en": "substitute",
+      "cosine": 0.05,
+      "band": "<0.200",
+      "primary": [
+        "n27"
+      ]
+    },
+    {
+      "id": "fr-p33",
+      "cohort": "protection",
+      "protectionClass": "number",
+      "identityEn": true,
+      "en": "0.841",
+      "cosine": 0.05,
+      "band": "<0.200",
+      "primary": [
+        "n16"
+      ]
+    },
+    {
+      "id": "fr-p30",
+      "cohort": "protection",
+      "protectionClass": "number",
+      "identityEn": true,
+      "en": "1.565",
+      "cosine": 0.052,
+      "band": "<0.200",
+      "primary": [
+        "n11"
+      ]
+    },
+    {
+      "id": "fr-p04",
+      "cohort": "protection",
+      "protectionClass": "number",
+      "identityEn": true,
+      "en": "0.604",
+      "cosine": 0.057,
+      "band": "<0.200",
+      "primary": [
+        "n02"
+      ]
+    },
+    {
+      "id": "fr-p17",
+      "cohort": "protection",
+      "protectionClass": "proper-noun",
+      "identityEn": true,
+      "en": "embedding",
+      "cosine": 0.104,
+      "band": "<0.200",
+      "primary": [
+        "n34"
+      ]
+    },
+    {
+      "id": "fr-p32",
+      "cohort": "protection",
+      "protectionClass": "number",
+      "identityEn": true,
+      "en": "0.0625",
+      "cosine": 0.104,
+      "band": "<0.200",
+      "primary": [
+        "n08"
+      ]
+    },
+    {
+      "id": "fr-p28",
+      "cohort": "protection",
+      "protectionClass": "number",
+      "identityEn": true,
+      "en": "0.0156",
+      "cosine": 0.119,
+      "band": "<0.200",
+      "primary": [
+        "n08"
+      ]
+    },
+    {
+      "id": "fr-p29",
+      "cohort": "protection",
+      "protectionClass": "number",
+      "identityEn": true,
+      "en": "4.955",
+      "cosine": 0.124,
+      "band": "<0.200",
+      "primary": [
+        "n10"
+      ]
+    },
+    {
+      "id": "fr-p11",
+      "cohort": "protection",
+      "protectionClass": "short-query",
+      "identityEn": false,
+      "en": "convey",
+      "cosine": 0.127,
+      "band": "<0.200",
+      "primary": [
+        "n32"
+      ]
+    },
+    {
+      "id": "fr-r38",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "Is there any direction where there's room for a negotiable trade-off?",
+      "cosine": 0.14,
+      "band": "<0.200",
+      "primary": [
+        "n18"
+      ]
+    },
+    {
+      "id": "fr-p10",
+      "cohort": "protection",
+      "protectionClass": "short-query",
+      "identityEn": false,
+      "en": "leak",
+      "cosine": 0.15,
+      "band": "<0.200",
+      "primary": [
+        "n33"
+      ]
+    },
+    {
+      "id": "fr-p20",
+      "cohort": "protection",
+      "protectionClass": "path",
+      "identityEn": true,
+      "en": "src/server/observation-search.ts",
+      "cosine": 0.156,
+      "band": "<0.200",
+      "primary": [
+        "n01"
+      ]
+    },
+    {
+      "id": "fr-r14",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "How much would it cost to require more word matches to count as a candidate?",
+      "cosine": 0.169,
+      "band": "<0.200",
+      "primary": [
+        "n18"
+      ]
+    },
+    {
+      "id": "fr-p13",
+      "cohort": "protection",
+      "protectionClass": "proper-noun",
+      "identityEn": true,
+      "en": "run-safety-round-grid",
+      "cosine": 0.172,
+      "band": "<0.200",
+      "primary": [
+        "n04"
+      ]
+    },
+    {
+      "id": "fr-r40",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "In the comparative experiment, why not use a compromise middle value?",
+      "cosine": 0.187,
+      "band": "<0.200",
+      "primary": [
+        "n07"
+      ]
+    },
+    {
+      "id": "fr-p03",
+      "cohort": "protection",
+      "protectionClass": "path",
+      "identityEn": true,
+      "en": "benchmark/run-safety-round-grid.ts",
+      "cosine": 0.193,
+      "band": "<0.200",
+      "primary": [
+        "n04"
+      ]
+    },
+    {
+      "id": "fr-p08",
+      "cohort": "protection",
+      "protectionClass": "short-query",
+      "identityEn": false,
+      "en": "expose",
+      "cosine": 0.197,
+      "band": "<0.200",
+      "primary": [
+        "n22"
+      ]
+    },
+    {
+      "id": "fr-r03",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "Why can't the numbers measured by that old evaluation setup be used directly to set the new parameters?",
+      "cosine": 0.204,
+      "band": "0.200-0.310",
+      "primary": [
+        "n05"
+      ]
+    },
+    {
+      "id": "fr-p14",
+      "cohort": "protection",
+      "protectionClass": "proper-noun",
+      "identityEn": true,
+      "en": "observation-search",
+      "cosine": 0.206,
+      "band": "0.200-0.310",
+      "primary": [
+        "n01"
+      ]
+    },
+    {
+      "id": "fr-r33",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "If you change two things in the same turn, can the readings still tell you which one actually caused the effect?",
+      "cosine": 0.218,
+      "band": "0.200-0.310",
+      "primary": [
+        "n37"
+      ]
+    },
+    {
+      "id": "fr-p12",
+      "cohort": "protection",
+      "protectionClass": "short-query",
+      "identityEn": false,
+      "en": "attribution",
+      "cosine": 0.22,
+      "band": "0.200-0.310",
+      "primary": [
+        "n37"
+      ]
+    },
+    {
+      "id": "fr-p07",
+      "cohort": "protection",
+      "protectionClass": "short-query",
+      "identityEn": false,
+      "en": "sliding window",
+      "cosine": 0.222,
+      "band": "0.200-0.310",
+      "primary": [
+        "n06"
+      ]
+    },
+    {
+      "id": "fr-p02",
+      "cohort": "protection",
+      "protectionClass": "proper-noun",
+      "identityEn": true,
+      "en": "mcp-server",
+      "cosine": 0.234,
+      "band": "0.200-0.310",
+      "primary": [
+        "n30"
+      ]
+    },
+    {
+      "id": "fr-r26",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "What are the problems with adding a switch that only takes effect in experiments to toggle behavior?",
+      "cosine": 0.239,
+      "band": "0.200-0.310",
+      "primary": [
+        "n30"
+      ]
+    },
+    {
+      "id": "fr-r19",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "It hasn't happened even once, can we say the risk is zero?",
+      "cosine": 0.248,
+      "band": "0.200-0.310",
+      "primary": [
+        "n23"
+      ]
+    },
+    {
+      "id": "fr-p01",
+      "cohort": "protection",
+      "protectionClass": "short-query",
+      "identityEn": false,
+      "en": "floor",
+      "cosine": 0.254,
+      "band": "0.200-0.310",
+      "primary": [
+        "n01"
+      ]
+    },
+    {
+      "id": "fr-r07",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "If I narrow the scope of the judgment a bit, would the conclusion change accordingly?",
+      "cosine": 0.276,
+      "band": "0.200-0.310",
+      "primary": [
+        "n11"
+      ]
+    },
+    {
+      "id": "fr-p16",
+      "cohort": "protection",
+      "protectionClass": "proper-noun",
+      "identityEn": true,
+      "en": "bootstrap-context.ts",
+      "cosine": 0.28,
+      "band": "0.200-0.310",
+      "primary": [
+        "n15"
+      ]
+    },
+    {
+      "id": "fr-r24",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "If neither side shows a problem, can we say this approach itself is safe?",
+      "cosine": 0.281,
+      "band": "0.200-0.310",
+      "primary": [
+        "n28"
+      ]
+    },
+    {
+      "id": "fr-p22",
+      "cohort": "protection",
+      "protectionClass": "path",
+      "identityEn": true,
+      "en": "src/bootstrap-context.ts",
+      "cosine": 0.285,
+      "band": "0.200-0.310",
+      "primary": [
+        "n15"
+      ]
+    },
+    {
+      "id": "fr-p18",
+      "cohort": "protection",
+      "protectionClass": "proper-noun",
+      "identityEn": true,
+      "en": "q6-criteria",
+      "cosine": 0.286,
+      "band": "0.200-0.310",
+      "primary": [
+        "n23"
+      ]
+    },
+    {
+      "id": "fr-p19",
+      "cohort": "protection",
+      "protectionClass": "proper-noun",
+      "identityEn": true,
+      "en": "s1-precheck",
+      "cosine": 0.286,
+      "band": "0.200-0.310",
+      "primary": [
+        "n39"
+      ]
+    },
+    {
+      "id": "fr-r11",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "Will returning a few more lines exceed the byte limit of the injected content?",
+      "cosine": 0.297,
+      "band": "0.200-0.310",
+      "primary": [
+        "n15"
+      ]
+    },
+    {
+      "id": "fr-r18",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "Should the case where the assistant never even saw that clue count as safe?",
+      "cosine": 0.303,
+      "band": "0.200-0.310",
+      "primary": [
+        "n22"
+      ]
+    },
+    {
+      "id": "fr-p26",
+      "cohort": "protection",
+      "protectionClass": "path",
+      "identityEn": true,
+      "en": "src/server/mcp-server.ts",
+      "cosine": 0.309,
+      "band": "0.200-0.310",
+      "primary": [
+        "n30"
+      ]
+    },
+    {
+      "id": "fr-r31",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "Does one failed assertion have to be treated with different severity levels?",
+      "cosine": 0.31,
+      "band": "0.200-0.310",
+      "primary": [
+        "n35"
+      ]
+    },
+    {
+      "id": "fr-r25",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "Just noting down which model was used, is that enough for others to reproduce?",
+      "cosine": 0.312,
+      "band": "0.310-0.400",
+      "primary": [
+        "n29"
+      ]
+    },
+    {
+      "id": "fr-r01",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "If I keep raising the similarity threshold, can that suppress those irrelevant results?",
+      "cosine": 0.313,
+      "band": "0.310-0.400",
+      "primary": [
+        "n01"
+      ]
+    },
+    {
+      "id": "fr-r05",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "Why does the same check pass entirely on one batch of queries but fail entirely on another batch?",
+      "cosine": 0.321,
+      "band": "0.310-0.400",
+      "primary": [
+        "n09"
+      ]
+    },
+    {
+      "id": "fr-r16",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "For the sake of observability convenience, what are the risks of duplicating the logic under test inside the script?",
+      "cosine": 0.322,
+      "band": "0.310-0.400",
+      "primary": [
+        "n20"
+      ]
+    },
+    {
+      "id": "fr-p39",
+      "cohort": "protection",
+      "protectionClass": "historical-state",
+      "identityEn": false,
+      "en": "Wasn't there a plan before to permanently change that feature to be manually enabled?",
+      "cosine": 0.328,
+      "band": "0.310-0.400",
+      "primary": [
+        "n31"
+      ]
+    },
+    {
+      "id": "fr-r10",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "How was the cap on the number of results originally decided, and can it be relaxed now?",
+      "cosine": 0.338,
+      "band": "0.310-0.400",
+      "primary": [
+        "n14"
+      ]
+    },
+    {
+      "id": "fr-p15",
+      "cohort": "protection",
+      "protectionClass": "proper-noun",
+      "identityEn": true,
+      "en": "analyze-fts-anchor-mechanism",
+      "cosine": 0.345,
+      "band": "0.310-0.400",
+      "primary": [
+        "n20"
+      ]
+    },
+    {
+      "id": "fr-r32",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "Where is that batch of irrelevant results mainly coming from",
+      "cosine": 0.356,
+      "band": "0.310-0.400",
+      "primary": [
+        "n36"
+      ]
+    },
+    {
+      "id": "fr-r29",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "How do I confirm a reading isn't because the vectors weren't fully built or it degraded partway through?",
+      "cosine": 0.365,
+      "band": "0.310-0.400",
+      "primary": [
+        "n33"
+      ]
+    },
+    {
+      "id": "fr-p24",
+      "cohort": "protection",
+      "protectionClass": "path",
+      "identityEn": true,
+      "en": "benchmark/q6/s1-precheck.ts",
+      "cosine": 0.371,
+      "band": "0.310-0.400",
+      "primary": [
+        "n39"
+      ]
+    },
+    {
+      "id": "fr-r23",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "One of the trials failed — can we temporarily rerun it to make up for it?",
+      "cosine": 0.374,
+      "band": "0.310-0.400",
+      "primary": [
+        "n27"
+      ]
+    },
+    {
+      "id": "fr-p23",
+      "cohort": "protection",
+      "protectionClass": "path",
+      "identityEn": true,
+      "en": "benchmark/dataset/pool-policy-filler-10k.json",
+      "cosine": 0.374,
+      "band": "0.310-0.400",
+      "primary": [
+        "n36"
+      ]
+    },
+    {
+      "id": "fr-r22",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "Only wrote the judgment rule for one of the cases, what will be the consequence",
+      "cosine": 0.397,
+      "band": "0.310-0.400",
+      "primary": [
+        "n26"
+      ]
+    },
+    {
+      "id": "fr-r39",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "Why do we have to add a new corpus first before we can start scanning parameters?",
+      "cosine": 0.4,
+      "band": "0.310-0.400",
+      "primary": [
+        "n05"
+      ]
+    },
+    {
+      "id": "fr-r13",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "An irrelevant record gets pulled up, usually because it happens to match a few words",
+      "cosine": 0.401,
+      "band": ">=0.400",
+      "primary": [
+        "n17"
+      ]
+    },
+    {
+      "id": "fr-p35",
+      "cohort": "protection",
+      "protectionClass": "historical-state",
+      "identityEn": false,
+      "en": "Do foreign-domain negatives still require empty returns one by one?",
+      "cosine": 0.404,
+      "band": ">=0.400",
+      "primary": [
+        "n35"
+      ]
+    },
+    {
+      "id": "fr-r04",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "With only six sets of samples, how good can the significance possibly get",
+      "cosine": 0.408,
+      "band": ">=0.400",
+      "primary": [
+        "n08"
+      ]
+    },
+    {
+      "id": "fr-r37",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "If the semantic leg is turned off, will the returned slot open up?",
+      "cosine": 0.417,
+      "band": ">=0.400",
+      "primary": [
+        "n01"
+      ]
+    },
+    {
+      "id": "fr-r12",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "If the top score can distinguish between the two types of questions, can it be used for ranking?",
+      "cosine": 0.42,
+      "band": ">=0.400",
+      "primary": [
+        "n16"
+      ]
+    },
+    {
+      "id": "fr-p36",
+      "cohort": "protection",
+      "protectionClass": "historical-state",
+      "identityEn": false,
+      "en": "Is the controlled experiment still three arms right now?",
+      "cosine": 0.423,
+      "band": ">=0.400",
+      "primary": [
+        "n07"
+      ]
+    },
+    {
+      "id": "fr-r06",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "Sweeping one parameter across the entire range barely moves the result, what does that indicate",
+      "cosine": 0.435,
+      "band": ">=0.400",
+      "primary": [
+        "n10"
+      ]
+    },
+    {
+      "id": "fr-p06",
+      "cohort": "protection",
+      "protectionClass": "short-query",
+      "identityEn": false,
+      "en": "displacement",
+      "cosine": 0.44,
+      "band": ">=0.400",
+      "primary": [
+        "n04"
+      ]
+    },
+    {
+      "id": "fr-p25",
+      "cohort": "protection",
+      "protectionClass": "path",
+      "identityEn": true,
+      "en": "benchmark/verify-safety-round-zero-fts.ts",
+      "cosine": 0.445,
+      "band": ">=0.400",
+      "primary": [
+        "n13"
+      ]
+    },
+    {
+      "id": "fr-r28",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "The conclusion was conveyed verbally, what should I watch out for in the evidence chain",
+      "cosine": 0.464,
+      "band": ">=0.400",
+      "primary": [
+        "n32"
+      ]
+    },
+    {
+      "id": "fr-r35",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "The kind of check that requires the returned content to be exactly identical across two runs — why can't that be achieved?",
+      "cosine": 0.464,
+      "band": ">=0.400",
+      "primary": [
+        "n39"
+      ]
+    },
+    {
+      "id": "fr-r09",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "We already confirmed in the previous phase that a certain query returns nothing at all — do we need to reconfirm that after switching corpora?",
+      "cosine": 0.468,
+      "band": ">=0.400",
+      "primary": [
+        "n13"
+      ]
+    },
+    {
+      "id": "fr-r20",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "If we run each of the two comparison batches one after the other in sequence, wouldn't that mix time effects into the results?",
+      "cosine": 0.474,
+      "band": ">=0.400",
+      "primary": [
+        "n24"
+      ]
+    },
+    {
+      "id": "fr-r15",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "Can we cap the frequency of overly common words to block out function-word fragments?",
+      "cosine": 0.485,
+      "band": ">=0.400",
+      "primary": [
+        "n19"
+      ]
+    },
+    {
+      "id": "fr-r27",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "For features with insufficient evidence, can we just decide to keep them permanently manually enabled by the user going forward?",
+      "cosine": 0.488,
+      "band": ">=0.400",
+      "primary": [
+        "n31"
+      ]
+    },
+    {
+      "id": "fr-p05",
+      "cohort": "protection",
+      "protectionClass": "historical-state",
+      "identityEn": false,
+      "en": "Are those four old false-recall gates still in use now",
+      "cosine": 0.491,
+      "band": ">=0.400",
+      "primary": [
+        "n03"
+      ]
+    },
+    {
+      "id": "fr-r21",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "How can you tell whether the assistant actually verified it, or is just saying it will verify?",
+      "cosine": 0.505,
+      "band": ">=0.400",
+      "primary": [
+        "n25"
+      ]
+    },
+    {
+      "id": "fr-r34",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "Forensics isn't done yet, will that also block the freeze?",
+      "cosine": 0.513,
+      "band": ">=0.400",
+      "primary": [
+        "n38"
+      ]
+    },
+    {
+      "id": "fr-r17",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "What problems happen when multiple rounds of experiments share the same temporary directory",
+      "cosine": 0.549,
+      "band": ">=0.400",
+      "primary": [
+        "n21"
+      ]
+    },
+    {
+      "id": "fr-p34",
+      "cohort": "protection",
+      "protectionClass": "historical-state",
+      "identityEn": false,
+      "en": "Are the false-recall gates still the same four as before?",
+      "cosine": 0.557,
+      "band": ">=0.400",
+      "primary": [
+        "n03"
+      ]
+    },
+    {
+      "id": "fr-r08",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "Could the number of validation items printed in the console be fewer than what was actually validated?",
+      "cosine": 0.567,
+      "band": ">=0.400",
+      "primary": [
+        "n12"
+      ]
+    },
+    {
+      "id": "fr-p40",
+      "cohort": "protection",
+      "protectionClass": "historical-state",
+      "identityEn": false,
+      "en": "That batch of zero-hit queries was confirmed once before — is that earlier confirmation still valid?",
+      "cosine": 0.567,
+      "band": ">=0.400",
+      "primary": [
+        "n13"
+      ]
+    },
+    {
+      "id": "fr-r02",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "Is the Chinese query matched by word in retrieval?",
+      "cosine": 0.6,
+      "band": ">=0.400",
+      "primary": [
+        "n06"
+      ]
+    },
+    {
+      "id": "fr-r30",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "Was the tiering recalculated this time, or did it reproduce the previously frozen result?",
+      "cosine": 0.605,
+      "band": ">=0.400",
+      "primary": [
+        "n34"
+      ]
+    },
+    {
+      "id": "fr-p38",
+      "cohort": "protection",
+      "protectionClass": "historical-state",
+      "identityEn": false,
+      "en": "Is that requirement for two returns to be byte-for-byte identical self-verification still there?",
+      "cosine": 0.608,
+      "band": ">=0.400",
+      "primary": [
+        "n39"
+      ]
+    },
+    {
+      "id": "fr-p37",
+      "cohort": "protection",
+      "protectionClass": "historical-state",
+      "identityEn": false,
+      "en": "Was the risk upper bound for zero observations calculated as a different number before?",
+      "cosine": 0.661,
+      "band": ">=0.400",
+      "primary": [
+        "n23"
+      ]
+    },
+    {
+      "id": "fr-r36",
+      "cohort": "new-relevance",
+      "identityEn": false,
+      "en": "Both the criteria and the judgment were made by the same person, how should this bias be handled",
+      "cosine": 0.674,
+      "band": ">=0.400",
+      "primary": [
+        "n40"
+      ]
+    }
+  ]
+}

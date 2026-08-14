@@ -1,0 +1,285 @@
+{
+  "purpose": "F2 第三段：S7a 的 K 阶梯选定（判据 r3 §2.2.1、§7 S7a）。判定只用正确性，不看任何门。",
+  "round": "fts-safety-round-2026-08-12-r2",
+  "generatedAt": "2026-08-14T05:16:03.223Z",
+  "freeze": {
+    "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/reports/fts-round/f1-freeze-r2.json",
+    "verify": "判据 1/1 + 输入 21/21"
+  },
+  "fixture": {
+    "dbPath": "/var/folders/m8/2nqfmnqd7mnfdz5q5vc33lmc0000gn/T//fts-round-f2-r2.db",
+    "scopeSize": 60066
+  },
+  "ladder": [
+    200,
+    1000,
+    5000,
+    "EXACT"
+  ],
+  "pageLimit": 50,
+  "arms": [
+    "r0-d1.00",
+    "r0-d0.30",
+    "r0-d0.10",
+    "r0-d0.03",
+    "r0.1-d1.00",
+    "r0.1-d0.30",
+    "r0.1-d0.10",
+    "r0.1-d0.03",
+    "r0.2-d1.00",
+    "r0.2-d0.30",
+    "r0.2-d0.10",
+    "r0.2-d0.03",
+    "r0.3-d1.00",
+    "r0.3-d0.30",
+    "r0.3-d0.10",
+    "r0.3-d0.03"
+  ],
+  "queries": 120,
+  "results": [
+    {
+      "k": 200,
+      "comparisons": 1920,
+      "mismatches": [],
+      "pass": true,
+      "wallMs": 15552
+    }
+  ],
+  "selectedK": 200,
+  "s7aPass": true,
+  "s6Identity": {
+    "checked": 120,
+    "mismatches": []
+  },
+  "perArm": [
+    {
+      "arm": "r0-d1.00",
+      "policy": {
+        "windowCoverageRatio": 0,
+        "unitDfRatioCeiling": 1
+      },
+      "emptyBranch": 0,
+      "likeBranch": 8,
+      "shrunkPages": 0,
+      "zeroReturn": 4,
+      "exemptTotal": 86,
+      "droppedUnitsTotal": 0,
+      "returnedMean": 17.78
+    },
+    {
+      "arm": "r0-d0.30",
+      "policy": {
+        "windowCoverageRatio": 0,
+        "unitDfRatioCeiling": 0.3
+      },
+      "emptyBranch": 0,
+      "likeBranch": 8,
+      "shrunkPages": 0,
+      "zeroReturn": 4,
+      "exemptTotal": 86,
+      "droppedUnitsTotal": 0,
+      "returnedMean": 17.78
+    },
+    {
+      "arm": "r0-d0.10",
+      "policy": {
+        "windowCoverageRatio": 0,
+        "unitDfRatioCeiling": 0.1
+      },
+      "emptyBranch": 0,
+      "likeBranch": 8,
+      "shrunkPages": 0,
+      "zeroReturn": 4,
+      "exemptTotal": 86,
+      "droppedUnitsTotal": 1,
+      "returnedMean": 17.39
+    },
+    {
+      "arm": "r0-d0.03",
+      "policy": {
+        "windowCoverageRatio": 0,
+        "unitDfRatioCeiling": 0.03
+      },
+      "emptyBranch": 0,
+      "likeBranch": 8,
+      "shrunkPages": 0,
+      "zeroReturn": 4,
+      "exemptTotal": 86,
+      "droppedUnitsTotal": 7,
+      "returnedMean": 15.48
+    },
+    {
+      "arm": "r0.1-d1.00",
+      "policy": {
+        "windowCoverageRatio": 0.1,
+        "unitDfRatioCeiling": 1
+      },
+      "emptyBranch": 0,
+      "likeBranch": 8,
+      "shrunkPages": 71,
+      "zeroReturn": 26,
+      "exemptTotal": 86,
+      "droppedUnitsTotal": 0,
+      "returnedMean": 5.23
+    },
+    {
+      "arm": "r0.1-d0.30",
+      "policy": {
+        "windowCoverageRatio": 0.1,
+        "unitDfRatioCeiling": 0.3
+      },
+      "emptyBranch": 0,
+      "likeBranch": 8,
+      "shrunkPages": 71,
+      "zeroReturn": 26,
+      "exemptTotal": 86,
+      "droppedUnitsTotal": 0,
+      "returnedMean": 5.23
+    },
+    {
+      "arm": "r0.1-d0.10",
+      "policy": {
+        "windowCoverageRatio": 0.1,
+        "unitDfRatioCeiling": 0.1
+      },
+      "emptyBranch": 0,
+      "likeBranch": 8,
+      "shrunkPages": 71,
+      "zeroReturn": 26,
+      "exemptTotal": 86,
+      "droppedUnitsTotal": 1,
+      "returnedMean": 5.23
+    },
+    {
+      "arm": "r0.1-d0.03",
+      "policy": {
+        "windowCoverageRatio": 0.1,
+        "unitDfRatioCeiling": 0.03
+      },
+      "emptyBranch": 0,
+      "likeBranch": 8,
+      "shrunkPages": 71,
+      "zeroReturn": 27,
+      "exemptTotal": 86,
+      "droppedUnitsTotal": 7,
+      "returnedMean": 4.82
+    },
+    {
+      "arm": "r0.2-d1.00",
+      "policy": {
+        "windowCoverageRatio": 0.2,
+        "unitDfRatioCeiling": 1
+      },
+      "emptyBranch": 0,
+      "likeBranch": 8,
+      "shrunkPages": 79,
+      "zeroReturn": 57,
+      "exemptTotal": 86,
+      "droppedUnitsTotal": 0,
+      "returnedMean": 1.96
+    },
+    {
+      "arm": "r0.2-d0.30",
+      "policy": {
+        "windowCoverageRatio": 0.2,
+        "unitDfRatioCeiling": 0.3
+      },
+      "emptyBranch": 0,
+      "likeBranch": 8,
+      "shrunkPages": 79,
+      "zeroReturn": 57,
+      "exemptTotal": 86,
+      "droppedUnitsTotal": 0,
+      "returnedMean": 1.96
+    },
+    {
+      "arm": "r0.2-d0.10",
+      "policy": {
+        "windowCoverageRatio": 0.2,
+        "unitDfRatioCeiling": 0.1
+      },
+      "emptyBranch": 0,
+      "likeBranch": 8,
+      "shrunkPages": 79,
+      "zeroReturn": 57,
+      "exemptTotal": 86,
+      "droppedUnitsTotal": 1,
+      "returnedMean": 1.96
+    },
+    {
+      "arm": "r0.2-d0.03",
+      "policy": {
+        "windowCoverageRatio": 0.2,
+        "unitDfRatioCeiling": 0.03
+      },
+      "emptyBranch": 0,
+      "likeBranch": 8,
+      "shrunkPages": 78,
+      "zeroReturn": 57,
+      "exemptTotal": 86,
+      "droppedUnitsTotal": 7,
+      "returnedMean": 1.96
+    },
+    {
+      "arm": "r0.3-d1.00",
+      "policy": {
+        "windowCoverageRatio": 0.3,
+        "unitDfRatioCeiling": 1
+      },
+      "emptyBranch": 0,
+      "likeBranch": 8,
+      "shrunkPages": 82,
+      "zeroReturn": 76,
+      "exemptTotal": 86,
+      "droppedUnitsTotal": 0,
+      "returnedMean": 1.37
+    },
+    {
+      "arm": "r0.3-d0.30",
+      "policy": {
+        "windowCoverageRatio": 0.3,
+        "unitDfRatioCeiling": 0.3
+      },
+      "emptyBranch": 0,
+      "likeBranch": 8,
+      "shrunkPages": 82,
+      "zeroReturn": 76,
+      "exemptTotal": 86,
+      "droppedUnitsTotal": 0,
+      "returnedMean": 1.37
+    },
+    {
+      "arm": "r0.3-d0.10",
+      "policy": {
+        "windowCoverageRatio": 0.3,
+        "unitDfRatioCeiling": 0.1
+      },
+      "emptyBranch": 0,
+      "likeBranch": 8,
+      "shrunkPages": 82,
+      "zeroReturn": 76,
+      "exemptTotal": 86,
+      "droppedUnitsTotal": 1,
+      "returnedMean": 1.37
+    },
+    {
+      "arm": "r0.3-d0.03",
+      "policy": {
+        "windowCoverageRatio": 0.3,
+        "unitDfRatioCeiling": 0.03
+      },
+      "emptyBranch": 0,
+      "likeBranch": 8,
+      "shrunkPages": 81,
+      "zeroReturn": 76,
+      "exemptTotal": 86,
+      "droppedUnitsTotal": 7,
+      "returnedMean": 1.37
+    }
+  ],
+  "boundaries": {
+    "exactByConstruction": "EXACT 的差集恒为 0，因此阶梯不会走空；它的成本由 §6.6 的性能门在 F3 判定。",
+    "attribution": "形状 C 用 instr 归因，EXACT 用 FTS MATCH 归因；两者在 F1 实现探针的 139 条 query 上逐条一致。",
+    "notAGate": "本段不产出任何 G1–G4 读数；perArm 只是准入机制自身的读数（判据 §5.4）。"
+  }
+}

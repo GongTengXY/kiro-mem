@@ -1,0 +1,233 @@
+{
+  "provenance": {
+    "source": "merged-acp-runs",
+    "target": "queries",
+    "querySet": "fts-round",
+    "inputs": [
+      {
+        "path": "/tmp/p11-4.json",
+        "provenance": {
+          "source": "acp",
+          "agent": "kiro-mem-compressor",
+          "kiroCli": "kiro-cli (see report)",
+          "target": "queries",
+          "querySet": "fts-round",
+          "generatedAt": "2026-08-14T02:54:31.494Z",
+          "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+          "items": 1,
+          "failures": 0,
+          "retries": 1,
+          "wallTimeMs": 29723,
+          "itemLatencyMs": {
+            "p50": 29722,
+            "p95": 29722,
+            "max": 29722
+          }
+        }
+      },
+      {
+        "path": "/tmp/retry1.json.failed-1786675865782.json",
+        "provenance": {
+          "source": "acp",
+          "agent": "kiro-mem-compressor",
+          "kiroCli": "kiro-cli (see report)",
+          "target": "queries",
+          "querySet": "fts-round",
+          "generatedAt": "2026-08-14T02:51:05.780Z",
+          "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+          "items": 22,
+          "failures": 7,
+          "retries": 13,
+          "wallTimeMs": 28898,
+          "itemLatencyMs": {
+            "p50": 16034,
+            "p95": 24011,
+            "max": 28886
+          }
+        }
+      },
+      {
+        "path": "/tmp/retry2.json.failed-1786675913998.json",
+        "provenance": {
+          "source": "acp",
+          "agent": "kiro-mem-compressor",
+          "kiroCli": "kiro-cli (see report)",
+          "target": "queries",
+          "querySet": "fts-round",
+          "generatedAt": "2026-08-14T02:51:53.998Z",
+          "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+          "items": 4,
+          "failures": 3,
+          "retries": 4,
+          "wallTimeMs": 28515,
+          "itemLatencyMs": {
+            "p50": 13381,
+            "p95": 28513,
+            "max": 28513
+          }
+        }
+      },
+      {
+        "path": "/tmp/retry3.json.failed-1786675935852.json",
+        "provenance": {
+          "source": "acp",
+          "agent": "kiro-mem-compressor",
+          "kiroCli": "kiro-cli (see report)",
+          "target": "queries",
+          "querySet": "fts-round",
+          "generatedAt": "2026-08-14T02:52:15.852Z",
+          "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+          "items": 1,
+          "failures": 2,
+          "retries": 2,
+          "wallTimeMs": 16522,
+          "itemLatencyMs": {
+            "p50": 16388,
+            "p95": 16519,
+            "max": 16519
+          }
+        }
+      },
+      {
+        "path": "/tmp/single-fr-p08-1.json",
+        "provenance": {
+          "source": "acp",
+          "agent": "kiro-mem-compressor",
+          "kiroCli": "kiro-cli (see report)",
+          "target": "queries",
+          "querySet": "fts-round",
+          "generatedAt": "2026-08-14T02:52:52.596Z",
+          "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+          "items": 1,
+          "failures": 0,
+          "retries": 0,
+          "wallTimeMs": 6655,
+          "itemLatencyMs": {
+            "p50": 6654,
+            "p95": 6654,
+            "max": 6654
+          }
+        }
+      },
+      {
+        "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-queries-fts-round.json.failed-1786675820050.json",
+        "provenance": {
+          "source": "acp",
+          "agent": "kiro-mem-compressor",
+          "kiroCli": "kiro-cli (see report)",
+          "target": "queries",
+          "querySet": "fts-round",
+          "generatedAt": "2026-08-14T02:50:20.043Z",
+          "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+          "items": 67,
+          "failures": 29,
+          "retries": 75,
+          "wallTimeMs": 58675,
+          "itemLatencyMs": {
+            "p50": 49704,
+            "p95": 56934,
+            "max": 58550
+          }
+        }
+      }
+    ]
+  },
+  "queries": {
+    "fr-p11": "convey",
+    "fr-r36": "Both the criteria and the judgment were made by the same person, how should this bias be handled",
+    "fr-p06": "displacement",
+    "fr-a27": "What is the default value for the compression sub-process concurrency?",
+    "fr-r31": "Does one failed assertion have to be treated with different severity levels?",
+    "fr-a36": "Was the self-verification items expanded from six to eight?",
+    "fr-r01": "If I keep raising the similarity threshold, can that suppress those irrelevant results?",
+    "fr-a23": "Which authoritative document should be followed during code review?",
+    "fr-a21": "Can the part that gets dropped after the raw payload is truncated by byte count be recovered?",
+    "fr-p36": "Is the controlled experiment still three arms right now?",
+    "fr-r35": "The kind of check that requires the returned content to be exactly identical across two runs — why can't that be achieved?",
+    "fr-a38": "Is the filler corpus expanded from two thousand entries to ten thousand?",
+    "fr-r39": "Why do we have to add a new corpus first before we can start scanning parameters?",
+    "fr-p34": "Is that gate requiring all returned results to be from semantic still there now",
+    "fr-p10": "leak",
+    "fr-a31": "How many samples do we need to draw for the retrieval calibration set for it to be enough",
+    "fr-a40": "Was the record retention period extended from 90 days to 1 year?",
+    "fr-a28": "How many records are shown per page on the web UI?",
+    "fr-r18": "Should the case where the assistant never even saw that clue count as safe?",
+    "fr-a39": "Did the original three evidence tracks later get merged into two?",
+    "fr-r23": "One of the trials failed — can we temporarily rerun it to make up for it?",
+    "fr-r05": "Why does the same check pass entirely on one batch of queries but fail entirely on another batch?",
+    "fr-r29": "How do I confirm a reading isn't because the vectors weren't fully built or it degraded partway through?",
+    "fr-r34": "Forensics isn't done yet, will that also block the freeze?",
+    "fr-r07": "If I narrow the scope of the judgment a bit, would the conclusion change accordingly?",
+    "fr-p12": "attribution",
+    "fr-p38": "Is that requirement for two returns to be byte-for-byte identical self-verification still there?",
+    "fr-a13": "Are frozen records versioned with an auto-incrementing number that overwrites the previous one?",
+    "fr-p08": "expose",
+    "fr-a01": "Is the number of ranking contaminations calculated by summing the weight of each result?",
+    "fr-a03": "What was the neutral value in the controlled experiment later changed to",
+    "fr-r02": "Is the Chinese query matched by word in retrieval?",
+    "fr-r04": "With only six sets of samples, how good can the significance possibly get",
+    "fr-r17": "What problems happen when multiple rounds of experiments share the same temporary directory",
+    "fr-a32": "Is the candidate pool cap still 200 now?",
+    "fr-r19": "It hasn't happened even once, can we say the risk is zero?",
+    "fr-a15": "Does the device self-verification include a consistency check across multiple machines?",
+    "fr-r30": "Was the tiering recalculated this time, or did it reproduce the previously frozen result?",
+    "fr-r03": "Why can't the numbers measured by that old evaluation setup be used directly to set the new parameters?",
+    "fr-a12": "Is the optimal point on the trade-off curve automatically computed by the script?",
+    "fr-r15": "Can we cap the frequency of overly common words to block out function-word fragments?",
+    "fr-r10": "How was the cap on the number of results originally decided, and can it be relaxed now?",
+    "fr-r32": "Where is that batch of irrelevant results mainly coming from",
+    "fr-r12": "If the top score can distinguish between the two types of questions, can it be used for ranking?",
+    "fr-r11": "Will returning a few more lines exceed the byte limit of the injected content?",
+    "fr-a05": "Do trials that fail the exposure gate automatically retry three times?",
+    "fr-a17": "Is the weighting for candidate-level ranking learned online?",
+    "fr-r22": "Only wrote the judgment rule for one of the cases, what will be the consequence",
+    "fr-a09": "Will the forwarding layer cache the response for reuse by later attempts?",
+    "fr-a14": "Are the false-recall readings reported to a remote dashboard?",
+    "fr-a26": "When does the full-text index need to be rebuilt entirely?",
+    "fr-r20": "If we run each of the two comparison batches one after the other in sequence, wouldn't that mix time effects into the results?",
+    "fr-a02": "Is the quota table for the keyword track divided by time period?",
+    "fr-a11": "Is the irrigation rotation order arranged by the sequence in which farmers signed up?",
+    "fr-r06": "Sweeping one parameter across the entire range barely moves the result, what does that indicate",
+    "fr-a25": "Is which tools get skipped during capture determined by the filter config?",
+    "fr-a08": "When there are zero observations, does it also give both-sided confidence intervals at the same time?",
+    "fr-a16": "Should the reproduction info record the machine's hardware fingerprint?",
+    "fr-a29": "How is the alert notified to ops after the system has an exception?",
+    "fr-p05": "Are those four old false-recall gates still in use now",
+    "fr-a22": "Does the search prioritize returning recent records based on temporal locality?",
+    "fr-p40": "That batch of zero-hit queries was confirmed once before — is that earlier confirmation still valid?",
+    "fr-p35": "Do foreign-domain negatives still require empty returns one by one?",
+    "fr-a24": "What's in the record that gets written when compression fails and degrades?",
+    "fr-r37": "If the semantic leg is turned off, will the returned slot open up?",
+    "fr-a06": "Is the sliding window length automatically adjusted based on the length of the query?",
+    "fr-a34": "In the control arm, what value was the third one later changed to",
+    "fr-r33": "If you change two things in the same turn, can the readings still tell you which one actually caused the effect?",
+    "fr-r38": "Is there any direction where there's room for a negotiable trade-off?",
+    "fr-r40": "In the comparative experiment, why not use a compromise middle value?",
+    "fr-a07": "Will the layered report ultimately synthesize a weighted total score by layer?",
+    "fr-r24": "If neither side shows a problem, can we say this approach itself is safe?",
+    "fr-a33": "Is the default time window still limited to 90 days now?",
+    "fr-a37": "Are the vectors still stored in full precision now?",
+    "fr-a30": "Is match_source distinguished by different colors in the UI?",
+    "fr-r09": "We already confirmed in the previous phase that a certain query returns nothing at all — do we need to reconfirm that after switching corpora?",
+    "fr-p07": "sliding window",
+    "fr-r25": "Just noting down which model was used, is that enough for others to reproduce?",
+    "fr-p01": "floor",
+    "fr-p09": "substitute",
+    "fr-p39": "Wasn't there a plan before to permanently change that feature to be manually enabled?",
+    "fr-r27": "For features with insufficient evidence, can we just decide to keep them permanently manually enabled by the user going forward?",
+    "fr-a10": "Is the duty roster automatically scheduled based on temperature screening results?",
+    "fr-a19": "How many tiers is the quality of compressed records rated on?",
+    "fr-a20": "What is the isolation and cleanup strategy for user data on disk",
+    "fr-r28": "The conclusion was conveyed verbally, what should I watch out for in the evidence chain",
+    "fr-r13": "An irrelevant record gets pulled up, usually because it happens to match a few words",
+    "fr-a18": "What order is the turns table for the retrieval experiment sorted in?",
+    "fr-p37": "Was the risk upper bound for zero observations calculated as a different number before?",
+    "fr-r08": "Could the number of validation items printed in the console be fewer than what was actually validated?",
+    "fr-r26": "What are the problems with adding a switch that only takes effect in experiments to toggle behavior?",
+    "fr-r16": "For the sake of observability convenience, what are the risks of duplicating the logic under test inside the script?",
+    "fr-r21": "How can you tell whether the assistant actually verified it, or is just saying it will verify?",
+    "fr-r14": "How much would it cost to require more word matches to count as a candidate?",
+    "fr-a35": "Did the number of valid trials per cell drop from twenty to ten?",
+    "fr-a04": "Does the capacity gate count entries after converting by record length?"
+  }
+}

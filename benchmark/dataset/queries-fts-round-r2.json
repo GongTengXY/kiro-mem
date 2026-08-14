@@ -1,0 +1,2035 @@
+{
+  "meta": {
+    "step": "F1 数据段 r2：按预检实测结果修 query（判据 r4 §15 / §16）。",
+    "criteria": "benchmark/reports/fts-round/f1-criteria-r4.md",
+    "criteriaRevision": "r3",
+    "records": "benchmark/dataset/turns-fts-round-sample.json（8 条）",
+    "coverage": "relevance 4 / 词面负例三类各 1 / 召回保护线五类各 1 = 12",
+    "authoring_order": "沿用 P2 判据 §7.2：先按「间接问法」规则撰写，撰写时**不看任何余弦**；全部写完后一次性测量 query→primary_gold 余弦并分四档（判据 §4.4：分层覆盖全部 80 条正例）。本样本尚未测余弦，因此不带 band 字段。",
+    "semantic_query_en": "按操作者裁定，ACP 镜像等 40 条记录与 120 条 query 全部定稿后一次性跑；本样本**不含** semantic_query_en，定稿后不得再改写 query 或 gold。",
+    "fts_count_note": "词面负例的 ftsCount ≥ 1 必须在本轮中文装置（60,066 行）上实测（判据 §7 S4）。本样本给出预期锚点与理由，实测在 F2 完成。",
+    "gold_rules": "primary_gold 只能是本轮新记录；acceptable_gold 是所有能实质性确认、否定或解释该 query 所问事实的记录（沿用 P2 §4.1）。旧 26 条只能进 acceptable_gold。",
+    "batches": [
+      "sample(fr-r01..04, fr-a01..03, fr-p01..05)",
+      "q2(fr-r05..r22)",
+      "q3(fr-r23..r40)",
+      "q4(fr-a04..a17 错误前提)",
+      "q5(fr-a18..a31 同词不同事)",
+      "q6(fr-a32..a40 旧状态混淆)",
+      "q7(fr-p06..p40 保护线)"
+    ],
+    "round": "fts-safety-round-2026-08-12-r2",
+    "baselineCriteria": "benchmark/reports/fts-round/f1-criteria.md",
+    "r1Source": "benchmark/dataset/queries-fts-round.json（逐字节保留，未修改）",
+    "patchScript": "benchmark/build-fts-round-queries-r2.ts",
+    "patched": 38,
+    "patchedIds": [
+      "fr-a01",
+      "fr-p02",
+      "fr-a06",
+      "fr-a07",
+      "fr-a08",
+      "fr-a11",
+      "fr-a12",
+      "fr-a13",
+      "fr-a15",
+      "fr-a16",
+      "fr-a19",
+      "fr-a20",
+      "fr-a21",
+      "fr-a22",
+      "fr-a23",
+      "fr-a24",
+      "fr-a26",
+      "fr-a27",
+      "fr-a28",
+      "fr-a29",
+      "fr-a32",
+      "fr-a33",
+      "fr-a35",
+      "fr-a37",
+      "fr-a38",
+      "fr-a39",
+      "fr-a40",
+      "fr-p13",
+      "fr-p14",
+      "fr-p15",
+      "fr-p17",
+      "fr-p18",
+      "fr-p19",
+      "fr-p28",
+      "fr-p29",
+      "fr-p30",
+      "fr-p33",
+      "fr-p34"
+    ],
+    "unchanged": 82,
+    "note": "改动条目保留 query_r1 / lexical_anchor_r1 / primary_gold_r1 字段，便于逐条核对改了什么；每条带 token_source 与 measured_df。"
+  },
+  "queries": [
+    {
+      "id": "fr-r01",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "把相似度门槛一路调高，那些不相关的返回能压住吗",
+      "primary_gold": [
+        "n01"
+      ],
+      "acceptable_gold": [
+        "n01",
+        "n02"
+      ],
+      "annotation_basis": "n01 是直接答案：地板线 0.197→0.325 之后同一条 query 仍返回满页，只是全部变成词面命中。n02 能补充解释为什么调数值这个方向本身走不通（两侧分布重叠）。问法刻意避开「地板线」「词面腿」这些记录原词，走间接问法。"
+    },
+    {
+      "id": "fr-r02",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "中文提问在检索里是按词去匹配的吗",
+      "primary_gold": [
+        "n06"
+      ],
+      "acceptable_gold": [
+        "n06"
+      ],
+      "annotation_basis": "n06 是直接答案：切分第一趟推的是整句、匹配不到任何文档，命中全部来自跨词边界的三字滑窗，正例侧 145 行皆如此。其余记录都无法确认或否定「是否按词匹配」这件事。这条同时满足 P2 裁决 1.4 的覆盖要求——n06 只在这里当 primary_gold。"
+    },
+    {
+      "id": "fr-r03",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "以前那套评测装置量出来的数字，为什么不能直接拿来定新参数",
+      "primary_gold": [
+        "n05"
+      ],
+      "acceptable_gold": [
+        "n05",
+        "n06"
+      ],
+      "annotation_basis": "n05 是直接答案：装置 50,066 行里含中文只有 66 行，填充语料一万条含中文为零，三类读数都不是真实规模读数。n06 解释了为什么中文那一侧尤其受影响（命中全靠三字滑窗）。"
+    },
+    {
+      "id": "fr-r04",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "只有六组样本的时候，显著性最好能做到多少",
+      "primary_gold": [
+        "n08"
+      ],
+      "acceptable_gold": [
+        "n08"
+      ],
+      "annotation_basis": "n08 是唯一能回答的记录：六个单位穷举六十四种模式，最小可达 0.0156；两组零差值时塌缩到 0.0625 已越过 0.05。其余七条与样本量或显著性无关。"
+    },
+    {
+      "id": "fr-a01",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是评测门里一件本项目没做过的事，而评测门本项目确实工作过，所以属同区域。",
+      "lexical_negative_class": "false-premise",
+      "lexical_anchor": "位移门存在",
+      "lexical_anchor_basis": "「排序污染」出现在 n04 的标题与摘要里，三字滑窗「排序污」「序污染」都会命中它。",
+      "false_premise_basis": "前提「按权重加起来」不存在：位移门的定义是「排在真答案之前的不相关结果**数**」，是计数，没有任何权重项；语料里也没有任何记录讨论、拒绝或登记过给位移加权。",
+      "query": "位移门存在的那个计数是按每条结果的权重加起来算的吗",
+      "gold": [],
+      "annotation_basis": "n04 讲的是位移计数在真答案缺席时记零这个退化解，不是加权。词面重叠只因为「排序污染」这个词，而问题主题（加权求和）在语料里不存在。",
+      "query_r1": "排序污染的次数是按每条结果的权重加起来算的吗",
+      "lexical_anchor_r1": "排序污染",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「排序污染」的三字窗在语料里对不上邻字；改用 n04 正文里逐字存在的短语。"
+    },
+    {
+      "id": "fr-a02",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是检索侧的一种配额形式，检索配额本项目确实工作过，所以属同区域。",
+      "lexical_negative_class": "same-word-other-thing",
+      "lexical_anchor": "配额表",
+      "anchor_source": "synthetic-filler",
+      "anchor_source_note": "锚点命中主要来自**合成中文 filler**（冷链域的干冰配额表），**不是项目事实**。它只用于制造词面竞争，不得被当作本项目做过配额表这件事的证据。",
+      "lexical_anchor_basis": "「配额表」在中文填充语料的冷链域里大量出现（干冰配额表），三字单元直接命中，预期 ftsCount 远大于 1。",
+      "other_meaning_basis": "语料里的「配额」有两处含义：填充语料指干冰用量配额表，检索侧的记录指语义专属结果的条数上限。**都不是**「按时间段划分的配额」。query 问的是后者，语料里不存在。",
+      "query": "词面那一路的配额表是按时间段分的吗",
+      "gold": [],
+      "annotation_basis": "词面命中来自填充语料的干冰配额表与检索侧的条数上限，两者都无法确认、否定或解释「按时间段分配额」这件事。词面腿也从来没有过任何配额形式。",
+      "token_source": "synthetic-filler"
+    },
+    {
+      "id": "fr-a03",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是对照实验臂数这件事本身，实验设计本项目确实工作过，所以属同区域。",
+      "lexical_negative_class": "stale-state-confusion",
+      "lexical_anchor": "对照",
+      "lexical_anchor_basis": "「对照臂」「干净对照」出现在 n07，三字滑窗「对照臂」会命中。",
+      "no_change_record_basis": "问的是「中性值那一臂现在改成什么值了」，它假设该臂仍存在并换过取值。事实是该臂被**整个删除**（n07），从未换值；语料里也没有任何记录讨论过给它换第二个取值。**待复核项**：本样本只有 8 条记录，批量阶段必须对全部 40 条新记录 + 旧 26 条逐条确认「没有任何记录能回答它」，否则这条要改判为 relevance（判据 §4.2 第三类的那一条纪律）。",
+      "query": "对照实验里那个中性的取值后来换成哪个了",
+      "gold": [],
+      "annotation_basis": "n07 只说明中性臂被删除及其原因，无法回答「换成了哪个值」——因为它没有被换值。这与「已变更状态有变更记录」那一类的区别就在这里：语料里缺的是「换值」这件事本身的记录，而不是缺一条变更说明。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p01",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "short-query",
+      "query": "地板",
+      "primary_gold": [
+        "n01"
+      ],
+      "acceptable_gold": [
+        "n01",
+        "n02"
+      ],
+      "annotation_basis": "两个字，短于三字下限，走子串回退分支。n01 的正文含「地板线」，子串可达。这一类的作用是回归锚点：覆盖度与文档频率上限都不作用于回退分支，若它回退说明实现漏到了不该改的地方（判据 §6.5 第 1 条）。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p02",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "proper-noun",
+      "query": "mcp-server",
+      "primary_gold": [
+        "n30"
+      ],
+      "acceptable_gold": [
+        "n30",
+        "n07"
+      ],
+      "annotation_basis": "拉丁标识符，来自 n30 的 files_touched（src/server/mcp-server.ts），实测 df=5。n30 讲的正是在这一层做转发改写而生产卡片构造不动。原 token「match_source」只存在于 fact_source，不进 Observation 可索引字段（r4 §15）。",
+      "query_r1": "match_source",
+      "primary_gold_r1": [
+        "n07"
+      ],
+      "token_source": "indexed-field",
+      "measured_df": 5,
+      "repair": "match_source 只在非索引字段里，换成 gold 可索引字段里的标识符；primary 相应从 n07 改为 n30（n07 的 primary 覆盖由 fr-r40 承担）。"
+    },
+    {
+      "id": "fr-p03",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "path",
+      "query": "benchmark/run-safety-round-grid.ts",
+      "primary_gold": [
+        "n04"
+      ],
+      "acceptable_gold": [
+        "n04"
+      ],
+      "annotation_basis": "路径被刻意整体保留、不拆分（拆开会命中几乎所有文档）。n04 的关键文件正是它，且事实来源引用了其中的行号。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p04",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "number",
+      "query": "0.604",
+      "primary_gold": [
+        "n02"
+      ],
+      "acceptable_gold": [
+        "n02"
+      ],
+      "annotation_basis": "「当时那个数值定成多少」是这类问法的主要形态。0.604 是 n02 的关键事实之一，作为精确单元命中。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p05",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "historical-state",
+      "query": "旧的那四道误召回门现在还在用吗",
+      "primary_gold": [
+        "n03"
+      ],
+      "acceptable_gold": [
+        "n03",
+        "n04"
+      ],
+      "annotation_basis": "已变更状态且**语料里有变更记录**，因此按 P2 判据 §4.2 是 stale-state relevance，必须返回变更记录，不得标成负例（判据 §6.5 第 2 条）。n03 就是那条变更记录（旧四道门整套作废、改为位移为主容量为辅）；n04 解释了其中一道为什么必须配资格过滤器。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-r05",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "为什么同一个检查在一批查询上全通过、在另一批上全失败",
+      "primary_gold": [
+        "n09"
+      ],
+      "acceptable_gold": [
+        "n09",
+        "n01"
+      ],
+      "annotation_basis": "n09 是直接答案：按层拆开后零词面命中那 23 条全过、有词面锚点那 22 条全败，说明门管不到词面那一路。n01 能解释同一机制的另一面（页面被词面命中填满）。"
+    },
+    {
+      "id": "fr-r06",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "一个参数扫完整个范围效果几乎不动，这说明什么",
+      "primary_gold": [
+        "n10"
+      ],
+      "acceptable_gold": [
+        "n10",
+        "n19"
+      ],
+      "annotation_basis": "n10 是直接答案：去重返回从 4.955 到 4.227，跨整个网格几乎水平，说明该变量对这一侧没有控制力。n19 是同一形状的另一例（频率上限在无竞争语料上也平坦），能解释这类曲线怎么读。"
+    },
+    {
+      "id": "fr-r07",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "把判定的适用范围缩小一点，结论会跟着变吗",
+      "primary_gold": [
+        "n11"
+      ],
+      "acceptable_gold": [
+        "n11",
+        "n09"
+      ],
+      "annotation_basis": "n11 是直接答案：同一道容量门只覆盖零词面命中那层就会通过（0.826），覆盖两层合计则不通过。n09 说明分层报告是看出这件事的前提。"
+    },
+    {
+      "id": "fr-r08",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "控制台打印的校验项数会不会比实际校验的少",
+      "primary_gold": [
+        "n12"
+      ],
+      "acceptable_gold": [
+        "n12"
+      ],
+      "annotation_basis": "n12 是唯一相关记录：先单独校验判据再循环校验十五项输入，而打印只覆盖后者，真实是一加十五共十六项。其余记录都不涉及计数标签。"
+    },
+    {
+      "id": "fr-r09",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "上一阶段已经确认过某条查询什么都查不到，换了语料还要再确认吗",
+      "primary_gold": [
+        "n13"
+      ],
+      "acceptable_gold": [
+        "n13",
+        "n05"
+      ],
+      "annotation_basis": "n13 是直接答案：零命中是相对语料成立的断言，正式装置上重测得到 40/40 与 30/30。n05 解释了语料构成本身如何决定这类断言（含中文只有 66 行）。"
+    },
+    {
+      "id": "fr-r10",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "结果条数的上限当初是怎么定下来的，现在能不能放宽",
+      "primary_gold": [
+        "n14"
+      ],
+      "acceptable_gold": [
+        "n14"
+      ],
+      "annotation_basis": "n14 是唯一相关记录：该上限来自更早一次预登记选择，未被本轮数据污染，但也不是独立证据，因此不授权依据同一数据调高。"
+    },
+    {
+      "id": "fr-r11",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "返回结果多几行会不会超出注入内容的字节限制",
+      "primary_gold": [
+        "n15"
+      ],
+      "acceptable_gold": [
+        "n15"
+      ],
+      "annotation_basis": "n15 是唯一相关记录：那份字节预算只作用于会话开始时注入的索引，检索返回页不引用它，实测该常量只有一个使用点。"
+    },
+    {
+      "id": "fr-r12",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "最高分能区分两类提问，是不是就能把它拿去做排序",
+      "primary_gold": [
+        "n16"
+      ],
+      "acceptable_gold": [
+        "n16",
+        "n02"
+      ],
+      "annotation_basis": "n16 是直接答案：查询级区分度不能外推成候选级排序方案，需另做取证。n02 提供同一空间里两侧分布重叠的读数，能解释为什么外推不成立。"
+    },
+    {
+      "id": "fr-r13",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "一条不相关的记录被找出来，通常是因为命中了几个词",
+      "primary_gold": [
+        "n17"
+      ],
+      "acceptable_gold": [
+        "n17",
+        "n06"
+      ],
+      "annotation_basis": "n17 是直接答案：109 行里 97 行只命中一个单元，而每条查询平均切出 18.5 个。n06 解释了那些单元是什么（跨词边界的三字滑窗）。"
+    },
+    {
+      "id": "fr-r14",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "要求多命中几个词才算候选，代价有多大",
+      "primary_gold": [
+        "n18"
+      ],
+      "acceptable_gold": [
+        "n18",
+        "n17"
+      ],
+      "annotation_basis": "n18 是直接答案：要求两个单元时误召回行从 109 降到 12，真答案行从 22 降到 14；三个时真答案只剩 6。n17 提供了这条规则为什么有效的机制读数。"
+    },
+    {
+      "id": "fr-r15",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "给出现得太频繁的词设个上限，能挡住虚词碎片吗",
+      "primary_gold": [
+        "n19"
+      ],
+      "acceptable_gold": [
+        "n19",
+        "n05"
+      ],
+      "annotation_basis": "n19 是直接答案：上限从千分之一扫到十分之一都看不出效果，因为命中单元的频率中位数只有万分之一，装置里没有高频单元可挡。n05 说明这个装置为什么没有高频中文单元。"
+    },
+    {
+      "id": "fr-r16",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "为了观测方便，在脚本里复制一份被测逻辑有什么风险",
+      "primary_gold": [
+        "n20"
+      ],
+      "acceptable_gold": [
+        "n20"
+      ],
+      "annotation_basis": "n20 是唯一相关记录：诊断里的分类是生产实现的重算副本，生产一改它不会报错，只会给出不一致的归因，因此写进诚实边界。"
+    },
+    {
+      "id": "fr-r17",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "多轮实验共用同一个临时目录会出什么问题",
+      "primary_gold": [
+        "n21"
+      ],
+      "acceptable_gold": [
+        "n21"
+      ],
+      "annotation_basis": "n21 是唯一相关记录：钩子会把当轮会话采集进临时库并压缩成记录，后一轮可能搜到前一轮对话产生的记录，因此每个试次必须从冻结快照重建。"
+    },
+    {
+      "id": "fr-r18",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "助手压根没看到那条线索的那一次，应该算成安全吗",
+      "primary_gold": [
+        "n22"
+      ],
+      "acceptable_gold": [
+        "n22"
+      ],
+      "annotation_basis": "n22 是唯一相关记录：没调用检索、卡没进页、卡没送达三种情况按原编码都落成无动作从而拉低指标，因此新增暴露门并改走替补。"
+    },
+    {
+      "id": "fr-r19",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "一次都没出现，能不能对外说风险是零",
+      "primary_gold": [
+        "n23"
+      ],
+      "acceptable_gold": [
+        "n23"
+      ],
+      "annotation_basis": "n23 是唯一相关记录：零观测只能给出上界，六十次零观测的单侧上界约百分之四点八七；分母写成二百四十会把上界缩到四分之一。"
+    },
+    {
+      "id": "fr-r20",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "两个对照先后各跑一整批，会不会把时间因素混进结果",
+      "primary_gold": [
+        "n24"
+      ],
+      "acceptable_gold": [
+        "n24"
+      ],
+      "annotation_basis": "n24 是唯一相关记录：服务侧随时间变化会与臂完全混淆且事后无法拆开，因此以三元组为区块做区块内与区块间双重随机并交错执行。"
+    },
+    {
+      "id": "fr-r21",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "怎么分辨助手是真的去核实了，还是只是嘴上说会核实",
+      "primary_gold": [
+        "n25"
+      ],
+      "acceptable_gold": [
+        "n25",
+        "n22"
+      ],
+      "annotation_basis": "n25 是直接答案：任务必须是做错了会留下可机械判定产物的那种，正确做法依赖一条历史决定。n22 说明还要先确认它确实看到了线索，否则无从判断。"
+    },
+    {
+      "id": "fr-r22",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "只给其中一种情况写了判定规则，会有什么后果",
+      "primary_gold": [
+        "n26"
+      ],
+      "acceptable_gold": [
+        "n26"
+      ],
+      "annotation_basis": "n26 是唯一相关记录：判定依据只覆盖一侧时，另一道门的主读数没有判定依据，那道门会变成无法执行，因此要求两个条件各写死规则。"
+    },
+    {
+      "id": "fr-r23",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "某个试次失败了，能不能临时补跑一个补上",
+      "primary_gold": [
+        "n27"
+      ],
+      "acceptable_gold": [
+        "n27",
+        "n22"
+      ],
+      "annotation_basis": "n27 是直接答案：补跑必须走预登记状态机，每格十个有效试次、失败即启用预排替补、同格失败超两次整轮作废。n22 提供了什么算装置失败的判定依据。"
+    },
+    {
+      "id": "fr-r24",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "两边都没出现问题，可以说这套做法本身是安全的吗",
+      "primary_gold": [
+        "n28"
+      ],
+      "acceptable_gold": [
+        "n28",
+        "n23"
+      ],
+      "annotation_basis": "n28 是直接答案：登记口径写死为未见不安全行为但因果效果未获证成，禁止写成两边都安全。n23 补充零观测只能给上界这条同源纪律。"
+    },
+    {
+      "id": "fr-r25",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "只记下用的是哪个模型，够别人复现吗",
+      "primary_gold": [
+        "n29"
+      ],
+      "acceptable_gold": [
+        "n29"
+      ],
+      "annotation_basis": "n29 是唯一相关记录：必须显式固定模型、档位与引擎并逐项记录版本、提示、清单与源码摘要，且结论随模型版本失效。"
+    },
+    {
+      "id": "fr-r26",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "加一个只在实验里生效的开关来切换行为，有什么问题",
+      "primary_gold": [
+        "n30"
+      ],
+      "acceptable_gold": [
+        "n30",
+        "n07"
+      ],
+      "annotation_basis": "n30 是直接答案：开关会在被测代码里留下只在实验里走的分支，测到的就不是生产行为，因此改写放在转发层。n07 是同一条纪律在取值域上的应用。"
+    },
+    {
+      "id": "fr-r27",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "证据不足的功能，可以直接定成以后一直由用户手动开启吗",
+      "primary_gold": [
+        "n31"
+      ],
+      "acceptable_gold": [
+        "n31",
+        "n38"
+      ],
+      "annotation_basis": "n31 是直接答案：不接受永久表述，只能裁定当前架构与当前证据下不得默认开启，且不得据此停掉全部安全工作。n38 给出同一决定在阻塞关系上的另一面。"
+    },
+    {
+      "id": "fr-r28",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "结论是口头转达来的，证据链上要注意什么",
+      "primary_gold": [
+        "n32"
+      ],
+      "acceptable_gold": [
+        "n32"
+      ],
+      "annotation_basis": "n32 是唯一相关记录：记录复述的是转达全文、原文未落盘，可核对性靠逐项理由与两处已复核的行号级引用支撑，必要时需补录原文。"
+    },
+    {
+      "id": "fr-r29",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "怎么确认一次读数不是因为向量没建全或者中途降级了",
+      "primary_gold": [
+        "n33"
+      ],
+      "acceptable_gold": [
+        "n33",
+        "n34"
+      ],
+      "annotation_basis": "n33 是直接答案：向量数等于行数、无跨域泄漏、降级为零、协议单一，外加护栏零拒绝。n34 补充向量与冻结值逐位一致这条更强的确认。"
+    },
+    {
+      "id": "fr-r30",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "分档是这次重新算出来的，还是复现了之前冻结的结果",
+      "primary_gold": [
+        "n34"
+      ],
+      "acceptable_gold": [
+        "n34"
+      ],
+      "annotation_basis": "n34 是唯一相关记录：重建向量与冻结值逐位相同、余弦差为零，所以分档是复现而非重算，参照因此稳定。"
+    },
+    {
+      "id": "fr-r31",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "一道判定失败得有多严重，需要分开对待吗",
+      "primary_gold": [
+        "n35"
+      ],
+      "acceptable_gold": [
+        "n35",
+        "n10"
+      ],
+      "annotation_basis": "n35 是直接答案：二十五条里失败二十四条、两个口径都在两条以上，说明是方向不可行而不是差一点。n10 是另一种失败形状（曲线几乎水平）的对照。"
+    },
+    {
+      "id": "fr-r32",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "那批不相关的返回主要是从哪儿来的",
+      "primary_gold": [
+        "n36"
+      ],
+      "acceptable_gold": [
+        "n36",
+        "n05"
+      ],
+      "annotation_basis": "n36 是直接答案：一百零九行里只有十三行来自填充语料且靠拉丁与数字单元命中，其余来自六十六条真实记录互相干扰。n05 给出这个语料构成的成因。"
+    },
+    {
+      "id": "fr-r33",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "两件事放在同一轮里一起改，读数还能说明是哪一件起了作用吗",
+      "primary_gold": [
+        "n37"
+      ],
+      "acceptable_gold": [
+        "n37"
+      ],
+      "annotation_basis": "n37 是唯一相关记录：两条取证轨道必须分开进行、分别归因，合并成一轮会让任何改善都无法归因到其中一件事上。"
+    },
+    {
+      "id": "fr-r34",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "取证还没做完，会不会把冻结也一起卡住",
+      "primary_gold": [
+        "n38"
+      ],
+      "acceptable_gold": [
+        "n38",
+        "n31"
+      ],
+      "annotation_basis": "n38 是直接答案：不阻塞冻结，但构成默认开启前的发布条件，冻结不等于放行。n31 是同一决定在措辞与重审条件上的部分。"
+    },
+    {
+      "id": "fr-r35",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "要求两次返回内容完全一致的那种检查，为什么做不到",
+      "primary_gold": [
+        "n39"
+      ],
+      "acceptable_gold": [
+        "n39"
+      ],
+      "annotation_basis": "n39 是唯一相关记录：不同会话生成不同检索参数，逐字节相同永远失败或被迫放宽，因此改为对同一份已捕获响应做投影预检并解析后比较。"
+    },
+    {
+      "id": "fr-r36",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "判据和判定都由同一个人做，这种偏差怎么处理",
+      "primary_gold": [
+        "n40"
+      ],
+      "acceptable_gold": [
+        "n40"
+      ],
+      "annotation_basis": "n40 是唯一相关记录：本轮未解决，只做缓解——主判据只用机械比对，依赖人读文本的编码不进主判据，局限如实登记。"
+    },
+    {
+      "id": "fr-r37",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "语义那一路被关掉以后，返回的位置会空出来吗",
+      "primary_gold": [
+        "n01"
+      ],
+      "acceptable_gold": [
+        "n01",
+        "n09"
+      ],
+      "annotation_basis": "n01 是直接答案：语义贡献清零后页面照样十行，全部由词面命中补满。n09 给出同一现象在分层判定上的表现。这条与 fr-r01 是同一记录的不同角度，问的是空位去哪了而不是门槛有没有用。"
+    },
+    {
+      "id": "fr-r38",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "有没有哪个方向存在可以谈判的取舍空间",
+      "primary_gold": [
+        "n18"
+      ],
+      "acceptable_gold": [
+        "n18",
+        "n02"
+      ],
+      "annotation_basis": "n18 是直接答案：覆盖度要求存在真实取舍曲线（109→12 对 22→14）。n02 提供对照——相似度门槛方向没有曲线可谈，因为两侧分布重叠。"
+    },
+    {
+      "id": "fr-r39",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "为什么必须先补一份新的语料才能开始扫参数",
+      "primary_gold": [
+        "n05"
+      ],
+      "acceptable_gold": [
+        "n05",
+        "n36",
+        "n19"
+      ],
+      "annotation_basis": "n05 是直接答案：竞争池只有六十六行，三类读数都不是真实规模读数。n36 给出返回来源的拆解证据，n19 给出频率上限因此测不出效果的实例。这条与 fr-r03 是同一记录的不同角度，问的是前置条件而不是旧读数能不能用。"
+    },
+    {
+      "id": "fr-r40",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "对照实验里为什么不用一个折中的中间取值",
+      "primary_gold": [
+        "n07"
+      ],
+      "acceptable_gold": [
+        "n07",
+        "n30"
+      ],
+      "annotation_basis": "n07 是直接答案：中间取值不在生产取值域内，助手可能因未知值走异常处理，于是测到的是异常反应而不是标记本身。n30 是同一条证据纯度纪律在实现方式上的应用。"
+    },
+    {
+      "id": "fr-a04",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是评测门的一种加权形式，评测门本项目确实工作过，属同区域。",
+      "lexical_negative_class": "false-premise",
+      "lexical_anchor": "容量门",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「容量门」出现在 n03 与 n11 的正文，三字单元直接命中。",
+      "false_premise_basis": "前提「按记录长度折算」不存在：容量口径是整页去重后的条数，与记录长度无关；语料里没有任何记录讨论、拒绝或登记过按长度折算。",
+      "query": "容量门是按记录长度折算之后再算条数的吗",
+      "gold": [],
+      "annotation_basis": "n03 与 n11 都只讲条数上限与覆盖范围，没有任何长度折算；词面重叠只因为「容量门」这个词。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-a05",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是暴露门的一种自动重试形式，暴露门本项目确实工作过，属同区域。",
+      "lexical_negative_class": "false-premise",
+      "lexical_anchor": "暴露门",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「暴露门」出现在 n22 的标题与摘要，三字单元直接命中。",
+      "false_premise_basis": "前提「自动重试三次」不存在：不满足暴露的试次走的是预登记替补状态机，每格最多两个预排替补且不得临场决定，没有任何自动重试次数的设定。",
+      "query": "没通过暴露门的试次会自动重试三次吗",
+      "gold": [],
+      "annotation_basis": "n22 讲暴露门的判定，n27 讲替补状态机，两者都不含自动重试；重试次数这件事在语料里不存在。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-a06",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是滑窗切分的一种长度自适应形式，切分本项目确实工作过，属同区域。",
+      "lexical_negative_class": "false-premise",
+      "lexical_anchor": "在词面腿里",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「三字滑窗」「滑窗单元」出现在 n06、n17、n18，三字单元「字滑窗」「滑窗单」都会命中。",
+      "false_premise_basis": "前提「窗口长度按提问长度自适应」不存在：窗口长度是固定的三字，等于索引分词粒度的硬下限；语料里没有任何记录讨论过按提问长度调整窗口。",
+      "query": "在词面腿里切出来的窗口长度是按提问长度自动调整的吗",
+      "gold": [],
+      "annotation_basis": "n06 明确窗口是固定三字且等于分词粒度下限，n18 讨论的是命中个数要求而非窗口长度。自适应这件事在语料里不存在。",
+      "query_r1": "滑窗的长度是按提问长度自动调整的吗",
+      "lexical_anchor_r1": "滑窗",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「滑窗」两字，三字窗跨过它时两侧邻字对不上（F0-2）；改用 n06 正文短语。"
+    },
+    {
+      "id": "fr-a07",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是分层报告的一种加权合并形式，分层报告本项目确实工作过，属同区域。",
+      "lexical_negative_class": "false-premise",
+      "lexical_anchor": "同一道门在两层",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「分层报告」出现在 n09 的摘要与概念，三字单元「分层报」「层报告」都会命中。",
+      "false_premise_basis": "前提「按层加权合成一个总分」不存在：分层报告的作用恰恰是不合并，让失败位置可见；语料里明确记录了合并会把两层相反的结论平均掉。",
+      "query": "同一道门在两层上的读数最后会按层加权合成一个总分吗",
+      "gold": [],
+      "annotation_basis": "n09 讲的是拆开报告让归因成为可能，与加权合成方向相反；语料里不存在总分这个概念。",
+      "query_r1": "分层报告最后会按层加权合成一个总分吗",
+      "lexical_anchor_r1": "分层报告",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「分层报告」不可达；改用 n09 标题里的短语。"
+    },
+    {
+      "id": "fr-a08",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是置信上界的一种双侧形式，上界计算本项目确实工作过，属同区域。",
+      "lexical_negative_class": "false-premise",
+      "lexical_anchor": "只能给出上界",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「置信上界」出现在 n23 的正文与概念，三字单元「置信上」「信上界」都会命中。",
+      "false_premise_basis": "前提「同时报双侧区间」不存在：零观测下报的是单侧上界，判据明确只要求单侧；语料里没有任何记录提出过双侧区间。",
+      "query": "零观测只能给出上界的时候，会同时给出双侧置信区间吗",
+      "gold": [],
+      "annotation_basis": "n23 只讲单侧上界及其分母口径，双侧区间这件事在语料里不存在。",
+      "query_r1": "零观测的时候会同时给出双侧置信区间吗",
+      "lexical_anchor_r1": "置信上界",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「置信上界」不可达；改用 n23 标题短语。"
+    },
+    {
+      "id": "fr-a09",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是转发层的一种缓存形式，转发层本项目确实工作过，属同区域。",
+      "lexical_negative_class": "false-premise",
+      "lexical_anchor": "转发层",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「转发层改写」出现在 n30 的标题与摘要，三字单元「转发层」直接命中。",
+      "false_premise_basis": "前提「转发层会缓存响应以复用」不存在：转发层的规定是按请求标识关联并逐帧留日志，解析失败一律原样透传，没有任何缓存或复用机制。",
+      "query": "转发层会把响应缓存下来给后面的试次复用吗",
+      "gold": [],
+      "annotation_basis": "n30 与 n39 讲的是改写位置与预检方式，都不含缓存；复用响应会直接破坏试次隔离（n21），语料里不存在这种设计。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-a10",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是排班表的一种自动生成形式，排班在合成语料里确实出现过，属同区域。",
+      "lexical_negative_class": "false-premise",
+      "lexical_anchor": "值班表",
+      "anchor_source": "synthetic-filler",
+      "lexical_anchor_basis": "「值班表模板」在中文填充语料的医院排班域里出现，三字单元「值班表」直接命中，预期命中数远大于一。",
+      "false_premise_basis": "前提「按体温筛查结果自动排班」不存在：合成语料里排班相关的处理是连班上限校验、换班链闭环、人力池分层与缺口预警，没有任何与体温筛查相关的内容。",
+      "query": "值班表是按体温筛查结果自动排的吗",
+      "gold": [],
+      "annotation_basis": "命中来自合成语料的排班域，但语料里排班的处理方式与体温筛查无关；同时它也不是项目事实，因此不存在能回答它的记录。",
+      "token_source": "synthetic-filler"
+    },
+    {
+      "id": "fr-a11",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是灌溉轮次的一种按人工经验排序形式，灌溉轮次在合成语料里确实出现过，属同区域。",
+      "lexical_negative_class": "false-premise",
+      "lexical_anchor": "轮灌轮次表",
+      "anchor_source": "synthetic-filler",
+      "lexical_anchor_basis": "「轮灌轮次表」在中文填充语料的灌溉域里出现，三字单元「轮灌轮」「灌轮次」都会命中。",
+      "false_premise_basis": "前提「按农户报名先后排轮次」不存在：合成语料里轮次是按地块高差重排的，与报名顺序无关，语料里也没有报名这个概念。",
+      "query": "轮灌轮次表是按农户报名先后排的吗",
+      "gold": [],
+      "annotation_basis": "命中来自合成语料的灌溉域，语料里的轮次依据是地块高差；报名顺序这件事在语料里不存在，也不是项目事实。",
+      "query_r1": "轮灌轮次是按农户报名先后排的吗",
+      "lexical_anchor_r1": "轮灌轮次",
+      "token_source": "synthetic-filler",
+      "measured_df": 1000,
+      "repair": "锚点补全为合成语料里逐字存在的完整表名。"
+    },
+    {
+      "id": "fr-a12",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是取舍曲线的一种自动求最优形式，取舍曲线本项目确实工作过，属同区域。",
+      "lexical_negative_class": "false-premise",
+      "lexical_anchor": "在真实取舍",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「取舍曲线」出现在 n10、n18 的概念与摘要，三字单元「取舍曲」「舍曲线」都会命中。",
+      "false_premise_basis": "前提「脚本会在曲线上自动求一个最优点」不存在：探针的作用被明确限制为筛方向，取值必须在新集上按先写死的刻度选；语料里明确禁止把探针最佳点当参数。",
+      "query": "存在真实取舍曲线的那个方向，最优点是脚本自动求出来的吗",
+      "gold": [],
+      "annotation_basis": "n18 明确探针只筛方向、不产阈值，n10 是同一纪律的另一例。自动求最优点这件事在语料里不存在且被明确禁止。",
+      "query_r1": "取舍曲线上的最优点是脚本自动求出来的吗",
+      "lexical_anchor_r1": "取舍曲线",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「取舍曲线」的窗口在语料里对不上；改用 n18 标题短语。"
+    },
+    {
+      "id": "fr-a13",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是冻结记录的一种版本号递增形式，冻结记录本项目确实工作过，属同区域。",
+      "lexical_negative_class": "false-premise",
+      "lexical_anchor": "冻结自证",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「冻结记录」出现在 n12、n29、n32 的正文，三字单元「冻结记」「结记录」都会命中。",
+      "false_premise_basis": "前提「冻结记录带自增版本号并覆盖前一份」不存在：规定是不得覆盖、作废重开必须换新路径或新轮次标识，让两份并存可比；语料里没有任何自增版本号的设定。",
+      "query": "冻结自证的记录是带自增版本号并覆盖上一份的吗",
+      "gold": [],
+      "annotation_basis": "n12 讲计数标签、n29 讲复现字段、n32 讲来源边界，都不含版本号；覆盖行为与登记的规定方向相反。",
+      "query_r1": "冻结记录是带自增版本号并覆盖上一份的吗",
+      "lexical_anchor_r1": "冻结记录",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「冻结记录」不可达；改用 n12 标题短语。"
+    },
+    {
+      "id": "fr-a14",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是把误召回读数上报到远端看板，本项目从未做过任何远端上报，也没有看板这一类组件，属异域。",
+      "lexical_negative_class": "false-premise",
+      "lexical_anchor": "误召回",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「误召回」出现在多条记录的正文与概念，三字单元「误召回」直接命中。",
+      "false_premise_basis": "前提「有一个远端看板接收误召回读数」不存在：读数只落本地报告文件，语料里既没有远端上报的实现，也没有明确拒绝它的记录。",
+      "query": "误召回读数会上报到远端看板吗",
+      "gold": [],
+      "annotation_basis": "词面命中大量记录，但没有任何记录能确认、否定或解释远端看板这件事——它既未实现也未被讨论。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-a15",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是给评测装置做多机并行调度，本项目从未做过任何多机调度，属异域。",
+      "lexical_negative_class": "false-premise",
+      "lexical_anchor": "四个数一起",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「装置自证」出现在 n13、n21、n33 的正文与概念，三字单元「装置自」「置自证」都会命中。",
+      "false_premise_basis": "前提「装置自证包含多机一致性检查」不存在：自证项是行数、向量数、泄漏、降级、协议与护栏拒绝，全部在单机单库上完成；语料里没有多机的概念。",
+      "query": "装置自证那四个数一起看的时候，包含多机之间的一致性检查吗",
+      "gold": [],
+      "annotation_basis": "n33 列出的自证项全部是单机单库指标，n13 与 n21 也只涉及本地临时库；多机一致性在语料里不存在。",
+      "query_r1": "装置自证里包含多机之间的一致性检查吗",
+      "lexical_anchor_r1": "装置自证",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「装置自证」不可达；改用 n33 标题短语。"
+    },
+    {
+      "id": "fr-a16",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是复现信息里的一种硬件指纹形式，复现信息本项目确实工作过，属同区域。",
+      "lexical_negative_class": "false-premise",
+      "lexical_anchor": "依赖模型",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「复现信息」出现在 n29 的标题与摘要，三字单元「复现信」「现信息」都会命中。",
+      "false_premise_basis": "前提「记录硬件指纹」不存在：要求记录的是模型、档位、引擎、命令行版本、提示词、清单、包装脚本、执行器与源码摘要，没有任何硬件项；语料里也没有讨论过硬件对结论的影响。",
+      "query": "结论依赖模型版本的时候，复现信息里要不要记录硬件指纹",
+      "gold": [],
+      "annotation_basis": "n29 的清单逐项列出且不含硬件，其余记录也未涉及；硬件指纹这件事在语料里不存在。",
+      "query_r1": "复现信息里要不要记录机器的硬件指纹",
+      "lexical_anchor_r1": "复现信息",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「复现信息」不可达；改用 n29 标题短语。"
+    },
+    {
+      "id": "fr-a17",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是候选级排序的一种在线学习形式，排序取证本项目确实立过项，属同区域。",
+      "lexical_negative_class": "false-premise",
+      "lexical_anchor": "候选级",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「候选级排序」出现在 n16、n37 的正文与概念，三字单元「候选级」直接命中。",
+      "false_premise_basis": "前提「候选级排序会在线学习权重」不存在：那条轨道目前只是待取证候选，明确要求先在新数据上做取证，不得直接把分数进排序当实施方案；语料里没有任何在线学习或权重更新的内容。",
+      "query": "候选级排序的权重是在线学习出来的吗",
+      "gold": [],
+      "annotation_basis": "n16 明确该方向尚未取证、不得直接实施，n37 说明它与准入取证分轨；在线学习在语料里不存在。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-a18",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是检索侧的排序策略，排序本项目确实工作过，属同区域。",
+      "lexical_negative_class": "same-word-other-thing",
+      "lexical_anchor": "轮次表",
+      "anchor_source": "synthetic-filler",
+      "lexical_anchor_basis": "「轮灌轮次表」在合成语料的灌溉域大量出现，三字单元「轮次表」直接命中。",
+      "other_meaning_basis": "语料里的「轮次表」指灌溉的地块轮灌顺序表；query 问的是检索实验的轮次编排。两者只共用这个词，实验轮次在语料里从来不叫轮次表，也没有任何记录把实验轮次做成表。",
+      "query": "检索实验的轮次表是按什么顺序排的",
+      "gold": [],
+      "annotation_basis": "命中来自合成语料的灌溉轮次表，与检索实验的轮次无关；语料里没有任何记录能回答实验轮次的编排方式。",
+      "token_source": "synthetic-filler"
+    },
+    {
+      "id": "fr-a19",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是记录压缩产出的质量分档，压缩本项目确实工作过，属同区域。",
+      "lexical_negative_class": "same-word-other-thing",
+      "lexical_anchor": "与冻结值",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「四档」「分档」出现在 n34、n30 等记录的正文，三字单元「的分档」「分档是」等窗口可命中。",
+      "other_meaning_basis": "语料里的「分档」指正例按余弦分成四档用于不回退判定；query 问的是压缩产出的质量分档。两者是完全不同的对象，压缩质量在语料里只有正常与降级两种标记，不存在分档。",
+      "query": "与冻结值逐位相同的那批记录，压缩质量是分几档评的",
+      "gold": [],
+      "annotation_basis": "n34 讲的是余弦四档分层，与压缩质量无关；语料里没有任何记录给压缩产出定过质量档位。",
+      "query_r1": "压缩出来的记录质量是分几档评的",
+      "lexical_anchor_r1": "分档",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「分档」不可达；改用 n34 标题短语，问的仍是压缩质量分档这件不存在的事。"
+    },
+    {
+      "id": "fr-a20",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是数据目录的清理策略，临时目录本项目确实工作过，属同区域。",
+      "lexical_negative_class": "same-word-other-thing",
+      "lexical_anchor": "完全隔离",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「试次隔离」「作用域隔离」出现在 n21、n33 的概念，三字单元「次隔离」「域隔离」都会命中。",
+      "other_meaning_basis": "语料里的「隔离」有两处含义：试次之间重建装置，以及作用域之间互不可见。query 问的是用户数据在磁盘上的隔离与清理策略，那是第三种含义，语料里不存在。",
+      "query": "试次之间必须完全隔离，那用户数据在磁盘上的隔离和清理策略是怎样的",
+      "gold": [],
+      "annotation_basis": "两处同词都不是磁盘层面的数据隔离；语料里没有任何记录讨论过用户数据的磁盘清理。",
+      "query_r1": "用户数据在磁盘上的隔离和清理策略是怎样的",
+      "lexical_anchor_r1": "隔离",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「隔离」两字不可达；改用 n21 标题短语。"
+    },
+    {
+      "id": "fr-a21",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是候选生成阶段的截断，截断本项目确实工作过，属同区域。",
+      "lexical_negative_class": "same-word-other-thing",
+      "lexical_anchor": "召回装置",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「候选截断」「排名截断」出现在 n05、n19 等记录，三字单元「的截断」「截断读」等窗口可命中。",
+      "other_meaning_basis": "语料里的「截断」指候选集合被排名上限截短；query 问的是原始载荷按字节被截短。两者是不同层的机制，后者在语料里没有任何记录。",
+      "query": "误召回装置里按字节截断丢掉的原始载荷还能补回来吗",
+      "gold": [],
+      "annotation_basis": "命中的记录讲的都是候选排名截断，没有一条涉及载荷字节截断，因此不存在能回答这个问题的记录。",
+      "query_r1": "原始载荷按字节截断之后丢掉的部分还能补回来吗",
+      "lexical_anchor_r1": "截断",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「截断」两字不可达；改用 n05 标题短语。"
+    },
+    {
+      "id": "fr-a22",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是检索侧的时间窗，时间窗本项目确实工作过，属同区域。",
+      "lexical_negative_class": "same-word-other-thing",
+      "lexical_anchor": "必须走预",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「时间局部性」出现在 n27 的正文与概念，三字单元「时间局」「间局部」都会命中。",
+      "other_meaning_basis": "语料里的「时间局部性」指替补试次必须紧接失败的那次执行，避免堆到最后；query 问的是检索结果按时间就近排序。两者只共用这个词，后者在语料里不存在。",
+      "query": "补跑必须走预登记状态机，那检索会按时间局部性优先返回最近的记录吗",
+      "gold": [],
+      "annotation_basis": "n27 讲的是实验执行顺序里的时间局部性，与检索结果排序无关；语料里没有记录说检索按时间就近优先。",
+      "query_r1": "检索结果会按时间局部性优先返回最近的记录吗",
+      "lexical_anchor_r1": "时间局部性",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「时间局部性」不可达；改用 n27 标题短语。"
+    },
+    {
+      "id": "fr-a23",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是权威文件在代码评审里的用法，权威文件本项目确实工作过，属同区域。",
+      "lexical_negative_class": "same-word-other-thing",
+      "lexical_anchor": "判定依据",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「权威文件」出现在 n26 的正文与概念，三字单元「权威文」「威文件」都会命中。",
+      "other_meaning_basis": "语料里的「权威文件」指行为取证里用来机械比对产物的那份文件；query 问的是代码评审时以哪份文档为准。两者只共用这个词，评审流程在语料里不存在。",
+      "query": "判定依据只给了一侧的那种情况，代码评审时以哪份权威文件为准",
+      "gold": [],
+      "annotation_basis": "n26 讲的是判定依据的完备性，与评审流程无关；语料里没有任何记录规定过评审的依据文件。",
+      "query_r1": "代码评审的时候以哪份权威文件为准",
+      "lexical_anchor_r1": "权威文件",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「权威文件」不可达；改用 n26 标题短语。"
+    },
+    {
+      "id": "fr-a24",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是记录写入时的降级策略，降级本项目确实工作过，属同区域。",
+      "lexical_negative_class": "same-word-other-thing",
+      "lexical_anchor": "数一起看",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「降级」出现在 n33 的正文与概念，三字单元「无降级」「降级次」等窗口可命中。",
+      "other_meaning_basis": "语料里的「降级」指检索时语义腿不可用而退回纯词面；query 问的是压缩失败时写入一条只含确定性证据的记录。两者是不同阶段的机制，后者在本轮语料里没有记录。",
+      "query": "那四个数一起看里的降级计数，指的是压缩失败写进去的那条记录吗",
+      "gold": [],
+      "annotation_basis": "n33 的降级计数指的是检索侧，与写入阶段无关；本轮四十条记录里没有一条讲压缩失败的写入内容。",
+      "query_r1": "压缩失败降级之后写进去的那条记录里有什么",
+      "lexical_anchor_r1": "降级",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「降级」两字不可达；改用 n33 标题短语。"
+    },
+    {
+      "id": "fr-a25",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是过滤器在数据处理里的用法，过滤器本项目确实工作过，属同区域。",
+      "lexical_negative_class": "same-word-other-thing",
+      "lexical_anchor": "过滤器",
+      "anchor_source": "synthetic-filler",
+      "lexical_anchor_basis": "「首部过滤器」在合成语料的灌溉域出现，三字单元「过滤器」直接命中，预期命中数远大于一。",
+      "other_meaning_basis": "语料里的「过滤器」有两处含义：灌溉首部的物理过滤器，以及判据里作为资格过滤器的那道门。query 问的是采集阶段跳过某些工具的名单，那是第三种含义，语料里不存在。",
+      "query": "采集的时候跳过哪些工具是由过滤器配置决定的吗",
+      "gold": [],
+      "annotation_basis": "两处同词都不是采集过滤；本轮语料里没有任何记录讨论过采集阶段跳过工具的名单。",
+      "token_source": "synthetic-filler"
+    },
+    {
+      "id": "fr-a26",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是索引重建，索引本项目确实工作过，属同区域。",
+      "lexical_negative_class": "same-word-other-thing",
+      "lexical_anchor": "向量与冻",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「重建装置」「重建向量」出现在 n21、n34 的正文，三字单元「重建装」「重建向」都会命中。",
+      "other_meaning_basis": "语料里的「重建」指重建实验装置或重新计算向量；query 问的是全文索引本身的重建。两者只共用这个词，索引重建在语料里没有任何记录。",
+      "query": "向量与冻结值重建之后，全文索引什么时候需要整个重建一次",
+      "gold": [],
+      "annotation_basis": "n21 与 n34 讲的是装置与向量的重建，都不涉及索引重建；语料里不存在这件事的记录。",
+      "query_r1": "全文索引什么时候需要整个重建一次",
+      "lexical_anchor_r1": "重建",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「重建」两字不可达；改用 n34 标题短语。"
+    },
+    {
+      "id": "fr-a27",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是并发数配置，并发本项目确实工作过，属同区域。",
+      "lexical_negative_class": "same-word-other-thing",
+      "lexical_anchor": "不阻塞门",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「并行推进」出现在 n38 的概念，三字单元「并行推」直接命中；合成语料的地铁域也有「两段并行」。",
+      "other_meaning_basis": "语料里的「并行」指两条取证轨道同时推进，以及合成语料里折返作业分两段并行；query 问的是压缩子进程的并发数配置。三者只共用这个词，后者在本轮语料里没有记录。",
+      "query": "取证不阻塞门集冻结、两条线并行推进的时候，压缩子进程的并行数默认是多少",
+      "gold": [],
+      "annotation_basis": "两处同词都不是进程并发数；本轮四十条记录里没有一条给出过并发配置的默认值。",
+      "query_r1": "压缩子进程的并行数默认是多少",
+      "lexical_anchor_r1": "并行",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「并行」两字不可达；改用 n38 标题短语。"
+    },
+    {
+      "id": "fr-a28",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是页面大小，返回页本项目确实工作过，属同区域。",
+      "lexical_negative_class": "same-word-other-thing",
+      "lexical_anchor": "清空页面",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「页面行」「整页」出现在多条记录的正文，三字单元「的页面」「页面行」都会命中。",
+      "other_meaning_basis": "语料里的「页面」指一次检索返回的那一组结果；query 问的是网页界面的分页。两者只共用这个词，界面这件事在语料里不存在，也没有任何界面被实现过。",
+      "query": "清空页面即通过的那种情形，网页界面上一页显示多少条记录",
+      "gold": [],
+      "annotation_basis": "词面命中大量记录，但它们讲的都是检索返回的结果集；语料里没有任何界面或网页分页的记录。",
+      "query_r1": "网页界面上一页显示多少条记录",
+      "lexical_anchor_r1": "页面",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「页面」两字不可达；改用 n04 标题短语。"
+    },
+    {
+      "id": "fr-a29",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是给运维人员发告警通知，本项目从未做过任何通知或告警投递，属异域。",
+      "lexical_negative_class": "same-word-other-thing",
+      "lexical_anchor": "四周预警",
+      "anchor_source": "synthetic-filler",
+      "lexical_anchor_basis": "「缺口预警」在合成语料的排班域出现，三字单元「口预警」「预警的」等窗口可命中。",
+      "other_meaning_basis": "语料里的「预警」指排班缺口提前四周暴露；query 问的是把系统异常通知给运维。两者只共用这个词，通知投递在语料里不存在。",
+      "query": "四周预警之后系统异常是怎么通知到运维的",
+      "gold": [],
+      "annotation_basis": "命中来自合成语料的排班缺口预警，与系统告警通知无关；本项目没有任何通知投递的实现或记录。",
+      "query_r1": "系统出现异常之后预警是怎么通知到运维的",
+      "lexical_anchor_r1": "预警",
+      "token_source": "synthetic-filler",
+      "measured_df": 182,
+      "repair": "原锚点「预警」两字不可达，改成的「缺口预警」实测在语料里 0 行（又一次未测量就断言）；改用实测存在的「四周预警」（182 行）。"
+    },
+    {
+      "id": "fr-a30",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是标记在界面上的展示方式，来源标记本项目确实工作过，属同区域。",
+      "lexical_negative_class": "same-word-other-thing",
+      "lexical_anchor": "标记",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「标记」出现在 n07、n28、n30 的正文与标题，三字单元「的标记」「标记产」等窗口可命中。",
+      "other_meaning_basis": "语料里的「标记」指返回结果携带的来源字段；query 问的是把它用不同颜色展示出来。两者只共用这个词，展示层在语料里不存在。",
+      "query": "来源标记在界面上是用不同颜色区分的吗",
+      "gold": [],
+      "annotation_basis": "n07、n28、n30 讲的是字段取值、登记口径与改写位置，都不涉及展示；语料里没有任何界面展示的记录。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-a31",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是样本量规划，样本量本项目确实工作过，属同区域。",
+      "lexical_negative_class": "same-word-other-thing",
+      "lexical_anchor": "样本量",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「样本量」出现在 n23、n40 的正文与概念，三字单元「样本量」直接命中。",
+      "other_meaning_basis": "语料里的「样本量」指行为取证里每格的有效试次数与实验单位数；query 问的是检索校准集要抽多少条记录才够。两者是不同实验的样本量，后者在本轮语料里没有记录。",
+      "query": "检索校准集的样本量要抽到多少条才够",
+      "gold": [],
+      "annotation_basis": "n23 与 n40 的样本量都是行为取证的试次数；本轮记录里没有一条给出过检索校准集的抽样规模依据。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-a32",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是候选池规模的历史取值，候选池本项目确实工作过，属同区域。",
+      "lexical_negative_class": "stale-state-confusion",
+      "lexical_anchor": "中文竞争",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「候选池」出现在 n19、n36 的正文，三字单元「候选池」直接命中。",
+      "no_change_record_basis": "问的是「候选池上限是不是还是两百条」。本轮四十条记录里没有任何一条记载候选池规模的取值或它的变更——n19 讲频率上限、n36 讲返回来源构成，都不涉及池子大小。因此语料里既没有现状也没有那条变更记录，属负例而不是 stale-state relevance。",
+      "query": "中文竞争池的上限现在还是两百条吗",
+      "gold": [],
+      "annotation_basis": "词面命中的两条记录都不含候选池规模；缺的是「池子多大以及何时改过」这条记录本身。",
+      "query_r1": "候选池上限现在还是两百条吗",
+      "lexical_anchor_r1": "候选池",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「候选池」在语料里子串出现 0 行（凭印象断言，缺陷 2）；改用 n19 正文短语。"
+    },
+    {
+      "id": "fr-a33",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是时间窗默认值的历史取值，时间窗本项目确实工作过，属同区域。",
+      "lexical_negative_class": "stale-state-confusion",
+      "lexical_anchor": "检索返回",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「时间窗」出现在 fr-a22 相关记录与 n39 的正文（检索参数含时间窗），三字单元「时间窗」直接命中。",
+      "no_change_record_basis": "问的是「默认时间窗是不是还限制在九十天」。本轮四十条记录里没有任何一条记载默认时间窗的取值或它从有界改为无界这件事；n39 只是把时间窗列为会话之间可能不同的检索参数之一。缺的是那条变更记录本身，因此属负例。",
+      "query": "检索返回页的默认时间窗现在还是限制在九十天吗",
+      "gold": [],
+      "annotation_basis": "命中的记录只把时间窗当作参数提及，没有任何一条给出过默认值或其变更；这与有变更记录的情形只差这一个事实。",
+      "query_r1": "默认时间窗现在还是限制在九十天吗",
+      "lexical_anchor_r1": "时间窗",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「时间窗」在语料里子串出现 0 行（缺陷 2）；改用 n15 标题短语。"
+    },
+    {
+      "id": "fr-a34",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是对照臂数量的历史取值，对照臂本项目确实工作过，属同区域。",
+      "lexical_negative_class": "stale-state-confusion",
+      "lexical_anchor": "对照臂",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「对照臂」出现在 n07、n30 的正文与概念，三字单元「对照臂」直接命中。",
+      "no_change_record_basis": "问的是「第三个臂后来换成了哪个取值」。语料里有的是「该臂被整个删除及其原因」（n07），**没有**任何记录讲它被换成另一个取值——因为那件事没有发生。缺的是「换值」这件事本身的记录，而不是缺一条变更说明。",
+      "query": "对照臂里第三个后来换成哪个取值了",
+      "gold": [],
+      "annotation_basis": "n07 只能说明该臂被删除，无法回答换成了什么；这与 stale-state relevance 的区别就在于语料里没有换值这件事。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-a35",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是重复次数的历史取值，重复次数本项目确实工作过，属同区域。",
+      "lexical_negative_class": "stale-state-confusion",
+      "lexical_anchor": "登记状态",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「有效试次」出现在 n27、n23 的正文，三字单元「有效试」「效试次」都会命中。",
+      "no_change_record_basis": "问的是「每格的有效试次是不是从二十降到十的」。语料里记载的是现状十个（n27），**没有**任何记录说它曾经是二十、也没有记录讲过这个数字的调整过程。缺的是那条调整记录本身，因此属负例。",
+      "query": "预登记状态机里每格的有效试次是从二十降到十的吗",
+      "gold": [],
+      "annotation_basis": "n27 只给现状，不含历史取值；没有任何记录能确认或否定曾经是二十这件事。",
+      "query_r1": "每格的有效试次是从二十降到十的吗",
+      "lexical_anchor_r1": "有效试次",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「有效试次」不可达；改用 n27 标题短语。"
+    },
+    {
+      "id": "fr-a36",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是自证项数量的历史取值，自证项本项目确实工作过，属同区域。",
+      "lexical_negative_class": "stale-state-confusion",
+      "lexical_anchor": "自证项",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「自证项」出现在 n13、n21、n30 的正文与概念，三字单元「自证项」直接命中。",
+      "no_change_record_basis": "问的是「自证项是不是从六项扩到八项的」。语料里有若干条记录各自新增了某一项自证（n13、n21、n30、n39），但**没有**任何一条记载自证项的总数或它的扩充历史。缺的是那条总数变更记录，因此属负例。",
+      "query": "自证项是从六项扩到八项的吗",
+      "gold": [],
+      "annotation_basis": "命中的记录只描述各自新增的那一项，没有一条给出过总数；总数的历史在语料里不存在。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-a37",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是模型精度的历史取值，向量与模型本项目确实工作过，属同区域。",
+      "lexical_negative_class": "stale-state-confusion",
+      "lexical_anchor": "值逐位相",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「向量」出现在 n33、n34 等多条记录，三字单元「的向量」「向量数」都会命中。",
+      "no_change_record_basis": "问的是「向量精度是不是还是全精度」。本轮四十条记录里没有任何一条记载向量的数值精度或它的切换——n33 讲向量数与协议，n34 讲逐位一致，都不涉及精度格式。缺的是那条精度记录本身，因此属负例。",
+      "query": "与冻结值逐位相同的向量现在还是用全精度存的吗",
+      "gold": [],
+      "annotation_basis": "命中的记录讲的是向量数量与一致性，与数值精度无关；精度这件事在本轮语料里没有记录。",
+      "query_r1": "向量现在还是用全精度存的吗",
+      "lexical_anchor_r1": "向量",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「向量」两字不可达；改用 n34 标题短语。"
+    },
+    {
+      "id": "fr-a38",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是填充语料规模的历史取值，填充语料本项目确实工作过，属同区域。",
+      "lexical_negative_class": "stale-state-confusion",
+      "lexical_anchor": "充语料只",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「填充语料」出现在 n05、n13、n36 的正文与概念，三字单元「填充语」「充语料」都会命中。",
+      "no_change_record_basis": "问的是「填充语料是不是从两千条扩到一万条的」。语料里记载的是现状一万条与含中文为零（n05），以及副本数从一份变五份对零命中断言的影响（n13），**没有**任何记录讲过两千到一万这个扩充。缺的是那条扩充记录本身，因此属负例。",
+      "query": "填充语料只贡献十三行的那份语料，是从两千条扩到一万条的吗",
+      "gold": [],
+      "annotation_basis": "n05 与 n13 给的是现状与副本数，没有一条记载过条数的扩充历史；这与有变更记录的情形只差这一个事实。",
+      "query_r1": "填充语料是从两千条扩到一万条的吗",
+      "lexical_anchor_r1": "填充语料",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「填充语料」不可达；改用 n36 标题短语。"
+    },
+    {
+      "id": "fr-a39",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是取证轨道数量的历史，取证轨道本项目确实工作过，属同区域。",
+      "lexical_negative_class": "stale-state-confusion",
+      "lexical_anchor": "准入取证",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「取证轨道」出现在 n16、n37 的概念与正文，三字单元「取证轨」「证轨道」都会命中。",
+      "no_change_record_basis": "问的是「原来的三条取证轨道是不是合并成两条了」。语料里记载的是两条轨道必须分开进行、分别归因（n37），**没有**任何记录说过曾有三条、也没有合并这件事。缺的是那条合并记录本身，因此属负例。",
+      "query": "排序取证与准入取证原来的三条轨道后来合并成两条了吗",
+      "gold": [],
+      "annotation_basis": "n37 的内容与合并方向相反（要求分开），且没有任何记录提到过第三条轨道。",
+      "query_r1": "原来的三条取证轨道后来合并成两条了吗",
+      "lexical_anchor_r1": "取证轨道",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「取证轨道」不可达；改用 n37 标题短语。"
+    },
+    {
+      "id": "fr-a40",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是记录保留期限，本项目从未有过任何保留策略，也没有任何删除机制，属异域。",
+      "lexical_negative_class": "stale-state-confusion",
+      "lexical_anchor": "命中是相对",
+      "anchor_source": "project-fact",
+      "lexical_anchor_basis": "「记录」在几乎每条正文里出现，三字单元「条记录」「记录里」等窗口会大量命中。",
+      "no_change_record_basis": "问的是「保留期限是不是从九十天延长到一年」。本轮四十条记录里没有任何一条记载保留期限的取值、也没有任何一条记载它被延长——保留策略本身不存在。缺的既是现状也是变更记录，因此属负例。",
+      "query": "零命中是相对语料成立的那批记录，保留期限是从九十天延长到一年了吗",
+      "gold": [],
+      "annotation_basis": "词面命中范围很宽，但没有一条记录涉及保留期限；这是本类里词面命中最多而事实基础最空的一条。",
+      "query_r1": "记录的保留期限是从九十天延长到一年了吗",
+      "lexical_anchor_r1": "记录",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原锚点「记录」两字虽在 10,012 行里，但三字窗不可达；改用 n13 标题短语。"
+    },
+    {
+      "id": "fr-p06",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "short-query",
+      "query": "位移",
+      "primary_gold": [
+        "n04"
+      ],
+      "acceptable_gold": [
+        "n04",
+        "n03"
+      ],
+      "annotation_basis": "两字，短于三字下限，走子串回退。n04 的标题与摘要含「位移」，子串可达；n03 讲位移成为主门这件事。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p07",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "short-query",
+      "query": "滑窗",
+      "primary_gold": [
+        "n06"
+      ],
+      "acceptable_gold": [
+        "n06",
+        "n17",
+        "n18"
+      ],
+      "annotation_basis": "两字，走子串回退。n06 是滑窗机制的直接答案，n17 与 n18 分别给出命中分布与覆盖度曲线。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p08",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "short-query",
+      "query": "暴露",
+      "primary_gold": [
+        "n22"
+      ],
+      "acceptable_gold": [
+        "n22"
+      ],
+      "annotation_basis": "两字，走子串回退。n22 的标题含「暴露门」，子串可达且是唯一相关记录。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p09",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "short-query",
+      "query": "替补",
+      "primary_gold": [
+        "n27"
+      ],
+      "acceptable_gold": [
+        "n27"
+      ],
+      "annotation_basis": "两字，走子串回退。n27 的正文多处含「替补」，是唯一讲补跑规则的记录。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p10",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "short-query",
+      "query": "泄漏",
+      "primary_gold": [
+        "n33"
+      ],
+      "acceptable_gold": [
+        "n33"
+      ],
+      "annotation_basis": "两字，走子串回退。n33 的自证项含跨作用域泄漏为零，是唯一相关记录。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p11",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "short-query",
+      "query": "转达",
+      "primary_gold": [
+        "n32"
+      ],
+      "acceptable_gold": [
+        "n32"
+      ],
+      "annotation_basis": "两字，走子串回退。n32 的标题与摘要含「转达」，是唯一讲裁定来源边界的记录。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p12",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "short-query",
+      "query": "归因",
+      "primary_gold": [
+        "n37"
+      ],
+      "acceptable_gold": [
+        "n37",
+        "n09"
+      ],
+      "annotation_basis": "两字，走子串回退。n37 是分别归因的直接答案；n09 是分层报告让归因成为可能的实例。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p13",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "proper-noun",
+      "query": "run-safety-round-grid",
+      "primary_gold": [
+        "n04"
+      ],
+      "acceptable_gold": [
+        "n04"
+      ],
+      "annotation_basis": "拉丁标识符，来自 n04 的 files_touched（benchmark/run-safety-round-grid.ts），实测 df=8。n04 的事实来源正是该脚本里那段位移计数实现。",
+      "query_r1": "primary_gold",
+      "token_source": "indexed-field",
+      "measured_df": 8,
+      "repair": "primary_gold 这个 token 只存在于 fact_source；换成 gold 可索引字段里的脚本名。"
+    },
+    {
+      "id": "fr-p14",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "proper-noun",
+      "query": "observation-search",
+      "primary_gold": [
+        "n01"
+      ],
+      "acceptable_gold": [
+        "n01"
+      ],
+      "annotation_basis": "拉丁标识符，来自 n01 的 files_touched（src/server/observation-search.ts），实测 df=9。n01 讲的是该文件里地板线只约束语义候选这件事。",
+      "query_r1": "semanticFloor",
+      "token_source": "indexed-field",
+      "measured_df": 9,
+      "repair": "semanticFloor 只存在于 fact_source；换成 gold 可索引字段里的模块名。"
+    },
+    {
+      "id": "fr-p15",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "proper-noun",
+      "query": "analyze-fts-anchor-mechanism",
+      "primary_gold": [
+        "n20"
+      ],
+      "acceptable_gold": [
+        "n20"
+      ],
+      "annotation_basis": "拉丁标识符，来自 n20 的 files_touched（benchmark/analyze-fts-anchor-mechanism.ts），实测 df=1。n20 讲的正是该脚本里那份重算的单元分类。",
+      "query_r1": "extractFtsSearchUnits",
+      "primary_gold_r1": [
+        "n06"
+      ],
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "extractFtsSearchUnits 只存在于 fact_source；换成 gold 可索引字段里的脚本名，primary 同步指向该脚本所属记录。"
+    },
+    {
+      "id": "fr-p16",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "proper-noun",
+      "query": "bootstrap-context.ts",
+      "primary_gold": [
+        "n15"
+      ],
+      "acceptable_gold": [
+        "n15"
+      ],
+      "annotation_basis": "带连字符与点号的文件名，整体保留为一个精确单元。n15 的事实来源引用该文件的具体行。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p17",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "proper-noun",
+      "query": "embedding",
+      "primary_gold": [
+        "n34"
+      ],
+      "acceptable_gold": [
+        "n34"
+      ],
+      "annotation_basis": "拉丁标识符，来自 n34 的 files_touched（src/embedding.ts），实测 df=4。n34 讲的是重建向量与冻结值逐位相同。",
+      "query_r1": "semantic-en-v1",
+      "primary_gold_r1": [
+        "n33"
+      ],
+      "token_source": "indexed-field",
+      "measured_df": 4,
+      "repair": "semantic-en-v1 只存在于 fact_source；换成 gold 可索引字段里的模块名，primary 从 n33 改为 n34（n33 的覆盖由 fr-r29 承担）。"
+    },
+    {
+      "id": "fr-p18",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "proper-noun",
+      "query": "q6-criteria",
+      "primary_gold": [
+        "n23"
+      ],
+      "acceptable_gold": [
+        "n23"
+      ],
+      "annotation_basis": "拉丁标识符，来自 n23 的 files_touched（benchmark/reports/agent-behavior/q6-criteria.md），实测 df=9。n23 讲的正是该判据里零观测上界的分母口径。",
+      "query_r1": "Clopper-Pearson",
+      "token_source": "indexed-field",
+      "measured_df": 9,
+      "repair": "Clopper-Pearson 只存在于 fact_source；换成 gold 可索引字段里的文件名。"
+    },
+    {
+      "id": "fr-p19",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "proper-noun",
+      "query": "s1-precheck",
+      "primary_gold": [
+        "n39"
+      ],
+      "acceptable_gold": [
+        "n39"
+      ],
+      "annotation_basis": "拉丁标识符，来自 n39 的 files_touched（benchmark/q6/s1-precheck.ts），实测 df=1。n39 讲的正是该预检替代了不可执行的自证项。",
+      "query_r1": "freeze-util",
+      "primary_gold_r1": [
+        "n12"
+      ],
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "freeze-util 在任何 gold 的可索引字段里都不存在；换成 gold 可索引字段里的脚本名，primary 从 n12 改为 n39（n12 的覆盖由 fr-r08 承担）。"
+    },
+    {
+      "id": "fr-p20",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "path",
+      "query": "src/server/observation-search.ts",
+      "primary_gold": [
+        "n01"
+      ],
+      "acceptable_gold": [
+        "n01",
+        "n10"
+      ],
+      "annotation_basis": "路径被刻意整体保留、不拆分。n01 的关键文件与事实来源都指向它；n10 也把它列为关键文件。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p21",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "path",
+      "query": "src/db/index.ts",
+      "primary_gold": [
+        "n06"
+      ],
+      "acceptable_gold": [
+        "n06",
+        "n17",
+        "n18",
+        "n19"
+      ],
+      "annotation_basis": "路径整体保留。n06 的事实来源引用该文件的切分函数；n17 至 n19 都把它列为关键文件。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p22",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "path",
+      "query": "src/bootstrap-context.ts",
+      "primary_gold": [
+        "n15"
+      ],
+      "acceptable_gold": [
+        "n15"
+      ],
+      "annotation_basis": "路径整体保留，且带具体行号的事实来源在 n15。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p23",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "path",
+      "query": "benchmark/dataset/pool-policy-filler-10k.json",
+      "primary_gold": [
+        "n36"
+      ],
+      "acceptable_gold": [
+        "n36",
+        "n05"
+      ],
+      "annotation_basis": "长路径整体保留。n36 的关键文件是它；n05 讲的正是这份语料的构成问题。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p24",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "path",
+      "query": "benchmark/q6/s1-precheck.ts",
+      "primary_gold": [
+        "n39"
+      ],
+      "acceptable_gold": [
+        "n39"
+      ],
+      "annotation_basis": "路径整体保留。n39 的关键文件正是它，讲的是该预检为什么替代了原自证项。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p25",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "path",
+      "query": "benchmark/verify-safety-round-zero-fts.ts",
+      "primary_gold": [
+        "n13"
+      ],
+      "acceptable_gold": [
+        "n13"
+      ],
+      "annotation_basis": "路径整体保留。n13 的关键文件与事件记录都指向它。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p26",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "path",
+      "query": "src/server/mcp-server.ts",
+      "primary_gold": [
+        "n30"
+      ],
+      "acceptable_gold": [
+        "n30",
+        "n07"
+      ],
+      "annotation_basis": "路径整体保留。n30 的事实来源引用该文件的卡片构造行；n07 也把它列为关键文件。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p27",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "number",
+      "query": "0.197",
+      "primary_gold": [
+        "n01"
+      ],
+      "acceptable_gold": [
+        "n01",
+        "n10"
+      ],
+      "annotation_basis": "数字作为精确单元命中。它是 n01 的关键事实之一，也出现在 n10 的网格区间描述里，因此比只出现一次的数值更难区分，符合复核要求的多形态覆盖。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p28",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "number",
+      "query": "0.0156",
+      "primary_gold": [
+        "n08"
+      ],
+      "acceptable_gold": [
+        "n08"
+      ],
+      "annotation_basis": "四位小数形态，逐字出现在 n08 的正文（最小可达显著性），实测 df=1。",
+      "query_r1": "4.87%",
+      "primary_gold_r1": [
+        "n23"
+      ],
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "4.87% 在记录正文里写成了中文「百分之四点八七」，投影里没有该数字串；换成 gold 正文里真实存在的数值。"
+    },
+    {
+      "id": "fr-p29",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "number",
+      "query": "4.955",
+      "primary_gold": [
+        "n10"
+      ],
+      "acceptable_gold": [
+        "n10"
+      ],
+      "annotation_basis": "三位小数形态，逐字出现在 n10 的标题与正文（去重返回起点），实测 df=1。",
+      "query_r1": "50066",
+      "primary_gold_r1": [
+        "n33"
+      ],
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "50066 在记录正文里写成中文「五万零六十六」；换成 gold 正文里真实存在的数值。"
+    },
+    {
+      "id": "fr-p30",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "number",
+      "query": "1.565",
+      "primary_gold": [
+        "n11"
+      ],
+      "acceptable_gold": [
+        "n11"
+      ],
+      "annotation_basis": "三位小数形态，逐字出现在 n11 的正文（零词面命中层的起点），实测 df=1。",
+      "query_r1": "97/109",
+      "primary_gold_r1": [
+        "n17"
+      ],
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "97/109 在记录正文里写成中文「一百零九行里九十七行」；换成 gold 正文里真实存在的数值。"
+    },
+    {
+      "id": "fr-p31",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "number",
+      "query": "2.720",
+      "primary_gold": [
+        "n35"
+      ],
+      "acceptable_gold": [
+        "n35"
+      ],
+      "annotation_basis": "三位小数形态。n35 的关键事实含该均值，是唯一相关记录。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p32",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "number",
+      "query": "0.0625",
+      "primary_gold": [
+        "n08"
+      ],
+      "acceptable_gold": [
+        "n08"
+      ],
+      "annotation_basis": "四位小数形态。n08 的关键事实含该最小可达值，是唯一相关记录。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p33",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "number",
+      "query": "0.841",
+      "primary_gold": [
+        "n16"
+      ],
+      "acceptable_gold": [
+        "n16"
+      ],
+      "annotation_basis": "三位小数形态，逐字出现在 n16 的正文（查询级区分度），实测 df=1。",
+      "query_r1": "18.5",
+      "primary_gold_r1": [
+        "n17"
+      ],
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "18.5 在记录正文里写成中文「十八点五个」；换成 gold 正文里真实存在的数值。"
+    },
+    {
+      "id": "fr-p34",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "historical-state",
+      "query": "误召回门现在还是原来那四道吗",
+      "primary_gold": [
+        "n03"
+      ],
+      "acceptable_gold": [
+        "n03",
+        "n09"
+      ],
+      "annotation_basis": "已变更状态且语料里有变更记录，属 stale-state relevance（P2 判据 §4.2）。n03 的标题逐字含「误召回门」，实测窗口 df=1，因此该 gold 在词面分支可达而不是空门。",
+      "query_r1": "那道要求返回项全部来自语义的门现在还在吗",
+      "token_source": "indexed-field",
+      "measured_df": 1,
+      "repair": "原问法的三字窗在 n03 上全部对不上，基线不可达即空门；改成含 n03 标题短语的问法。"
+    },
+    {
+      "id": "fr-p35",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "historical-state",
+      "query": "异域负例还要求逐条空返回吗",
+      "primary_gold": [
+        "n35"
+      ],
+      "acceptable_gold": [
+        "n35",
+        "n03"
+      ],
+      "annotation_basis": "变更记录存在：n35 记载该门失败幅度并据此改为容量口径，n03 是改判本身。属 relevance 不得标为负例。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p36",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "historical-state",
+      "query": "对照实验现在还是三个臂吗",
+      "primary_gold": [
+        "n07"
+      ],
+      "acceptable_gold": [
+        "n07"
+      ],
+      "annotation_basis": "变更记录存在：n07 明确记载第三个臂被删除及其原因，因此这是有答案的历史状态问法，与 fr-a34 的区别在于后者问的是「换成了哪个值」这件从未发生的事。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p37",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "historical-state",
+      "query": "零观测的风险上界之前算的是不是另一个数",
+      "primary_gold": [
+        "n23"
+      ],
+      "acceptable_gold": [
+        "n23"
+      ],
+      "annotation_basis": "变更记录存在：n23 记载分母从二百四十改为六十、上界从约百分之一点二四改为约百分之四点八七。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p38",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "historical-state",
+      "query": "那项要求两次返回逐字节相同的自证还留着吗",
+      "primary_gold": [
+        "n39"
+      ],
+      "acceptable_gold": [
+        "n39"
+      ],
+      "annotation_basis": "变更记录存在：n39 记载该自证项不可执行并被改为投影预检。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p39",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "historical-state",
+      "query": "以前是不是打算把那个功能永久改成手动开启",
+      "primary_gold": [
+        "n31"
+      ],
+      "acceptable_gold": [
+        "n31",
+        "n38"
+      ],
+      "annotation_basis": "变更记录存在：n31 记载永久表述被拒绝、改为当前架构与当前证据下不得默认开启；n38 补充它与冻结的依赖关系。",
+      "token_source": "indexed-field"
+    },
+    {
+      "id": "fr-p40",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "historical-state",
+      "query": "零命中那批查询之前确认过一次，那次的确认还算有效吗",
+      "primary_gold": [
+        "n13"
+      ],
+      "acceptable_gold": [
+        "n13"
+      ],
+      "annotation_basis": "变更记录存在：n13 记载前一次只在一份填充语料上确认、正式装置上必须重测，并给出重测结果。",
+      "token_source": "indexed-field"
+    }
+  ]
+}

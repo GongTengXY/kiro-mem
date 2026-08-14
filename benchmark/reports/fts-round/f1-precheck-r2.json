@@ -1,0 +1,1290 @@
+{
+  "purpose": "冻结前数据资格预检（判据 r4 §16 / §17）。纯文本投影，无向量、无 ACP。",
+  "round": "fts-safety-round-2026-08-12-r2",
+  "generatedAt": "2026-08-14T03:32:46.146Z",
+  "criteria": "benchmark/reports/fts-round/f1-criteria-r4.md",
+  "baselineCriteria": "benchmark/reports/fts-round/f1-criteria.md",
+  "queriesFile": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/queries-fts-round-r2.json",
+  "fixture": {
+    "dbPath": "/var/folders/m8/2nqfmnqd7mnfdz5q5vc33lmc0000gn/T/fts-round-precheck.db",
+    "rows": 60066,
+    "layoutSeed": 15867942,
+    "vectors": "none",
+    "acp": "none"
+  },
+  "gates": [
+    {
+      "gate": "Q1 负例词面命中 ≥1",
+      "total": 40,
+      "fail": 0,
+      "pass": true,
+      "failedIds": []
+    },
+    {
+      "gate": "Q2 锚点索引可达",
+      "total": 40,
+      "fail": 0,
+      "pass": true,
+      "failedIds": []
+    },
+    {
+      "gate": "Q3 保护线 gold 词面可达",
+      "total": 40,
+      "fail": 0,
+      "pass": true,
+      "failedIds": []
+    },
+    {
+      "gate": "Q4 基线非空门",
+      "total": 40,
+      "fail": 0,
+      "pass": true,
+      "failedIds": []
+    }
+  ],
+  "pass": true,
+  "negatives": [
+    {
+      "id": "fr-a01",
+      "cls": "false-premise",
+      "anchor": "位移门存在",
+      "anchorLength": 5,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "位移门:1",
+        "移门存:1",
+        "门存在:1"
+      ],
+      "units": 24,
+      "unitDfMax": 3,
+      "ftsCount": 5,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a02",
+      "cls": "same-word-other-thing",
+      "anchor": "配额表",
+      "anchorLength": 3,
+      "anchorSubstringRows": 400,
+      "anchorReachableUnits": [
+        "配额表:400"
+      ],
+      "units": 16,
+      "unitDfMax": 400,
+      "ftsCount": 403,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a03",
+      "cls": "stale-state-confusion",
+      "anchor": "对照",
+      "anchorLength": 2,
+      "anchorSubstringRows": 4,
+      "anchorReachableUnits": [
+        "对照实:2"
+      ],
+      "units": 18,
+      "unitDfMax": 2,
+      "ftsCount": 4,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a04",
+      "cls": "false-premise",
+      "anchor": "容量门",
+      "anchorLength": 3,
+      "anchorSubstringRows": 2,
+      "anchorReachableUnits": [
+        "容量门:2"
+      ],
+      "units": 18,
+      "unitDfMax": 2,
+      "ftsCount": 2,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a05",
+      "cls": "false-premise",
+      "anchor": "暴露门",
+      "anchorLength": 3,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "暴露门:1"
+      ],
+      "units": 16,
+      "unitDfMax": 2,
+      "ftsCount": 3,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a06",
+      "cls": "false-premise",
+      "anchor": "在词面腿里",
+      "anchorLength": 5,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "在词面:3",
+        "词面腿:2",
+        "面腿里:1"
+      ],
+      "units": 24,
+      "unitDfMax": 4,
+      "ftsCount": 7,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a07",
+      "cls": "false-premise",
+      "anchor": "同一道门在两层",
+      "anchorLength": 7,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "同一道:2",
+        "一道门:3",
+        "道门在:2",
+        "门在两:1",
+        "在两层:1"
+      ],
+      "units": 24,
+      "unitDfMax": 3,
+      "ftsCount": 4,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a08",
+      "cls": "false-premise",
+      "anchor": "只能给出上界",
+      "anchorLength": 6,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "只能给:1",
+        "能给出:1",
+        "给出上:1",
+        "出上界:1"
+      ],
+      "units": 23,
+      "unitDfMax": 2501,
+      "ftsCount": 2000,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a09",
+      "cls": "false-premise",
+      "anchor": "转发层",
+      "anchorLength": 3,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "转发层:1"
+      ],
+      "units": 19,
+      "unitDfMax": 2,
+      "ftsCount": 3,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a10",
+      "cls": "false-premise",
+      "anchor": "值班表",
+      "anchorLength": 3,
+      "anchorSubstringRows": 406,
+      "anchorReachableUnits": [
+        "值班表:406"
+      ],
+      "units": 15,
+      "unitDfMax": 406,
+      "ftsCount": 673,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a11",
+      "cls": "false-premise",
+      "anchor": "轮灌轮次表",
+      "anchorLength": 5,
+      "anchorSubstringRows": 415,
+      "anchorReachableUnits": [
+        "轮灌轮:415",
+        "灌轮次:415",
+        "轮次表:526"
+      ],
+      "units": 15,
+      "unitDfMax": 526,
+      "ftsCount": 526,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a12",
+      "cls": "false-premise",
+      "anchor": "在真实取舍",
+      "anchorLength": 5,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "在真实:1",
+        "真实取:1",
+        "实取舍:1"
+      ],
+      "units": 25,
+      "unitDfMax": 4,
+      "ftsCount": 8,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a13",
+      "cls": "false-premise",
+      "anchor": "冻结自证",
+      "anchorLength": 4,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "冻结自:1",
+        "结自证:1"
+      ],
+      "units": 21,
+      "unitDfMax": 195,
+      "ftsCount": 198,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a14",
+      "cls": "false-premise",
+      "anchor": "误召回",
+      "anchorLength": 3,
+      "anchorSubstringRows": 7,
+      "anchorReachableUnits": [
+        "误召回:7"
+      ],
+      "units": 13,
+      "unitDfMax": 7,
+      "ftsCount": 7,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a15",
+      "cls": "false-premise",
+      "anchor": "四个数一起",
+      "anchorLength": 5,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "四个数:1",
+        "个数一:1",
+        "数一起:1"
+      ],
+      "units": 26,
+      "unitDfMax": 2501,
+      "ftsCount": 2000,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a16",
+      "cls": "false-premise",
+      "anchor": "依赖模型",
+      "anchorLength": 4,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "依赖模:1",
+        "赖模型:1"
+      ],
+      "units": 24,
+      "unitDfMax": 2501,
+      "ftsCount": 2000,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a17",
+      "cls": "false-premise",
+      "anchor": "候选级",
+      "anchorLength": 3,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "候选级:1"
+      ],
+      "units": 16,
+      "unitDfMax": 4,
+      "ftsCount": 5,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a18",
+      "cls": "same-word-other-thing",
+      "anchor": "轮次表",
+      "anchorLength": 3,
+      "anchorSubstringRows": 526,
+      "anchorReachableUnits": [
+        "轮次表:526"
+      ],
+      "units": 15,
+      "unitDfMax": 526,
+      "ftsCount": 618,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a19",
+      "cls": "same-word-other-thing",
+      "anchor": "与冻结值",
+      "anchorLength": 4,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "与冻结:1",
+        "冻结值:1"
+      ],
+      "units": 22,
+      "unitDfMax": 1,
+      "ftsCount": 1,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a20",
+      "cls": "same-word-other-thing",
+      "anchor": "完全隔离",
+      "anchorLength": 4,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "试次之间必须完全隔离:1",
+        "完全隔:1",
+        "全隔离:1"
+      ],
+      "units": 30,
+      "unitDfMax": 3,
+      "ftsCount": 4,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a21",
+      "cls": "same-word-other-thing",
+      "anchor": "召回装置",
+      "anchorLength": 4,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "召回装:1",
+        "回装置:1"
+      ],
+      "units": 23,
+      "unitDfMax": 7,
+      "ftsCount": 8,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a22",
+      "cls": "same-word-other-thing",
+      "anchor": "必须走预",
+      "anchorLength": 4,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "补跑必须走预登记状态机:1",
+        "必须走:1",
+        "须走预:1"
+      ],
+      "units": 30,
+      "unitDfMax": 195,
+      "ftsCount": 199,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a23",
+      "cls": "same-word-other-thing",
+      "anchor": "判定依据",
+      "anchorLength": 4,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "判定依:1",
+        "定依据:1"
+      ],
+      "units": 27,
+      "unitDfMax": 3,
+      "ftsCount": 6,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a24",
+      "cls": "same-word-other-thing",
+      "anchor": "数一起看",
+      "anchorLength": 4,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "数一起:1",
+        "一起看:1"
+      ],
+      "units": 28,
+      "unitDfMax": 1,
+      "ftsCount": 3,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a25",
+      "cls": "same-word-other-thing",
+      "anchor": "过滤器",
+      "anchorLength": 3,
+      "anchorSubstringRows": 516,
+      "anchorReachableUnits": [
+        "过滤器:516"
+      ],
+      "units": 21,
+      "unitDfMax": 2501,
+      "ftsCount": 2000,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a26",
+      "cls": "same-word-other-thing",
+      "anchor": "向量与冻",
+      "anchorLength": 4,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "向量与:1",
+        "量与冻:1"
+      ],
+      "units": 25,
+      "unitDfMax": 500,
+      "ftsCount": 501,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a27",
+      "cls": "same-word-other-thing",
+      "anchor": "不阻塞门",
+      "anchorLength": 4,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "取证不阻塞门集冻结:1",
+        "不阻塞:2",
+        "阻塞门:1"
+      ],
+      "units": 31,
+      "unitDfMax": 2501,
+      "ftsCount": 2000,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a28",
+      "cls": "same-word-other-thing",
+      "anchor": "清空页面",
+      "anchorLength": 4,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "清空页:1",
+        "空页面:1"
+      ],
+      "units": 25,
+      "unitDfMax": 2,
+      "ftsCount": 3,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a29",
+      "cls": "same-word-other-thing",
+      "anchor": "四周预警",
+      "anchorLength": 4,
+      "anchorSubstringRows": 182,
+      "anchorReachableUnits": [
+        "四周预:182",
+        "周预警:182"
+      ],
+      "units": 18,
+      "unitDfMax": 182,
+      "ftsCount": 182,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a30",
+      "cls": "same-word-other-thing",
+      "anchor": "标记",
+      "anchorLength": 2,
+      "anchorSubstringRows": 3,
+      "anchorReachableUnits": [
+        "标记在:1"
+      ],
+      "units": 17,
+      "unitDfMax": 1,
+      "ftsCount": 1,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a31",
+      "cls": "same-word-other-thing",
+      "anchor": "样本量",
+      "anchorLength": 3,
+      "anchorSubstringRows": 2,
+      "anchorReachableUnits": [
+        "样本量:2"
+      ],
+      "units": 16,
+      "unitDfMax": 2,
+      "ftsCount": 2,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a32",
+      "cls": "stale-state-confusion",
+      "anchor": "中文竞争",
+      "anchorLength": 4,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "中文竞:1",
+        "文竞争:1"
+      ],
+      "units": 15,
+      "unitDfMax": 2,
+      "ftsCount": 2,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a33",
+      "cls": "stale-state-confusion",
+      "anchor": "检索返回",
+      "anchorLength": 4,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "检索返:1",
+        "索返回:1"
+      ],
+      "units": 21,
+      "unitDfMax": 1,
+      "ftsCount": 1,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a34",
+      "cls": "stale-state-confusion",
+      "anchor": "对照臂",
+      "anchorLength": 3,
+      "anchorSubstringRows": 2,
+      "anchorReachableUnits": [
+        "对照臂:2"
+      ],
+      "units": 15,
+      "unitDfMax": 2,
+      "ftsCount": 2,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a35",
+      "cls": "stale-state-confusion",
+      "anchor": "登记状态",
+      "anchorLength": 4,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "登记状:1",
+        "记状态:1"
+      ],
+      "units": 22,
+      "unitDfMax": 4,
+      "ftsCount": 7,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a36",
+      "cls": "stale-state-confusion",
+      "anchor": "自证项",
+      "anchorLength": 3,
+      "anchorSubstringRows": 4,
+      "anchorReachableUnits": [
+        "自证项:4"
+      ],
+      "units": 12,
+      "unitDfMax": 4,
+      "ftsCount": 4,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a37",
+      "cls": "stale-state-confusion",
+      "anchor": "值逐位相",
+      "anchorLength": 4,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "值逐位:1",
+        "逐位相:1"
+      ],
+      "units": 21,
+      "unitDfMax": 2,
+      "ftsCount": 2,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a38",
+      "cls": "stale-state-confusion",
+      "anchor": "充语料只",
+      "anchorLength": 4,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "充语料:3",
+        "语料只:1"
+      ],
+      "units": 26,
+      "unitDfMax": 3,
+      "ftsCount": 3,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a39",
+      "cls": "stale-state-confusion",
+      "anchor": "准入取证",
+      "anchorLength": 4,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "准入取:1",
+        "入取证:1"
+      ],
+      "units": 24,
+      "unitDfMax": 2,
+      "ftsCount": 2,
+      "q1": true,
+      "q2": true
+    },
+    {
+      "id": "fr-a40",
+      "cls": "stale-state-confusion",
+      "anchor": "命中是相对",
+      "anchorLength": 5,
+      "anchorSubstringRows": 1,
+      "anchorReachableUnits": [
+        "命中是:1",
+        "中是相:1",
+        "是相对:1"
+      ],
+      "units": 30,
+      "unitDfMax": 1,
+      "ftsCount": 1,
+      "q1": true,
+      "q2": true
+    }
+  ],
+  "protections": [
+    {
+      "id": "fr-p01",
+      "cls": "short-query",
+      "query": "地板",
+      "branch": "like",
+      "expectedBranch": "like",
+      "branchOk": true,
+      "units": 0,
+      "ftsCount": 4,
+      "primary": [
+        "n01"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p02",
+      "cls": "proper-noun",
+      "query": "mcp-server",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 5,
+      "primary": [
+        "n30"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 5
+    },
+    {
+      "id": "fr-p03",
+      "cls": "path",
+      "query": "benchmark/run-safety-round-grid.ts",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 8,
+      "primary": [
+        "n04"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 7
+    },
+    {
+      "id": "fr-p04",
+      "cls": "number",
+      "query": "0.604",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 1,
+      "primary": [
+        "n02"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p05",
+      "cls": "historical-state",
+      "query": "旧的那四道误召回门现在还在用吗",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 14,
+      "ftsCount": 7,
+      "primary": [
+        "n03"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p06",
+      "cls": "short-query",
+      "query": "位移",
+      "branch": "like",
+      "expectedBranch": "like",
+      "branchOk": true,
+      "units": 0,
+      "ftsCount": 3,
+      "primary": [
+        "n04"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 2
+    },
+    {
+      "id": "fr-p07",
+      "cls": "short-query",
+      "query": "滑窗",
+      "branch": "like",
+      "expectedBranch": "like",
+      "branchOk": true,
+      "units": 0,
+      "ftsCount": 1,
+      "primary": [
+        "n06"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p08",
+      "cls": "short-query",
+      "query": "暴露",
+      "branch": "like",
+      "expectedBranch": "like",
+      "branchOk": true,
+      "units": 0,
+      "ftsCount": 343,
+      "primary": [
+        "n22"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 24
+    },
+    {
+      "id": "fr-p09",
+      "cls": "short-query",
+      "query": "替补",
+      "branch": "like",
+      "expectedBranch": "like",
+      "branchOk": true,
+      "units": 0,
+      "ftsCount": 2,
+      "primary": [
+        "n27"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 2
+    },
+    {
+      "id": "fr-p10",
+      "cls": "short-query",
+      "query": "泄漏",
+      "branch": "like",
+      "expectedBranch": "like",
+      "branchOk": true,
+      "units": 0,
+      "ftsCount": 4,
+      "primary": [
+        "n33"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 4
+    },
+    {
+      "id": "fr-p11",
+      "cls": "short-query",
+      "query": "转达",
+      "branch": "like",
+      "expectedBranch": "like",
+      "branchOk": true,
+      "units": 0,
+      "ftsCount": 1,
+      "primary": [
+        "n32"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p12",
+      "cls": "short-query",
+      "query": "归因",
+      "branch": "like",
+      "expectedBranch": "like",
+      "branchOk": true,
+      "units": 0,
+      "ftsCount": 4,
+      "primary": [
+        "n37"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 3
+    },
+    {
+      "id": "fr-p13",
+      "cls": "proper-noun",
+      "query": "run-safety-round-grid",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 8,
+      "primary": [
+        "n04"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 7
+    },
+    {
+      "id": "fr-p14",
+      "cls": "proper-noun",
+      "query": "observation-search",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 9,
+      "primary": [
+        "n01"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 8
+    },
+    {
+      "id": "fr-p15",
+      "cls": "proper-noun",
+      "query": "analyze-fts-anchor-mechanism",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 1,
+      "primary": [
+        "n20"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p16",
+      "cls": "proper-noun",
+      "query": "bootstrap-context.ts",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 1,
+      "primary": [
+        "n15"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p17",
+      "cls": "proper-noun",
+      "query": "embedding",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 4,
+      "primary": [
+        "n34"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 4
+    },
+    {
+      "id": "fr-p18",
+      "cls": "proper-noun",
+      "query": "q6-criteria",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 9,
+      "primary": [
+        "n23"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p19",
+      "cls": "proper-noun",
+      "query": "s1-precheck",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 1,
+      "primary": [
+        "n39"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p20",
+      "cls": "path",
+      "query": "src/server/observation-search.ts",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 9,
+      "primary": [
+        "n01"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 8
+    },
+    {
+      "id": "fr-p21",
+      "cls": "path",
+      "query": "src/db/index.ts",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 9,
+      "primary": [
+        "n06"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 6
+    },
+    {
+      "id": "fr-p22",
+      "cls": "path",
+      "query": "src/bootstrap-context.ts",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 1,
+      "primary": [
+        "n15"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p23",
+      "cls": "path",
+      "query": "benchmark/dataset/pool-policy-filler-10k.json",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 2,
+      "primary": [
+        "n36"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p24",
+      "cls": "path",
+      "query": "benchmark/q6/s1-precheck.ts",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 1,
+      "primary": [
+        "n39"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p25",
+      "cls": "path",
+      "query": "benchmark/verify-safety-round-zero-fts.ts",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 1,
+      "primary": [
+        "n13"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p26",
+      "cls": "path",
+      "query": "src/server/mcp-server.ts",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 5,
+      "primary": [
+        "n30"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 4
+    },
+    {
+      "id": "fr-p27",
+      "cls": "number",
+      "query": "0.197",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 2,
+      "primary": [
+        "n01"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 2
+    },
+    {
+      "id": "fr-p28",
+      "cls": "number",
+      "query": "0.0156",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 1,
+      "primary": [
+        "n08"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p29",
+      "cls": "number",
+      "query": "4.955",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 1,
+      "primary": [
+        "n10"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p30",
+      "cls": "number",
+      "query": "1.565",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 1,
+      "primary": [
+        "n11"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p31",
+      "cls": "number",
+      "query": "2.720",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 1,
+      "primary": [
+        "n35"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p32",
+      "cls": "number",
+      "query": "0.0625",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 1,
+      "primary": [
+        "n08"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p33",
+      "cls": "number",
+      "query": "0.841",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 1,
+      "ftsCount": 1,
+      "primary": [
+        "n16"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p34",
+      "cls": "historical-state",
+      "query": "误召回门现在还是原来那四道吗",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 13,
+      "ftsCount": 8,
+      "primary": [
+        "n03"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 2
+    },
+    {
+      "id": "fr-p35",
+      "cls": "historical-state",
+      "query": "异域负例还要求逐条空返回吗",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 12,
+      "ftsCount": 3,
+      "primary": [
+        "n35"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p36",
+      "cls": "historical-state",
+      "query": "对照实验现在还是三个臂吗",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 11,
+      "ftsCount": 2,
+      "primary": [
+        "n07"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 2
+    },
+    {
+      "id": "fr-p37",
+      "cls": "historical-state",
+      "query": "零观测的风险上界之前算的是不是另一个数",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 18,
+      "ftsCount": 802,
+      "primary": [
+        "n23"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p38",
+      "cls": "historical-state",
+      "query": "那项要求两次返回逐字节相同的自证还留着吗",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 19,
+      "ftsCount": 2,
+      "primary": [
+        "n39"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p39",
+      "cls": "historical-state",
+      "query": "以前是不是打算把那个功能永久改成手动开启",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 19,
+      "ftsCount": 801,
+      "primary": [
+        "n31"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    },
+    {
+      "id": "fr-p40",
+      "cls": "historical-state",
+      "query": "零命中那批查询之前确认过一次，那次的确认还算有效吗",
+      "branch": "fts",
+      "expectedBranch": "fts",
+      "branchOk": true,
+      "units": 23,
+      "ftsCount": 175,
+      "primary": [
+        "n13"
+      ],
+      "primaryLexicalReachable": true,
+      "primaryLexicalRank": 1
+    }
+  ]
+}

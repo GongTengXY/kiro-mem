@@ -1,0 +1,45 @@
+{
+  "batch": "q7",
+  "note": "召回保护线：五类各 8 条（样本已有各 1 条，本批各补 7 条）。这一类与误召回门同等地位，任一类回退即该 arm 淘汰。",
+  "queries": [
+    { "id": "fr-p06", "kind": "relevance", "cohort": "protection", "protection_class": "short-query", "query": "位移", "primary_gold": ["n04"], "acceptable_gold": ["n04", "n03"], "annotation_basis": "两字，短于三字下限，走子串回退。n04 的标题与摘要含「位移」，子串可达；n03 讲位移成为主门这件事。" },
+    { "id": "fr-p07", "kind": "relevance", "cohort": "protection", "protection_class": "short-query", "query": "滑窗", "primary_gold": ["n06"], "acceptable_gold": ["n06", "n17", "n18"], "annotation_basis": "两字，走子串回退。n06 是滑窗机制的直接答案，n17 与 n18 分别给出命中分布与覆盖度曲线。" },
+    { "id": "fr-p08", "kind": "relevance", "cohort": "protection", "protection_class": "short-query", "query": "暴露", "primary_gold": ["n22"], "acceptable_gold": ["n22"], "annotation_basis": "两字，走子串回退。n22 的标题含「暴露门」，子串可达且是唯一相关记录。" },
+    { "id": "fr-p09", "kind": "relevance", "cohort": "protection", "protection_class": "short-query", "query": "替补", "primary_gold": ["n27"], "acceptable_gold": ["n27"], "annotation_basis": "两字，走子串回退。n27 的正文多处含「替补」，是唯一讲补跑规则的记录。" },
+    { "id": "fr-p10", "kind": "relevance", "cohort": "protection", "protection_class": "short-query", "query": "泄漏", "primary_gold": ["n33"], "acceptable_gold": ["n33"], "annotation_basis": "两字，走子串回退。n33 的自证项含跨作用域泄漏为零，是唯一相关记录。" },
+    { "id": "fr-p11", "kind": "relevance", "cohort": "protection", "protection_class": "short-query", "query": "转达", "primary_gold": ["n32"], "acceptable_gold": ["n32"], "annotation_basis": "两字，走子串回退。n32 的标题与摘要含「转达」，是唯一讲裁定来源边界的记录。" },
+    { "id": "fr-p12", "kind": "relevance", "cohort": "protection", "protection_class": "short-query", "query": "归因", "primary_gold": ["n37"], "acceptable_gold": ["n37", "n09"], "annotation_basis": "两字，走子串回退。n37 是分别归因的直接答案；n09 是分层报告让归因成为可能的实例。" },
+
+    { "id": "fr-p13", "kind": "relevance", "cohort": "protection", "protection_class": "proper-noun", "query": "primary_gold", "primary_gold": ["n04"], "acceptable_gold": ["n04"], "annotation_basis": "单个拉丁标识符，是唯一精确单元、滑窗单元数为零，因此覆盖度规则天然不作用于它。n04 的事实来源引用了含该标识符的实现行。" },
+    { "id": "fr-p14", "kind": "relevance", "cohort": "protection", "protection_class": "proper-noun", "query": "semanticFloor", "primary_gold": ["n01"], "acceptable_gold": ["n01"], "annotation_basis": "拉丁标识符，n01 的事实来源直接引用该字段所在行，且它是唯一讲该字段作用范围的记录。" },
+    { "id": "fr-p15", "kind": "relevance", "cohort": "protection", "protection_class": "proper-noun", "query": "extractFtsSearchUnits", "primary_gold": ["n06"], "acceptable_gold": ["n06", "n20"], "annotation_basis": "拉丁标识符，n06 的事实来源引用该函数；n20 讲的正是它被重算成副本这件事。" },
+    { "id": "fr-p16", "kind": "relevance", "cohort": "protection", "protection_class": "proper-noun", "query": "bootstrap-context.ts", "primary_gold": ["n15"], "acceptable_gold": ["n15"], "annotation_basis": "带连字符与点号的文件名，整体保留为一个精确单元。n15 的事实来源引用该文件的具体行。" },
+    { "id": "fr-p17", "kind": "relevance", "cohort": "protection", "protection_class": "proper-noun", "query": "semantic-en-v1", "primary_gold": ["n33"], "acceptable_gold": ["n33"], "annotation_basis": "带连字符的协议标识，整体保留。n33 的自证项含协议单一这一条，是唯一相关记录。" },
+    { "id": "fr-p18", "kind": "relevance", "cohort": "protection", "protection_class": "proper-noun", "query": "Clopper-Pearson", "primary_gold": ["n23"], "acceptable_gold": ["n23"], "annotation_basis": "带连字符的专有名词。n23 是唯一讲零观测置信上界的记录，该上界正是用这个方法算的。" },
+    { "id": "fr-p19", "kind": "relevance", "cohort": "protection", "protection_class": "proper-noun", "query": "freeze-util", "primary_gold": ["n12"], "acceptable_gold": ["n12"], "annotation_basis": "带连字符的模块名。n12 讲计数标签必须由工具生成，正是该模块承担的职责。" },
+
+    { "id": "fr-p20", "kind": "relevance", "cohort": "protection", "protection_class": "path", "query": "src/server/observation-search.ts", "primary_gold": ["n01"], "acceptable_gold": ["n01", "n10"], "annotation_basis": "路径被刻意整体保留、不拆分。n01 的关键文件与事实来源都指向它；n10 也把它列为关键文件。" },
+    { "id": "fr-p21", "kind": "relevance", "cohort": "protection", "protection_class": "path", "query": "src/db/index.ts", "primary_gold": ["n06"], "acceptable_gold": ["n06", "n17", "n18", "n19"], "annotation_basis": "路径整体保留。n06 的事实来源引用该文件的切分函数；n17 至 n19 都把它列为关键文件。" },
+    { "id": "fr-p22", "kind": "relevance", "cohort": "protection", "protection_class": "path", "query": "src/bootstrap-context.ts", "primary_gold": ["n15"], "acceptable_gold": ["n15"], "annotation_basis": "路径整体保留，且带具体行号的事实来源在 n15。" },
+    { "id": "fr-p23", "kind": "relevance", "cohort": "protection", "protection_class": "path", "query": "benchmark/dataset/pool-policy-filler-10k.json", "primary_gold": ["n36"], "acceptable_gold": ["n36", "n05"], "annotation_basis": "长路径整体保留。n36 的关键文件是它；n05 讲的正是这份语料的构成问题。" },
+    { "id": "fr-p24", "kind": "relevance", "cohort": "protection", "protection_class": "path", "query": "benchmark/q6/s1-precheck.ts", "primary_gold": ["n39"], "acceptable_gold": ["n39"], "annotation_basis": "路径整体保留。n39 的关键文件正是它，讲的是该预检为什么替代了原自证项。" },
+    { "id": "fr-p25", "kind": "relevance", "cohort": "protection", "protection_class": "path", "query": "benchmark/verify-safety-round-zero-fts.ts", "primary_gold": ["n13"], "acceptable_gold": ["n13"], "annotation_basis": "路径整体保留。n13 的关键文件与事件记录都指向它。" },
+    { "id": "fr-p26", "kind": "relevance", "cohort": "protection", "protection_class": "path", "query": "src/server/mcp-server.ts", "primary_gold": ["n30"], "acceptable_gold": ["n30", "n07"], "annotation_basis": "路径整体保留。n30 的事实来源引用该文件的卡片构造行；n07 也把它列为关键文件。" },
+
+    { "id": "fr-p27", "kind": "relevance", "cohort": "protection", "protection_class": "number", "query": "0.197", "primary_gold": ["n01"], "acceptable_gold": ["n01", "n10"], "annotation_basis": "数字作为精确单元命中。它是 n01 的关键事实之一，也出现在 n10 的网格区间描述里，因此比只出现一次的数值更难区分，符合复核要求的多形态覆盖。" },
+    { "id": "fr-p28", "kind": "relevance", "cohort": "protection", "protection_class": "number", "query": "4.87%", "primary_gold": ["n23"], "acceptable_gold": ["n23"], "annotation_basis": "带百分号的数值形态。n23 的关键事实含该上界，是唯一相关记录。" },
+    { "id": "fr-p29", "kind": "relevance", "cohort": "protection", "protection_class": "number", "query": "50066", "primary_gold": ["n33"], "acceptable_gold": ["n33", "n05"], "annotation_basis": "无分隔符的整数形态。n33 的自证项以它为向量数与行数；n05 用它作为物理行数。" },
+    { "id": "fr-p30", "kind": "relevance", "cohort": "protection", "protection_class": "number", "query": "97/109", "primary_gold": ["n17"], "acceptable_gold": ["n17"], "annotation_basis": "分数形态（含斜杠）。n17 的关键事实正是这个比值，是唯一相关记录。" },
+    { "id": "fr-p31", "kind": "relevance", "cohort": "protection", "protection_class": "number", "query": "2.720", "primary_gold": ["n35"], "acceptable_gold": ["n35"], "annotation_basis": "三位小数形态。n35 的关键事实含该均值，是唯一相关记录。" },
+    { "id": "fr-p32", "kind": "relevance", "cohort": "protection", "protection_class": "number", "query": "0.0625", "primary_gold": ["n08"], "acceptable_gold": ["n08"], "annotation_basis": "四位小数形态。n08 的关键事实含该最小可达值，是唯一相关记录。" },
+    { "id": "fr-p33", "kind": "relevance", "cohort": "protection", "protection_class": "number", "query": "18.5", "primary_gold": ["n17"], "acceptable_gold": ["n17"], "annotation_basis": "一位小数形态。n17 的关键事实含每条查询平均切出的单元数。与 fr-p30 同记录但数值形态不同，覆盖复核要求的多形态。" },
+
+    { "id": "fr-p34", "kind": "relevance", "cohort": "protection", "protection_class": "historical-state", "query": "那道要求返回项全部来自语义的门现在还在吗", "primary_gold": ["n03"], "acceptable_gold": ["n03", "n09"], "annotation_basis": "已变更状态且语料里有变更记录，按已裁定口径属 stale-state relevance，必须返回变更记录。n03 记载了该门被删除；n09 给出它失败的分层证据。" },
+    { "id": "fr-p35", "kind": "relevance", "cohort": "protection", "protection_class": "historical-state", "query": "异域负例还要求逐条空返回吗", "primary_gold": ["n35"], "acceptable_gold": ["n35", "n03"], "annotation_basis": "变更记录存在：n35 记载该门失败幅度并据此改为容量口径，n03 是改判本身。属 relevance 不得标为负例。" },
+    { "id": "fr-p36", "kind": "relevance", "cohort": "protection", "protection_class": "historical-state", "query": "对照实验现在还是三个臂吗", "primary_gold": ["n07"], "acceptable_gold": ["n07"], "annotation_basis": "变更记录存在：n07 明确记载第三个臂被删除及其原因，因此这是有答案的历史状态问法，与 fr-a34 的区别在于后者问的是「换成了哪个值」这件从未发生的事。" },
+    { "id": "fr-p37", "kind": "relevance", "cohort": "protection", "protection_class": "historical-state", "query": "零观测的风险上界之前算的是不是另一个数", "primary_gold": ["n23"], "acceptable_gold": ["n23"], "annotation_basis": "变更记录存在：n23 记载分母从二百四十改为六十、上界从约百分之一点二四改为约百分之四点八七。" },
+    { "id": "fr-p38", "kind": "relevance", "cohort": "protection", "protection_class": "historical-state", "query": "那项要求两次返回逐字节相同的自证还留着吗", "primary_gold": ["n39"], "acceptable_gold": ["n39"], "annotation_basis": "变更记录存在：n39 记载该自证项不可执行并被改为投影预检。" },
+    { "id": "fr-p39", "kind": "relevance", "cohort": "protection", "protection_class": "historical-state", "query": "以前是不是打算把那个功能永久改成手动开启", "primary_gold": ["n31"], "acceptable_gold": ["n31", "n38"], "annotation_basis": "变更记录存在：n31 记载永久表述被拒绝、改为当前架构与当前证据下不得默认开启；n38 补充它与冻结的依赖关系。" },
+    { "id": "fr-p40", "kind": "relevance", "cohort": "protection", "protection_class": "historical-state", "query": "零命中那批查询之前确认过一次，那次的确认还算有效吗", "primary_gold": ["n13"], "acceptable_gold": ["n13"], "annotation_basis": "变更记录存在：n13 记载前一次只在一份填充语料上确认、正式装置上必须重测，并给出重测结果。" }
+  ]
+}

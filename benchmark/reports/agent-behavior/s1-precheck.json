@@ -1,0 +1,132 @@
+{
+  "purpose": "Q6 S1 包装器预检结果（判据 §8 / §8.1）。跑在任何 trial 之前，与 agent 行为无关。",
+  "generatedAt": "2026-08-13T07:56:20.688Z",
+  "fixture": "benchmark/q6/fixtures/captured-search-response.json",
+  "capturedProvenance": {
+    "mcpServer": "src/server/mcp-server.ts",
+    "packageVersion": "3.0.0",
+    "seededObservations": 3,
+    "note": "本样本仅用于验证 wire 级投影；不是 §3 的实验 fixture，不参与任何 H 门。"
+  },
+  "pass": true,
+  "checks": [
+    {
+      "name": "[semantic-only] captured-sha-matches",
+      "pass": true,
+      "detail": "recorded=2847d8d804705cb3 actual=2847d8d804705cb3"
+    },
+    {
+      "name": "[semantic-only] recognized-as-search-response",
+      "pass": true,
+      "detail": "full=true hidden=true"
+    },
+    {
+      "name": "[semantic-only] target-present-on-captured-page",
+      "pass": true,
+      "detail": "cardCount=1"
+    },
+    {
+      "name": "[semantic-only] target-original-match-source-is-semantic",
+      "pass": true,
+      "detail": "got=semantic"
+    },
+    {
+      "name": "[semantic-only] l-full-removes-nothing",
+      "pass": true,
+      "detail": "removed=0"
+    },
+    {
+      "name": "[semantic-only] l-hidden-removes-exactly-one",
+      "pass": true,
+      "detail": "removed=1"
+    },
+    {
+      "name": "[semantic-only] card-count-unchanged",
+      "pass": true,
+      "detail": "full=1 hidden=1"
+    },
+    {
+      "name": "[semantic-only] only-target-match-source-differs",
+      "pass": true,
+      "detail": "no other diff"
+    },
+    {
+      "name": "[semantic-only] non-target-cards-keep-their-source",
+      "pass": true,
+      "detail": "vacuous (single-card page)"
+    },
+    {
+      "name": "[semantic-only] envelope-and-page-meta-unchanged",
+      "pass": true,
+      "detail": "id=2 total=1"
+    },
+    {
+      "name": "[mixed-source] captured-sha-matches",
+      "pass": true,
+      "detail": "recorded=feab1cbbe63837cf actual=feab1cbbe63837cf"
+    },
+    {
+      "name": "[mixed-source] recognized-as-search-response",
+      "pass": true,
+      "detail": "full=true hidden=true"
+    },
+    {
+      "name": "[mixed-source] target-present-on-captured-page",
+      "pass": true,
+      "detail": "cardCount=2"
+    },
+    {
+      "name": "[mixed-source] target-original-match-source-is-semantic",
+      "pass": true,
+      "detail": "got=semantic"
+    },
+    {
+      "name": "[mixed-source] l-full-removes-nothing",
+      "pass": true,
+      "detail": "removed=0"
+    },
+    {
+      "name": "[mixed-source] l-hidden-removes-exactly-one",
+      "pass": true,
+      "detail": "removed=1"
+    },
+    {
+      "name": "[mixed-source] card-count-unchanged",
+      "pass": true,
+      "detail": "full=2 hidden=2"
+    },
+    {
+      "name": "[mixed-source] only-target-match-source-differs",
+      "pass": true,
+      "detail": "no other diff"
+    },
+    {
+      "name": "[mixed-source] non-target-cards-keep-their-source",
+      "pass": true,
+      "detail": "n=1 sources=[\"fts\"]"
+    },
+    {
+      "name": "[mixed-source] envelope-and-page-meta-unchanged",
+      "pass": true,
+      "detail": "id=3 total=2"
+    },
+    {
+      "name": "[coverage] has-mixed-source-multi-card-sample",
+      "pass": true,
+      "detail": "semantic-only=[\"semantic\"] mixed-source=[\"semantic\",\"fts\"]"
+    }
+  ],
+  "targetObservationId": 1,
+  "samples": [
+    {
+      "label": "semantic-only",
+      "cardCount": 1,
+      "sha256": "2847d8d804705cb3cdc2cb00ec9a43cb36357d0cacfc4da33f1da5eab8f08521"
+    },
+    {
+      "label": "mixed-source",
+      "cardCount": 2,
+      "sha256": "feab1cbbe63837cff3f5d2e2cba18cff732b4e5ff00078e50f7481dee3df7dca"
+    }
+  ]
+}

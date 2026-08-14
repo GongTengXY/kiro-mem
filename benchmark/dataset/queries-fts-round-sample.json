@@ -1,0 +1,147 @@
+{
+  "meta": {
+    "step": "F1 数据段样本：12 条 query，供 sample gate 审口径。**不是冻结集。**",
+    "criteria": "benchmark/reports/fts-round/f1-criteria.md",
+    "criteriaRevision": "r3",
+    "records": "benchmark/dataset/turns-fts-round-sample.json（8 条）",
+    "coverage": "relevance 4 / 词面负例三类各 1 / 召回保护线五类各 1 = 12",
+    "authoring_order": "沿用 P2 判据 §7.2：先按「间接问法」规则撰写，撰写时**不看任何余弦**；全部写完后一次性测量 query→primary_gold 余弦并分四档（判据 §4.4：分层覆盖全部 80 条正例）。本样本尚未测余弦，因此不带 band 字段。",
+    "semantic_query_en": "按操作者裁定，ACP 镜像等 40 条记录与 120 条 query 全部定稿后一次性跑；本样本**不含** semantic_query_en，定稿后不得再改写 query 或 gold。",
+    "fts_count_note": "词面负例的 ftsCount ≥ 1 必须在本轮中文装置（60,066 行）上实测（判据 §7 S4）。本样本给出预期锚点与理由，实测在 F2 完成。",
+    "gold_rules": "primary_gold 只能是本轮新记录；acceptable_gold 是所有能实质性确认、否定或解释该 query 所问事实的记录（沿用 P2 §4.1）。旧 26 条只能进 acceptable_gold。"
+  },
+  "queries": [
+    {
+      "id": "fr-r01",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "把相似度门槛一路调高，那些不相关的返回能压住吗",
+      "primary_gold": ["n01"],
+      "acceptable_gold": ["n01", "n02"],
+      "annotation_basis": "n01 是直接答案：地板线 0.197→0.325 之后同一条 query 仍返回满页，只是全部变成词面命中。n02 能补充解释为什么调数值这个方向本身走不通（两侧分布重叠）。问法刻意避开「地板线」「词面腿」这些记录原词，走间接问法。"
+    },
+    {
+      "id": "fr-r02",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "中文提问在检索里是按词去匹配的吗",
+      "primary_gold": ["n06"],
+      "acceptable_gold": ["n06"],
+      "annotation_basis": "n06 是直接答案：切分第一趟推的是整句、匹配不到任何文档，命中全部来自跨词边界的三字滑窗，正例侧 145 行皆如此。其余记录都无法确认或否定「是否按词匹配」这件事。这条同时满足 P2 裁决 1.4 的覆盖要求——n06 只在这里当 primary_gold。"
+    },
+    {
+      "id": "fr-r03",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "以前那套评测装置量出来的数字，为什么不能直接拿来定新参数",
+      "primary_gold": ["n05"],
+      "acceptable_gold": ["n05", "n06"],
+      "annotation_basis": "n05 是直接答案：装置 50,066 行里含中文只有 66 行，填充语料一万条含中文为零，三类读数都不是真实规模读数。n06 解释了为什么中文那一侧尤其受影响（命中全靠三字滑窗）。"
+    },
+    {
+      "id": "fr-r04",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "只有六组样本的时候，显著性最好能做到多少",
+      "primary_gold": ["n08"],
+      "acceptable_gold": ["n08"],
+      "annotation_basis": "n08 是唯一能回答的记录：六个单位穷举六十四种模式，最小可达 0.0156；两组零差值时塌缩到 0.0625 已越过 0.05。其余七条与样本量或显著性无关。"
+    },
+
+    {
+      "id": "fr-a01",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是评测门里一件本项目没做过的事，而评测门本项目确实工作过，所以属同区域。",
+      "lexical_negative_class": "false-premise",
+      "lexical_anchor": "排序污染",
+      "lexical_anchor_basis": "「排序污染」出现在 n04 的标题与摘要里，三字滑窗「排序污」「序污染」都会命中它。",
+      "false_premise_basis": "前提「按权重加起来」不存在：位移门的定义是「排在真答案之前的不相关结果**数**」，是计数，没有任何权重项；语料里也没有任何记录讨论、拒绝或登记过给位移加权。",
+      "query": "排序污染的次数是按每条结果的权重加起来算的吗",
+      "gold": [],
+      "annotation_basis": "n04 讲的是位移计数在真答案缺席时记零这个退化解，不是加权。词面重叠只因为「排序污染」这个词，而问题主题（加权求和）在语料里不存在。"
+    },
+    {
+      "id": "fr-a02",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是检索侧的一种配额形式，检索配额本项目确实工作过，所以属同区域。",
+      "lexical_negative_class": "same-word-other-thing",
+      "lexical_anchor": "配额表",
+      "anchor_source": "synthetic-filler",
+      "anchor_source_note": "锚点命中主要来自**合成中文 filler**（冷链域的干冰配额表），**不是项目事实**。它只用于制造词面竞争，不得被当作本项目做过配额表这件事的证据。",
+      "lexical_anchor_basis": "「配额表」在中文填充语料的冷链域里大量出现（干冰配额表），三字单元直接命中，预期 ftsCount 远大于 1。",
+      "other_meaning_basis": "语料里的「配额」有两处含义：填充语料指干冰用量配额表，检索侧的记录指语义专属结果的条数上限。**都不是**「按时间段划分的配额」。query 问的是后者，语料里不存在。",
+      "query": "词面那一路的配额表是按时间段分的吗",
+      "gold": [],
+      "annotation_basis": "词面命中来自填充语料的干冰配额表与检索侧的条数上限，两者都无法确认、否定或解释「按时间段分配额」这件事。词面腿也从来没有过任何配额形式。"
+    },
+    {
+      "id": "fr-a03",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是对照实验臂数这件事本身，实验设计本项目确实工作过，所以属同区域。",
+      "lexical_negative_class": "stale-state-confusion",
+      "lexical_anchor": "对照",
+      "lexical_anchor_basis": "「对照臂」「干净对照」出现在 n07，三字滑窗「对照臂」会命中。",
+      "no_change_record_basis": "问的是「中性值那一臂现在改成什么值了」，它假设该臂仍存在并换过取值。事实是该臂被**整个删除**（n07），从未换值；语料里也没有任何记录讨论过给它换第二个取值。**待复核项**：本样本只有 8 条记录，批量阶段必须对全部 40 条新记录 + 旧 26 条逐条确认「没有任何记录能回答它」，否则这条要改判为 relevance（判据 §4.2 第三类的那一条纪律）。",
+      "query": "对照实验里那个中性的取值后来换成哪个了",
+      "gold": [],
+      "annotation_basis": "n07 只说明中性臂被删除及其原因，无法回答「换成了哪个值」——因为它没有被换值。这与「已变更状态有变更记录」那一类的区别就在这里：语料里缺的是「换值」这件事本身的记录，而不是缺一条变更说明。"
+    },
+
+    {
+      "id": "fr-p01",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "short-query",
+      "query": "地板",
+      "primary_gold": ["n01"],
+      "acceptable_gold": ["n01", "n02"],
+      "annotation_basis": "两个字，短于三字下限，走子串回退分支。n01 的正文含「地板线」，子串可达。这一类的作用是回归锚点：覆盖度与文档频率上限都不作用于回退分支，若它回退说明实现漏到了不该改的地方（判据 §6.5 第 1 条）。"
+    },
+    {
+      "id": "fr-p02",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "proper-noun",
+      "query": "match_source",
+      "primary_gold": ["n07"],
+      "acceptable_gold": ["n07"],
+      "annotation_basis": "单个拉丁标识符，是唯一的精确单元，滑窗单元数为零，因此覆盖度规则对它天然不生效（判据 §2.1 边界 1）。n07 的事实来源与关键文件都指向来源标记字段。"
+    },
+    {
+      "id": "fr-p03",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "path",
+      "query": "benchmark/run-safety-round-grid.ts",
+      "primary_gold": ["n04"],
+      "acceptable_gold": ["n04"],
+      "annotation_basis": "路径被刻意整体保留、不拆分（拆开会命中几乎所有文档）。n04 的关键文件正是它，且事实来源引用了其中的行号。"
+    },
+    {
+      "id": "fr-p04",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "number",
+      "query": "0.604",
+      "primary_gold": ["n02"],
+      "acceptable_gold": ["n02"],
+      "annotation_basis": "「当时那个数值定成多少」是这类问法的主要形态。0.604 是 n02 的关键事实之一，作为精确单元命中。"
+    },
+    {
+      "id": "fr-p05",
+      "kind": "relevance",
+      "cohort": "protection",
+      "protection_class": "historical-state",
+      "query": "旧的那四道误召回门现在还在用吗",
+      "primary_gold": ["n03"],
+      "acceptable_gold": ["n03", "n04"],
+      "annotation_basis": "已变更状态且**语料里有变更记录**，因此按 P2 判据 §4.2 是 stale-state relevance，必须返回变更记录，不得标成负例（判据 §6.5 第 2 条）。n03 就是那条变更记录（旧四道门整套作废、改为位移为主容量为辅）；n04 解释了其中一道为什么必须配资格过滤器。"
+    }
+  ]
+}

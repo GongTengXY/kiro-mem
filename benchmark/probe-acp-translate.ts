@@ -54,9 +54,9 @@ if (target !== 'records' && target !== 'queries') {
   process.exit(2);
 }
 const querySet = flag('query-set', 'tuned') as
-  'tuned' | 'heldout' | 'empty' | 'leakage' | 'validation' | 'phase2' | 'r2' | 'safety-round';
-if (!['tuned', 'heldout', 'empty', 'leakage', 'validation', 'phase2', 'r2', 'safety-round'].includes(querySet)) {
-  console.error('unknown --query-set (expected tuned|heldout|empty|leakage|validation|phase2|r2|safety-round)');
+  'tuned' | 'heldout' | 'empty' | 'leakage' | 'validation' | 'phase2' | 'r2' | 'safety-round' | 'fts-round' | 'fts-round-r2';
+if (!['tuned', 'heldout', 'empty', 'leakage', 'validation', 'phase2', 'r2', 'safety-round', 'fts-round', 'fts-round-r2'].includes(querySet)) {
+  console.error('unknown --query-set (expected tuned|heldout|empty|leakage|validation|phase2|r2|safety-round|fts-round)');
   process.exit(2);
 }
 /**
@@ -86,6 +86,9 @@ const RECORD_SET_FILES: Record<string, string> = {
   'near-duplicate-pilot': 'near-duplicate-pilot.json',
   'safety-round-sample': 'turns-safety-round-sample.json',
   'safety-round': 'turns-safety-round.json',
+  // FTS 安全策略轮次 F1 的新记录集（判据 r3 §4.1）。形状与 safety-round 相同：
+  // `{ records: [{ id, annotation }] }`，因此走同一条 parse 判据。
+  'fts-round': 'turns-fts-round.json',
 };
 if (recordSet !== 'turns' && !RECORD_SET_FILES[recordSet]) {
   console.error(`unknown --record-set (expected turns|${Object.keys(RECORD_SET_FILES).join('|')})`);
@@ -282,15 +285,27 @@ if (target === 'records') {
     },
   }));
 } else {
-  // 安全策略轮次的 query 集在自己的文件里（判据 §7.1 的三个 cohort 都在同一份），
+  // 安全策略轮次与 FTS 轮次的 query 集各在自己的文件里（各 cohort 同一份），
   // 与 turns.json 的 query 无关，因此不走 loadDataset。
+  //
+  // FTS 轮次多一条过滤：判据 r3 §4.1 的召回保护线里有纯拉丁 / 路径 / 数字 query
+  // （`match_source`、`src/db/index.ts`、`0.197`）。它们**不含中文**，护栏明确允许
+  // 英文原文合法地归一化为自身，因此拿它们去跑一次中→英 prompt 是纯浪费，
+  // 而且历史上那正是失败最集中的形状（模型倾向回一句解释而不是 JSON）。
+  // 这些恒等条目在冻结脚本里单独补齐，口径与 phase2 / r2 分支一致。
+  const QUERY_SET_FILES: Record<string, string> = {
+    'safety-round': 'queries-safety-round.json',
+    'fts-round': 'queries-fts-round.json',
+    // r4 §14 的新轮次 query 集；原集逐字节保留，不再是冻结候选。
+    'fts-round-r2': 'queries-fts-round-r2.json',
+  };
   const picked: { id: string; query: string }[] =
-    querySet === 'safety-round'
+    QUERY_SET_FILES[querySet]
       ? (
           JSON.parse(
-            readFileSync(join(DATASET_DIR, 'queries-safety-round.json'), 'utf-8'),
+            readFileSync(join(DATASET_DIR, QUERY_SET_FILES[querySet]!), 'utf-8'),
           ) as { queries: { id: string; query: string }[] }
-        ).queries
+        ).queries.filter((q) => !querySet.startsWith('fts-round') || /[\u4e00-\u9fff]/.test(q.query))
       : queries.filter((q: DatasetQuery) =>
     querySet === 'empty'
       ? q.kind === 'empty'
