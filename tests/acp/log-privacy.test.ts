@@ -31,7 +31,7 @@ describe('compressor log privacy', () => {
       // maxRetries: 0 isolates the first-attempt parse log from the
       // repair-exhausted log asserted by the next test.
       const compressor = new ACPCompressor({ maxRetries: 0 }, {
-        stats: { total: 1, busy: 0, queued: 0, restarts: 0, contaminations: 0 },
+        stats: { total: 1, busy: 0, queued: 0, restarts: 0, contaminations: 0, slots: [] },
         run: async () => ({ text: `${secret} invalid json`, stopReason: 'end_turn' }),
         close: async () => {},
       });

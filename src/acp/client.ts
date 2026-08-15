@@ -72,6 +72,19 @@ export class ACPClient {
     return !this.closed && this.proc != null;
   }
 
+  /**
+   * PID of the spawned `kiro-cli acp` process, or null before start / after exit.
+   *
+   * Exposed only so the Worker can attribute resident memory to it. Measured on
+   * this machine, one runtime is 9.8MB in this process plus a 28.1MB child of
+   * its own — reporting the Worker's own RSS alone therefore misses the larger
+   * half of the pool's cost, which is exactly the number the internal-test data
+   * collection has to answer.
+   */
+  get pid(): number | null {
+    return this.proc?.pid ?? null;
+  }
+
   /** Send a JSON-RPC request and wait for the response. */
   async request(method: string, params?: Record<string, unknown>, timeoutMs = 30000): Promise<unknown> {
     if (!this.proc || this.closed) {

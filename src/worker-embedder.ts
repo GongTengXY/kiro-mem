@@ -83,6 +83,10 @@ export function createWorkerEmbedder(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        // Lets the Worker attribute RSS to a recently observed MCP caller. This
+        // is not a liveness heartbeat: callers only identify themselves when an
+        // embedding request is made. Carries no scope, query text or path.
+        'X-Kiro-Mem-Pid': String(process.pid),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({ text }),

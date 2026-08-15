@@ -336,4 +336,34 @@ export interface ObservabilityStats {
   auth24h: {
     unauthorized: number;
   };
+  /**
+   * On-disk footprint. Exists because "越用越大" is a growth-rate question, and a
+   * rate needs a number that can be sampled repeatedly — `du` run by hand on
+   * someone else's machine cannot produce a series.
+   */
+  storage: {
+    /** `kiro-mem.db` size in bytes. -1 when the file could not be stat'ed. */
+    dbBytes: number;
+    /**
+     * `-wal` size in bytes. -1 when absent (no WAL, or not stat-able).
+     *
+     * Reported separately from `dbBytes` because a WAL that dwarfs the main
+     * database means checkpoints are being starved by long-lived readers, which
+     * is a different defect with a different fix than "the corpus grew".
+     */
+    walBytes: number;
+    /**
+     * Approximate `turn_events` row count, from `MAX(rowid)` rather than
+     * `COUNT(*)`, so `/health` stays O(1) on a table that grows with every tool
+     * call. Nothing deletes from this table today, so the approximation is exact
+     * in practice; it can only over-report if a future retention policy prunes.
+     */
+    turnEventsApprox: number;
+    /**
+     * Jobs in terminal `succeeded` state. The existing `jobs` group reports
+     * pending / leased / dead but not this one — and `succeeded` is precisely the
+     * set nothing ever deletes, so it is the one that quantifies the leak.
+     */
+    jobsSucceeded: number;
+  };
 }

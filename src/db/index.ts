@@ -2,7 +2,7 @@
 
 import { Database } from 'bun:sqlite';
 import { join, dirname } from 'path';
-import { mkdirSync, existsSync } from 'fs';
+import { mkdirSync, existsSync, statSync } from 'fs';
 import { getDataDir } from '../config';
 import { ALL_SCHEMA, migrateSchema } from './schema';
 import {
@@ -41,6 +41,21 @@ export { computeScopeKey, detectRepo } from './scope';
 /** Current timestamp in ISO 8601 UTC. Single source of "now" for this layer. */
 function nowISO(): string {
   return new Date().toISOString();
+}
+
+/**
+ * Size of a file in bytes, or -1 when it cannot be stat'ed.
+ *
+ * -1 rather than 0: "the WAL does not exist" and "the WAL is empty" lead to
+ * opposite conclusions about checkpoint health, and a collected reading that
+ * conflates them is worse than a missing one.
+ */
+function fileBytes(path: string): number {
+  try {
+    return statSync(path).size;
+  } catch {
+    return -1;
+  }
 }
 
 /**
@@ -413,9 +428,11 @@ function resolveDbPath(dbPath?: string): string {
 
 export class MemoryDB {
   private db: Database;
+  private path: string;
 
   constructor(dbPath?: string) {
     const path = resolveDbPath(dbPath);
+    this.path = path;
     this.db = new Database(path);
     this.db.exec('PRAGMA journal_mode=WAL');
     this.db.exec('PRAGMA foreign_keys=ON');
@@ -438,6 +455,11 @@ export class MemoryDB {
   /** Exposed for tests and ad-hoc maintenance scripts that need raw SQL. */
   get raw(): Database {
     return this.db;
+  }
+
+  /** Resolved path of the SQLite file backing this instance. */
+  get dbPath(): string {
+    return this.path;
   }
 
   /**
@@ -2005,6 +2027,14 @@ export class MemoryDB {
           "SELECT COUNT(*) AS c FROM metric_events WHERE kind = 'auth_unauthorized' AND created_at > ?",
           since,
         ),
+      },
+      storage: {
+        dbBytes: fileBytes(this.path),
+        walBytes: fileBytes(`${this.path}-wal`),
+        // MAX(rowid), not COUNT(*): this table gains a row per tool call, and
+        // /health is meant to be polled.
+        turnEventsApprox: scalar('SELECT COALESCE(MAX(rowid), 0) AS c FROM turn_events'),
+        jobsSucceeded: scalar("SELECT COUNT(*) AS c FROM jobs WHERE state = 'succeeded'"),
       },
     };
   }

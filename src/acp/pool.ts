@@ -10,6 +10,27 @@ interface PoolSlot {
   runtime: ACPRuntime;
   jobCount: number;
   busy: boolean;
+  /**
+   * Epoch ms of the last release. Set at creation so a slot that was never used
+   * still reports honest idle time rather than 0.
+   */
+  lastUsedAt: number;
+}
+
+/** Per-slot detail reported on `/health`, for internal-test data collection. */
+export interface ACPSlotStat {
+  /** PID of the `kiro-cli acp` process; null if it never started or already exited. */
+  pid: number | null;
+  /**
+   * Jobs this runtime has served since it was created. Recycling resets it, so
+   * this reading answers whether `maxJobsPerProcess` is ever actually reached —
+   * if it stays in single digits in real use, session accumulation inside one
+   * runtime is not a real problem and needs no fix.
+   */
+  jobCount: number;
+  /** Milliseconds since last release. 0 while busy. */
+  idleMs: number;
+  busy: boolean;
 }
 
 export class ACPPool {
@@ -45,12 +66,27 @@ export class ACPPool {
   }
 
   get stats() {
+    const now = Date.now();
     return {
       total: this.slots.length,
       busy: this.slots.filter((s) => s.busy).length,
       queued: this.queue.length,
       restarts: this._restartCount,
       contaminations: this._contaminationCount,
+      // Per-slot detail. The aggregate counts above cannot distinguish "3 slots
+      // saturated" from "3 slots idle holding memory", and those two readings
+      // call for opposite decisions on idle recycling.
+      slots: this.slots.map(
+        (s): ACPSlotStat => ({
+          // `?? null` rather than a bare read: a runtime implementation without
+          // the getter (test doubles) must report "unknown", not `undefined`,
+          // which would serialize as a missing key and read as a shape change.
+          pid: s.runtime.pid ?? null,
+          jobCount: s.jobCount,
+          idleMs: s.busy ? 0 : Math.max(0, now - s.lastUsedAt),
+          busy: s.busy,
+        }),
+      ),
     };
   }
 
@@ -114,6 +150,9 @@ export class ACPPool {
     // A failed recycle removes its slot. Never hand that dead object to a waiter.
     if (!this.slots.includes(slot)) return;
     slot.busy = false;
+    // Stamped even when a waiter takes the slot immediately below: the field
+    // means "last time this runtime finished work", not "start of idleness".
+    slot.lastUsedAt = Date.now();
 
     const waiter = this.queue.shift();
     if (waiter) {
@@ -130,7 +169,7 @@ export class ACPPool {
       await runtime.close().catch(() => {});
       throw error;
     }
-    const slot: PoolSlot = { runtime, jobCount: 0, busy: false };
+    const slot: PoolSlot = { runtime, jobCount: 0, busy: false, lastUsedAt: Date.now() };
     this.slots.push(slot);
     return slot;
   }

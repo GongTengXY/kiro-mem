@@ -49,11 +49,21 @@ export class JobRunner {
   }
 
   get stats() {
+    const now = Date.now();
+    const oldestAge = (state: JobState, column: 'created_at' | 'leased_at'): number => {
+      const row = this.db.raw
+        .query(`SELECT MIN(${column}) AS at FROM jobs WHERE state = ?`)
+        .get(state) as { at: string | null };
+      const at = row?.at ? Date.parse(row.at) : NaN;
+      return Number.isFinite(at) ? Math.max(0, now - at) : 0;
+    };
     return {
       inflight: this.inflight,
       pending: this.countByState('pending'),
       leased: this.countByState('leased'),
       dead: this.countByState('dead'),
+      oldestPendingMs: oldestAge('pending', 'created_at'),
+      oldestLeasedMs: oldestAge('leased', 'leased_at'),
     };
   }
 

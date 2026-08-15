@@ -11,6 +11,7 @@ import { ensureLocalAuthToken, readLocalAuthToken } from '../auth-token';
 import { readCaptureMisses } from '../hooks/capture-log';
 import { logError } from '../logger';
 import { JobRunner, extractArtifacts } from '../jobs';
+import { sampleRssTreeAsync, type RssSample } from '../process-rss';
 import { resolveRetrievalPolicy } from './observation-search';
 import {
   generateEmbedding,
@@ -275,6 +276,103 @@ export function createApp(deps: AppDeps) {
   const embeddingTimeoutMs = deps.embeddingTimeoutMs ?? DEFAULT_JOB_EMBEDDING_TIMEOUT_MS;
   const enableAuth = deps.enableAuth ?? true;
   const skipTools = config.filter.skipTools;
+
+  // =============================================================
+  // Runtime observability state (in-memory, since worker start)
+  // =============================================================
+  //
+  // None of this is persisted. It answers "what is this machine doing right
+  // now", which a restart legitimately resets — and keeping it out of SQLite
+  // means a polled `/health` adds no writes.
+
+  /**
+   * MCP processes seen recently, `pid -> last seen epoch ms`.
+   *
+   * The Worker has no other way to know they exist: MCP servers are spawned by
+   * kiro-cli, not by us, and they never registered before. Without this, the one
+   * question the internal test most needs answered — "is the per-session memory
+   * duplication actually gone now that the model is a Worker singleton?" — can
+   * only be answered by asking each tester to run `ps` and correlate by hand.
+   *
+   * Best-effort by construction: a PID lands here when it calls `/embed/query`,
+   * and there is no exit notification, so entries are pruned by age.
+   */
+  const mcpClientsSeen = new Map<number, number>();
+  /** Beyond this the caller is no longer considered recently observed. */
+  const MCP_CLIENT_TTL_MS = 10 * 60 * 1000;
+  /** Hard cap so a PID-churning caller cannot grow this map without bound. */
+  const MCP_CLIENT_MAX = 64;
+
+  const runtimeStartedAtMs = Date.now();
+  const runtimeStartedAt = new Date(runtimeStartedAtMs).toISOString();
+
+  const noteMcpClient = (raw: string | undefined | null): void => {
+    if (!raw) return;
+    const pid = Number(raw);
+    if (!Number.isInteger(pid) || pid <= 0) return;
+    mcpClientsSeen.set(pid, Date.now());
+    if (mcpClientsSeen.size > MCP_CLIENT_MAX) {
+      // Drop the oldest first: the newest entries are the live sessions.
+      const oldest = [...mcpClientsSeen.entries()].sort((a, b) => a[1] - b[1]);
+      for (const [pid] of oldest.slice(0, mcpClientsSeen.size - MCP_CLIENT_MAX)) {
+        mcpClientsSeen.delete(pid);
+      }
+    }
+  };
+
+  /**
+   * Rolling latency of the raw-event ingest route, in ms.
+   *
+   * Hooks give the Worker 700ms and never block the user's turn, so a Worker that
+   * got slow shows up as permanently missing memory rather than as a slow turn.
+   * `capture_misses_24h` already counts the misses; this says whether the Worker
+   * is the reason.
+   *
+   * Bounded ring buffer — this is a health endpoint, not a metrics backend.
+   */
+  const INGEST_SAMPLE_MAX = 512;
+  const ingestLatencies: number[] = [];
+  let ingestRequests = 0;
+  const noteIngestLatency = (ms: number): void => {
+    ingestRequests++;
+    if (ingestLatencies.length >= INGEST_SAMPLE_MAX) ingestLatencies.shift();
+    ingestLatencies.push(ms);
+  };
+  const percentile = (sorted: number[], p: number): number => {
+    if (sorted.length === 0) return 0;
+    const idx = Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length));
+    return Math.round(sorted[idx]!);
+  };
+
+  const EMBED_SAMPLE_MAX = 512;
+  const embedLatencies: number[] = [];
+  let embedRequests = 0;
+  const noteEmbedLatency = (ms: number): void => {
+    embedRequests++;
+    if (embedLatencies.length >= EMBED_SAMPLE_MAX) embedLatencies.shift();
+    embedLatencies.push(ms);
+  };
+
+  // RSS is sampled out of band. A failed or slow `ps` must never block the
+  // Worker's event loop, so /health returns the last completed sample instead.
+  let rssSample: RssSample = { byPid: new Map(), measured: true };
+  let rssSampleAt = 0;
+  let rssSampleKey = '';
+  let rssSampling = false;
+  const requestRssSample = (pids: number[]): void => {
+    const unique = [...new Set(pids.filter((p) => Number.isInteger(p) && p > 0))]
+      .sort((a, b) => a - b);
+    const key = unique.join(',');
+    if (rssSampling || (key === rssSampleKey && Date.now() - rssSampleAt < 1000)) return;
+    rssSampleKey = key;
+    rssSampling = true;
+    void sampleRssTreeAsync(unique).then((sample) => {
+      rssSample = sample;
+      rssSampleAt = Date.now();
+    }).finally(() => {
+      rssSampling = false;
+    });
+  };
 
   // --- Job Runner ---
   const jobRunner = new JobRunner(db, {
@@ -739,11 +837,34 @@ export function createApp(deps: AppDeps) {
     return c.json({ ok: false, error: 'internal error' }, 500);
   });
 
+  // --- Ingest latency instrumentation ---
+  //
+  // Wraps the whole handler, body parse included, because that is what the hook's
+  // 700ms deadline actually covers. Registered before the routes so it applies to
+  // every `/events/*` path, current and future.
+  app.use('/events/*', async (c, next) => {
+    const started = performance.now();
+    try {
+      await next();
+    } finally {
+      noteIngestLatency(performance.now() - started);
+    }
+  });
+
   app.get('/health', (c) => {
     const stats = db.getObservabilityStats();
+    // Read once: `memory` below attributes RSS to the same slots `acp` reports,
+    // and two reads could disagree about which slots exist.
+    const acpStats = compressor.stats ?? null;
+    const observedAt = new Date().toISOString();
     return c.json({
       status: 'ok',
       version: PACKAGE_VERSION,
+      runtime: {
+        observedAt,
+        startedAt: runtimeStartedAt,
+        uptimeMs: Math.max(0, Date.now() - runtimeStartedAtMs),
+      },
       jobs: jobRunner.stats,
       jobs_24h: stats.jobs24h,
       search_24h: stats.search24h,
@@ -783,9 +904,16 @@ export function createApp(deps: AppDeps) {
         in_flight: embedInFlight,
         queue_limit: EMBED_QUEUE_LIMIT,
         rejected: embedRejected,
+        requests: embedRequests,
+        samples: embedLatencies.length,
+        latencyMsP50: percentile([...embedLatencies].sort((a, b) => a - b), 50),
+        latencyMsP95: percentile([...embedLatencies].sort((a, b) => a - b), 95),
+        latencyMsMax: embedLatencies.length > 0
+          ? Math.round(Math.max(...embedLatencies))
+          : 0,
       },
       // Live cumulative pool/compressor state (since worker start).
-      acp: compressor.stats ?? null,
+      acp: acpStats,
       // Windowed repair / contamination counts over the last 24h.
       acp_24h: stats.acp24h,
       // Rejected Hook requests over the last 24h (silent-failure detector).
@@ -794,6 +922,70 @@ export function createApp(deps: AppDeps) {
       // Non-zero means some turns are permanently missing input, which no
       // projection repair can undo — surfaced so the gap is never silent.
       capture_misses_24h: readCaptureMisses(getDataDir()),
+      // How long the Worker itself took to accept raw events. Paired with
+      // capture_misses_24h: that field says events were lost, this one says
+      // whether the Worker was the bottleneck that lost them.
+      ingest_runtime: (() => {
+        const sorted = [...ingestLatencies].sort((a, b) => a - b);
+        return {
+          requests: ingestRequests,
+          samples: sorted.length,
+          latencyMsP50: percentile(sorted, 50),
+          latencyMsP95: percentile(sorted, 95),
+          latencyMsMax: sorted.length > 0 ? Math.round(sorted[sorted.length - 1]!) : 0,
+        };
+      })(),
+      // Resident memory, attributed per process. See src/process-rss.ts for why
+      // this samples subtrees rather than the PIDs the pool holds.
+      memory: (() => {
+        const slots = acpStats?.slots ?? [];
+        const now = Date.now();
+        for (const [pid, seen] of mcpClientsSeen) {
+          if (now - seen > MCP_CLIENT_TTL_MS) mcpClientsSeen.delete(pid);
+        }
+        const mcpPids = [...mcpClientsSeen.keys()];
+        const acpPids = slots
+          .map((s) => s.pid)
+          .filter((p): p is number => typeof p === 'number');
+        // One asynchronous `ps` refresh for both groups. The response uses the
+        // previous completed sample so a slow process table cannot block /health.
+        requestRssSample([...acpPids, ...mcpPids]);
+        const sample = rssSample;
+        const acpSlots = slots.map((s) => ({
+          pid: s.pid,
+          // null, not 0: the process may have exited between the stats read and
+          // the sample, and 0 would read as "costs nothing".
+          rssBytes: s.pid == null ? null : (sample.byPid.get(s.pid) ?? null),
+          jobCount: s.jobCount,
+          idleMs: s.idleMs,
+          busy: s.busy,
+        }));
+        const acpTotal = acpSlots.reduce((sum, s) => sum + (s.rssBytes ?? 0), 0);
+        return {
+          // The Worker's own heap. Historically small (measured 10.7MB after 18
+          // days), so its job here is to RULE OUT the Worker — a large value
+          // means the whole diagnosis has to be reconsidered.
+          workerSelfRssBytes: process.memoryUsage().rss,
+          acpSlots,
+          // This is attributed subtree RSS, not a machine-wide total: shared
+          // pages may be counted once per process subtree.
+          acpAttributedSubtreeRssBytes: acpTotal,
+          mcpClientsSeen: mcpPids.map((pid) => ({
+            pid,
+            rssBytes: sample.byPid.get(pid) ?? null,
+            lastSeenMsAgo: now - (mcpClientsSeen.get(pid) ?? now),
+          })),
+          mcpClientObservationTtlMs: MCP_CLIENT_TTL_MS,
+          rssSampleAt: rssSampleAt > 0 ? new Date(rssSampleAt).toISOString() : null,
+          rssSampleAgeMs: rssSampleAt > 0 ? Math.max(0, now - rssSampleAt) : null,
+          // False means `ps` failed. Every rssBytes above is then unreliable and
+          // must not be read as a small number.
+          rssMeasured: sample.measured,
+        };
+      })(),
+      // On-disk growth. Sampled repeatedly, this is what turns "越用越大" from a
+      // feeling into a rate.
+      storage: stats.storage,
     });
   });
 
@@ -813,48 +1005,56 @@ export function createApp(deps: AppDeps) {
   let embedInFlight = 0;
   let embedRejected = 0;
   app.post('/embed/query', async (c) => {
-    if (!enableEmbeddings) return c.json({ ok: false, error: 'embeddings disabled' }, 503);
-    // Reserve the slot BEFORE the first await. Checking the counter and then
-    // yielding on `req.json()` let an entire concurrent burst pass the check
-    // while the counter was still 0 — the limit existed and admitted everyone.
-    if (embedInFlight >= EMBED_QUEUE_LIMIT) {
-      embedRejected++;
-      return c.json({ ok: false, error: 'busy', in_flight: embedInFlight }, 429);
-    }
-    embedInFlight++;
+    const started = performance.now();
     try {
-      let text = '';
+      if (!enableEmbeddings) return c.json({ ok: false, error: 'embeddings disabled' }, 503);
+      // This is an observation point, not a liveness registry: only callers that
+      // request an embedding identify themselves, and the PID header is optional.
+      noteMcpClient(c.req.header('X-Kiro-Mem-Pid'));
+      // Reserve the slot BEFORE the first await. Checking the counter and then
+      // yielding on `req.json()` let an entire concurrent burst pass the check
+      // while the counter was still 0 — the limit existed and admitted everyone.
+      if (embedInFlight >= EMBED_QUEUE_LIMIT) {
+        embedRejected++;
+        return c.json({ ok: false, error: 'busy', in_flight: embedInFlight }, 429);
+      }
+      embedInFlight++;
       try {
-        const body = await c.req.json();
-        text = typeof body?.text === 'string' ? body.text : '';
-      } catch {
-        return c.json({ ok: false, error: 'invalid body' }, 400);
-      }
-      if (!text.trim()) return c.json({ ok: false, error: 'text required' }, 400);
-      // Bound the input the same way the embed job does implicitly: a caller must
-      // not be able to turn one search into an arbitrarily long inference.
-      if (text.length > EMBED_TEXT_MAX_CHARS) {
-        return c.json({ ok: false, error: 'text too long' }, 413);
-      }
+        let text = '';
+        try {
+          const body = await c.req.json();
+          text = typeof body?.text === 'string' ? body.text : '';
+        } catch {
+          return c.json({ ok: false, error: 'invalid body' }, 400);
+        }
+        if (!text.trim()) return c.json({ ok: false, error: 'text required' }, 400);
+        // Bound the input the same way the embed job does implicitly: a caller must
+        // not be able to turn one search into an arbitrarily long inference.
+        if (text.length > EMBED_TEXT_MAX_CHARS) {
+          return c.json({ ok: false, error: 'text too long' }, 413);
+        }
 
-      const vector = await withEmbeddingTimeout(
-        embeddingGenerator(text),
-        embeddingTimeoutMs,
-      );
-      return c.json({
-        ok: true,
-        dimensions: vector.length,
-        // base64 of the raw float32 buffer: same wire shape as the stored blob,
-        // and ~3x smaller than a JSON number array.
-        embedding: embeddingToBlob(vector).toString('base64'),
-      });
-    } catch (error) {
-      logError('embed/query', {
-        error_type: error instanceof Error ? error.name : 'UnknownError',
-      });
-      return c.json({ ok: false, error: 'embedding unavailable' }, 503);
+        const vector = await withEmbeddingTimeout(
+          embeddingGenerator(text),
+          embeddingTimeoutMs,
+        );
+        return c.json({
+          ok: true,
+          dimensions: vector.length,
+          // base64 of the raw float32 buffer: same wire shape as the stored blob,
+          // and ~3x smaller than a JSON number array.
+          embedding: embeddingToBlob(vector).toString('base64'),
+        });
+      } catch (error) {
+        logError('embed/query', {
+          error_type: error instanceof Error ? error.name : 'UnknownError',
+        });
+        return c.json({ ok: false, error: 'embedding unavailable' }, 503);
+      } finally {
+        embedInFlight--;
+      }
     } finally {
-      embedInFlight--;
+      noteEmbedLatency(performance.now() - started);
     }
   });
 

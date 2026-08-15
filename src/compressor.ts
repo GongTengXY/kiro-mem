@@ -68,6 +68,20 @@ export interface CompressorStats {
   repairs: number;
   /** Times repair was exhausted and the job degraded to a fallback Observation. */
   parseFallbacks: number;
+  /**
+   * Per-slot detail, when the implementation is backed by a process pool.
+   *
+   * Optional because `MemoryCompressor` also has non-pool implementations (test
+   * doubles), and because the aggregate counters above must keep working for
+   * them. Declared here rather than only on `ACPPool` so `/health` can read it
+   * without narrowing to a concrete class.
+   */
+  slots?: {
+    pid: number | null;
+    jobCount: number;
+    idleMs: number;
+    busy: boolean;
+  }[];
 }
 
 /** Abstract interface for memory compression. The worker depends on this, not concrete impl. */

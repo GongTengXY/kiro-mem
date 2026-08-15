@@ -165,7 +165,18 @@ describe('Integration / real createApp — full ingest cycle', () => {
     expect(h).toHaveProperty('jobs');
     // The production compressor reports pool stats; the fake pool is a single
     // idle slot. `null` here would mean the worker lost the stats wiring.
-    expect(h.acp).toEqual({ total: 1, busy: 0, queued: 0, restarts: 0, contaminations: 0, repairs: 0, parseFallbacks: 0 });
+    expect(h.acp).toEqual({
+      total: 1,
+      busy: 0,
+      queued: 0,
+      restarts: 0,
+      contaminations: 0,
+      repairs: 0,
+      parseFallbacks: 0,
+      // Per-slot detail. The aggregates above cannot tell a saturated pool from
+      // an idle one holding memory; `tests/acp/pool.test.ts` pins the semantics.
+      slots: [{ pid: null, jobCount: 0, idleMs: 0, busy: false }],
+    });
   });
 
   /**

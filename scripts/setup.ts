@@ -413,6 +413,10 @@ async function install() {
     'embedding-space.ts',
     'semantic-en.ts',
     'worker-embedder.ts',
+    // Subtree RSS sampling for /health. The Worker imports it, so omitting it
+    // here would break the installed runtime while the in-tree build stayed
+    // green — which is exactly what `missingInstalledImports` guards against.
+    'process-rss.ts',
     'bootstrap-context.ts',
     'config.ts',
     'auth-token.ts',
@@ -731,6 +735,84 @@ async function diagnose() {
             `  ${ansi.err('✗')} ${padLabel(m.diagVersionMatch, 10)}${m.versionMismatch} ${ansi.dim(`(worker v${h.version} / installed v${installedVersion})`)}`,
           );
         }
+
+        // --- Runtime footprint ---
+        //
+        // Only reachable from a live /health: RSS is per-process state that no
+        // amount of reading the database can reconstruct. Printed here rather
+        // than in the database section for that reason.
+        const mb = (bytes: number | null | undefined) =>
+          typeof bytes === 'number' && bytes >= 0
+            ? `${(bytes / 1048576).toFixed(1)}MB`
+            : '?';
+        const mem = h.memory;
+        if (mem) {
+          console.log(
+            `\n${ansi.bold(`── ${m.diagRuntimeSection} ──────────────────────`)}`,
+          );
+          console.log(
+            `  ${padLabel(m.diagWorkerRss, 14)}${ansi.cyan(mb(mem.workerSelfRssBytes))}`,
+          );
+          const slots: any[] = Array.isArray(mem.acpSlots) ? mem.acpSlots : [];
+          if (slots.length === 0) {
+            console.log(`  ${padLabel(m.diagAcpPool, 14)}${ansi.dim('0')}`);
+          } else {
+            console.log(
+              `  ${padLabel(m.diagAcpPool, 14)}${ansi.cyan(mb(mem.acpAttributedSubtreeRssBytes))} ${ansi.dim(`(${slots.length} ${m.diagAcpSlot})`)}`,
+            );
+            for (const s of slots) {
+              const state = s.busy
+                ? m.diagAcpBusy
+                : `${m.diagAcpIdle} ${Math.round((s.idleMs ?? 0) / 1000)}s`;
+              console.log(
+                `    ${ansi.dim(`pid ${s.pid ?? '?'} · ${mb(s.rssBytes)} · ${s.jobCount} ${m.diagAcpJobs} · ${state}`)}`,
+              );
+            }
+          }
+          const clients: any[] = Array.isArray(mem.mcpClientsSeen) ? mem.mcpClientsSeen : [];
+          if (clients.length > 0) {
+            const total = clients.reduce(
+              (sum, x) => sum + (typeof x.rssBytes === 'number' ? x.rssBytes : 0),
+              0,
+            );
+            console.log(
+              `  ${padLabel(m.diagMcpClients, 14)}${ansi.cyan(String(clients.length))} ${ansi.dim(`· ${mb(total)} ${m.diagTotal}`)}`,
+            );
+          }
+          // A failed `ps` makes every byte count above meaningless. Say so
+          // instead of letting the reader treat '?' as "small".
+          if (mem.rssMeasured === false) {
+            console.log(`  ${ansi.warn('⚠')} ${ansi.dim(m.diagRssUnmeasured)}`);
+          } else if (mem.rssSampleAt === null && (slots.some((s) => s.pid != null) || clients.length > 0)) {
+            console.log(`  ${ansi.warn('⚠')} ${ansi.dim(m.diagRssPending)}`);
+          } else if (typeof mem.rssSampleAgeMs === 'number' && mem.rssSampleAgeMs > 5000) {
+            console.log(`  ${ansi.warn('⚠')} ${ansi.dim(`${m.diagRssStale} ${Math.round(mem.rssSampleAgeMs / 1000)}s`)}`);
+          }
+          const ing = h.ingest_runtime;
+          if (ing && ing.samples > 0) {
+            const slow = (ing.latencyMsP95 ?? 0) >= 500;
+            console.log(
+              `  ${slow ? `${ansi.warn('⚠')} ` : ''}${padLabel(m.diagIngestLatency, slow ? 12 : 14)}p50 ${ansi.cyan(`${ing.latencyMsP50}ms`)} / p95 ${ansi.cyan(`${ing.latencyMsP95}ms`)} / max ${ansi.cyan(`${ing.latencyMsMax}ms`)}`,
+            );
+            if (slow) console.log(`    ${ansi.dim(m.diagIngestHint)}`);
+          }
+          const emb = h.embedding_runtime;
+          if (emb && emb.samples > 0) {
+            console.log(
+              `  ${padLabel(m.diagEmbedLatency, 14)}p50 ${ansi.cyan(`${emb.latencyMsP50}ms`)} / p95 ${ansi.cyan(`${emb.latencyMsP95}ms`)} / max ${ansi.cyan(`${emb.latencyMsMax}ms`)} ${ansi.dim(`· ${emb.rejected} ${m.diagEmbedRejected}`)}`,
+            );
+          }
+          if (h.runtime) {
+            console.log(
+              `  ${padLabel(m.diagRuntimeAge, 14)}${ansi.dim(`${Math.round((h.runtime.uptimeMs ?? 0) / 3600000)}h`)}`,
+            );
+          }
+          if (h.jobs && (h.jobs.oldestPendingMs > 0 || h.jobs.oldestLeasedMs > 0)) {
+            console.log(
+              `  ${padLabel(m.diagJobAge, 14)}${m.diagJobPendingAge} ${ansi.cyan(`${Math.round((h.jobs.oldestPendingMs ?? 0) / 1000)}s`)} / ${m.diagJobLeasedAge} ${ansi.cyan(`${Math.round((h.jobs.oldestLeasedMs ?? 0) / 1000)}s`)}`,
+            );
+          }
+        }
       } catch {
         console.log(
           `  ${ansi.warn('⚠')} ${padLabel(m.diagHealth, 10)}${m.diagUnparseable}`,
@@ -986,6 +1068,13 @@ try {
       console.log(
         `  ${padLabel(m.diagJobsLabel, 14)}${ansi.cyan(String(s.jobs.pending))} ${m.diagJobsPending} / ${ansi.cyan(String(s.jobs.leased))} ${m.diagJobsLeased} / ${ansi.cyan(String(s.jobs.dead))} ${m.diagJobsDead}`,
       );
+      // Nothing prunes either of these: `turn_events` gains a row per tool call
+      // and `succeeded` jobs are only ever marked, never deleted. Both are
+      // monotonic, so they belong next to the jobs line rather than in a
+      // "current state" group.
+      console.log(
+        `  ${padLabel(m.diagTurnEvents, 14)}${ansi.cyan(String(s.storage.turnEventsApprox))} ${ansi.dim(`· ${m.diagJobsSucceeded} ${s.storage.jobsSucceeded} ${m.diagJobsSucceededHint}`)}`,
+      );
       console.log(
         `  ${padLabel(m.diagSearch, 14)}${ansi.cyan(String(s.search24h.requests))} / ${ansi.cyan(pct(s.search24h.degradeRate))} ${m.diagDegrade} / p50 ${ansi.cyan(`${s.search24h.latencyMsP50}ms`)} / p95 ${ansi.cyan(`${s.search24h.latencyMsP95}ms`)}`,
       );
@@ -1046,10 +1135,18 @@ try {
           `  ${ansi.warn('⚠')} ${padLabel(m.diagCaptureMissed, 12)}${ansi.cyan(String(misses.total))} ${ansi.dim(detail)} ${m.diagCaptureMissedHint}`,
         );
       }
-      const stat = Bun.file(dbPath);
+      // Size comes from the stats read above, not a second `Bun.file()` stat, so
+      // this line and `/health` can never disagree. WAL is reported beside it
+      // because a WAL several times the main database is a checkpoint-starvation
+      // signal — a different defect, with a different fix, than "the corpus grew".
+      const sizeMb = (bytes: number) =>
+        bytes >= 0 ? `${(bytes / 1048576).toFixed(1)} MB` : m.diagStorageUnavailable;
       console.log(
-        `  ${padLabel(m.diagSize, 14)}${ansi.cyan((stat.size / 1024 / 1024).toFixed(1) + ' MB')}`,
+        `  ${padLabel(m.diagSize, 14)}${ansi.cyan(sizeMb(s.storage.dbBytes))} ${ansi.dim(`· ${m.diagWalSize} ${sizeMb(s.storage.walBytes)}`)}`,
       );
+      if (s.storage.dbBytes > 0 && s.storage.walBytes > s.storage.dbBytes * 2) {
+        console.log(`  ${ansi.warn('⚠')} ${ansi.dim(m.diagWalHint)}`);
+      }
       mdb.close();
     } catch (e) {
       console.log(

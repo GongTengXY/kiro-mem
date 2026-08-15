@@ -103,6 +103,11 @@ export class ACPRuntime {
     return this.contamination != null;
   }
 
+  /** PID of the underlying `kiro-cli acp` process, for RSS attribution only. */
+  get pid(): number | null {
+    return this.client.pid;
+  }
+
   /** Start process and initialize ACP protocol. */
   async start(): Promise<InitializeResult> {
     this.client.start();

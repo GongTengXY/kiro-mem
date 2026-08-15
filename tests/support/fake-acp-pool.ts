@@ -70,7 +70,16 @@ export class FakeACPPool {
   }
 
   get stats() {
-    return { total: 1, busy: 0, queued: 0, restarts: 0, contaminations: 0 };
+    return {
+      total: 1,
+      busy: 0,
+      queued: 0,
+      restarts: 0,
+      contaminations: 0,
+      // No subprocess exists here, so `pid` is null by construction. Kept in the
+      // shape so `ACPPoolLike` still matches structurally.
+      slots: [{ pid: null as number | null, jobCount: 0, idleMs: 0, busy: false }],
+    };
   }
 
   async run(
