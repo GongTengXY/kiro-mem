@@ -18,7 +18,7 @@
 
 > Kiro CLI only. Not compatible with Kiro IDE.
 
-[Quick Start](#quick-start) • [How It Works](#how-it-works) • [MCP Tools](#mcp-tools) • [Configuration](#configuration) • [CLI](#cli) • [Limitations](#limitations) • [License](#license)
+[Quick Start](#quick-start) • [How It Works](#how-it-works) • [MCP Tools](#mcp-tools) • [Web Viewer](#web-viewer) • [Configuration](#configuration) • [CLI](#cli) • [Limitations](#limitations) • [License](#license)
 
 ---
 
@@ -32,6 +32,7 @@ kiro-mem automatically captures each turn (prompt → tool calls → stop) durin
 - 🔍 **Hybrid Search** — FTS5 full-text search + local semantic recall, fused with RRF and hard-scoped per workspace; a query with no shared wording can still find the record
 - 📊 **Read-time Organization** — Inject a compact index; the agent pulls relevance on demand (`search` → `timeline` → `get_observations`)
 - 🔧 **MCP Tools** — `search`, `timeline`, `get_observations`, `pin`
+- 🖥 **Web Viewer** — Local browser UI: browse each Observation next to the turn it came from, preview the exact context the next session will receive, and permanently delete a memory together with its source turn
 - 🔒 **Privacy Control** — Use `<private>` tags to redact sensitive content before storage
 - 🚀 **Async Processing** — Persistent job queue, no tool-call blocking
 - 🔄 **Process Keepalive** — Worker managed by `launchd` or `systemd`
@@ -136,6 +137,48 @@ Help me configure the connection
 
 Content inside `<private>` tags is replaced with `[REDACTED]` before it is written to storage — this covers the user prompt, tool payloads, and the assistant's final response, so private text never reaches an Observation or the injected index.
 
+## Web Viewer
+
+```bash
+kiro-mem viewer
+```
+
+Opens a local browser UI served by the Worker itself — no CDN, no dev server, no network beyond loopback. It starts on **All workspaces**; use the workspace selector to narrow the feed to one project. A standing notice remains visible while the global view is selected.
+
+What it answers:
+
+- **What was remembered** — a live Feed of Observations, newest first, with type, quality, pin state and a summary/outcome snippet. New Observations appear as their compression commits.
+- **Whether the memory is faithful** — each card opens a side-by-side detail view: the generated fields (`title`, `summary`, `request`, `outcome`, `learned`, `next_steps`, evidence, concepts, files) next to the Truth Layer they came from (`prompt_text`, deterministic artifacts, event counts and original byte sizes). Raw event payloads load on demand and are bounded per event and per response, so a 4MB turn cannot stall the page.
+- **What the next session will receive** — the context preview renders the exact string the `agentSpawn` hook injects, with `usedBytes / effectiveMaxBytes` and a per-section byte breakdown (frame, trust boundary, usage, pinned, recent-detail, recent-index). The budget is adjustable for preview and clamped server-side to 9500 bytes.
+- **Why a search matched** — keyword search over the current scope, with `match_source` shown per result. Viewer search is **keyword-only**: it never fabricates a `semantic_query_en` on your behalf, so results labelled `semantic` come from the agent-facing path, not from this UI.
+- **Whether retrieval is healthy** — a panel projecting the same trailing-24h `search_24h` counters and retrieval profile that `/health` reports, plus a worker error log drawer.
+
+### Permanent Deletion
+
+The trash icon on a card (or in the detail header) opens a confirmation showing the Observation id and title, the workspace, the turn's start/stop time, and how many raw events and original bytes will be destroyed. Confirming deletes, in **one SQLite transaction**:
+
+the Observation → its vectors and semantic-normalization row → its FTS entry → the source turn's `turn_artifacts`, `turn_events` and `turns` row → every `pending` or terminal job attached to that turn or Observation.
+
+There is deliberately **no** "delete the memory but keep the turn" mode: a kept turn is exactly what `kiro-mem repair` re-queues, so the record would come back. After a successful delete the turn cannot be reached by `search`, `timeline`, `get_observations`, context injection or `repair`, and every open Viewer removes the card immediately.
+
+Refusals are honest rather than partial:
+
+- a related job in `leased` state returns **409** and changes **nothing** — an ACP or CPU task cannot be cancelled mid-flight, so retry after it finishes;
+- any SQL failure rolls the whole transaction back, leaving row counts unchanged;
+- `pin` does not block deletion; it only affects display and injection priority.
+
+This is product-level permanent deletion — not queryable, not retrievable, not rebuildable. It is **not** a forensic wipe: ordinary SQLite `DELETE` leaves bytes in the WAL, the freelist, filesystem snapshots and any backup you took, and kiro-mem deliberately does not run an automatic `VACUUM` or rewrite the database.
+
+### Security Model
+
+- The Viewer runs on the same loopback-only Worker and reuses the existing local Bearer token. `/ui` and its two static assets are the public shell; **every** `/api/viewer/*` route fails closed without the token.
+- `kiro-mem viewer` hands the token over in the URL **fragment**, which browsers never send to the server. The page moves it into that tab's `sessionStorage` and rewrites the URL, so the token stays out of history, Referer headers and the Worker's logs. Closing the tab ends the session; a 401 shows "run `kiro-mem viewer` again" instead of reconnecting in a loop.
+- Requests must carry an exact loopback `Host` matching the Worker's port, which blocks DNS rebinding. `DELETE` additionally requires an `Origin` identical to the page's own origin.
+- Responses set `nosniff`, `DENY` framing, `no-referrer`, same-origin COOP/CORP and a CSP of `default-src 'none'` with only `'self'` scripts and styles.
+- Recorded memory is untrusted input and is rendered as text nodes only. There is no `dangerouslySetInnerHTML`, no Markdown rendering and no auto-linking anywhere in the bundle.
+
+If the Viewer bundle is missing (a source checkout that has not run `bun run build:ui`), the Worker still starts normally and `/ui` returns a readable build hint.
+
 ## Configuration
 
 Edit `~/.kiro-mem/config.json`, or run `kiro-mem config` for interactive setup:
@@ -217,6 +260,7 @@ kiro-mem config
 kiro-mem config --show
 kiro-mem diagnose
 kiro-mem repair
+kiro-mem viewer
 kiro-mem uninstall
 kiro-mem uninstall --purge
 ```
@@ -232,7 +276,8 @@ kiro-mem uninstall --purge
 | Limitation                          | Impact                                                                | Mitigation                                    |
 | ----------------------------------- | --------------------------------------------------------------------- | --------------------------------------------- |
 | Capture is best-effort              | Hooks give the Worker ~700ms and never block your turn, so a Worker restart or transient error can drop a raw event. Dropped input cannot be reconstructed later — memory is not guaranteed to be complete | Misses are counted per hook and reason; see `capture_misses_24h` in `/health` and the warning line in `kiro-mem diagnose` |
-| No fine-grained deletion            | Captured turns are kept indefinitely. `kiro-mem uninstall --purge` wipes **everything**; there is no per-observation, per-scope or per-time-range delete, no export, and no retention policy in 3.x | Use `<private>` tags to keep sensitive content out of storage in the first place |
+| Deletion is one record at a time, and manual | Nothing expires on its own: there is no retention policy, no automatic cleanup and no batch `prune`, because kiro-mem does not decide which of your memories are worthless. The Web Viewer deletes **one** Observation together with its source turn per confirmation, and there is no export, no bulk delete, no soft delete and no undo. A `leased` related job makes that one deletion return 409 until it finishes | Delete from the Viewer for anything you want gone; `<private>` tags keep sensitive content out of storage in the first place; `kiro-mem uninstall --purge` still wipes everything at once |
+| Deletion is not a forensic wipe    | Ordinary SQLite `DELETE` leaves the old bytes reachable in the WAL, the freelist, filesystem snapshots and any backup you already took. kiro-mem deliberately runs no automatic `VACUUM` and never rewrites the database, so "permanently deleted" means unreachable to every kiro-mem read path — not scrubbed from the disk | Treat the promise as product-level: not queryable, not retrievable, not rebuildable. For media-level guarantees use full-disk encryption and control your own backups |
 | Raw event payloads are capped        | A tool response over 32KB per string field is truncated, and a single turn stores at most 4MB of raw payload. Truncation is marked inline, but the dropped bytes are not recoverable | `payload_size` still records the original size; artifacts extraction keeps working on the capped payload |
 | Requires Kiro CLI ACP               | Compression cannot run without a working `kiro-cli acp` subcommand    | `kiro-mem diagnose` runs an ACP smoke test    |
 | `agentSpawn` output limit 10KB      | Injected index must stay compact                                      | Budget-controlled context builder             |
@@ -244,7 +289,8 @@ kiro-mem uninstall --purge
 | Semantic search needs the English form | The semantic leg runs ONLY in the `semantic-en-v1` space. If the agent omits `semantic_query_en` or the guardrail refuses it, the search is **keyword-only**: no query vector is computed and no stored vector is read, so that request loses semantic reranking as well as semantic recall. The `raw-v1` space is never scored, because it has no usable relevance threshold — annotated matches and pure noise overlap in it | `semanticEnRate` and `semanticQueryIssues` (including `missing`) in `/health` / `kiro-mem diagnose` show how often that happens |
 | Only the top 1,000 semantic candidates keep a rank | The candidate pool is scope-wide — every vector in the searched scope gets scored, and by default no time window narrows that, so no record is invisible to the semantic leg because of its age. What is bounded is retention: candidates are read in chunks, scored immediately, and only the best 1,000 keep a rank (plus every keyword hit, at any score). Returned pages were identical to full scoring on every measured corpus, including at 50,000 records where only 163 of 4,618 above-floor candidates survived — a rank in the thousands cannot reach a page of 10. What does change is observability: a record outside the top 1,000 has no recorded semantic rank | Measured at 50,000 records: full-search p95 158–286ms against a 300ms budget, search-loop memory +225…+324MB against 512MB |
 | Install step                        | Copies the bundled embedding model (~23 MB) into `~/.kiro-mem/models` | Model ships in the package — no model download |
-| No Web Viewer UI yet                | Memory inspected through CLI/MCP/DB                                   | Planned separately                            |
+| Viewer search is keyword-only        | The Viewer never fabricates a `semantic_query_en`, so its search runs the FTS leg alone: a question phrased entirely differently from the record will not find it here, even though the agent's own `search` could | Use `@kiro-mem/search` from a Kiro session for semantic recall; the Viewer labels every result with its `match_source` so the difference is visible |
+| Viewer is loopback-only, single user | It is served by the local Worker on 127.0.0.1 and authenticated by the same local token, handed over in the URL fragment. There is no multi-user model, no remote access and no session beyond the browser tab you opened | Run `kiro-mem viewer` on the machine that holds the data; a closed tab ends the session |
 | Local only                          | No built-in cross-machine sync                                        | Future: git sync or cloud storage             |
 
 ## License

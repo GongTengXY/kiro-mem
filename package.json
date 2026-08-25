@@ -27,6 +27,7 @@
     "src",
     "scripts",
     "models",
+    "dist/ui",
     "index.ts",
     "tsconfig.json",
     "README.md"
@@ -35,16 +36,23 @@
     "worker": "bun run src/server/worker.ts",
     "mcp": "bun run src/server/mcp-server.ts",
     "setup": "bun run scripts/setup.ts",
+    "build:ui": "bun run scripts/build-viewer.ts",
     "test": "bun test",
     "bench": "bun run benchmark/run.ts --compressor=gold",
     "bench:acp": "bun run benchmark/run.ts --compressor=acp",
     "probe:rank": "bun run benchmark/probe-semantic-rank.ts",
     "probe:dist": "bun run benchmark/probe-similarity-dist.ts",
     "probe:profile": "bun run benchmark/probe-encoder-profile.ts",
-    "typecheck": "bun node_modules/typescript/bin/tsc --noEmit"
+    "typecheck": "bun node_modules/typescript/bin/tsc --noEmit",
+    "typecheck:viewer": "bun node_modules/typescript/bin/tsc --noEmit -p tsconfig.viewer.json"
   },
   "devDependencies": {
+    "@happy-dom/global-registrator": "20.0.11",
     "@types/bun": "latest",
+    "@types/node": "24.9.2",
+    "lucide-preact": "0.545.0",
+    "preact": "10.27.2",
+    "preact-render-to-string": "6.6.2",
     "typescript": "^5"
   },
   "dependencies": {

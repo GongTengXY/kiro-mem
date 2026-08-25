@@ -1557,6 +1557,292 @@ export class MemoryDB {
   }
 
   // ===========================================================
+  // Viewer reads (plan §7)
+  // ===========================================================
+  //
+  // Every method here takes `scopeKey` the same way retrieval does: the filter is
+  // applied in SQL, not after the rows are handed to a caller. A Viewer that
+  // fetched cross-scope rows and dropped them in the browser would have already
+  // put another workspace's memory on the wire.
+
+  /**
+   * Workspace scopes that actually hold Observations, newest first.
+   *
+   * Drives the Viewer's scope selector. The launching workspace is added by the
+   * caller, because a fresh workspace with no memory yet still has to be
+   * selectable — otherwise the Viewer opens on "all workspaces" by accident.
+   */
+  listObservationScopes(limit = 200): {
+    scopeKey: string;
+    observations: number;
+    lastActivityAt: string | null;
+  }[] {
+    return this.db
+      .query(
+        `SELECT scope_key AS scopeKey,
+                COUNT(*) AS observations,
+                MAX(turn_stopped_at) AS lastActivityAt
+           FROM observations
+          GROUP BY scope_key
+          ORDER BY lastActivityAt DESC
+          LIMIT ?`,
+      )
+      .all(limit) as { scopeKey: string; observations: number; lastActivityAt: string | null }[];
+  }
+
+  /**
+   * One Feed page, keyset-paginated on the Feed's own sort key.
+   *
+   * Keyset rather than OFFSET because the Feed is live: an Observation created
+   * between two pages shifts every later offset, which shows up as a duplicated
+   * or skipped card. `(turn_stopped_at, id)` is exactly the ORDER BY, so the
+   * cursor is stable under concurrent inserts and deletes.
+   */
+  listObservationsPage(opts: {
+    scopeKey?: string;
+    limit: number;
+    cursor?: { turnStoppedAt: string; id: number } | null;
+  }): { rows: Observation[]; nextCursor: { turnStoppedAt: string; id: number } | null } {
+    const limit = Math.max(1, Math.min(opts.limit, 50));
+    const where: string[] = [];
+    const params: (string | number)[] = [];
+    if (opts.scopeKey) { where.push('scope_key = ?'); params.push(opts.scopeKey); }
+    if (opts.cursor) {
+      where.push('(turn_stopped_at < ? OR (turn_stopped_at = ? AND id < ?))');
+      params.push(opts.cursor.turnStoppedAt, opts.cursor.turnStoppedAt, opts.cursor.id);
+    }
+    const sql =
+      `SELECT * FROM observations` +
+      (where.length ? ` WHERE ${where.join(' AND ')}` : '') +
+      ` ORDER BY turn_stopped_at DESC, id DESC LIMIT ?`;
+    // One extra row answers "is there another page?" without a second COUNT(*).
+    const rows = this.db.query(sql).all(...params, limit + 1) as Observation[];
+    const page = rows.slice(0, limit);
+    const last = page[page.length - 1];
+    return {
+      rows: page,
+      nextCursor:
+        rows.length > limit && last
+          ? { turnStoppedAt: last.turn_stopped_at, id: last.id }
+          : null,
+    };
+  }
+
+  /** Raw event page for one turn, ascending by event_seq (bounded by the caller). */
+  listTurnEventsPage(
+    turn_id: number,
+    opts: { limit: number; afterSeq?: number },
+  ): { rows: TurnEvent[]; nextAfterSeq: number | null } {
+    const limit = Math.max(1, Math.min(opts.limit, 50));
+    const rows = this.db
+      .query(
+        `SELECT * FROM turn_events
+          WHERE turn_id = ? AND event_seq > ?
+          ORDER BY event_seq ASC LIMIT ?`,
+      )
+      .all(turn_id, opts.afterSeq ?? 0, limit + 1) as TurnEvent[];
+    const page = rows.slice(0, limit);
+    const last = page[page.length - 1];
+    return {
+      rows: page,
+      nextAfterSeq: rows.length > limit && last ? last.event_seq : null,
+    };
+  }
+
+  /**
+   * Per-turn raw-event shape: how many events, of which kinds, and how many
+   * ORIGINAL bytes they carried.
+   *
+   * `payload_size` is the pre-truncation size, so this is what the delete
+   * confirmation must show: the user is agreeing to destroy that much captured
+   * input, not the possibly-capped copy that survived.
+   */
+  turnEventStats(turn_id: number): {
+    events: number;
+    payloadBytes: number;
+    byHook: { hookEventName: string; count: number }[];
+  } {
+    const totals = this.db
+      .query(
+        `SELECT COUNT(*) AS events, COALESCE(SUM(payload_size), 0) AS bytes
+           FROM turn_events WHERE turn_id = ?`,
+      )
+      .get(turn_id) as { events: number; bytes: number };
+    const byHook = this.db
+      .query(
+        `SELECT hook_event_name AS hookEventName, COUNT(*) AS count
+           FROM turn_events WHERE turn_id = ?
+          GROUP BY hook_event_name ORDER BY count DESC`,
+      )
+      .all(turn_id) as { hookEventName: string; count: number }[];
+    return { events: totals.events, payloadBytes: totals.bytes, byHook };
+  }
+
+  /** Jobs attached to a turn or an Observation. Both entity kinds, one query. */
+  listRelatedJobs(opts: { turnId: number; observationId: number }): Job[] {
+    return this.db
+      .query(
+        `SELECT * FROM jobs
+          WHERE (entity_type = 'turn' AND entity_id = ?)
+             OR (entity_type = 'observation' AND entity_id = ?)
+          ORDER BY id ASC`,
+      )
+      .all(String(opts.turnId), String(opts.observationId)) as Job[];
+  }
+
+  /** Vector spaces this Observation currently has a stored embedding in. */
+  listObservationEmbeddingSpaces(observation_id: number): { model: string; dimensions: number }[] {
+    return this.db
+      .query(
+        `SELECT model, dimensions FROM observation_embeddings
+          WHERE observation_id = ? ORDER BY model ASC`,
+      )
+      .all(observation_id) as { model: string; dimensions: number }[];
+  }
+
+  /**
+   * Every scope key this database knows about, whether or not it has memory yet.
+   *
+   * Two sources on purpose. `observations` answers "what can I browse", but a
+   * workspace whose first turn has not compressed yet has only a `session_refs`
+   * row — and the Viewer still has to accept it, because that is exactly the
+   * scope a context preview should show as "frame only, nothing recorded".
+   *
+   * Derived from STORED repo/cwd, never from caller input, so validating a
+   * requested scope cannot make the Worker probe an arbitrary path.
+   */
+  listKnownScopeKeys(limit = 200): string[] {
+    const keys = new Set<string>();
+    for (const row of this.db
+      .query('SELECT DISTINCT scope_key AS k FROM observations LIMIT ?')
+      .all(limit) as { k: string }[]) {
+      keys.add(row.k);
+    }
+    for (const row of this.db
+      .query('SELECT DISTINCT repo, cwd FROM session_refs ORDER BY last_seen_at DESC LIMIT ?')
+      .all(limit) as { repo: string | null; cwd: string }[]) {
+      keys.add(computeScopeKey(row.repo, row.cwd));
+    }
+    return [...keys];
+  }
+
+  // ===========================================================
+  // Manual permanent deletion (plan §4)
+  // ===========================================================
+
+  /**
+   * Permanently delete one Observation together with the turn truth it was
+   * projected from.
+   *
+   * There is deliberately no "delete the memory but keep the truth" mode. Keeping
+   * the turn would leave `kiro-mem repair` a closed turn with no Observation,
+   * which it is built to re-enqueue — the record the user asked to forget would
+   * come back on the next repair, with a new id and no trace of the deletion.
+   *
+   * `BEGIN IMMEDIATE`, not the default deferred transaction: the check for a
+   * leased job and the deletion of pending jobs must be one atomic step against
+   * the JobRunner. A deferred transaction takes no write lock until its first
+   * write, so the runner could lease the pending job in the window between "no
+   * leased jobs found" and the DELETE, and then write derived rows for an
+   * Observation that no longer exists.
+   *
+   * Returns the minimum needed to route an SSE event. No prompt, summary, event
+   * payload or file path is returned or logged: a deletion must not leave the
+   * content in a log line.
+   */
+  deleteObservationWithTruth(
+    observationId: number,
+    opts?: { scopeKey?: string },
+  ):
+    | { ok: true; observationId: number; turnId: number; scopeKey: string }
+    | { ok: false; reason: 'not_found' | 'deletion_in_progress' } {
+    type Result =
+      | { ok: true; observationId: number; turnId: number; scopeKey: string }
+      | { ok: false; reason: 'not_found' | 'deletion_in_progress' };
+
+    const run = this.db.transaction((): Result => {
+      const obs = this.db
+        .query(
+          `SELECT id, turn_id, scope_key, session_id FROM observations
+            WHERE id = ?` + (opts?.scopeKey ? ' AND scope_key = ?' : ''),
+        )
+        .get(...(opts?.scopeKey ? [observationId, opts.scopeKey] : [observationId])) as
+        | { id: number; turn_id: number; scope_key: string; session_id: string }
+        | null;
+      if (!obs) return { ok: false, reason: 'not_found' };
+
+      // A leased job owns CPU or an ACP sub-process that cannot be cancelled
+      // mid-flight. Refusing is the only honest answer: deleting underneath it
+      // would let the handler write derived rows for a row that is gone.
+      const related = this.db
+        .query(
+          `SELECT id, state FROM jobs
+            WHERE (entity_type = 'turn' AND entity_id = ?)
+               OR (entity_type = 'observation' AND entity_id = ?)`,
+        )
+        .all(String(obs.turn_id), String(obs.id)) as { id: number; state: string }[];
+      if (related.some((j) => j.state === 'leased')) {
+        return { ok: false, reason: 'deletion_in_progress' };
+      }
+
+      // Terminal rows go too: a `dead` summarize_turn job left behind would keep
+      // the turn id in the queue as evidence of content the user just erased.
+      for (const job of related) this.db.run('DELETE FROM jobs WHERE id = ?', [job.id]);
+
+      // Child-to-parent order. No FK in this schema declares ON DELETE CASCADE,
+      // so a parent-first delete raises SQLITE_CONSTRAINT and aborts — which is
+      // the intended behaviour, but only reachable through a wrong order.
+      this.db.run('DELETE FROM observation_embeddings WHERE observation_id = ?', [obs.id]);
+      this.db.run('DELETE FROM observation_semantic_texts WHERE observation_id = ?', [obs.id]);
+      // The observations_ad trigger removes the FTS row; there is deliberately no
+      // second hand-written FTS delete to drift from it.
+      this.db.run('DELETE FROM observations WHERE id = ?', [obs.id]);
+      this.db.run('DELETE FROM turn_artifacts WHERE turn_id = ?', [obs.turn_id]);
+      this.db.run('DELETE FROM turn_events WHERE turn_id = ?', [obs.turn_id]);
+      this.db.run('DELETE FROM turns WHERE id = ?', [obs.turn_id]);
+
+      // The session_ref is isolation metadata, not memory. Drop it only when this
+      // was its last turn AND the session is not live — an active session still
+      // needs the row to allocate its next turn seq.
+      const remaining = this.db
+        .query('SELECT COUNT(*) AS cnt FROM turns WHERE session_id = ?')
+        .get(obs.session_id) as { cnt: number };
+      if (remaining.cnt === 0) {
+        const ref = this.db
+          .query('SELECT state FROM session_refs WHERE session_id = ?')
+          .get(obs.session_id) as { state: string } | null;
+        if (ref && ref.state !== 'active') {
+          this.db.run('DELETE FROM session_refs WHERE session_id = ?', [obs.session_id]);
+        }
+      }
+
+      // Belt and braces. `PRAGMA foreign_keys=ON` already aborts a statement that
+      // would orphan a row, so this is a verification rather than the mechanism —
+      // and it is scoped to the tables this transaction touched, because the
+      // database-wide form scans every FK in the file on every delete.
+      for (const table of [
+        'observations',
+        'observation_embeddings',
+        'observation_semantic_texts',
+        'turns',
+        'turn_events',
+        'turn_artifacts',
+      ]) {
+        const violations = this.db.query(`PRAGMA foreign_key_check(${table})`).all();
+        if (violations.length > 0) {
+          // Throwing is the rollback: partial deletion is never an acceptable
+          // outcome for an operation the user was told is permanent.
+          throw new Error(`foreign_key_check failed after delete: ${table}`);
+        }
+      }
+
+      return { ok: true, observationId: obs.id, turnId: obs.turn_id, scopeKey: obs.scope_key };
+    });
+
+    return run.immediate() as Result;
+  }
+
+  // ===========================================================
   // jobs
   // ===========================================================
 

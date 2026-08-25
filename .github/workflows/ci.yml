@@ -22,6 +22,17 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
+      # The browser bundle is a separate TS project (DOM lib + preact JSX), so
+      # `bun run typecheck` deliberately does not cover it.
+      - name: Typecheck viewer
+        run: bun run typecheck:viewer
+
+      # Before Test and Pack: the install-integrity test asserts the Worker can
+      # serve the Viewer from the installed directory, and the tarball must carry
+      # dist/ui.
+      - name: Build viewer bundle
+        run: bun run build:ui
+
       - name: Test
         run: bun test
 
@@ -42,7 +53,10 @@ jobs:
             src/agent/kiro-mem.json \
             src/agent/kiro-mem-compressor.json \
             models/all-MiniLM-L6-v2/config.json \
-            scripts/setup.ts
+            scripts/setup.ts \
+            dist/ui/viewer.html \
+            dist/ui/viewer.js \
+            dist/ui/styles.css
           do
             grep -q "$required" /tmp/pack.log || { echo "missing from tarball: $required"; exit 1; }
           done

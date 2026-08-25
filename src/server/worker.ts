@@ -13,6 +13,9 @@ import { logError } from '../logger';
 import { JobRunner, extractArtifacts } from '../jobs';
 import { sampleRssTreeAsync, type RssSample } from '../process-rss';
 import { resolveRetrievalPolicy } from './observation-search';
+import { registerViewerRoutes } from './viewer-routes';
+import { ViewerStreamHub } from './viewer-stream';
+import type { ViewerQueueStatus } from './viewer-types';
 import {
   generateEmbedding,
   embeddingModelInitCount,
@@ -242,6 +245,10 @@ export interface AppDeps {
   authToken?: string;
   /** Set false to disable token auth (legacy tests). */
   enableAuth?: boolean;
+  /** Viewer bundle search path. Tests point this at a fixture directory. */
+  viewerUiDirs?: string[];
+  /** Viewer log-drawer source directory. Tests point this at a fixture. */
+  viewerLogsDir?: string;
 }
 
 /**
@@ -379,6 +386,25 @@ export function createApp(deps: AppDeps) {
     concurrency: config.compression.concurrency,
     pollMs: deps.jobPollMs ?? 2000,
   });
+
+  // --- Viewer SSE hub (plan §8) ---
+  //
+  // Created here rather than beside the routes because the synthesis jobs below
+  // publish into it: an Observation appearing in the Feed the moment its
+  // transaction commits is the whole point of the stream. Broadcasts are no-ops
+  // while nobody is connected, so an idle Worker pays nothing for it.
+  const viewerHub = new ViewerStreamHub({
+    queueStatus: () => viewerQueueStatus(),
+  });
+  const viewerQueueStatus = (): ViewerQueueStatus => {
+    const stats = jobRunner.stats;
+    return {
+      pending: stats.pending,
+      leased: stats.leased,
+      dead: stats.dead,
+      succeeded24h: db.getObservabilityStats().jobs24h.succeeded,
+    };
+  };
 
   // =============================================================
   // Synthesis jobs — project closed turns into atomic Observations.
@@ -556,6 +582,22 @@ export function createApp(deps: AppDeps) {
         }
       }
     });
+
+    // After the transaction, never inside it: a Viewer told that an Observation
+    // exists must be able to fetch it, and a rolled-back transaction must not
+    // have announced anything. The annotation keeps the declared union — the id
+    // is assigned inside a callback, which control-flow analysis cannot see.
+    const createdId: number | null = observationId;
+    if (createdId != null) {
+      const created = db.getObservation(createdId);
+      if (created) {
+        viewerHub.broadcast({
+          type: 'observation_created',
+          scopeKey: created.scope_key,
+          observationId: created.id,
+        });
+      }
+    }
   });
 
   // --- embed_observation job ---
@@ -649,6 +691,15 @@ export function createApp(deps: AppDeps) {
       embeddingSpaceKey(SEMANTIC_EN_PROTOCOL),
       buildObservationSearchText(semanticEnSearchTextFields(payload, files)),
     );
+
+    // The Viewer shows whether an Observation is semantically reachable yet, so
+    // the state change has to reach an open page without a manual refresh.
+    viewerHub.broadcast({
+      type: 'observation_updated',
+      scopeKey: obs.scope_key,
+      observationId: obs.id,
+      reason: 'embedding',
+    });
   });
 
   // --- renormalize_observation job ---
@@ -807,8 +858,12 @@ export function createApp(deps: AppDeps) {
     };
 
     app.use('*', async (c, next) => {
-      // /health is public
+      // /health is public. So is the Viewer's static shell: a browser cannot set
+      // an Authorization header on a top-level navigation, and the shell carries
+      // no memory content — it fetches everything under /api/viewer/*, which is
+      // deliberately NOT exempt here and therefore fails closed.
       if (c.req.path === '/health') return next();
+      if (c.req.path === '/ui' || c.req.path.startsWith('/ui/')) return next();
 
       const expected = resolveExpectedToken();
       const auth = c.req.header('Authorization') || '';
@@ -1181,7 +1236,49 @@ export function createApp(deps: AppDeps) {
     return c.json({ ok: true, session_id: sessionId, turn_id: turn.id });
   });
 
-  return { app, jobRunner };
+  // --- Web Viewer (plan §6, §7) ---
+  //
+  // Registered last so the auth middleware above already covers every
+  // /api/viewer/* path. The static shell is exempt there by explicit path, not by
+  // ordering, so this position cannot accidentally expose memory data.
+  //
+  // `listeningPort` starts at the configured value and is corrected by
+  // `startWorker` once the socket is bound, so the Host check is anchored to the
+  // port that is really serving rather than to the one config hoped for.
+  let listeningPort = config.worker.port;
+  registerViewerRoutes(app, {
+    db,
+    config,
+    hub: viewerHub,
+    queueStatus: viewerQueueStatus,
+    listeningPort: () => listeningPort,
+    retrievalProfile: () => {
+      const enabled = readSemanticDiscoverySwitch(config);
+      const policy = resolveRetrievalPolicy(enabled);
+      return {
+        semanticDiscovery: enabled,
+        profile: enabled ? 'default' : 'lexical-anchor-rollback',
+        semanticFloor: policy.semanticFloor,
+        semanticOnlyLimit: Number.isFinite(policy.semanticOnlyLimit) ? policy.semanticOnlyLimit : 'none',
+        tieBreak: policy.tieBreak,
+      };
+    },
+    retrievalPolicy: resolveRetrievalPolicy(readSemanticDiscoverySwitch(config)),
+    version: PACKAGE_VERSION,
+    startedAt: runtimeStartedAt,
+    ...(deps.viewerUiDirs ? { uiDirs: deps.viewerUiDirs } : {}),
+    ...(deps.viewerLogsDir ? { logsDir: deps.viewerLogsDir } : {}),
+  });
+
+  return {
+    app,
+    jobRunner,
+    viewerHub,
+    /** Called once the socket is bound; keeps the Viewer's Host check truthful. */
+    setListeningPort: (value: number) => {
+      if (Number.isInteger(value) && value > 0) listeningPort = value;
+    },
+  };
 }
 
 // =============================================================
@@ -1206,7 +1303,7 @@ const compressor: MemoryCompressor = new ACPCompressor({
   // Persist ACP repair / contamination events for the 24h observability window.
   onMetric: (kind) => db.recordAcpEvent(kind),
 });
-const { app, jobRunner } = createApp({ db, compressor, config });
+const { app, jobRunner, setListeningPort } = createApp({ db, compressor, config });
 
 export { app };
 
@@ -1239,7 +1336,9 @@ export function startWorker() {
     });
   });
   jobRunner.start();
-  Bun.serve({ fetch: app.fetch, port, hostname: host });
+  const server = Bun.serve({ fetch: app.fetch, port, hostname: host });
+  // Anchor the Viewer's Host check to the socket that is actually bound.
+  setListeningPort(server.port ?? port);
 }
 
 if (import.meta.main) {

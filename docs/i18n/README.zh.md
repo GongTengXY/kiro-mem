@@ -18,7 +18,7 @@
 
 > 仅支持 Kiro CLI，不兼容 Kiro IDE。
 
-[快速开始](#快速开始) • [工作原理](#工作原理) • [MCP 工具](#mcp-工具) • [配置](#配置) • [CLI 命令](#cli-命令) • [限制](#限制) • [许可证](#许可证)
+[快速开始](#快速开始) • [工作原理](#工作原理) • [MCP 工具](#mcp-工具) • [Web 查看器](#web-查看器) • [配置](#配置) • [CLI 命令](#cli-命令) • [限制](#限制) • [许可证](#许可证)
 
 ---
 
@@ -32,6 +32,7 @@ kiro-mem 自动捕获 Kiro 会话中的每一轮对话（prompt → 工具调用
 - 🔍 **混合搜索** — FTS5 全文搜索 + 本地语义召回，用 RRF 融合并按 workspace 硬隔离；词面零重叠的问法也能找回记录
 - 📊 **读取期组织** — 先注入紧凑索引，Agent 按需拉取相关性（`search` → `timeline` → `get_observations`）
 - 🔧 **MCP 工具** — `search`、`timeline`、`get_observations`、`pin`
+- 🖥 **Web 查看器** — 本机浏览器界面：把每条 Observation 与产生它的 turn 并排对照、预览下一次会话真正会收到的上下文、把一条记忆连同它的原始 turn 一起永久删除
 - 🔒 **隐私控制** — 使用 `<private>` 标签在存储前脱敏
 - 🚀 **异步处理** — 持久任务队列，不阻塞工具调用
 - 🔄 **进程保活** — Worker 由 `launchd` 或 `systemd` 管理
@@ -136,6 +137,48 @@ curl http://127.0.0.1:37778/health
 
 `<private>` 标签内的内容会在写入存储前替换为 `[REDACTED]`——覆盖用户 prompt、工具 payload 和助手最终回复，因此私密内容不会进入任何 Observation 或注入索引。
 
+## Web 查看器
+
+```bash
+kiro-mem viewer
+```
+
+由 Worker 自己提供的本机浏览器界面——零 CDN、零独立 dev server、除 loopback 之外不走网络。它默认显示**全部 workspace**；可通过 workspace 选择器把 Feed 缩小到单个项目。全局视图选中期间，界面上始终保留提示。
+
+它回答这些问题：
+
+- **记住了什么** —— 实时 Feed，按时间倒序列出 Observation，带类型、质量、pin 状态和 summary/outcome 摘要。新的 Observation 在其压缩事务提交时出现。
+- **生成得是否忠于原文** —— 每张卡片打开左右对照的详情：生成字段（`title`、`summary`、`request`、`outcome`、`learned`、`next_steps`、evidence、concepts、files）对照它们来自的真相层（`prompt_text`、确定性产物、事件数量与原始字节数）。原始 event payload 按需加载，单事件与单响应都有字节上限，所以一个 4MB 的 turn 不会拖垮页面。
+- **下一次会话会收到什么** —— 上下文预览渲染 `agentSpawn` hook 实际注入的那一串文本，带 `usedBytes / effectiveMaxBytes` 和分段字节明细（frame、信任边界、usage、pinned、recent-detail、recent-index）。预算可临时调整，服务端强制封顶 9500 字节。
+- **搜索为什么命中** —— 当前 scope 内的关键词搜索，逐条显示 `match_source`。查看器搜索是**纯关键词**的：它不会替你伪造 `semantic_query_en`，所以标为 `semantic` 的结果来自 agent 那条路径，而不是这个界面。
+- **检索是否健康** —— 一个面板投影 `/health` 已有的 24 小时 `search_24h` 计数与 retrieval profile，另有 worker 错误日志抽屉。
+
+### 永久删除
+
+卡片（或详情头部）的垃圾桶图标会打开确认框，显示 Observation 的 ID 与标题、workspace、turn 的起止时间，以及将被销毁的原始 event 数量和原始字节数。确认后在**同一个 SQLite 事务**里删除：
+
+Observation → 它的向量与语义归一化行 → 它的 FTS 条目 → 来源 turn 的 `turn_artifacts`、`turn_events` 和 `turns` 行 → 挂在该 turn 或 Observation 上的所有 `pending` 与终态 job。
+
+刻意**没有**"只删记忆、保留 turn"的模式：保留下来的 turn 正好是 `kiro-mem repair` 会重新入队的对象，那条记录会回来。删除成功后，该 turn 无法再通过 `search`、`timeline`、`get_observations`、上下文注入或 `repair` 触达，所有打开的查看器会立即移除对应卡片。
+
+拒绝是诚实的，而不是半途而废：
+
+- 关联 job 处于 `leased` 状态时返回 **409** 且**不改动任何数据**——ACP 或 CPU 任务无法可靠中途取消，等它结束后重试；
+- 任何 SQL 失败都整体回滚，各表行数保持不变；
+- `pin` 不阻止删除，它只影响展示与注入优先级。
+
+这是产品层面的永久删除——不可查询、不可检索、不可重建。它**不是**法证级擦除：普通 SQLite `DELETE` 会把旧字节留在 WAL、freelist、文件系统快照和你已经做过的备份里，kiro-mem 刻意不做自动 `VACUUM`，也不重写数据库。
+
+### 安全模型
+
+- 查看器跑在同一个仅监听 loopback 的 Worker 上，复用现有的本机 Bearer token。`/ui` 与它的两个静态资源是公开外壳；**所有** `/api/viewer/*` 路由在没有 token 时 fail closed。
+- `kiro-mem viewer` 把 token 放在 URL 的 **fragment** 里，浏览器永远不会把 fragment 发给服务端。页面把它移入该标签页的 `sessionStorage` 并重写 URL，因此 token 不会进入历史记录、Referer 头或 Worker 日志。关闭标签页即结束会话；遇到 401 会显示"请重新运行 `kiro-mem viewer`"，而不是死循环重连。
+- 请求必须带与 Worker 端口精确匹配的 loopback `Host`，用于阻断 DNS rebinding。`DELETE` 额外要求 `Origin` 与页面自身 origin 完全一致。
+- 响应设置 `nosniff`、`DENY` 框架、`no-referrer`、同源 COOP/CORP，以及 `default-src 'none'`、仅允许 `'self'` 脚本与样式的 CSP。
+- 已记录的记忆是不可信输入，只按 text node 渲染。整个 bundle 里没有 `dangerouslySetInnerHTML`、没有 Markdown 渲染、没有任何自动链接。
+
+如果查看器 bundle 缺失（源码检出且没跑过 `bun run build:ui`），Worker 仍然正常启动，`/ui` 返回可读的构建提示。
+
 ## 配置
 
 编辑 `~/.kiro-mem/config.json`，或运行 `kiro-mem config` 交互式配置：
@@ -216,6 +259,7 @@ kiro-mem config
 kiro-mem config --show
 kiro-mem diagnose
 kiro-mem repair
+kiro-mem viewer
 kiro-mem uninstall
 kiro-mem uninstall --purge
 ```
@@ -231,7 +275,8 @@ kiro-mem uninstall --purge
 | 限制 | 影响 | 缓解 |
 |------|------|------|
 | 采集是 best-effort | Hook 只给 Worker 约 700ms，且从不阻塞你的对话。Worker 重启或临时错误会丢掉原始事件，**丢掉的输入事后无法重建——记忆不保证完整** | 按 Hook 与原因计数；见 `/health` 的 `capture_misses_24h` 与 `kiro-mem diagnose` 的告警行 |
-| 无细粒度删除 | 采集到的 turn 会无限期保留。`kiro-mem uninstall --purge` 清除**全部**数据；3.x **没有**按 Observation、按 scope、按时间段的删除，也没有导出与保留期策略 | 用 `<private>` 标签从源头阻止敏感内容入库 |
+| 删除是一条一条的，而且必须手动 | 没有任何东西会自己过期：没有保留期策略、没有自动清理、没有批量 `prune`，因为 kiro-mem 不替你判断哪些记忆没价值。Web 查看器每次确认删除**一条** Observation 连同它的来源 turn，没有导出、没有批量删除、没有软删除、没有撤销。关联 job 处于 `leased` 时，这一条删除会持续返回 409 直到它结束 | 想清掉的就在查看器里删；`<private>` 标签从源头阻止敏感内容入库；`kiro-mem uninstall --purge` 仍然可以一次清空全部 |
+| 删除不是法证级擦除 | 普通 SQLite `DELETE` 会把旧字节留在 WAL、freelist、文件系统快照和你已经做过的备份里。kiro-mem 刻意不做自动 `VACUUM`、也从不重写数据库，所以“永久删除”指的是 kiro-mem 所有读取路径都触达不到——不是把磁盘上的痕迹擦干净 | 请按产品层面的承诺理解：不可查询、不可检索、不可重建。需要介质级保证请用全盘加密并自己管好备份 |
 | 原始事件 payload 有上限 | 单个字符串字段超过 32KB 会被截断，单个 turn 最多存 4MB 原始 payload。截断会就地标记，但丢掉的字节不可恢复 | `payload_size` 仍记录原始大小；artifacts 提取在截断后的 payload 上继续工作 |
 | 依赖 Kiro CLI ACP | `kiro-cli acp` 不可用时无法压缩 | `kiro-mem diagnose` 会跑 ACP smoke 测试 |
 | `agentSpawn` 输出限制 10KB | 注入索引必须紧凑 | 预算控制的 context builder |
@@ -243,7 +288,8 @@ kiro-mem uninstall --purge
 | 语义检索依赖英文形式 | 语义腿**只**在 `semantic-en-v1` 空间里运行。Agent 没传 `semantic_query_en` 或护栏拒绝时，这次搜索是**纯关键词**的：不计算 query 向量、不读取任何已存向量，所以该请求既失去语义召回、也失去语义重排。`raw-v1` 空间永不参与打分——它没有可用的相关性阈值，标注命中与纯噪声在其中区间重叠 | `/health` 与 `kiro-mem diagnose` 的 `semanticEnRate`、`semanticQueryIssues`（含 `missing`）会报出这件事发生的频率 |
 | 只有前 1,000 条语义候选保留名次 | 候选池是**全 scope** 的：所搜 scope 里的每一个向量都会被打分，默认也不再有时间窗收窄它，所以不再有记录因为年代久远而对语义腿不可见。被限制的是保留量——候选按块读取、立即打分，只有最好的 1,000 条保留名次（外加全部词面命中，不论分数）。返回页在所有已测语料上与全量打分**完全一致**，包括 50,000 条那一档：4,618 条过 floor 的候选里只活下来 163 条，返回页仍然逐位相同——名次到了几千位就进不了 10 条的页面。真正改变的是可观测性：排在 1,000 名之外的记录没有语义名次记录 | 50,000 条实测：完整 search p95 158–286ms（预算 300ms），检索循环内存 +225…+324MB（预算 512MB） |
 | 安装阶段 | 把内置 embedding 模型（约 23 MB）复制到 `~/.kiro-mem/models` | 模型随包分发，无需下载模型 |
-| 暂无 Web 查看器 | 通过 CLI/MCP/DB 查看记忆 | 单独规划中 |
+| 查看器搜索是纯关键词的 | 查看器不会伪造 `semantic_query_en`，所以它的搜索只跑 FTS 腿：措辞与记录完全不同的问题在这里搜不到，即使 agent 自己的 `search` 能搜到 | 需要语义召回时在 Kiro 会话里用 `@kiro-mem/search`；查看器给每条结果都标了 `match_source`，差异是可见的 |
+| 查看器仅限 loopback、单用户 | 它由本机 Worker 在 127.0.0.1 上提供，用同一个本机 token 鉴权，token 通过 URL fragment 交接。没有多用户模型、没有远程访问，会话不超出你打开的那个浏览器标签页 | 在存有数据的那台机器上运行 `kiro-mem viewer`；关闭标签页即结束会话 |
 | 仅本地 | 无内置跨机器同步 | 未来：git sync 或云存储 |
 
 ## 许可证

@@ -90,6 +90,15 @@ const MODEL_FILES = [
   'onnx/model_quantized.onnx',
 ] as const;
 
+/**
+ * Web Viewer bundle. Built by `bun run build:ui` into `dist/ui` and published in
+ * the npm `files` list, so an installed package carries it without needing the
+ * source repository to still exist.
+ */
+const VIEWER_SRC_DIR = join(PKG_ROOT, 'dist', 'ui');
+const VIEWER_DEST_DIR = join(DATA_DIR, 'ui');
+const VIEWER_FILES = ['viewer.html', 'viewer.js', 'styles.css'] as const;
+
 // --- Resolve language from existing config (or default) ---
 
 function resolveLanguage(): Language {
@@ -131,6 +140,9 @@ switch (command) {
     break;
   case 'repair':
     await repair();
+    break;
+  case 'viewer':
+    await viewer();
     break;
   default:
     help();
@@ -372,7 +384,18 @@ async function install() {
     join(DATA_DIR, 'src', 'hooks', 'capture-log.ts'),
   );
 
-  for (const file of ['worker.ts', 'mcp-server.ts', 'mcp-scope.ts', 'observation-search.ts']) {
+  for (const file of [
+    'worker.ts',
+    'mcp-server.ts',
+    'mcp-scope.ts',
+    'observation-search.ts',
+    // Viewer server surface. The Worker imports these directly, so a missing
+    // file here breaks the installed runtime while the in-tree build stays green
+    // — the case `missingInstalledImports` in setup.test.ts guards against.
+    'viewer-routes.ts',
+    'viewer-stream.ts',
+    'viewer-types.ts',
+  ]) {
     copyFileSync(
       join(SRC_DIR, 'server', file),
       join(DATA_DIR, 'src', 'server', file),
@@ -437,6 +460,18 @@ async function install() {
   }
   copyEmbeddingModel();
   console.log(`${ansi.ok('✓')} ${m.modelsCopied}`);
+
+  // 8b. Copy the Web Viewer bundle to <dataDir>/ui
+  //
+  // The Worker resolves the bundle from the INSTALLED directory first, because a
+  // real installation has no repository to fall back to. A missing bundle is not
+  // fatal — memory capture, compression and MCP all work without it, and `/ui`
+  // then answers with a build hint instead of the Worker refusing to start.
+  if (copyViewerBundle()) {
+    console.log(`${ansi.ok('✓')} ${m.viewerInstalled}`);
+  } else {
+    console.log(`${ansi.warn('!')} ${m.viewerMissing} ${ansi.cyan('bun run build:ui')}`);
+  }
 
   // 9. Copy main agent prompt
   copyFileSync(
@@ -539,6 +574,24 @@ function copyEmbeddingModel() {
   }
 }
 
+/**
+ * Copy `dist/ui` into `<dataDir>/ui`. Returns false when the package carries no
+ * built bundle (a source checkout that has not run `bun run build:ui`).
+ *
+ * All three files or none: a directory with `viewer.html` but no `viewer.js`
+ * would serve a blank page with no diagnosable error, which is worse than the
+ * "bundle not found" hint the Worker shows for an absent directory.
+ */
+function copyViewerBundle(): boolean {
+  const present = VIEWER_FILES.every((f) => existsSync(join(VIEWER_SRC_DIR, f)));
+  if (!present) return false;
+  mkdirSync(VIEWER_DEST_DIR, { recursive: true });
+  for (const file of VIEWER_FILES) {
+    copyFileSync(join(VIEWER_SRC_DIR, file), join(VIEWER_DEST_DIR, file));
+  }
+  return true;
+}
+
 function uninstall() {
   const purge = process.argv[3] === '--purge';
   removeService();
@@ -563,6 +616,10 @@ function uninstall() {
     'node_modules',
     'logs',
     'kiro-runtime',
+    // The Viewer bundle is a build artefact of the installed package, not user
+    // data — it is reinstalled by `kiro-mem install`, so keeping it would leave a
+    // stale UI able to talk to a newer Worker.
+    'ui',
   ]) {
     const p = join(DATA_DIR, dir);
     if (existsSync(p)) rmSync(p, { recursive: true });
@@ -1269,5 +1326,64 @@ Commands:
   start                ${m.helpStart}
   stop                 ${m.helpStop}
   diagnose             ${m.helpDiagnose}
-  repair               ${m.helpRepair}`);
+  repair               ${m.helpRepair}
+  viewer               ${m.helpViewer}`);
+}
+
+/**
+ * Open the Web Viewer in the default browser (plan §6.1).
+ *
+ * The token travels in the URL FRAGMENT. A fragment is never sent to the server,
+ * so it stays out of the Worker's access log and out of any Referer; the page then
+ * moves it into that tab's `sessionStorage` and rewrites the URL. A query
+ * parameter would have put a live credential into browser history.
+ *
+ * The Viewer opens on all workspaces by default. The user can narrow the feed
+ * from the workspace selector after the page has authenticated.
+ */
+async function viewer() {
+  if (!existsSync(join(DATA_DIR, 'config.json'))) {
+    console.log(`${ansi.err('✗')} ${m.notInstalled} ${ansi.cyan('kiro-mem install')}`);
+    return;
+  }
+
+  const token = readLocalAuthToken(DATA_DIR);
+  if (!token) {
+    console.log(`${ansi.err('✗')} ${m.viewerNoToken} ${ansi.cyan('kiro-mem install')}`);
+    return;
+  }
+
+  // The running Worker's port, not the configured one: they differ while a config
+  // edit is waiting for a restart, and the Viewer has to reach the live process.
+  const portFile = join(DATA_DIR, '.worker.port');
+  let port = 37778;
+  try {
+    const fromConfig = JSON.parse(readFileSync(join(DATA_DIR, 'config.json'), 'utf-8'))?.worker?.port;
+    if (Number.isInteger(fromConfig)) port = fromConfig;
+  } catch {}
+  if (existsSync(portFile)) {
+    const fromDisk = Number(readFileSync(portFile, 'utf-8').trim());
+    if (Number.isInteger(fromDisk) && fromDisk > 0) port = fromDisk;
+  }
+
+  const base = `http://127.0.0.1:${port}`;
+  try {
+    const health = await fetch(`${base}/health`, { signal: AbortSignal.timeout(2000) });
+    if (!health.ok) throw new Error(String(health.status));
+  } catch {
+    console.log(`${ansi.err('✗')} ${m.viewerWorkerDown} ${ansi.cyan('kiro-mem start')}`);
+    return;
+  }
+
+  const url = `${base}/ui#token=${encodeURIComponent(token)}`;
+
+  console.log(`${ansi.ok('✓')} ${m.viewerOpening}`);
+  const opener = process.platform === 'darwin' ? 'open' : 'xdg-open';
+  const opened = spawnSync(opener, [url], { stdio: 'ignore' });
+  if (opened.status !== 0) {
+    // No desktop session (SSH, headless): print the URL instead of failing. It
+    // carries a live token, so say so rather than logging it silently.
+    console.log(`${ansi.warn('!')} ${m.viewerOpenManually}`);
+    console.log(`   ${ansi.cyan(url)}`);
+  }
 }

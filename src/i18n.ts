@@ -178,6 +178,15 @@ const messages = {
     diagJobsSucceededHint: '条从不清理',
     diagStorageUnavailable: '无法读取（文件不存在或无权限）',
     helpRepair: '扫描并重排丢失的记忆投影（不删除失败记录）',
+
+    // --- viewer ---
+    helpViewer: '在浏览器中打开本机记忆查看器（默认显示全部 workspace）',
+    viewerInstalled: 'Web Viewer 已安装',
+    viewerMissing: '未找到 Web Viewer 构建产物，可在源码目录运行：',
+    viewerNoToken: '未找到本机 Worker token，请重新安装：',
+    viewerWorkerDown: '后台服务未响应，请先启动：',
+    viewerOpening: '正在打开 Viewer（全部 workspace）',
+    viewerOpenManually: '无法自动打开浏览器。下面的链接包含一次性 token，请勿分享：',
     repairNoDb: '数据库不存在，请先运行 kiro-mem install：',
     repairNothing: '无需修复：所有已结束的 turn 都有 Observation，所有 Observation 都有当前模型的可用向量',
     repairFound: '发现丢失的投影：',
@@ -387,6 +396,15 @@ const messages = {
     diagJobsSucceededHint: 'rows, never pruned',
     diagStorageUnavailable: 'unreadable (missing file or no permission)',
     helpRepair: 'Find and re-queue lost memory projections (keeps failure records)',
+
+    // --- viewer ---
+    helpViewer: 'Open the local memory viewer in a browser (all workspaces)',
+    viewerInstalled: 'Web Viewer installed',
+    viewerMissing: 'No Web Viewer build found. From a source checkout run:',
+    viewerNoToken: 'No local Worker token found — reinstall with:',
+    viewerWorkerDown: 'Worker is not responding — start it with:',
+    viewerOpening: 'Opening the Viewer (all workspaces)',
+    viewerOpenManually: 'Could not open a browser. The link below carries a one-time token — do not share it:',
     repairNoDb: 'No database found — run `kiro-mem install` first:',
     repairNothing: 'Nothing to repair: every closed turn has an Observation, every Observation has a usable vector for the current model',
     repairFound: 'Lost projections found:',
