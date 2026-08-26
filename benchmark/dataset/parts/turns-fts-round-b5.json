@@ -1,0 +1,277 @@
+{
+  "batch": "b5",
+  "records": [
+    {
+      "id": "n33",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/safety-round/p3-completion.md",
+          "section": "§1 的自证表 S2",
+          "supports": "装置里作用域向量数与物理行数相等，跨作用域泄漏为零，降级次数为零，协议单一，且一百三十一条英文提问被生产护栏拒绝的数量为零"
+        }
+      ],
+      "prompt": "怎么确认这次读数不是因为向量没建全或者被降级了？",
+      "assistant_response": "靠四个数一起看：作用域内的向量数等于物理行数，说明每行都建了向量；跨作用域泄漏为零，说明隔离没破；降级次数为零，说明没有哪条查询是在语义腿失效的情况下跑的；协议单一，说明没有混进另一种空间的向量。再加一条，一百三十一条英文提问被生产护栏拒绝的数量是零——否则那些查询会退化成纯词面，读数里就混进了与结论无关的失败原因。",
+      "events": [
+        { "tool": "shell", "input": { "command": "bun run benchmark/run-safety-round-grid.ts --self-checks" }, "response": { "exit_status": 0, "stdout": "vectors 50066/50066; leak 0; degraded 0; rejected 0/131" } }
+      ],
+      "annotation": {
+        "request": "确认装置结构自证的四项指标",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["benchmark/run-safety-round-grid.ts"],
+        "key_facts": ["50066", "0", "0/131"],
+        "unfinished": [],
+        "title": "装置自证靠四个数一起看：向量齐全、无泄漏、无降级、护栏零拒绝",
+        "summary": "作用域向量数等于物理行数说明每行都建了向量；跨作用域泄漏为零说明隔离完好；降级次数为零说明没有查询在语义腿失效下跑；协议单一说明没混入另一空间的向量。再加英文提问被护栏拒绝零次，否则那些查询会退化成纯词面，把无关的失败原因混进读数。",
+        "outcome": "结构自证通过，读数具备可解释的前提。",
+        "learned": "一次实验的可信度先取决于装置自证，而自证要覆盖每一条可能让读数默默换掉含义的路径。",
+        "concepts": ["结构自证", "向量齐全", "作用域隔离", "降级", "护栏拒绝"]
+      }
+    },
+    {
+      "id": "n34",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/safety-round/p3-completion.md",
+          "section": "§1 自证表 S5 及其说明（|Δcosine| = 0）",
+          "supports": "本轮重建的向量与前一阶段冻结时逐位相同，因此低分正例的四档分层不是重新算出来的，而是复现了冻结值"
+        }
+      ],
+      "prompt": "分层是这次重新算的，还是复现了冻结时的结果？",
+      "assistant_response": "是复现。本轮重建的向量与冻结时逐位相同，余弦差的绝对值是零，所以四档条数不是重新算出来的一组新数字，而是把冻结值复现了一遍。这个区别很重要：如果向量有任何漂移，分层就会变成本轮的产物，那么「低分档不得回退」这条线的参照就成了一个会随运行变化的东西。",
+      "events": [
+        { "tool": "shell", "input": { "command": "bun run benchmark/run-safety-round-grid.ts --verify-strata" }, "response": { "exit_status": 0, "stdout": "|delta cosine| = 0; strata reproduced" } }
+      ],
+      "annotation": {
+        "request": "核对重建向量与冻结值是否一致",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["src/embedding.ts", "benchmark/run-safety-round-grid.ts"],
+        "key_facts": ["0"],
+        "unfinished": [],
+        "title": "重建向量与冻结值逐位相同，分层是复现而不是重算",
+        "summary": "本轮重建的向量与冻结时逐位一致，余弦差绝对值为零，因此四档分层是复现冻结值而非新算出来的结果。若向量存在漂移，分层就会变成本轮产物，不得回退那条线的参照也会随运行变化。",
+        "outcome": "分层参照的稳定性得到确认。",
+        "learned": "任何被当作参照的分层，都要先证明它在本次运行里是复现而不是重算。",
+        "concepts": ["向量复现", "逐位一致", "分层参照", "漂移", "参照稳定性"]
+      }
+    },
+    {
+      "id": "n35",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/safety-round/p3-completion.md",
+          "section": "§3 的门判定表（F1 行）",
+          "supports": "要求异域负例逐条归零的那道门，二十五条里有二十四条非零；物理行数均值 2.720，去重后均值 2.000，两个口径都失败"
+        }
+      ],
+      "prompt": "那道要求完全不返回任何东西的门，失败得厉害吗？",
+      "assistant_response": "二十五条里二十四条非零，只有一条真的空返回。两个口径都失败：按物理行数平均是 2.720，按去重内容平均是 2.000。也就是说这类查询平均仍会拿回两条不同的记录。这个形状说明它不是差一点通过，而是这道门的方向本身没有可通过取值——后续裁定据此把它从逐条归零改成容量上限。",
+      "events": [
+        { "tool": "shell", "input": { "command": "bun run benchmark/run-safety-round-grid.ts --gate=F1" }, "response": { "exit_status": 0, "stdout": "24/25 non-zero; physicalRows 2.720; distinctContent 2.000" } }
+      ],
+      "annotation": {
+        "request": "量出逐条归零门的失败幅度",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["benchmark/run-safety-round-grid.ts"],
+        "key_facts": ["24/25", "2.720", "2.000"],
+        "unfinished": [],
+        "title": "逐条归零门在二十五条里失败二十四条，两个口径都在两条以上",
+        "summary": "要求异域负例逐条空返回的那道门，二十五条里有二十四条非零，只有一条真空返回；物理行数均值 2.720，去重后均值 2.000。这类查询平均仍拿回两条不同记录。失败幅度说明方向本身没有可通过取值，后续裁定据此把逐条归零改成容量上限。",
+        "outcome": "该门被判定为方向不可行，改为容量口径。",
+        "learned": "失败幅度比失败与否更有信息量：差一点和差一个量级要走完全不同的下一步。",
+        "concepts": ["逐条归零", "失败幅度", "两套口径", "容量上限", "方向不可行"]
+      }
+    },
+    {
+      "id": "n36",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/fts-round/f0-anchor-mechanism.md",
+          "section": "§1 的返回来源对照表与其后说明",
+          "supports": "锚点负例一百零九行返回里只有十三行来自填充语料，且这十三行是靠混排段里切出的拉丁或数字单元命中的；中文三字窗口一行填充语料都碰不到，正例侧来自填充的行数为零"
+        }
+      ],
+      "prompt": "那批不相关返回里，有多少是来自填充语料的？",
+      "assistant_response": "一百零九行里只有十三行，而且这十三行不是靠中文命中的——它们来自混排段里切出的拉丁或数字单元。中文三字窗口一行填充语料都碰不到，正例那一侧来自填充的更是零行。所以那批返回几乎全部来自六十六条真实记录之间的互相干扰，而不是来自五万条语料。这正是「装置不能用来做词面工作」这个结论的最直接证据。",
+      "events": [
+        { "tool": "shell", "input": { "command": "bun run benchmark/analyze-fts-anchor-mechanism.ts --sources" }, "response": { "exit_status": 0, "stdout": "anchor: filler 13 / gold 96; positive: filler 0 / gold 145" } }
+      ],
+      "annotation": {
+        "request": "拆开返回来源，看填充语料贡献了多少",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["benchmark/dataset/pool-policy-filler-10k.json"],
+        "key_facts": ["13", "96", "145"],
+        "unfinished": [],
+        "title": "填充语料只贡献十三行，且全靠拉丁与数字单元命中",
+        "summary": "锚点负例一百零九行返回里只有十三行来自填充语料，且这十三行靠的是混排段切出的拉丁或数字单元；中文三字窗口一行填充都碰不到，正例侧来自填充的为零行。因此那批返回几乎全部是六十六条真实记录之间的互相干扰，而不是五万条语料造成的。",
+        "outcome": "装置不适用于词面工作这一结论获得最直接证据。",
+        "learned": "看一批返回来自哪里，比看它有多少行更能判断装置有没有在测你以为的那件事。",
+        "concepts": ["返回来源", "填充贡献", "拉丁单元", "互相干扰", "装置适用性"]
+      }
+    },
+    {
+      "id": "n37",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/gate-shape-ruling.md",
+          "section": "§4 第 6 项（修改路径的逻辑自相矛盾）",
+          "supports": "不能写成不建中文语料只做排序：文档自己预测容量门在词面侧仍会失败，因此准入取证仍需继续；正确路径是排序取证与准入取证分开进行、分别归因"
+        }
+      ],
+      "prompt": "既然要做排序取证，词面准入这条线是不是可以先停？",
+      "assistant_response": "不能，那是自相矛盾的路径。提案自己预测了容量门在词面那一侧仍会失败，如果同时停掉准入取证，就没有任何一条线在解决那个失败。裁定给的正确路径是两条轨道分开进行、分别归因：排序取证解决候选之间的相对位置，准入取证解决哪条记录有资格成为候选。合并成一轮的话，任何改善都无法归因到其中一件事上。",
+      "events": [
+        { "tool": "read", "input": { "path": "benchmark/reports/gate-shape-ruling.md", "pattern": "§4" }, "response": { "exit_status": 0, "stdout": "第 6 项：分开进行、分别归因" } }
+      ],
+      "annotation": {
+        "request": "裁定两条取证轨道能否合并或互相替代",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["src/db/index.ts", "src/server/observation-search.ts"],
+        "key_facts": ["2"],
+        "unfinished": ["两条轨道各自的取证均未完成"],
+        "title": "排序取证与准入取证必须分开进行、分别归因，不得互相替代",
+        "summary": "提案自己预测容量门在词面侧仍会失败，因此停掉准入取证就没有任何一条线在解决那个失败，路径自相矛盾。裁定要求两条轨道分开进行、分别归因：一条解决候选之间的相对位置，一条解决哪条记录有资格成为候选。合并成一轮会让任何改善都无法归因。",
+        "outcome": "两条轨道各自立项，归因边界写进裁定。",
+        "learned": "两个变量放进同一轮时，读数只能证明它们的组合有效，永远无法证明哪一个有效。",
+        "concepts": ["轨道分离", "归因", "准入", "排序", "自相矛盾路径"]
+      }
+    },
+    {
+      "id": "n38",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/gate-shape-ruling.md",
+          "section": "§2 的 Q6 与 §6 第五条不授权项",
+          "supports": "行为取证不阻塞门集冻结，但构成默认开启前的发布条件；在完成该取证之前不授权把该功能设为默认开启"
+        }
+      ],
+      "prompt": "行为取证还没做，会不会卡住门的冻结？",
+      "assistant_response": "不会卡冻结，但会卡发布。裁定把它定成两件事：门集可以先冻结、后续轮次照常进行；而在完成行为取证之前，不授权把那个功能设为默认开启。这个划分的好处是两条线可以并行，坏处是必须记清楚它们的依赖方向——冻结不等于放行。",
+      "events": [
+        { "tool": "read", "input": { "path": "benchmark/reports/gate-shape-ruling.md", "pattern": "Q6" }, "response": { "exit_status": 0, "stdout": "不阻塞冻结，构成发布条件" } }
+      ],
+      "annotation": {
+        "request": "确定行为取证与门集冻结的依赖关系",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["src/config.ts"],
+        "key_facts": ["1"],
+        "unfinished": ["行为取证未完成，默认开启未获授权"],
+        "title": "行为取证不阻塞门集冻结，但构成默认开启前的发布条件",
+        "summary": "裁定把两件事分开：门集可以先冻结、后续轮次照常推进；而在行为取证完成之前不授权把该功能设为默认开启。这样两条线可以并行，代价是必须记清依赖方向——冻结不等于放行。",
+        "outcome": "依赖方向登记完成，冻结与放行解耦。",
+        "learned": "把阻塞关系写清楚比把工作排成一条直线更省时间，但前提是不能把冻结误读成放行。",
+        "concepts": ["阻塞关系", "发布条件", "并行推进", "冻结与放行", "授权范围"]
+      }
+    },
+    {
+      "id": "n39",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/agent-behavior/q6-criteria.md",
+          "section": "§8.1「S1 为什么不能按原稿执行」",
+          "supports": "不同会话会生成不同的检索参数，因此两个臂的实际响应本来就不该逐字节相同，要求相同会让这项自证永远失败或被迫放宽；改为跑任何试次之前对同一个已捕获响应做投影预检，解析后比较"
+        }
+      ],
+      "prompt": "自证就写成「两个臂返回的内容除了那个字段之外完全相同」，不行吗？",
+      "assistant_response": "不行，因为它做不到。不同会话会生成不同的检索参数——措辞、条数、时间窗都可能不同，所以两个臂的实际响应本来就不该逐字节相同；这样写只会让这项自证永远失败，或者逼着运行者去放宽它。改法是把它变成跑任何试次之前的确定性预检：取同一个已捕获的响应，分别走两条改写路径，解析之后比较，断言只有目标卡的那个字段被删除，其余字段、其余卡、帧结构全部不变。",
+      "events": [
+        { "tool": "shell", "input": { "command": "bun run benchmark/q6/s1-precheck.ts" }, "response": { "exit_status": 0, "stdout": "21 项断言全过" } }
+      ],
+      "annotation": {
+        "request": "修正无法执行的装置自证项",
+        "completed": true,
+        "memory_type": "bugfix",
+        "key_files": ["benchmark/q6/s1-precheck.ts", "benchmark/q6/project-response.ts"],
+        "key_facts": ["21"],
+        "unfinished": [],
+        "title": "自证不能要求两臂响应逐字节相同，改为对已捕获响应做投影预检",
+        "summary": "不同会话生成不同的检索参数，两臂的实际响应本来就不该逐字节相同，按原文执行只会让这项自证永远失败或被迫放宽。改为跑任何试次之前的确定性预检：取同一个已捕获响应分别投影到两条改写路径，解析后比较，断言仅目标卡的那个字段被删除，其余字段、其余卡与帧结构不变。",
+        "outcome": "该自证项从不可执行改为确定性预检并全部通过。",
+        "learned": "一项永远失败的自证会被运行者放宽，等于没有自证；不可执行的检查必须重写而不是降低标准。",
+        "concepts": ["装置自证", "不可执行检查", "投影预检", "解析后比较", "标准放宽"]
+      }
+    },
+    {
+      "id": "n40",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/agent-behavior/q6-criteria.md",
+          "section": "§7 第 4 条与 §10 第 5 条（已知做假面与诚实边界）",
+          "supports": "撰写者、样本作者与行为判定者是同一人，本轮没有改善这一点；缓解方式是主判据只用机械比对，依赖人读文本的编码不进主判据"
+        }
+      ],
+      "prompt": "判据、样本和判定都由同一个人做，这个问题怎么处理？",
+      "assistant_response": "本轮没有解决它，只做了缓解，并且把这条如实登记。缓解方式是让主判据只依赖机械比对：产物比对是字段精确匹配或正则，工具调用记录是机械核对；而依赖人读回复文本的那两类编码明确不进主判据。这样主结论不依赖同一个人的主观判断，但撰写者与判定者同一人这件事本身仍然存在，写在诚实边界里而不是被绕过去。",
+      "events": [
+        { "tool": "read", "input": { "path": "benchmark/reports/agent-behavior/q6-criteria.md", "pattern": "§7" }, "response": { "exit_status": 0, "stdout": "第 4 条：同一人，未改善，缓解方式为机械判定" } }
+      ],
+      "annotation": {
+        "request": "处理撰写者与判定者同一人带来的主观性",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["benchmark/reports/agent-behavior/q6-criteria.md"],
+        "key_facts": ["4"],
+        "unfinished": ["同一人问题本轮未解决，只做缓解"],
+        "title": "撰写者与判定者同一人未被解决，缓解方式是主判据只用机械比对",
+        "summary": "撰写者、样本作者与行为判定者是同一人，本轮没有改善这一点。缓解方式是主判据只依赖机械比对：产物比对用字段精确匹配或正则，工具调用用记录机械核对；依赖人读回复文本的编码明确不进主判据。主结论因此不依赖主观判断，但同一人这件事本身仍然登记在诚实边界里。",
+        "outcome": "主观性被隔离在非主判据之外，局限如实登记。",
+        "learned": "无法消除的偏差要么隔离到不影响主结论的位置，要么如实登记；两者都比声称它不存在好。",
+        "concepts": ["主观性", "机械比对", "主判据隔离", "诚实边界", "未解决局限"]
+      }
+    }
+  ]
+}

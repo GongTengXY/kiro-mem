@@ -1,0 +1,706 @@
+{
+  "frozen": true,
+  "frozenAt": "2026-08-14T05:17:14.490Z",
+  "round": "fts-safety-round-2026-08-12-r2",
+  "phase": "F2",
+  "criteria": {
+    "name": "criteria",
+    "path": "benchmark/reports/fts-round/f1-criteria-r4.md",
+    "sha256": "6f2aece66a01ad0b863fc0e7c4234914b6e216bc5eb9eff2858fd349b727a069",
+    "bytes": 8540
+  },
+  "inputs": [
+    {
+      "name": "criteriaBaselineR3",
+      "path": "benchmark/reports/fts-round/f1-criteria.md",
+      "sha256": "18be34b1e15285874074a10252c2d3a7f6d51227851090de6803ce2b8219e7aa",
+      "bytes": 47644
+    },
+    {
+      "name": "f1Freeze",
+      "path": "benchmark/reports/fts-round/f1-freeze-r2.json",
+      "sha256": "3ac2263cb353649e0ef05aa2f62a386a684174894e07ff269c786e511e378ea6",
+      "bytes": 13022
+    },
+    {
+      "name": "fixtureSelfCert",
+      "path": "benchmark/reports/fts-round/f2-fixture-r2.json",
+      "sha256": "834f2677d1e9210087c5870d9f3f95b044467fa92475dcff9e198d65557d244a",
+      "bytes": 20450
+    },
+    {
+      "name": "strata",
+      "path": "benchmark/reports/fts-round/f2-strata-r2.json",
+      "sha256": "a3830847e19ce206b7fed39966ea25b5f5bd0e78f8282499a3817ba24d97e589",
+      "bytes": 23190
+    },
+    {
+      "name": "kLadder",
+      "path": "benchmark/reports/fts-round/f2-kladder-r2.json",
+      "sha256": "3695cfb5318ecfe8683bbcf01fff65eb56fd6a5a0076e06a3ec0ee676b564bd3",
+      "bytes": 6601
+    },
+    {
+      "name": "precheck",
+      "path": "benchmark/reports/fts-round/f1-precheck-r2.json",
+      "sha256": "f49e62faf9ae7e3035f641f2653e76994ee2b95fa5853e20471d0603fde936b5",
+      "bytes": 28314
+    },
+    {
+      "name": "admissionImpl",
+      "path": "benchmark/fts-round-admission.ts",
+      "sha256": "e539bc2518a51cc6d4eefe105c5b2eff964e3fa4fa9a816b964245dd75fe1b14",
+      "bytes": 11614
+    },
+    {
+      "name": "fixtureBuilder",
+      "path": "benchmark/run-fts-round-f2-fixture.ts",
+      "sha256": "9c04e81bc4a03b507753c5b10be1b990479345b7df812b96cd17d68d3be0d311",
+      "bytes": 20914
+    },
+    {
+      "name": "strataRunner",
+      "path": "benchmark/run-fts-round-f2-strata.ts",
+      "sha256": "e567edc6fafb63451fdec7093410f6f4f9ef2076e93558ba9a725639037795ea",
+      "bytes": 8231
+    },
+    {
+      "name": "kLadderRunner",
+      "path": "benchmark/run-fts-round-f2-kladder.ts",
+      "sha256": "349aef5349fa95129e95b7680f0075b265150c67c21836c0cf59680749843d2c",
+      "bytes": 8788
+    }
+  ],
+  "itemCountLabel": "1 + 10",
+  "itemCount": 11,
+  "note": "F2 收口：装置、四档分层与 K 一次性冻结。K 由 S7a 的正确性阶梯选出，不由任何门的读数选出。F3 必须在本记录固定的 K 与装置上跑，且全程不得改动 K（r3 §2.2 第 3 条）。",
+  "payload": {
+    "selectedK": 200,
+    "kSelection": {
+      "ladder": [
+        200,
+        1000,
+        5000,
+        "EXACT"
+      ],
+      "rule": "取最小的 K，使 16 个 (r,d) 设置 × 120 条 query 与 EXACT 的候选差集逐 query 为 0（r3 §2.2.1）",
+      "comparisons": 1920,
+      "mismatches": 0,
+      "basis": "只用正确性判定，未看任何门的读数",
+      "exactByConstruction": "EXACT 差集恒为 0，阶梯不会走空；其成本由 §6.6 性能门在 F3 判定"
+    },
+    "fixture": {
+      "dbPath": "/var/folders/m8/2nqfmnqd7mnfdz5q5vc33lmc0000gn/T//fts-round-f2-r2.db",
+      "rows": 60066,
+      "scopeVectors": 60066,
+      "composition": {
+        "newGold": 40,
+        "oldGold": 26,
+        "fillerEn": 50000,
+        "fillerEnSourceRows": 10000,
+        "fillerZh": 10000
+      },
+      "realEncodes": 20066,
+      "embeddingModel": "all-MiniLM-L6-v2",
+      "spaceKey": "all-MiniLM-L6-v2:q8:384:semantic-en-v1",
+      "layoutSeed": 15867942,
+      "ageDays": [
+        {
+          "id": "n01",
+          "ageDays": 40
+        },
+        {
+          "id": "n02",
+          "ageDays": 833
+        },
+        {
+          "id": "n03",
+          "ageDays": 628
+        },
+        {
+          "id": "n04",
+          "ageDays": 410
+        },
+        {
+          "id": "n05",
+          "ageDays": 709
+        },
+        {
+          "id": "n06",
+          "ageDays": 822
+        },
+        {
+          "id": "n07",
+          "ageDays": 808
+        },
+        {
+          "id": "n08",
+          "ageDays": 227
+        },
+        {
+          "id": "n09",
+          "ageDays": 889
+        },
+        {
+          "id": "n10",
+          "ageDays": 642
+        },
+        {
+          "id": "n11",
+          "ageDays": 184
+        },
+        {
+          "id": "n12",
+          "ageDays": 135
+        },
+        {
+          "id": "n13",
+          "ageDays": 319
+        },
+        {
+          "id": "n14",
+          "ageDays": 760
+        },
+        {
+          "id": "n15",
+          "ageDays": 40
+        },
+        {
+          "id": "n16",
+          "ageDays": 243
+        },
+        {
+          "id": "n17",
+          "ageDays": 428
+        },
+        {
+          "id": "n18",
+          "ageDays": 755
+        },
+        {
+          "id": "n19",
+          "ageDays": 859
+        },
+        {
+          "id": "n20",
+          "ageDays": 617
+        },
+        {
+          "id": "n21",
+          "ageDays": 718
+        },
+        {
+          "id": "n22",
+          "ageDays": 51
+        },
+        {
+          "id": "n23",
+          "ageDays": 237
+        },
+        {
+          "id": "n24",
+          "ageDays": 309
+        },
+        {
+          "id": "n25",
+          "ageDays": 122
+        },
+        {
+          "id": "n26",
+          "ageDays": 565
+        },
+        {
+          "id": "n27",
+          "ageDays": 566
+        },
+        {
+          "id": "n28",
+          "ageDays": 543
+        },
+        {
+          "id": "n29",
+          "ageDays": 413
+        },
+        {
+          "id": "n30",
+          "ageDays": 159
+        },
+        {
+          "id": "n31",
+          "ageDays": 41
+        },
+        {
+          "id": "n32",
+          "ageDays": 814
+        },
+        {
+          "id": "n33",
+          "ageDays": 503
+        },
+        {
+          "id": "n34",
+          "ageDays": 73
+        },
+        {
+          "id": "n35",
+          "ageDays": 456
+        },
+        {
+          "id": "n36",
+          "ageDays": 302
+        },
+        {
+          "id": "n37",
+          "ageDays": 711
+        },
+        {
+          "id": "n38",
+          "ageDays": 365
+        },
+        {
+          "id": "n39",
+          "ageDays": 287
+        },
+        {
+          "id": "n40",
+          "ageDays": 70
+        }
+      ],
+      "insertionOrder": [
+        "n11",
+        "n31",
+        "n27",
+        "n22",
+        "n06",
+        "n36",
+        "n07",
+        "n39",
+        "n09",
+        "n24",
+        "n13",
+        "n29",
+        "n21",
+        "n14",
+        "n37",
+        "n03",
+        "n19",
+        "n28",
+        "n12",
+        "n01",
+        "n33",
+        "n32",
+        "n02",
+        "n18",
+        "n26",
+        "n30",
+        "n16",
+        "n40",
+        "n35",
+        "n17",
+        "n34",
+        "n10",
+        "n20",
+        "n05",
+        "n08",
+        "n23",
+        "n38",
+        "n25",
+        "n15",
+        "n04"
+      ]
+    },
+    "selfCert": {
+      "s2": {
+        "rows": 60066,
+        "totalRows": 60066,
+        "scopeVectors": 60066,
+        "protocols": [
+          "semantic-en-v1"
+        ],
+        "zhRows": 10066
+      },
+      "s3FunctionWords": [
+        {
+          "word": "能不能",
+          "df": 1000,
+          "target": 0.1,
+          "dfOverZhRecords": 0.1,
+          "dfOverScope": 0.0166,
+          "relativeDeviation": 0,
+          "pass": true
+        },
+        {
+          "word": "有没有",
+          "df": 1001,
+          "target": 0.1,
+          "dfOverZhRecords": 0.1001,
+          "dfOverScope": 0.0167,
+          "relativeDeviation": 0.001,
+          "pass": true
+        },
+        {
+          "word": "是不是",
+          "df": 800,
+          "target": 0.08,
+          "dfOverZhRecords": 0.08,
+          "dfOverScope": 0.0133,
+          "relativeDeviation": 0,
+          "pass": true
+        },
+        {
+          "word": "为什么",
+          "df": 801,
+          "target": 0.08,
+          "dfOverZhRecords": 0.0801,
+          "dfOverScope": 0.0133,
+          "relativeDeviation": 0.0013,
+          "pass": true
+        },
+        {
+          "word": "的时候",
+          "df": 2501,
+          "target": 0.25,
+          "dfOverZhRecords": 0.2501,
+          "dfOverScope": 0.0416,
+          "relativeDeviation": 0.0004,
+          "pass": true
+        },
+        {
+          "word": "的模型",
+          "df": 500,
+          "target": 0.05,
+          "dfOverZhRecords": 0.05,
+          "dfOverScope": 0.0083,
+          "relativeDeviation": 0,
+          "pass": true
+        },
+        {
+          "word": "会不会",
+          "df": 601,
+          "target": 0.06,
+          "dfOverZhRecords": 0.0601,
+          "dfOverScope": 0.01,
+          "relativeDeviation": 0.0017,
+          "pass": true
+        },
+        {
+          "word": "什么时候",
+          "df": 500,
+          "target": 0.05,
+          "dfOverZhRecords": 0.05,
+          "dfOverScope": 0.0083,
+          "relativeDeviation": 0,
+          "pass": true
+        }
+      ],
+      "s4NegativeFtsCountRange": [
+        1,
+        2899
+      ],
+      "precheckConsistency": "负例 40 + 保护线 40 逐条一致",
+      "s6Identity": {
+        "checked": 120,
+        "mismatches": []
+      },
+      "checks": [
+        {
+          "name": "r4 §16.2 预检一致",
+          "pass": true
+        },
+        {
+          "name": "S2 物理行数",
+          "pass": true
+        },
+        {
+          "name": "S2 无跨域行",
+          "pass": true
+        },
+        {
+          "name": "S2 向量齐全",
+          "pass": true
+        },
+        {
+          "name": "S2 协议单一",
+          "pass": true
+        },
+        {
+          "name": "S3 中文行数",
+          "pass": true
+        },
+        {
+          "name": "S3 功能词占比",
+          "pass": true
+        },
+        {
+          "name": "S4 负例词面命中",
+          "pass": true
+        }
+      ]
+    },
+    "strata": {
+      "union": {
+        "<0.200": 20,
+        "0.200-0.310": 19,
+        "0.310-0.400": 14,
+        ">=0.400": 27
+      },
+      "relevance": {
+        "<0.200": 3,
+        "0.200-0.310": 9,
+        "0.310-0.400": 10,
+        ">=0.400": 18
+      },
+      "protection": {
+        "<0.200": 17,
+        "0.200-0.310": 10,
+        "0.310-0.400": 4,
+        ">=0.400": 9
+      },
+      "bands": [
+        "<0.200",
+        "0.200-0.310",
+        "0.310-0.400",
+        ">=0.400"
+      ]
+    },
+    "admissionReadings": {
+      "note": "准入机制自身的读数（判据 §5.4），不是门读数；F3 会在完整检索链上重出。",
+      "perArm": [
+        {
+          "arm": "r0-d1.00",
+          "policy": {
+            "windowCoverageRatio": 0,
+            "unitDfRatioCeiling": 1
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 0,
+          "zeroReturn": 4,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 0,
+          "returnedMean": 17.78
+        },
+        {
+          "arm": "r0-d0.30",
+          "policy": {
+            "windowCoverageRatio": 0,
+            "unitDfRatioCeiling": 0.3
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 0,
+          "zeroReturn": 4,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 0,
+          "returnedMean": 17.78
+        },
+        {
+          "arm": "r0-d0.10",
+          "policy": {
+            "windowCoverageRatio": 0,
+            "unitDfRatioCeiling": 0.1
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 0,
+          "zeroReturn": 4,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 1,
+          "returnedMean": 17.39
+        },
+        {
+          "arm": "r0-d0.03",
+          "policy": {
+            "windowCoverageRatio": 0,
+            "unitDfRatioCeiling": 0.03
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 0,
+          "zeroReturn": 4,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 7,
+          "returnedMean": 15.48
+        },
+        {
+          "arm": "r0.1-d1.00",
+          "policy": {
+            "windowCoverageRatio": 0.1,
+            "unitDfRatioCeiling": 1
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 71,
+          "zeroReturn": 26,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 0,
+          "returnedMean": 5.23
+        },
+        {
+          "arm": "r0.1-d0.30",
+          "policy": {
+            "windowCoverageRatio": 0.1,
+            "unitDfRatioCeiling": 0.3
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 71,
+          "zeroReturn": 26,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 0,
+          "returnedMean": 5.23
+        },
+        {
+          "arm": "r0.1-d0.10",
+          "policy": {
+            "windowCoverageRatio": 0.1,
+            "unitDfRatioCeiling": 0.1
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 71,
+          "zeroReturn": 26,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 1,
+          "returnedMean": 5.23
+        },
+        {
+          "arm": "r0.1-d0.03",
+          "policy": {
+            "windowCoverageRatio": 0.1,
+            "unitDfRatioCeiling": 0.03
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 71,
+          "zeroReturn": 27,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 7,
+          "returnedMean": 4.82
+        },
+        {
+          "arm": "r0.2-d1.00",
+          "policy": {
+            "windowCoverageRatio": 0.2,
+            "unitDfRatioCeiling": 1
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 79,
+          "zeroReturn": 57,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 0,
+          "returnedMean": 1.96
+        },
+        {
+          "arm": "r0.2-d0.30",
+          "policy": {
+            "windowCoverageRatio": 0.2,
+            "unitDfRatioCeiling": 0.3
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 79,
+          "zeroReturn": 57,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 0,
+          "returnedMean": 1.96
+        },
+        {
+          "arm": "r0.2-d0.10",
+          "policy": {
+            "windowCoverageRatio": 0.2,
+            "unitDfRatioCeiling": 0.1
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 79,
+          "zeroReturn": 57,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 1,
+          "returnedMean": 1.96
+        },
+        {
+          "arm": "r0.2-d0.03",
+          "policy": {
+            "windowCoverageRatio": 0.2,
+            "unitDfRatioCeiling": 0.03
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 78,
+          "zeroReturn": 57,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 7,
+          "returnedMean": 1.96
+        },
+        {
+          "arm": "r0.3-d1.00",
+          "policy": {
+            "windowCoverageRatio": 0.3,
+            "unitDfRatioCeiling": 1
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 82,
+          "zeroReturn": 76,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 0,
+          "returnedMean": 1.37
+        },
+        {
+          "arm": "r0.3-d0.30",
+          "policy": {
+            "windowCoverageRatio": 0.3,
+            "unitDfRatioCeiling": 0.3
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 82,
+          "zeroReturn": 76,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 0,
+          "returnedMean": 1.37
+        },
+        {
+          "arm": "r0.3-d0.10",
+          "policy": {
+            "windowCoverageRatio": 0.3,
+            "unitDfRatioCeiling": 0.1
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 82,
+          "zeroReturn": 76,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 1,
+          "returnedMean": 1.37
+        },
+        {
+          "arm": "r0.3-d0.03",
+          "policy": {
+            "windowCoverageRatio": 0.3,
+            "unitDfRatioCeiling": 0.03
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 81,
+          "zeroReturn": 76,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 7,
+          "returnedMean": 1.37
+        }
+      ],
+      "observed": {
+        "v1Bites": "r 从 0 到 0.3，逐 arm 平均返回 17.78 → 5.23 → 1.96 → 1.37；空返回 4 → 26 → 57 → 76（共 120 条）",
+        "v2Inert": "d 从 1.0 到 0.03，被丢弃单元共 0 / 0 / 1 / 7 个——60,066 行下连最高频功能词的 df/scope 也只有 0.0416，低于 0.10。刻度已冻结，不因此读数改动（§2.4 第 2 条）",
+        "exemption": "精确单元豁免命中在所有 arm 上恒为 86，它是拉丁 / 路径 / 数字 query 不被覆盖度打死的原因（§2.1 边界 1）"
+      }
+    },
+    "nextPhase": {
+      "f3": "在本记录固定的 K 与装置上扫 16 个 arm，出 G1–G4 + 保护线 + 性能门读数",
+      "forbidden": "F3 不得改动 K、不得改动网格刻度、不得改动语义侧任何参数"
+    }
+  },
+  "generatedBy": "benchmark/freeze-util.ts"
+}

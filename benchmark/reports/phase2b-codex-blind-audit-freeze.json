@@ -1,0 +1,17 @@
+{
+  "input": "benchmark/reports/phase2b-codex-blind-audit-input.json",
+  "sha256": "dc9a0ba59f1e6d638d71aed775e075da52eb0beda566678a77a88e58832f44e5",
+  "frozen_at": "2026-07-31T14:19:37Z",
+  "counts": {
+    "relevance": 20,
+    "empty_hard_negative": 20,
+    "total": 40,
+    "unique_ids": 40
+  },
+  "pre_freeze_check": {
+    "mode": "fts-only",
+    "all_fts_counts_zero": true,
+    "selected_policy_executed": false
+  },
+  "mutation_rule": "Any input change invalidates this freeze record and requires a new FTS-only check before semantic evaluation."
+}

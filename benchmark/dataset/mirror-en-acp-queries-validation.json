@@ -1,0 +1,80 @@
+{
+  "provenance": {
+    "source": "merged-acp-runs",
+    "target": "queries",
+    "querySet": "validation",
+    "inputs": [
+      {
+        "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-queries-validation.json.failed-1785421864838.json",
+        "provenance": {
+          "source": "acp",
+          "agent": "kiro-mem-compressor",
+          "kiroCli": "kiro-cli (see report)",
+          "target": "queries",
+          "querySet": "validation",
+          "generatedAt": "2026-07-30T14:31:04.838Z",
+          "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+          "items": 11,
+          "failures": 9,
+          "retries": 18,
+          "wallTimeMs": 37514,
+          "itemLatencyMs": {
+            "p50": 33476,
+            "p95": 37184,
+            "max": 37509
+          }
+        }
+      },
+      {
+        "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-queries-validation-retry.json",
+        "provenance": {
+          "source": "acp",
+          "agent": "kiro-mem-compressor",
+          "kiroCli": "kiro-cli (see report)",
+          "target": "queries",
+          "querySet": "validation",
+          "generatedAt": "2026-07-30T14:32:41.775Z",
+          "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+          "items": 9,
+          "failures": 0,
+          "retries": 4,
+          "wallTimeMs": 24050,
+          "itemLatencyMs": {
+            "p50": 16961,
+            "p95": 24041,
+            "max": 24041
+          }
+        }
+      }
+    ],
+    "v20Repair": {
+      "was": "...",
+      "now": "was the quality benchmark set treated as a release blocker",
+      "why": "v20 原文本来就是英文，中→英 prompt 面对已是英文的输入会返回解释而不是 JSON（阶段 1b §5 已记录该形状）。首轮落进固定输入的是字面 \"...\"，生产护栏以 placeholder 正确拒绝，于是该 query 在 arm 里静默落回 raw-v1。加固后的探针（parse 里过一遍 checkSemanticEnQuery）重译得到恒等形式，护栏明确允许\"An English source legitimately normalizes to itself\"。",
+      "repairedAt": "2026-07-31",
+      "gate": "Gate B 后续整改"
+    }
+  },
+  "queries": {
+    "v12": "what happens to search when the embedding model is unavailable",
+    "v09": "Are there any type errors that haven't been fixed yet?",
+    "v15": "do the tests ever write into the developer's real data directory",
+    "v05": "How big is that index injected at the start of the session, actually?",
+    "v01": "What happens to search if the vector model hasn't warmed up yet",
+    "v14": "which MCP arguments get validated before they reach SQLite",
+    "v11": "does a search containing a quote or a bracket still throw",
+    "v02": "If one of the sub-process pool used for compression breaks, will it get stuck forever?",
+    "v06": "why does timeline sort by turn order instead of by ID",
+    "v16": "why does a repair install have to restart the service",
+    "v07": "Is there any possibility that memory from other projects could leak into the current project?",
+    "v10": "If I do a full clean and reinstall, will the old version's tables still be left behind?",
+    "v04": "After installing, the Worker failed to start once — what was the reason at that time?",
+    "v18": "what floor does the RRF fusion apply to semantic-only candidates",
+    "v08": "What precision does the local sentence embedding model use?",
+    "v13": "are ACP failures logged without leaking the prompt content",
+    "v03": "How does the local token work in a way that's completely unnoticeable to the user",
+    "v19": "are the MCP tool descriptions available in more than one language",
+    "v17": "how does diagnose notice that the installed version drifted",
+    "v20": "was the quality benchmark set treated as a release blocker"
+  }
+}

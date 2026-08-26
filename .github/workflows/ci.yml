@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      # The browser bundle is a separate TS project (DOM lib + preact JSX), so
+      # `bun run typecheck` deliberately does not cover it.
+      - name: Typecheck viewer
+        run: bun run typecheck:viewer
+
+      # Before Test and Pack: the install-integrity test asserts the Worker can
+      # serve the Viewer from the installed directory, and the tarball must carry
+      # dist/ui.
+      - name: Build viewer bundle
+        run: bun run build:ui
+
+      - name: Test
+        run: bun test
+
+      # The published tarball must carry the Worker, MCP, hooks, ACP runtime
+      # files, agent configs, prompts and the bundled embedding model. A missing
+      # file here means an installed Worker that cannot start (see the
+      # src/auth-token.ts incident), so assert the payload explicitly.
+      - name: Pack
+        run: |
+          npm pack --dry-run 2>&1 | tee /tmp/pack.log
+          version=$(node -p "require('./package.json').version")
+          grep -q "kiro-mem-${version}.tgz" /tmp/pack.log
+          for required in \
+            src/server/worker.ts \
+            src/server/mcp-server.ts \
+            src/auth-token.ts \
+            src/acp/compressor.ts \
+            src/agent/kiro-mem.json \
+            src/agent/kiro-mem-compressor.json \
+            models/all-MiniLM-L6-v2/config.json \
+            scripts/setup.ts \
+            dist/ui/viewer.html \
+            dist/ui/viewer.js \
+            dist/ui/styles.css
+          do
+            grep -q "$required" /tmp/pack.log || { echo "missing from tarball: $required"; exit 1; }
+          done
+
+      # Quality baseline (benchmark/README.md). The `gold` compressor needs no
+      # kiro-cli, so retrieval precision, scope isolation and latency gates are
+      # enforced on every push. The `acp` variant measures real summary quality
+      # and has to be run locally against an installed kiro-runtime.
+      - name: Quality baseline (gold)
+        run: bun run bench

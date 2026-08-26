@@ -1,0 +1,932 @@
+{
+  "tieSet": [
+    "q02",
+    "q03",
+    "q06",
+    "q07",
+    "q10",
+    "q14",
+    "q15",
+    "q16",
+    "q20"
+  ],
+  "verdicts": [
+    {
+      "arm": {
+        "arm": "tb-source-confidence",
+        "variable": "tieBreak",
+        "policy": {
+          "semanticDiscovery": true,
+          "semanticFloor": 0.197,
+          "semanticOnlyLimit": 2,
+          "rrfK": 60,
+          "ftsWeight": 1,
+          "semanticWeight": 1,
+          "tieBreak": "source-confidence"
+        },
+        "diffRows": 3,
+        "diffIds": [
+          "q02",
+          "q10",
+          "q20"
+        ],
+        "metrics": {
+          "phase2HitAt5": 0.5,
+          "phase2Mrr": 0.4583333333333333,
+          "phase2RPrecision": 0.4097222222222222,
+          "phase2EmptyReturned": 0.5918367346938775,
+          "phase2EmptyWorst": 2,
+          "tunedHitAt5": 1,
+          "tunedMrr": 0.8888888888888888,
+          "tunedRPrecision": 0.8333333333333334,
+          "expectedEmptyReturned": 1,
+          "expectedEmptyWorst": 2,
+          "semanticOnlyMax": 2,
+          "semanticOnlyTotal": 156,
+          "semanticOnlyDroppedTotal": 130,
+          "exactTieQueries": 9,
+          "exactTieInPageQueries": 9,
+          "exactTiePairsTotal": 10,
+          "leakTotal": 0,
+          "degrades": 0,
+          "latencyP95": 10.714124999999967
+        },
+        "tieInPageIds": [
+          "q02",
+          "q03",
+          "q06",
+          "q07",
+          "q10",
+          "q14",
+          "q15",
+          "q16",
+          "q20"
+        ]
+      },
+      "changed": [
+        "q02",
+        "q10",
+        "q20"
+      ],
+      "overreach": [],
+      "resolvesAny": true,
+      "d2Failures": [],
+      "conservativeExtension": true,
+      "feasible": true
+    },
+    {
+      "arm": {
+        "arm": "tb-semantic-rank",
+        "variable": "tieBreak",
+        "policy": {
+          "semanticDiscovery": true,
+          "semanticFloor": 0.197,
+          "semanticOnlyLimit": 2,
+          "rrfK": 60,
+          "ftsWeight": 1,
+          "semanticWeight": 1,
+          "tieBreak": "semantic-rank"
+        },
+        "diffRows": 5,
+        "diffIds": [
+          "q02",
+          "q03",
+          "q10",
+          "q14",
+          "q20"
+        ],
+        "metrics": {
+          "phase2HitAt5": 0.5,
+          "phase2Mrr": 0.4583333333333333,
+          "phase2RPrecision": 0.4097222222222222,
+          "phase2EmptyReturned": 0.5918367346938775,
+          "phase2EmptyWorst": 2,
+          "tunedHitAt5": 1,
+          "tunedMrr": 0.9444444444444444,
+          "tunedRPrecision": 0.8888888888888888,
+          "expectedEmptyReturned": 1,
+          "expectedEmptyWorst": 2,
+          "semanticOnlyMax": 2,
+          "semanticOnlyTotal": 156,
+          "semanticOnlyDroppedTotal": 130,
+          "exactTieQueries": 9,
+          "exactTieInPageQueries": 9,
+          "exactTiePairsTotal": 10,
+          "leakTotal": 0,
+          "degrades": 0,
+          "latencyP95": 17.227542000000085
+        },
+        "tieInPageIds": [
+          "q02",
+          "q03",
+          "q06",
+          "q07",
+          "q10",
+          "q14",
+          "q15",
+          "q16",
+          "q20"
+        ]
+      },
+      "changed": [
+        "q02",
+        "q03",
+        "q10",
+        "q14",
+        "q20"
+      ],
+      "overreach": [],
+      "resolvesAny": true,
+      "d2Failures": [],
+      "conservativeExtension": true,
+      "feasible": true
+    },
+    {
+      "arm": {
+        "arm": "k30-wsem1",
+        "variable": "rrfK=30 w_sem=1",
+        "policy": {
+          "semanticDiscovery": true,
+          "semanticFloor": 0.197,
+          "semanticOnlyLimit": 2,
+          "rrfK": 30,
+          "ftsWeight": 1,
+          "semanticWeight": 1,
+          "tieBreak": "recency"
+        },
+        "diffRows": 0,
+        "diffIds": [],
+        "metrics": {
+          "phase2HitAt5": 0.5,
+          "phase2Mrr": 0.4583333333333333,
+          "phase2RPrecision": 0.4097222222222222,
+          "phase2EmptyReturned": 0.5918367346938775,
+          "phase2EmptyWorst": 2,
+          "tunedHitAt5": 1,
+          "tunedMrr": 0.8888888888888888,
+          "tunedRPrecision": 0.8333333333333334,
+          "expectedEmptyReturned": 1,
+          "expectedEmptyWorst": 2,
+          "semanticOnlyMax": 2,
+          "semanticOnlyTotal": 156,
+          "semanticOnlyDroppedTotal": 130,
+          "exactTieQueries": 9,
+          "exactTieInPageQueries": 9,
+          "exactTiePairsTotal": 10,
+          "leakTotal": 0,
+          "degrades": 0,
+          "latencyP95": 14.875958999999966
+        },
+        "tieInPageIds": [
+          "q02",
+          "q03",
+          "q06",
+          "q07",
+          "q10",
+          "q14",
+          "q15",
+          "q16",
+          "q20"
+        ]
+      },
+      "changed": [],
+      "overreach": [],
+      "resolvesAny": false,
+      "d2Failures": [],
+      "conservativeExtension": false,
+      "feasible": false
+    },
+    {
+      "arm": {
+        "arm": "k30-wsem1.1",
+        "variable": "rrfK=30 w_sem=1.1",
+        "policy": {
+          "semanticDiscovery": true,
+          "semanticFloor": 0.197,
+          "semanticOnlyLimit": 2,
+          "rrfK": 30,
+          "ftsWeight": 1,
+          "semanticWeight": 1.1,
+          "tieBreak": "recency"
+        },
+        "diffRows": 9,
+        "diffIds": [
+          "q02",
+          "q03",
+          "q04",
+          "q06",
+          "q10",
+          "q11",
+          "q13",
+          "q14",
+          "q20"
+        ],
+        "metrics": {
+          "phase2HitAt5": 0.5,
+          "phase2Mrr": 0.4583333333333333,
+          "phase2RPrecision": 0.4097222222222222,
+          "phase2EmptyReturned": 0.5918367346938775,
+          "phase2EmptyWorst": 2,
+          "tunedHitAt5": 1,
+          "tunedMrr": 0.9722222222222222,
+          "tunedRPrecision": 0.8888888888888888,
+          "expectedEmptyReturned": 1,
+          "expectedEmptyWorst": 2,
+          "semanticOnlyMax": 2,
+          "semanticOnlyTotal": 157,
+          "semanticOnlyDroppedTotal": 130,
+          "exactTieQueries": 0,
+          "exactTieInPageQueries": 0,
+          "exactTiePairsTotal": 0,
+          "leakTotal": 0,
+          "degrades": 0,
+          "latencyP95": 13.31308399999989
+        },
+        "tieInPageIds": []
+      },
+      "changed": [
+        "q02",
+        "q03",
+        "q04",
+        "q06",
+        "q10",
+        "q11",
+        "q13",
+        "q14",
+        "q20"
+      ],
+      "overreach": [
+        "q04",
+        "q11",
+        "q13"
+      ],
+      "resolvesAny": true,
+      "d2Failures": [],
+      "conservativeExtension": true,
+      "feasible": false
+    },
+    {
+      "arm": {
+        "arm": "k30-wsem1.25",
+        "variable": "rrfK=30 w_sem=1.25",
+        "policy": {
+          "semanticDiscovery": true,
+          "semanticFloor": 0.197,
+          "semanticOnlyLimit": 2,
+          "rrfK": 30,
+          "ftsWeight": 1,
+          "semanticWeight": 1.25,
+          "tieBreak": "recency"
+        },
+        "diffRows": 9,
+        "diffIds": [
+          "q02",
+          "q03",
+          "q04",
+          "q06",
+          "q10",
+          "q11",
+          "q13",
+          "q14",
+          "q20"
+        ],
+        "metrics": {
+          "phase2HitAt5": 0.5,
+          "phase2Mrr": 0.4583333333333333,
+          "phase2RPrecision": 0.4097222222222222,
+          "phase2EmptyReturned": 0.5918367346938775,
+          "phase2EmptyWorst": 2,
+          "tunedHitAt5": 1,
+          "tunedMrr": 0.9722222222222222,
+          "tunedRPrecision": 0.8888888888888888,
+          "expectedEmptyReturned": 1,
+          "expectedEmptyWorst": 2,
+          "semanticOnlyMax": 2,
+          "semanticOnlyTotal": 158,
+          "semanticOnlyDroppedTotal": 130,
+          "exactTieQueries": 1,
+          "exactTieInPageQueries": 0,
+          "exactTiePairsTotal": 1,
+          "leakTotal": 0,
+          "degrades": 0,
+          "latencyP95": 12.087125000000015
+        },
+        "tieInPageIds": []
+      },
+      "changed": [
+        "q02",
+        "q03",
+        "q04",
+        "q06",
+        "q10",
+        "q11",
+        "q13",
+        "q14",
+        "q20"
+      ],
+      "overreach": [
+        "q04",
+        "q11",
+        "q13"
+      ],
+      "resolvesAny": true,
+      "d2Failures": [],
+      "conservativeExtension": true,
+      "feasible": false
+    },
+    {
+      "arm": {
+        "arm": "k30-wsem1.5",
+        "variable": "rrfK=30 w_sem=1.5",
+        "policy": {
+          "semanticDiscovery": true,
+          "semanticFloor": 0.197,
+          "semanticOnlyLimit": 2,
+          "rrfK": 30,
+          "ftsWeight": 1,
+          "semanticWeight": 1.5,
+          "tieBreak": "recency"
+        },
+        "diffRows": 9,
+        "diffIds": [
+          "q02",
+          "q03",
+          "q04",
+          "q06",
+          "q10",
+          "q11",
+          "q13",
+          "q14",
+          "q20"
+        ],
+        "metrics": {
+          "phase2HitAt5": 0.5,
+          "phase2Mrr": 0.4583333333333333,
+          "phase2RPrecision": 0.4097222222222222,
+          "phase2EmptyReturned": 0.5918367346938775,
+          "phase2EmptyWorst": 2,
+          "tunedHitAt5": 1,
+          "tunedMrr": 0.9722222222222222,
+          "tunedRPrecision": 0.8888888888888888,
+          "expectedEmptyReturned": 1,
+          "expectedEmptyWorst": 2,
+          "semanticOnlyMax": 2,
+          "semanticOnlyTotal": 158,
+          "semanticOnlyDroppedTotal": 130,
+          "exactTieQueries": 0,
+          "exactTieInPageQueries": 0,
+          "exactTiePairsTotal": 0,
+          "leakTotal": 0,
+          "degrades": 0,
+          "latencyP95": 13.478458000000046
+        },
+        "tieInPageIds": []
+      },
+      "changed": [
+        "q02",
+        "q03",
+        "q04",
+        "q06",
+        "q10",
+        "q11",
+        "q13",
+        "q14",
+        "q20"
+      ],
+      "overreach": [
+        "q04",
+        "q11",
+        "q13"
+      ],
+      "resolvesAny": true,
+      "d2Failures": [],
+      "conservativeExtension": true,
+      "feasible": false
+    },
+    {
+      "arm": {
+        "arm": "k60-wsem1",
+        "variable": "rrfK=60 w_sem=1",
+        "policy": {
+          "semanticDiscovery": true,
+          "semanticFloor": 0.197,
+          "semanticOnlyLimit": 2,
+          "rrfK": 60,
+          "ftsWeight": 1,
+          "semanticWeight": 1,
+          "tieBreak": "recency"
+        },
+        "diffRows": 0,
+        "diffIds": [],
+        "metrics": {
+          "phase2HitAt5": 0.5,
+          "phase2Mrr": 0.4583333333333333,
+          "phase2RPrecision": 0.4097222222222222,
+          "phase2EmptyReturned": 0.5918367346938775,
+          "phase2EmptyWorst": 2,
+          "tunedHitAt5": 1,
+          "tunedMrr": 0.8888888888888888,
+          "tunedRPrecision": 0.8333333333333334,
+          "expectedEmptyReturned": 1,
+          "expectedEmptyWorst": 2,
+          "semanticOnlyMax": 2,
+          "semanticOnlyTotal": 156,
+          "semanticOnlyDroppedTotal": 130,
+          "exactTieQueries": 9,
+          "exactTieInPageQueries": 9,
+          "exactTiePairsTotal": 10,
+          "leakTotal": 0,
+          "degrades": 0,
+          "latencyP95": 17.161957999999913
+        },
+        "tieInPageIds": [
+          "q02",
+          "q03",
+          "q06",
+          "q07",
+          "q10",
+          "q14",
+          "q15",
+          "q16",
+          "q20"
+        ]
+      },
+      "changed": [],
+      "overreach": [],
+      "resolvesAny": false,
+      "d2Failures": [],
+      "conservativeExtension": false,
+      "feasible": false
+    },
+    {
+      "arm": {
+        "arm": "k60-wsem1.1",
+        "variable": "rrfK=60 w_sem=1.1",
+        "policy": {
+          "semanticDiscovery": true,
+          "semanticFloor": 0.197,
+          "semanticOnlyLimit": 2,
+          "rrfK": 60,
+          "ftsWeight": 1,
+          "semanticWeight": 1.1,
+          "tieBreak": "recency"
+        },
+        "diffRows": 9,
+        "diffIds": [
+          "q02",
+          "q03",
+          "q04",
+          "q06",
+          "q10",
+          "q11",
+          "q13",
+          "q14",
+          "q20"
+        ],
+        "metrics": {
+          "phase2HitAt5": 0.5,
+          "phase2Mrr": 0.4583333333333333,
+          "phase2RPrecision": 0.4097222222222222,
+          "phase2EmptyReturned": 0.5918367346938775,
+          "phase2EmptyWorst": 2,
+          "tunedHitAt5": 1,
+          "tunedMrr": 0.9722222222222222,
+          "tunedRPrecision": 0.8888888888888888,
+          "expectedEmptyReturned": 1,
+          "expectedEmptyWorst": 2,
+          "semanticOnlyMax": 2,
+          "semanticOnlyTotal": 158,
+          "semanticOnlyDroppedTotal": 130,
+          "exactTieQueries": 0,
+          "exactTieInPageQueries": 0,
+          "exactTiePairsTotal": 0,
+          "leakTotal": 0,
+          "degrades": 0,
+          "latencyP95": 14.029208000000153
+        },
+        "tieInPageIds": []
+      },
+      "changed": [
+        "q02",
+        "q03",
+        "q04",
+        "q06",
+        "q10",
+        "q11",
+        "q13",
+        "q14",
+        "q20"
+      ],
+      "overreach": [
+        "q04",
+        "q11",
+        "q13"
+      ],
+      "resolvesAny": true,
+      "d2Failures": [],
+      "conservativeExtension": true,
+      "feasible": false
+    },
+    {
+      "arm": {
+        "arm": "k60-wsem1.25",
+        "variable": "rrfK=60 w_sem=1.25",
+        "policy": {
+          "semanticDiscovery": true,
+          "semanticFloor": 0.197,
+          "semanticOnlyLimit": 2,
+          "rrfK": 60,
+          "ftsWeight": 1,
+          "semanticWeight": 1.25,
+          "tieBreak": "recency"
+        },
+        "diffRows": 9,
+        "diffIds": [
+          "q02",
+          "q03",
+          "q04",
+          "q06",
+          "q10",
+          "q11",
+          "q13",
+          "q14",
+          "q20"
+        ],
+        "metrics": {
+          "phase2HitAt5": 0.5,
+          "phase2Mrr": 0.4583333333333333,
+          "phase2RPrecision": 0.4097222222222222,
+          "phase2EmptyReturned": 0.5918367346938775,
+          "phase2EmptyWorst": 2,
+          "tunedHitAt5": 1,
+          "tunedMrr": 0.9722222222222222,
+          "tunedRPrecision": 0.8888888888888888,
+          "expectedEmptyReturned": 1,
+          "expectedEmptyWorst": 2,
+          "semanticOnlyMax": 2,
+          "semanticOnlyTotal": 158,
+          "semanticOnlyDroppedTotal": 130,
+          "exactTieQueries": 0,
+          "exactTieInPageQueries": 0,
+          "exactTiePairsTotal": 0,
+          "leakTotal": 0,
+          "degrades": 0,
+          "latencyP95": 11.114500000000135
+        },
+        "tieInPageIds": []
+      },
+      "changed": [
+        "q02",
+        "q03",
+        "q04",
+        "q06",
+        "q10",
+        "q11",
+        "q13",
+        "q14",
+        "q20"
+      ],
+      "overreach": [
+        "q04",
+        "q11",
+        "q13"
+      ],
+      "resolvesAny": true,
+      "d2Failures": [],
+      "conservativeExtension": true,
+      "feasible": false
+    },
+    {
+      "arm": {
+        "arm": "k60-wsem1.5",
+        "variable": "rrfK=60 w_sem=1.5",
+        "policy": {
+          "semanticDiscovery": true,
+          "semanticFloor": 0.197,
+          "semanticOnlyLimit": 2,
+          "rrfK": 60,
+          "ftsWeight": 1,
+          "semanticWeight": 1.5,
+          "tieBreak": "recency"
+        },
+        "diffRows": 9,
+        "diffIds": [
+          "q02",
+          "q03",
+          "q04",
+          "q06",
+          "q10",
+          "q11",
+          "q13",
+          "q14",
+          "q20"
+        ],
+        "metrics": {
+          "phase2HitAt5": 0.5,
+          "phase2Mrr": 0.4583333333333333,
+          "phase2RPrecision": 0.4097222222222222,
+          "phase2EmptyReturned": 0.5918367346938775,
+          "phase2EmptyWorst": 2,
+          "tunedHitAt5": 1,
+          "tunedMrr": 0.9722222222222222,
+          "tunedRPrecision": 0.8888888888888888,
+          "expectedEmptyReturned": 1,
+          "expectedEmptyWorst": 2,
+          "semanticOnlyMax": 2,
+          "semanticOnlyTotal": 158,
+          "semanticOnlyDroppedTotal": 130,
+          "exactTieQueries": 0,
+          "exactTieInPageQueries": 0,
+          "exactTiePairsTotal": 0,
+          "leakTotal": 0,
+          "degrades": 0,
+          "latencyP95": 13.70395799999983
+        },
+        "tieInPageIds": []
+      },
+      "changed": [
+        "q02",
+        "q03",
+        "q04",
+        "q06",
+        "q10",
+        "q11",
+        "q13",
+        "q14",
+        "q20"
+      ],
+      "overreach": [
+        "q04",
+        "q11",
+        "q13"
+      ],
+      "resolvesAny": true,
+      "d2Failures": [],
+      "conservativeExtension": true,
+      "feasible": false
+    },
+    {
+      "arm": {
+        "arm": "k90-wsem1",
+        "variable": "rrfK=90 w_sem=1",
+        "policy": {
+          "semanticDiscovery": true,
+          "semanticFloor": 0.197,
+          "semanticOnlyLimit": 2,
+          "rrfK": 90,
+          "ftsWeight": 1,
+          "semanticWeight": 1,
+          "tieBreak": "recency"
+        },
+        "diffRows": 0,
+        "diffIds": [],
+        "metrics": {
+          "phase2HitAt5": 0.5,
+          "phase2Mrr": 0.4583333333333333,
+          "phase2RPrecision": 0.4097222222222222,
+          "phase2EmptyReturned": 0.5918367346938775,
+          "phase2EmptyWorst": 2,
+          "tunedHitAt5": 1,
+          "tunedMrr": 0.8888888888888888,
+          "tunedRPrecision": 0.8333333333333334,
+          "expectedEmptyReturned": 1,
+          "expectedEmptyWorst": 2,
+          "semanticOnlyMax": 2,
+          "semanticOnlyTotal": 156,
+          "semanticOnlyDroppedTotal": 130,
+          "exactTieQueries": 9,
+          "exactTieInPageQueries": 9,
+          "exactTiePairsTotal": 10,
+          "leakTotal": 0,
+          "degrades": 0,
+          "latencyP95": 13.40625
+        },
+        "tieInPageIds": [
+          "q02",
+          "q03",
+          "q06",
+          "q07",
+          "q10",
+          "q14",
+          "q15",
+          "q16",
+          "q20"
+        ]
+      },
+      "changed": [],
+      "overreach": [],
+      "resolvesAny": false,
+      "d2Failures": [],
+      "conservativeExtension": false,
+      "feasible": false
+    },
+    {
+      "arm": {
+        "arm": "k90-wsem1.1",
+        "variable": "rrfK=90 w_sem=1.1",
+        "policy": {
+          "semanticDiscovery": true,
+          "semanticFloor": 0.197,
+          "semanticOnlyLimit": 2,
+          "rrfK": 90,
+          "ftsWeight": 1,
+          "semanticWeight": 1.1,
+          "tieBreak": "recency"
+        },
+        "diffRows": 9,
+        "diffIds": [
+          "q02",
+          "q03",
+          "q04",
+          "q06",
+          "q10",
+          "q11",
+          "q13",
+          "q14",
+          "q20"
+        ],
+        "metrics": {
+          "phase2HitAt5": 0.5,
+          "phase2Mrr": 0.4583333333333333,
+          "phase2RPrecision": 0.4097222222222222,
+          "phase2EmptyReturned": 0.5918367346938775,
+          "phase2EmptyWorst": 2,
+          "tunedHitAt5": 1,
+          "tunedMrr": 0.9722222222222222,
+          "tunedRPrecision": 0.8888888888888888,
+          "expectedEmptyReturned": 1,
+          "expectedEmptyWorst": 2,
+          "semanticOnlyMax": 2,
+          "semanticOnlyTotal": 158,
+          "semanticOnlyDroppedTotal": 130,
+          "exactTieQueries": 0,
+          "exactTieInPageQueries": 0,
+          "exactTiePairsTotal": 0,
+          "leakTotal": 0,
+          "degrades": 0,
+          "latencyP95": 12.466916999999967
+        },
+        "tieInPageIds": []
+      },
+      "changed": [
+        "q02",
+        "q03",
+        "q04",
+        "q06",
+        "q10",
+        "q11",
+        "q13",
+        "q14",
+        "q20"
+      ],
+      "overreach": [
+        "q04",
+        "q11",
+        "q13"
+      ],
+      "resolvesAny": true,
+      "d2Failures": [],
+      "conservativeExtension": true,
+      "feasible": false
+    },
+    {
+      "arm": {
+        "arm": "k90-wsem1.25",
+        "variable": "rrfK=90 w_sem=1.25",
+        "policy": {
+          "semanticDiscovery": true,
+          "semanticFloor": 0.197,
+          "semanticOnlyLimit": 2,
+          "rrfK": 90,
+          "ftsWeight": 1,
+          "semanticWeight": 1.25,
+          "tieBreak": "recency"
+        },
+        "diffRows": 9,
+        "diffIds": [
+          "q02",
+          "q03",
+          "q04",
+          "q06",
+          "q10",
+          "q11",
+          "q13",
+          "q14",
+          "q20"
+        ],
+        "metrics": {
+          "phase2HitAt5": 0.5,
+          "phase2Mrr": 0.4583333333333333,
+          "phase2RPrecision": 0.4097222222222222,
+          "phase2EmptyReturned": 0.5918367346938775,
+          "phase2EmptyWorst": 2,
+          "tunedHitAt5": 1,
+          "tunedMrr": 0.9722222222222222,
+          "tunedRPrecision": 0.8888888888888888,
+          "expectedEmptyReturned": 1,
+          "expectedEmptyWorst": 2,
+          "semanticOnlyMax": 2,
+          "semanticOnlyTotal": 158,
+          "semanticOnlyDroppedTotal": 130,
+          "exactTieQueries": 0,
+          "exactTieInPageQueries": 0,
+          "exactTiePairsTotal": 0,
+          "leakTotal": 0,
+          "degrades": 0,
+          "latencyP95": 13.127707999999984
+        },
+        "tieInPageIds": []
+      },
+      "changed": [
+        "q02",
+        "q03",
+        "q04",
+        "q06",
+        "q10",
+        "q11",
+        "q13",
+        "q14",
+        "q20"
+      ],
+      "overreach": [
+        "q04",
+        "q11",
+        "q13"
+      ],
+      "resolvesAny": true,
+      "d2Failures": [],
+      "conservativeExtension": true,
+      "feasible": false
+    },
+    {
+      "arm": {
+        "arm": "k90-wsem1.5",
+        "variable": "rrfK=90 w_sem=1.5",
+        "policy": {
+          "semanticDiscovery": true,
+          "semanticFloor": 0.197,
+          "semanticOnlyLimit": 2,
+          "rrfK": 90,
+          "ftsWeight": 1,
+          "semanticWeight": 1.5,
+          "tieBreak": "recency"
+        },
+        "diffRows": 9,
+        "diffIds": [
+          "q02",
+          "q03",
+          "q04",
+          "q06",
+          "q10",
+          "q11",
+          "q13",
+          "q14",
+          "q20"
+        ],
+        "metrics": {
+          "phase2HitAt5": 0.5,
+          "phase2Mrr": 0.4583333333333333,
+          "phase2RPrecision": 0.4097222222222222,
+          "phase2EmptyReturned": 0.5918367346938775,
+          "phase2EmptyWorst": 2,
+          "tunedHitAt5": 1,
+          "tunedMrr": 0.9722222222222222,
+          "tunedRPrecision": 0.8888888888888888,
+          "expectedEmptyReturned": 1,
+          "expectedEmptyWorst": 2,
+          "semanticOnlyMax": 2,
+          "semanticOnlyTotal": 158,
+          "semanticOnlyDroppedTotal": 130,
+          "exactTieQueries": 0,
+          "exactTieInPageQueries": 0,
+          "exactTiePairsTotal": 0,
+          "leakTotal": 0,
+          "degrades": 0,
+          "latencyP95": 12.511874999999918
+        },
+        "tieInPageIds": []
+      },
+      "changed": [
+        "q02",
+        "q03",
+        "q04",
+        "q06",
+        "q10",
+        "q11",
+        "q13",
+        "q14",
+        "q20"
+      ],
+      "overreach": [
+        "q04",
+        "q11",
+        "q13"
+      ],
+      "resolvesAny": true,
+      "d2Failures": [],
+      "conservativeExtension": true,
+      "feasible": false
+    }
+  ],
+  "selected": "tb-semantic-rank"
+}

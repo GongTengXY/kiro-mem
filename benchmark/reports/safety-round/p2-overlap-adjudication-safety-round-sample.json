@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "step": "P2 第 3 步：8 条样本记录的复核带逐对裁决",
+    "criteria": "benchmark/reports/safety-round/p2-calibration-criteria.md §5.2",
+    "screen": "benchmark/reports/safety-round/p2-overlap-screen-safety-round-sample.json",
+    "rule": "同一事实 / 同一修复 / 同一结果 → duplicate；同一领域但不同工作 → related；能共同回答同一 query → 记为 acceptable_gold 候选",
+    "basis": "按 fact_source 与两侧 annotation 的事实内容裁决，不按余弦。",
+    "band": 0.45,
+    "note": "本集最高 0.476，远低于 pilot 里两条无意重复的 0.670 / 0.558；分布 p95 只有 0.354。"
+  },
+  "rulings": [
+    {
+      "pair": "s06×t06",
+      "cosine": 0.476,
+      "verdict": "related",
+      "reason": "两侧都改 src/server/mcp-server.ts 的参数处理，但 t06 是 MCP 入参边界校验与 pin 的错误返回，s06 是删掉 90 天默认时间窗（含 schema 里的 default: 90）。同一文件、两项不同工作。",
+      "acceptableGoldCandidate": false
+    },
+    {
+      "pair": "s03×t26",
+      "cosine": 0.465,
+      "verdict": "related",
+      "reason": "都与\"能不能对外发布\"有关，但 t26 是\"质量基准集在内测不阻塞、对外发布前必须完成\"这条决策，s03 是最终盲审误召回门以 1.900 不通过的裁定。前者定规则，后者是一次具体判定。",
+      "acceptableGoldCandidate": true,
+      "acceptableGoldNote": "一条问\"现在为什么还不能对外发布\"的 query 可由两条共同回答；若第 4 步写了这类 query，t26 应进 acceptable_gold，s03 进 primary_gold。"
+    },
+    {
+      "pair": "s03×s08",
+      "cosine": 0.466,
+      "scope": "within-new-set",
+      "verdict": "related",
+      "reason": "两条的 fact_source 都指向 codex-p6-ruling.md，但引的是不同章节、陈述不同事实：s03 引 §1（1.900 不通过、回滚只降 0.100），s08 引 §6（配额只约束 semantic-only）。裁定书与它内部的护栏语义澄清不是同一件工作。",
+      "acceptableGoldCandidate": true,
+      "acceptableGoldNote": "同一份裁定书的两条记录天然互为 related，第 4 步若继续从同一份报告取事实，必须逐条确认引的是不同章节、不同事实。"
+    },
+    {
+      "pair": "s01×s05",
+      "cosine": 0.459,
+      "scope": "within-new-set",
+      "verdict": "related",
+      "reason": "词面上都在讲\"归一化\"，事实完全不同：s01 是文本层面的英文归一化必须两侧同时做（0.437 < 0.529），s05 是分数层面的相对语料背景归一化更差（AUC 0.735 < 0.841）。同一个词指两件事，这也是余弦偏高的原因。",
+      "acceptableGoldCandidate": false,
+      "acceptableGoldNote": "反过来它是个有用的负例素材：一条只含\"归一化\"字样的 query 可能同时贴上这两条，第 4 步的 query 必须写清问的是文本还是分数。"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "criteria": "benchmark/reports/phase3c-criteria.md §6.3",
+  "criteriaSha256": "366ce756b0d6ebd0",
+  "db": "/tmp/3c-old-50k.db（50,000 条，跨 1,095 天，91.8% 在旧 90 天窗外）",
+  "plans": {
+    "ftsLeg": {
+      "after（默认无界）": [
+        "SCAN fts VIRTUAL TABLE INDEX 0:M9",
+        "SEARCH o USING INTEGER PRIMARY KEY (rowid=?)",
+        "USE TEMP B-TREE FOR ORDER BY"
+      ],
+      "before（有阈值 / 等于显式 days=N）": [
+        "SCAN fts VIRTUAL TABLE INDEX 0:M9",
+        "SEARCH o USING INTEGER PRIMARY KEY (rowid=?)",
+        "USE TEMP B-TREE FOR ORDER BY"
+      ]
+    },
+    "candidatePoolScan": {
+      "after（默认无界，pool=Infinity 无 LIMIT）": [
+        "SEARCH observations USING COVERING INDEX idx_observations_scope_time (scope_key=?)"
+      ],
+      "before（有阈值）": [
+        "SEARCH observations USING COVERING INDEX idx_observations_scope_time (scope_key=? AND turn_stopped_at>?)"
+      ]
+    }
+  },
+  "verdict": {
+    "ftsLeg": "计划逐行相同：去掉谓词没有翻转驱动表，FTS 虚表仍是外层循环",
+    "candidatePoolScan": "仍走 idx_observations_scope_time（COVERING INDEX），只是少了 turn_stopped_at 约束 => 扫同一个索引的更多部分，没有退化成全表扫描"
+  }
+}

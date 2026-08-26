@@ -1,0 +1,182 @@
+[
+  {
+    "id": "v01",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "向量模型还没热起来的时候搜索会怎么样",
+    "expect": ["t02"],
+    "note": "zh：冷启动/降级，问法与 t02 标注措辞不同"
+  },
+  {
+    "id": "v02",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "压缩用的子进程池坏掉一个之后会不会一直卡住",
+    "expect": ["t07"],
+    "note": "zh：ACPPool recycle 失败"
+  },
+  {
+    "id": "v03",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "本地 token 是怎么做到用户完全感觉不到的",
+    "expect": ["t11"],
+    "note": "zh：认证决策"
+  },
+  {
+    "id": "v04",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "装完之后 Worker 起不来过一次，当时是什么原因",
+    "expect": ["t13"],
+    "note": "zh：安装器复制清单缺文件"
+  },
+  {
+    "id": "v05",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "会话开头注入的那段索引到底多大",
+    "expect": ["t18"],
+    "note": "zh：bootstrap 字节预算"
+  },
+  {
+    "id": "v06",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "timeline 为什么按 turn 的顺序排而不是按编号",
+    "expect": ["t20"],
+    "note": "zh：timeline 锚点决策"
+  },
+  {
+    "id": "v07",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "别的项目的记忆有没有可能串进当前项目",
+    "expect": ["t22"],
+    "note": "zh：scope 硬隔离"
+  },
+  {
+    "id": "v08",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "本地那个句向量模型用的是什么精度",
+    "expect": ["t23"],
+    "note": "zh：q8 量化决策"
+  },
+  {
+    "id": "v09",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "还有没有没修完的类型报错",
+    "expect": ["t25"],
+    "note": "zh：typecheck 未完成项"
+  },
+  {
+    "id": "v10",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "彻底清掉再重装一遍，旧版本的表还会留着吗",
+    "expect": ["t09"],
+    "note": "zh：purge → clean install"
+  },
+  {
+    "id": "v11",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "does a search containing a quote or a bracket still throw",
+    "expect": ["t01"],
+    "note": "en：FTS5 特殊字符"
+  },
+  {
+    "id": "v12",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "what happens to search when the embedding model is unavailable",
+    "expect": ["t02"],
+    "note": "en：FTS-only 降级"
+  },
+  {
+    "id": "v13",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "are ACP failures logged without leaking the prompt content",
+    "expect": ["t04"],
+    "note": "en：日志脱敏"
+  },
+  {
+    "id": "v14",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "which MCP arguments get validated before they reach SQLite",
+    "expect": ["t06"],
+    "note": "en：参数边界校验"
+  },
+  {
+    "id": "v15",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "do the tests ever write into the developer's real data directory",
+    "expect": ["t12"],
+    "note": "en：测试隔离"
+  },
+  {
+    "id": "v16",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "why does a repair install have to restart the service",
+    "expect": ["t14"],
+    "note": "en：install restart"
+  },
+  {
+    "id": "v17",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "how does diagnose notice that the installed version drifted",
+    "expect": ["t15"],
+    "note": "en：版本漂移检查"
+  },
+  {
+    "id": "v18",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "what floor does the RRF fusion apply to semantic-only candidates",
+    "expect": ["t21"],
+    "note": "en：语义地板线"
+  },
+  {
+    "id": "v19",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "are the MCP tool descriptions available in more than one language",
+    "expect": ["t24"],
+    "note": "en：i18n"
+  },
+  {
+    "id": "v20",
+    "kind": "relevance",
+    "origin": "validation",
+    "scope": "primary",
+    "query": "was the quality benchmark set treated as a release blocker",
+    "expect": ["t26"],
+    "note": "en：发布门槛决策"
+  }
+]

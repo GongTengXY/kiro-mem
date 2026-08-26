@@ -1,0 +1,27 @@
+{
+  "provenance": {
+    "source": "acp",
+    "agent": "kiro-mem-compressor",
+    "kiroCli": "kiro-cli (see report)",
+    "target": "queries",
+    "querySet": "r2",
+    "generatedAt": "2026-08-04T07:23:31.510Z",
+    "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+    "items": 0,
+    "failures": 1,
+    "retries": 1,
+    "wallTimeMs": 16866,
+    "itemLatencyMs": {
+      "p50": 16865,
+      "p95": 16865,
+      "max": 16865
+    }
+  },
+  "queries": {},
+  "failuresDetail": [
+    {
+      "id": "n04",
+      "reason": "JSON 解析失败"
+    }
+  ]
+}

@@ -1,0 +1,1099 @@
+{
+  "generatedAt": "2026-08-05T10:06:23.476Z",
+  "provenance": {
+    "criteria": "benchmark/reports/pool-policy-criteria.md",
+    "criteriaSha256": "3af22b49d73ddd5a",
+    "scriptSha256": "c9afdc8918a60db8",
+    "inputs": {
+      "recall": {
+        "commit": "b2e972f",
+        "dirty": true,
+        "bun": "1.2.20",
+        "platform": "darwin-arm64",
+        "criteria": "benchmark/reports/phase3b-criteria.md",
+        "criteriaSha256": "bf740be5b6893ac1",
+        "poolPolicyCriteria": "benchmark/reports/pool-policy-criteria.md",
+        "poolPolicyCriteriaSha256": "deabe28f35b71b70",
+        "recallPools": [
+          "pool-200",
+          "pool-500",
+          "pool-1000",
+          "pool-1970",
+          "pool-1971",
+          "pool-full"
+        ],
+        "perfPools": [
+          "full"
+        ],
+        "fixtureMetaSha256": "0714319fc076d680",
+        "fillerSha256": "10b572bd3ec7e4b9",
+        "harnessSha256": "dac0866b4f501ddd",
+        "spaceKey": "all-MiniLM-L6-v2:q8:384:semantic-en-v1",
+        "embeddingModel": "all-MiniLM-L6-v2",
+        "dimensions": 384,
+        "basePolicy": {
+          "semanticDiscovery": true,
+          "semanticFloor": 0.197,
+          "semanticOnlyLimit": 2,
+          "rrfK": 60,
+          "ftsWeight": 1,
+          "semanticWeight": 1,
+          "tieBreak": "semantic-rank",
+          "semanticCandidatePool": 200,
+          "bigramAux": false,
+          "bigramDfRatioCeiling": 1,
+          "bigramMinMatches": 1,
+          "bigramOnlyLimit": 2,
+          "bigramWeight": 1,
+          "bigramVote": "always"
+        },
+        "rounds": 4,
+        "limit": 10
+      },
+      "scale10k": [
+        "200",
+        "5000",
+        "20000",
+        "full"
+      ],
+      "scale50k": [
+        "200",
+        "5000",
+        "20000",
+        "full"
+      ]
+    }
+  },
+  "stepFunction": [
+    {
+      "id": "G-STEP′ pool-500/1000/1970 触达数 = pool-200",
+      "pass": true,
+      "reading": "200=68 500=68 1000=68 1970=68"
+    },
+    {
+      "id": "G-STEP′ pool-1971 恰好多触达 1 条目标",
+      "pass": true,
+      "reading": "新触达目标 [t26]（1 条）｜翻转 query z29/z53/z54｜反向翻转 0｜可比向量 1964 → 1965"
+    }
+  ],
+  "arms": [
+    {
+      "arm": "pool-200",
+      "pool": 200,
+      "recallSource": "measured",
+      "role": "candidate",
+      "checks": [
+        {
+          "id": "G1 泄漏=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G2 semanticOnlyMax≤2",
+          "pass": true,
+          "reading": "2"
+        },
+        {
+          "id": "G4 degrade=0（召回档）",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G8 empty 均值≤4.06",
+          "pass": true,
+          "reading": "3.56"
+        },
+        {
+          "id": "G9 empty 最坏≤10",
+          "pass": true,
+          "reading": "10"
+        },
+        {
+          "id": "G10 empty semantic-only 均值≤1.36 且 max≤2",
+          "pass": true,
+          "reading": "0.86 / 2"
+        },
+        {
+          "id": "G13 p95<300ms @2000",
+          "pass": true,
+          "reading": "8.11ms"
+        },
+        {
+          "id": "G14 p99<500ms @2000",
+          "pass": true,
+          "reading": "10.77ms"
+        },
+        {
+          "id": "G14 样本≥200 @2000",
+          "pass": true,
+          "reading": "200"
+        },
+        {
+          "id": "G4 degrade=0 @2000",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G13 p95<300ms @10000",
+          "pass": true,
+          "reading": "20.08ms"
+        },
+        {
+          "id": "G14 p99<500ms @10000",
+          "pass": true,
+          "reading": "41.7ms"
+        },
+        {
+          "id": "G14 样本≥200 @10000",
+          "pass": true,
+          "reading": "200"
+        },
+        {
+          "id": "G4 degrade=0 @10000",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G13 p95<300ms @50000",
+          "pass": true,
+          "reading": "67.96ms"
+        },
+        {
+          "id": "G14 p99<500ms @50000",
+          "pass": true,
+          "reading": "139.17ms"
+        },
+        {
+          "id": "G14 样本≥200 @50000",
+          "pass": true,
+          "reading": "200"
+        },
+        {
+          "id": "G4 degrade=0 @50000",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G15 循环内 RSS≤512MB @50000",
+          "pass": true,
+          "reading": "+8MB"
+        },
+        {
+          "id": "G16 全局峰值 RSS≤1024MB @50000",
+          "pass": true,
+          "reading": "950MB"
+        },
+        {
+          "id": "G17 RSS 跨轮不单调上涨 @50000",
+          "pass": true,
+          "reading": "[950, 893, 618, 614, 623, 638, 464, 401, 358, 324, 183]"
+        }
+      ],
+      "feasible": true,
+      "metrics": {
+        "phase2Reached": 0,
+        "phase2HitAt5": 0,
+        "phase2Mrr": 0,
+        "fusionHitAt5": 58.1,
+        "fusionMrr": 0.565,
+        "reachRate": 35.8,
+        "hitAt5": 36.8
+      }
+    },
+    {
+      "arm": "pool-500",
+      "pool": 500,
+      "recallSource": "measured",
+      "role": "candidate",
+      "checks": [
+        {
+          "id": "G1 泄漏=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G2 semanticOnlyMax≤2",
+          "pass": true,
+          "reading": "2"
+        },
+        {
+          "id": "G4 degrade=0（召回档）",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G5′ 无法归因的新进页=0",
+          "pass": true,
+          "reading": "0（非 semantic 11 条，其中已是 FTS 候选 11）"
+        },
+        {
+          "id": "G5′ semantic 新进页>2 的 query=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G6′ gold 掉出 top-5=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G6′ gold 掉出整页=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G7 净收益>0（进入 top-5 > 掉出 top-5）",
+          "pass": false,
+          "reading": "+0 / −0"
+        },
+        {
+          "id": "G8 empty 均值≤4.06",
+          "pass": true,
+          "reading": "3.66"
+        },
+        {
+          "id": "G9 empty 最坏≤10",
+          "pass": true,
+          "reading": "10"
+        },
+        {
+          "id": "G10 empty semantic-only 均值≤1.36 且 max≤2",
+          "pass": true,
+          "reading": "0.99 / 2"
+        },
+        {
+          "id": "G13/G14 成本读数存在",
+          "pass": false,
+          "reading": "未测（本 arm 未进入成本 instrument）"
+        }
+      ],
+      "feasible": false,
+      "metrics": {
+        "phase2Reached": 0,
+        "phase2HitAt5": 0,
+        "phase2Mrr": 0,
+        "fusionHitAt5": 58.1,
+        "fusionMrr": 0.566,
+        "reachRate": 35.8,
+        "hitAt5": 36.8
+      }
+    },
+    {
+      "arm": "pool-1000",
+      "pool": 1000,
+      "recallSource": "measured",
+      "role": "candidate",
+      "checks": [
+        {
+          "id": "G1 泄漏=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G2 semanticOnlyMax≤2",
+          "pass": true,
+          "reading": "2"
+        },
+        {
+          "id": "G4 degrade=0（召回档）",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G5′ 无法归因的新进页=0",
+          "pass": true,
+          "reading": "0（非 semantic 23 条，其中已是 FTS 候选 23）"
+        },
+        {
+          "id": "G5′ semantic 新进页>2 的 query=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G6′ gold 掉出 top-5=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G6′ gold 掉出整页=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G7 净收益>0（进入 top-5 > 掉出 top-5）",
+          "pass": false,
+          "reading": "+0 / −0"
+        },
+        {
+          "id": "G8 empty 均值≤4.06",
+          "pass": true,
+          "reading": "3.67"
+        },
+        {
+          "id": "G9 empty 最坏≤10",
+          "pass": true,
+          "reading": "10"
+        },
+        {
+          "id": "G10 empty semantic-only 均值≤1.36 且 max≤2",
+          "pass": true,
+          "reading": "1.01 / 2"
+        },
+        {
+          "id": "G13/G14 成本读数存在",
+          "pass": false,
+          "reading": "未测（本 arm 未进入成本 instrument）"
+        }
+      ],
+      "feasible": false,
+      "metrics": {
+        "phase2Reached": 0,
+        "phase2HitAt5": 0,
+        "phase2Mrr": 0,
+        "fusionHitAt5": 58.1,
+        "fusionMrr": 0.567,
+        "reachRate": 35.8,
+        "hitAt5": 36.8
+      }
+    },
+    {
+      "arm": "pool-1970",
+      "pool": 1970,
+      "recallSource": "measured",
+      "role": "structural-only",
+      "checks": [
+        {
+          "id": "G1 泄漏=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G2 semanticOnlyMax≤2",
+          "pass": true,
+          "reading": "2"
+        },
+        {
+          "id": "G4 degrade=0（召回档）",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G5′ 无法归因的新进页=0",
+          "pass": true,
+          "reading": "0（非 semantic 28 条，其中已是 FTS 候选 28）"
+        },
+        {
+          "id": "G5′ semantic 新进页>2 的 query=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G6′ gold 掉出 top-5=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G6′ gold 掉出整页=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G7 净收益>0（进入 top-5 > 掉出 top-5）",
+          "pass": true,
+          "reading": "+1 / −0"
+        },
+        {
+          "id": "G8 empty 均值≤4.06",
+          "pass": true,
+          "reading": "3.67"
+        },
+        {
+          "id": "G9 empty 最坏≤10",
+          "pass": true,
+          "reading": "10"
+        },
+        {
+          "id": "G10 empty semantic-only 均值≤1.36 且 max≤2",
+          "pass": true,
+          "reading": "1.02 / 2"
+        },
+        {
+          "id": "G13/G14 成本读数存在",
+          "pass": false,
+          "reading": "未测（本 arm 未进入成本 instrument）"
+        }
+      ],
+      "feasible": false,
+      "metrics": {
+        "phase2Reached": 0,
+        "phase2HitAt5": 0,
+        "phase2Mrr": 0,
+        "fusionHitAt5": 59.7,
+        "fusionMrr": 0.569,
+        "reachRate": 35.8,
+        "hitAt5": 37.4
+      }
+    },
+    {
+      "arm": "pool-1971",
+      "pool": 1971,
+      "recallSource": "measured",
+      "role": "structural-only",
+      "checks": [
+        {
+          "id": "G1 泄漏=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G2 semanticOnlyMax≤2",
+          "pass": true,
+          "reading": "2"
+        },
+        {
+          "id": "G4 degrade=0（召回档）",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G5′ 无法归因的新进页=0",
+          "pass": true,
+          "reading": "0（非 semantic 28 条，其中已是 FTS 候选 28）"
+        },
+        {
+          "id": "G5′ semantic 新进页>2 的 query=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G6′ gold 掉出 top-5=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G6′ gold 掉出整页=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G7 净收益>0（进入 top-5 > 掉出 top-5）",
+          "pass": true,
+          "reading": "+4 / −0"
+        },
+        {
+          "id": "G8 empty 均值≤4.06",
+          "pass": true,
+          "reading": "3.69"
+        },
+        {
+          "id": "G9 empty 最坏≤10",
+          "pass": true,
+          "reading": "10"
+        },
+        {
+          "id": "G10 empty semantic-only 均值≤1.36 且 max≤2",
+          "pass": true,
+          "reading": "1.03 / 2"
+        },
+        {
+          "id": "G13/G14 成本读数存在",
+          "pass": false,
+          "reading": "未测（本 arm 未进入成本 instrument）"
+        }
+      ],
+      "feasible": false,
+      "metrics": {
+        "phase2Reached": 3,
+        "phase2HitAt5": 4.2,
+        "phase2Mrr": 0.042,
+        "fusionHitAt5": 59.7,
+        "fusionMrr": 0.569,
+        "reachRate": 37.4,
+        "hitAt5": 38.9
+      }
+    },
+    {
+      "arm": "pool-5000",
+      "pool": 5000,
+      "recallSource": "by-construction",
+      "role": "candidate",
+      "checks": [
+        {
+          "id": "G1 泄漏=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G2 semanticOnlyMax≤2",
+          "pass": true,
+          "reading": "2"
+        },
+        {
+          "id": "G4 degrade=0（召回档）",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G5′ 无法归因的新进页=0",
+          "pass": true,
+          "reading": "0（非 semantic 28 条，其中已是 FTS 候选 28）"
+        },
+        {
+          "id": "G5′ semantic 新进页>2 的 query=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G6′ gold 掉出 top-5=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G6′ gold 掉出整页=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G7 净收益>0（进入 top-5 > 掉出 top-5）",
+          "pass": true,
+          "reading": "+55 / −0"
+        },
+        {
+          "id": "G8 empty 均值≤4.06",
+          "pass": true,
+          "reading": "3.8"
+        },
+        {
+          "id": "G9 empty 最坏≤10",
+          "pass": true,
+          "reading": "10"
+        },
+        {
+          "id": "G10 empty semantic-only 均值≤1.36 且 max≤2",
+          "pass": true,
+          "reading": "1.15 / 2"
+        },
+        {
+          "id": "G13 p95<300ms @2000",
+          "pass": true,
+          "reading": "17.11ms"
+        },
+        {
+          "id": "G14 p99<500ms @2000",
+          "pass": true,
+          "reading": "27.76ms"
+        },
+        {
+          "id": "G14 样本≥200 @2000",
+          "pass": true,
+          "reading": "200"
+        },
+        {
+          "id": "G4 degrade=0 @2000",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G13 p95<300ms @10000",
+          "pass": true,
+          "reading": "28.17ms"
+        },
+        {
+          "id": "G14 p99<500ms @10000",
+          "pass": true,
+          "reading": "56.33ms"
+        },
+        {
+          "id": "G14 样本≥200 @10000",
+          "pass": true,
+          "reading": "200"
+        },
+        {
+          "id": "G4 degrade=0 @10000",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G13 p95<300ms @50000",
+          "pass": true,
+          "reading": "80.13ms"
+        },
+        {
+          "id": "G14 p99<500ms @50000",
+          "pass": true,
+          "reading": "139.37ms"
+        },
+        {
+          "id": "G14 样本≥200 @50000",
+          "pass": true,
+          "reading": "200"
+        },
+        {
+          "id": "G4 degrade=0 @50000",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G15 循环内 RSS≤512MB @50000",
+          "pass": true,
+          "reading": "+456MB"
+        },
+        {
+          "id": "G16 全局峰值 RSS≤1024MB @50000",
+          "pass": true,
+          "reading": "950MB"
+        },
+        {
+          "id": "G17 RSS 跨轮不单调上涨 @50000",
+          "pass": true,
+          "reading": "[374, 478, 528, 611, 640, 502, 418, 419, 419, 390, 283]"
+        }
+      ],
+      "feasible": true,
+      "metrics": {
+        "phase2Reached": 43,
+        "phase2HitAt5": 31.9,
+        "phase2Mrr": 0.306,
+        "fusionHitAt5": 80.6,
+        "fusionMrr": 0.751,
+        "reachRate": 80,
+        "hitAt5": 65.8
+      }
+    },
+    {
+      "arm": "pool-20000",
+      "pool": 20000,
+      "recallSource": "by-construction",
+      "role": "candidate",
+      "checks": [
+        {
+          "id": "G1 泄漏=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G2 semanticOnlyMax≤2",
+          "pass": true,
+          "reading": "2"
+        },
+        {
+          "id": "G4 degrade=0（召回档）",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G5′ 无法归因的新进页=0",
+          "pass": true,
+          "reading": "0（非 semantic 28 条，其中已是 FTS 候选 28）"
+        },
+        {
+          "id": "G5′ semantic 新进页>2 的 query=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G6′ gold 掉出 top-5=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G6′ gold 掉出整页=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G7 净收益>0（进入 top-5 > 掉出 top-5）",
+          "pass": true,
+          "reading": "+55 / −0"
+        },
+        {
+          "id": "G8 empty 均值≤4.06",
+          "pass": true,
+          "reading": "3.8"
+        },
+        {
+          "id": "G9 empty 最坏≤10",
+          "pass": true,
+          "reading": "10"
+        },
+        {
+          "id": "G10 empty semantic-only 均值≤1.36 且 max≤2",
+          "pass": true,
+          "reading": "1.15 / 2"
+        },
+        {
+          "id": "G13 p95<300ms @2000",
+          "pass": true,
+          "reading": "15.85ms"
+        },
+        {
+          "id": "G14 p99<500ms @2000",
+          "pass": true,
+          "reading": "27.32ms"
+        },
+        {
+          "id": "G14 样本≥200 @2000",
+          "pass": true,
+          "reading": "200"
+        },
+        {
+          "id": "G4 degrade=0 @2000",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G13 p95<300ms @10000",
+          "pass": true,
+          "reading": "40.67ms"
+        },
+        {
+          "id": "G14 p99<500ms @10000",
+          "pass": true,
+          "reading": "55.56ms"
+        },
+        {
+          "id": "G14 样本≥200 @10000",
+          "pass": true,
+          "reading": "200"
+        },
+        {
+          "id": "G4 degrade=0 @10000",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G13 p95<300ms @50000",
+          "pass": true,
+          "reading": "148.47ms"
+        },
+        {
+          "id": "G14 p99<500ms @50000",
+          "pass": true,
+          "reading": "203.61ms"
+        },
+        {
+          "id": "G14 样本≥200 @50000",
+          "pass": true,
+          "reading": "200"
+        },
+        {
+          "id": "G4 degrade=0 @50000",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G15 循环内 RSS≤512MB @50000",
+          "pass": true,
+          "reading": "+155MB"
+        },
+        {
+          "id": "G16 全局峰值 RSS≤1024MB @50000",
+          "pass": true,
+          "reading": "950MB"
+        },
+        {
+          "id": "G17 RSS 跨轮不单调上涨 @50000",
+          "pass": true,
+          "reading": "[349, 395, 350, 344, 438, 347, 365, 365, 321, 329, 322]"
+        }
+      ],
+      "feasible": true,
+      "metrics": {
+        "phase2Reached": 43,
+        "phase2HitAt5": 31.9,
+        "phase2Mrr": 0.306,
+        "fusionHitAt5": 80.6,
+        "fusionMrr": 0.751,
+        "reachRate": 80,
+        "hitAt5": 65.8
+      }
+    },
+    {
+      "arm": "pool-full",
+      "pool": null,
+      "recallSource": "measured",
+      "role": "candidate",
+      "checks": [
+        {
+          "id": "G1 泄漏=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G2 semanticOnlyMax≤2",
+          "pass": true,
+          "reading": "2"
+        },
+        {
+          "id": "G4 degrade=0（召回档）",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G5′ 无法归因的新进页=0",
+          "pass": true,
+          "reading": "0（非 semantic 28 条，其中已是 FTS 候选 28）"
+        },
+        {
+          "id": "G5′ semantic 新进页>2 的 query=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G6′ gold 掉出 top-5=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G6′ gold 掉出整页=0",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G7 净收益>0（进入 top-5 > 掉出 top-5）",
+          "pass": true,
+          "reading": "+55 / −0"
+        },
+        {
+          "id": "G8 empty 均值≤4.06",
+          "pass": true,
+          "reading": "3.8"
+        },
+        {
+          "id": "G9 empty 最坏≤10",
+          "pass": true,
+          "reading": "10"
+        },
+        {
+          "id": "G10 empty semantic-only 均值≤1.36 且 max≤2",
+          "pass": true,
+          "reading": "1.15 / 2"
+        },
+        {
+          "id": "G13 p95<300ms @2000",
+          "pass": true,
+          "reading": "16.24ms"
+        },
+        {
+          "id": "G14 p99<500ms @2000",
+          "pass": true,
+          "reading": "37.39ms"
+        },
+        {
+          "id": "G14 样本≥200 @2000",
+          "pass": true,
+          "reading": "200"
+        },
+        {
+          "id": "G4 degrade=0 @2000",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G13 p95<300ms @10000",
+          "pass": true,
+          "reading": "39.5ms"
+        },
+        {
+          "id": "G14 p99<500ms @10000",
+          "pass": true,
+          "reading": "67.71ms"
+        },
+        {
+          "id": "G14 样本≥200 @10000",
+          "pass": true,
+          "reading": "200"
+        },
+        {
+          "id": "G4 degrade=0 @10000",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G13 p95<300ms @50000",
+          "pass": true,
+          "reading": "254.15ms"
+        },
+        {
+          "id": "G14 p99<500ms @50000",
+          "pass": true,
+          "reading": "306.99ms"
+        },
+        {
+          "id": "G14 样本≥200 @50000",
+          "pass": true,
+          "reading": "200"
+        },
+        {
+          "id": "G4 degrade=0 @50000",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "G15 循环内 RSS≤512MB @50000",
+          "pass": true,
+          "reading": "+444MB"
+        },
+        {
+          "id": "G16 全局峰值 RSS≤1024MB @50000",
+          "pass": true,
+          "reading": "950MB"
+        },
+        {
+          "id": "G17 RSS 跨轮不单调上涨 @50000",
+          "pass": true,
+          "reading": "[667, 669, 699, 614, 670, 587, 587, 546, 666, 638, 732]"
+        }
+      ],
+      "feasible": true,
+      "metrics": {
+        "phase2Reached": 43,
+        "phase2HitAt5": 31.9,
+        "phase2Mrr": 0.306,
+        "fusionHitAt5": 80.6,
+        "fusionMrr": 0.751,
+        "reachRate": 80,
+        "hitAt5": 65.8
+      }
+    }
+  ],
+  "selectionTrace": [
+    "规则 1 phase2 触达数：最优 43 → 保留 pool-5000, pool-20000, pool-full",
+    "规则 2 phase2 hit@5：最优 31.9 → 保留 pool-5000, pool-20000, pool-full",
+    "规则 3 phase2 MRR：最优 0.306 → 保留 pool-5000, pool-20000, pool-full",
+    "规则 4 fusion hit@5：最优 80.6 → 保留 pool-5000, pool-20000, pool-full",
+    "规则 5 fusion MRR：最优 0.751 → 保留 pool-5000, pool-20000, pool-full",
+    "规则 6 池值更大者：pool-full"
+  ],
+  "selected": {
+    "arm": "pool-full",
+    "pool": null
+  },
+  "branch": "B-1：pool-full 通过全部门槛 → 默认改为 Infinity，分块取向量为强制前置条件",
+  "perfRecheck": [
+    {
+      "pool": "full",
+      "file": "pool-policy/perf-recheck-50000.json",
+      "checks": [
+        {
+          "id": "P1 p95<300ms",
+          "pass": true,
+          "reading": "277.35ms"
+        },
+        {
+          "id": "P2 p99<500ms",
+          "pass": true,
+          "reading": "434ms"
+        },
+        {
+          "id": "P3 循环内 RSS 增量≤512MB",
+          "pass": false,
+          "reading": "+720MB"
+        },
+        {
+          "id": "P4 检索进程峰值≤1024MB",
+          "pass": true,
+          "reading": "848MB"
+        },
+        {
+          "id": "P5 样本≥200",
+          "pass": true,
+          "reading": "200"
+        },
+        {
+          "id": "P6 degrade=0",
+          "pass": true,
+          "reading": "0"
+        }
+      ],
+      "pass": false,
+      "floorPass": {
+        "rateMean": 0.0924,
+        "rateP50": 0.05,
+        "rateP95": 0.28,
+        "rateMax": 0.2966,
+        "countMean": 4618,
+        "countP95": 13870,
+        "countMax": 14830,
+        "comparableMean": 50000
+      },
+      "twoProcess": true
+    },
+    {
+      "pool": "20000",
+      "file": "pool-policy/perf-recheck-50000-p20000-final.json",
+      "checks": [
+        {
+          "id": "P1 p95<300ms",
+          "pass": true,
+          "reading": "183.39ms"
+        },
+        {
+          "id": "P2 p99<500ms",
+          "pass": true,
+          "reading": "342.72ms"
+        },
+        {
+          "id": "P3 循环内 RSS 增量≤512MB",
+          "pass": true,
+          "reading": "+461MB"
+        },
+        {
+          "id": "P4 检索进程峰值≤1024MB",
+          "pass": true,
+          "reading": "547MB"
+        },
+        {
+          "id": "P5 样本≥200",
+          "pass": true,
+          "reading": "200"
+        },
+        {
+          "id": "P6 degrade=0",
+          "pass": true,
+          "reading": "0"
+        }
+      ],
+      "pass": true,
+      "floorPass": {
+        "rateMean": 0.0925,
+        "rateP50": 0.05,
+        "rateP95": 0.28,
+        "rateMax": 0.2966,
+        "countMean": 1850,
+        "countP95": 5548,
+        "countMax": 5932,
+        "comparableMean": 20015
+      },
+      "twoProcess": true
+    }
+  ],
+  "perfRecheckVariance": [
+    {
+      "file": "pool-policy/perf-recheck-50000-p20000-final.json",
+      "p50": 90.46,
+      "p95": 183.39,
+      "p99": 342.72,
+      "rssDeltaMb": 461,
+      "rssPeakMb": 547
+    },
+    {
+      "file": "pool-policy/perf-recheck-50000-p20000-final-r2.json",
+      "p50": 87.99,
+      "p95": 121.86,
+      "p99": 302.03,
+      "rssDeltaMb": 466,
+      "rssPeakMb": 593
+    },
+    {
+      "file": "pool-policy/perf-recheck-50000-p20000-final-r3.json",
+      "p50": 89.95,
+      "p95": 169.56,
+      "p99": 282.64,
+      "rssDeltaMb": 465,
+      "rssPeakMb": 592
+    }
+  ],
+  "finalBranch": "B-2（裁定 §12.5）：Infinity 补证门失败 → 生产使用 20000；必须写明它在 50,000 条上截断 60%，不得宣称召回等价",
+  "finalPool": 20000
+}

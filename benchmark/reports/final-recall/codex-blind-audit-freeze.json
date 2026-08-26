@@ -1,0 +1,69 @@
+{
+  "frozen": true,
+  "frozenAt": "2026-08-07T08:34:21Z",
+  "authority": "Codex final independent recall audit",
+  "input": "benchmark/reports/final-recall/codex-blind-audit-input.json",
+  "inputSha256": "6111697b0c42322ef4a11fefea7a914d9da398121b9bd56a42bfd891260eee36",
+  "criteria": "benchmark/reports/final-recall/codex-blind-audit-criteria.md",
+  "criteriaSha256": "952eddbe6234d10bf568fa631c91459d8e4f3bd0c011e73c57e771fa87a7c3e3",
+  "precheck": "benchmark/precheck-final-recall-audit.ts",
+  "precheckSha256": "77e5ee3099c8e14bcc04cd02fd67402afc973d8490e153331834b702ecf19ca3",
+  "factSources": [
+    {
+      "path": "benchmark/dataset/turns.json",
+      "sha256": "aa8f9beda2a4f90320455ff2756815d5b6271977044d5820a76df489bdb533e0"
+    },
+    {
+      "path": "benchmark/dataset/mirror-en-acp-records.json",
+      "sha256": "cf44a10339c58b767debf585d457a70d3480bbca6901dc266f5954abd9112119"
+    }
+  ],
+  "oldCorpus": {
+    "path": "benchmark/dataset/pool-policy-filler-10k.json",
+    "sha256": "bbb3a6739cd4bed8cff349525d9cc41006caab3beb66789e8711410ad90d3d41",
+    "meta": "benchmark/dataset/pool-policy-filler-10k-meta.json",
+    "metaSha256": "7a02301035113090c338b613f1081cb30c352d04f6fb1203ba6cf57ed8a32a13",
+    "sourceRecords": 10000,
+    "copies": 5,
+    "auditRecords": 50000,
+    "spreadDays": 1095
+  },
+  "counts": {
+    "oldRelevance": 26,
+    "hardNegative": 30,
+    "hardNegativeNearDomain": 20,
+    "hardNegativeForeignDomain": 10,
+    "rawControls": 8
+  },
+  "textOnlyPrecheck": {
+    "passed": true,
+    "zeroFtsRelevance": 26,
+    "zeroFtsHardNegative": 30,
+    "rawControlsWithExpectedLexicalGold": 8,
+    "semanticQueryEnGuardValid": 56,
+    "rawGuardReasonsMatched": 8,
+    "queryEmbeddingsGenerated": 0,
+    "storedVectorsRead": 0,
+    "semanticArmsExecuted": 0
+  },
+  "blindness": {
+    "constructedWithoutSelectedStrategyReturns": true,
+    "days90ArmViewedBeforeFreeze": false,
+    "unboundedArmViewedBeforeFreeze": false,
+    "orderedPagesViewedBeforeFreeze": false,
+    "semanticScoresViewedBeforeFreeze": false
+  },
+  "authorizedAfterFreeze": [
+    "Build or adapt the mechanical audit instrumentation without changing this input or the frozen criteria",
+    "Seed the exact 50,000-record old corpus and 26 gold records at age 400 days",
+    "Run the same production policy on days=90 and unbounded arms",
+    "Run the eight raw degradation controls on both arms",
+    "Write machine-readable per-query results, ordered page diffs, and a report for Codex adjudication"
+  ],
+  "forbiddenAfterFreeze": [
+    "Edit, remove, replace, or add a query in the frozen input",
+    "Change a gold label, annotation basis, semantic_query_en, fixture checksum, time placement, or threshold",
+    "Tune floor, cap, candidate pool, Top-K, RRF, tie-break, or time window from this audit",
+    "Hide failed queries or report only aggregate/net return-count changes"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "frozen": true,
+  "frozenAt": "2026-08-05T08:36:55.536Z",
+  "criteria": "benchmark/reports/pool-policy-criteria.md §12（B2）",
+  "purpose": "性能门补证：真实 cosine 分布 + 确定性回放到 50,000 候选",
+  "count": 10000,
+  "seed": 3932160,
+  "domains": 15,
+  "rulesSameAs": "phase3b-criteria.md §3.4（B1）：78 独特 concept + 33 文件基名禁用表",
+  "lexicalViolations": 0,
+  "uniqueTitles": 10000,
+  "builderScriptSha256": "255136fee2e6c32e",
+  "fillerSha256": "bbb3a6739cd4bed8"
+}

@@ -147,21 +147,20 @@ describe('WP2 / summarize_turn job integration', () => {
 
     // Run job
     const runner = new JobRunner(db, { concurrency: 1, pollMs: 50 });
+    let ran = false;
     runner.register('summarize_turn', async (job) => {
       const { turn_id } = JSON.parse(job.payload_json);
       const t = db.getTurn(turn_id);
       if (!t || t.state !== 'closed') return;
-      db.setTurnSummarizationState(turn_id, 'running');
       extractArtifacts(db, turn_id);
-      db.setTurnSummarizationState(turn_id, 'ready');
+      ran = true;
     });
     runner.start();
     await Bun.sleep(200);
     runner.stop();
 
-    // Verify
-    const updated = db.getTurn(turn.id)!;
-    expect(updated.summarization_state).toBe('ready');
+    // Verify the handler ran and deterministic artifacts were extracted.
+    expect(ran).toBe(true);
     const artifacts = db.getTurnArtifacts(turn.id);
     expect(artifacts).not.toBeNull();
     expect(JSON.parse(artifacts!.files_touched_json)).toContain('/a.ts');

@@ -1,0 +1,454 @@
+{
+  "generatedAt": "2026-08-05T12:28:57.954Z",
+  "provenance": {
+    "criteria": "benchmark/reports/topk-criteria.md",
+    "criteriaSha256": "a075f1bb3a5907a4",
+    "aggregationRule": "每次复现都需达标（裁定 B1；不接受中位数 / 最小值+分布）",
+    "scriptSha256": "04a4bdcda38ea31e",
+    "identityBaselines": {
+      "2000": "pool-policy/recall.json arm pool-full（换之前的全量打分）",
+      "50000": "topk/perf-50000-full-noK.json（流式但不截断）"
+    }
+  },
+  "candidateK": [
+    200,
+    1000,
+    5000,
+    20000
+  ],
+  "excluded": {
+    "Infinity": "B1：topK=Infinity 让保留集随语料规模增长（50,000 档实测均 4,618 / 最坏 14,830 条），不满足 O(块大小 + K)，不得作为发布形态"
+  },
+  "verdicts": [
+    {
+      "k": 200,
+      "checks": [
+        {
+          "id": "S1 2,000 装置有序 resultIds",
+          "pass": true,
+          "reading": "0/276"
+        },
+        {
+          "id": "S1 2,000 装置 match_source",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "S1 50,000 档有序 resultIds（真截断）",
+          "pass": true,
+          "reading": "0/20"
+        },
+        {
+          "id": "S1 50,000 档 match_source",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "S8/T4 名次表仍含 gold（触达差异 0）",
+          "pass": false,
+          "reading": "3 条 query"
+        },
+        {
+          "id": "复现次数 ≥3",
+          "pass": true,
+          "reading": "3 次"
+        },
+        {
+          "id": "S2 每次 p95 < 300ms",
+          "pass": false,
+          "reading": "181.54 / 192.41 / 372.04ms"
+        },
+        {
+          "id": "S3 每次 p99 < 500ms",
+          "pass": false,
+          "reading": "293.79 / 400.48 / 702.39ms"
+        },
+        {
+          "id": "S4 每次循环内 RSS ≤ 512MB",
+          "pass": true,
+          "reading": "+247 / +260 / +296MB"
+        },
+        {
+          "id": "S5 每次进程峰值 ≤ 1024MB",
+          "pass": true,
+          "reading": "375 / 386 / 425MB"
+        },
+        {
+          "id": "S6 每次样本 ≥ 200",
+          "pass": true,
+          "reading": "200 / 200 / 200"
+        },
+        {
+          "id": "S7 degrade = 0",
+          "pass": true,
+          "reading": "0 / 0 / 0"
+        }
+      ],
+      "feasible": false,
+      "runs": [
+        {
+          "file": "perf-50000-full-k200.json",
+          "k": "200",
+          "samples": 200,
+          "p50": 123.8,
+          "p95": 181.54,
+          "p99": 293.79,
+          "rssDelta": 247,
+          "rssPeak": 375,
+          "degraded": 0
+        },
+        {
+          "file": "perf-50000-full-k200-r3.json",
+          "k": "200",
+          "samples": 200,
+          "p50": 127.11,
+          "p95": 192.41,
+          "p99": 400.48,
+          "rssDelta": 260,
+          "rssPeak": 386,
+          "degraded": 0
+        },
+        {
+          "file": "perf-50000-full-k200-r2.json",
+          "k": "200",
+          "samples": 200,
+          "p50": 148.24,
+          "p95": 372.04,
+          "p99": 702.39,
+          "rssDelta": 296,
+          "rssPeak": 425,
+          "degraded": 0
+        }
+      ]
+    },
+    {
+      "k": 1000,
+      "checks": [
+        {
+          "id": "S1 2,000 装置有序 resultIds",
+          "pass": true,
+          "reading": "0/276"
+        },
+        {
+          "id": "S1 2,000 装置 match_source",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "S1 50,000 档有序 resultIds（真截断）",
+          "pass": true,
+          "reading": "0/20"
+        },
+        {
+          "id": "S1 50,000 档 match_source",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "S8/T4 名次表仍含 gold（触达差异 0）",
+          "pass": true,
+          "reading": "0 条 query"
+        },
+        {
+          "id": "复现次数 ≥3",
+          "pass": true,
+          "reading": "5 次"
+        },
+        {
+          "id": "S2 每次 p95 < 300ms",
+          "pass": true,
+          "reading": "158.23 / 182.95 / 192.74 / 216.25 / 286.29ms"
+        },
+        {
+          "id": "S3 每次 p99 < 500ms",
+          "pass": true,
+          "reading": "337.92 / 356.51 / 358.25 / 442.76 / 447.91ms"
+        },
+        {
+          "id": "S4 每次循环内 RSS ≤ 512MB",
+          "pass": true,
+          "reading": "+225 / +285 / +299 / +318 / +324MB"
+        },
+        {
+          "id": "S5 每次进程峰值 ≤ 1024MB",
+          "pass": true,
+          "reading": "354 / 413 / 427 / 446 / 453MB"
+        },
+        {
+          "id": "S6 每次样本 ≥ 200",
+          "pass": true,
+          "reading": "600 / 200 / 200 / 200 / 600"
+        },
+        {
+          "id": "S7 degrade = 0",
+          "pass": true,
+          "reading": "0 / 0 / 0 / 0 / 0"
+        }
+      ],
+      "feasible": true,
+      "runs": [
+        {
+          "file": "perf-50000-k1000-n600-r2.json",
+          "k": "1000",
+          "samples": 600,
+          "p50": 132.93,
+          "p95": 216.25,
+          "p99": 358.25,
+          "rssDelta": 299,
+          "rssPeak": 427,
+          "degraded": 0
+        },
+        {
+          "file": "perf-50000-full-k1000-r3.json",
+          "k": "1000",
+          "samples": 200,
+          "p50": 127.72,
+          "p95": 158.23,
+          "p99": 447.91,
+          "rssDelta": 324,
+          "rssPeak": 453,
+          "degraded": 0
+        },
+        {
+          "file": "perf-50000-full-k1000-r2.json",
+          "k": "1000",
+          "samples": 200,
+          "p50": 126.53,
+          "p95": 182.95,
+          "p99": 356.51,
+          "rssDelta": 318,
+          "rssPeak": 446,
+          "degraded": 0
+        },
+        {
+          "file": "perf-50000-full-k1000.json",
+          "k": "1000",
+          "samples": 200,
+          "p50": 126.68,
+          "p95": 192.74,
+          "p99": 337.92,
+          "rssDelta": 285,
+          "rssPeak": 413,
+          "degraded": 0
+        },
+        {
+          "file": "perf-50000-k1000-n600-r1.json",
+          "k": "1000",
+          "samples": 600,
+          "p50": 160.13,
+          "p95": 286.29,
+          "p99": 442.76,
+          "rssDelta": 225,
+          "rssPeak": 354,
+          "degraded": 0
+        }
+      ]
+    },
+    {
+      "k": 5000,
+      "checks": [
+        {
+          "id": "S1 2,000 装置有序 resultIds",
+          "pass": true,
+          "reading": "0/276"
+        },
+        {
+          "id": "S1 2,000 装置 match_source",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "S1 50,000 档有序 resultIds（真截断）",
+          "pass": true,
+          "reading": "0/20"
+        },
+        {
+          "id": "S1 50,000 档 match_source",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "S8/T4 名次表仍含 gold（触达差异 0）",
+          "pass": true,
+          "reading": "0 条 query"
+        },
+        {
+          "id": "复现次数 ≥3",
+          "pass": true,
+          "reading": "3 次"
+        },
+        {
+          "id": "S2 每次 p95 < 300ms",
+          "pass": false,
+          "reading": "250.01 / 257.19 / 535.59ms"
+        },
+        {
+          "id": "S3 每次 p99 < 500ms",
+          "pass": false,
+          "reading": "328.15 / 538.33 / 1376ms"
+        },
+        {
+          "id": "S4 每次循环内 RSS ≤ 512MB",
+          "pass": true,
+          "reading": "+280 / +352 / +352MB"
+        },
+        {
+          "id": "S5 每次进程峰值 ≤ 1024MB",
+          "pass": true,
+          "reading": "410 / 478 / 479MB"
+        },
+        {
+          "id": "S6 每次样本 ≥ 200",
+          "pass": true,
+          "reading": "200 / 200 / 200"
+        },
+        {
+          "id": "S7 degrade = 0",
+          "pass": true,
+          "reading": "0 / 0 / 0"
+        }
+      ],
+      "feasible": false,
+      "runs": [
+        {
+          "file": "perf-50000-full-k5000.json",
+          "k": "5000",
+          "samples": 200,
+          "p50": 139.24,
+          "p95": 250.01,
+          "p99": 538.33,
+          "rssDelta": 352,
+          "rssPeak": 479,
+          "degraded": 0
+        },
+        {
+          "file": "perf-50000-full-k5000-r3.json",
+          "k": "5000",
+          "samples": 200,
+          "p50": 150.27,
+          "p95": 257.19,
+          "p99": 328.15,
+          "rssDelta": 280,
+          "rssPeak": 410,
+          "degraded": 0
+        },
+        {
+          "file": "perf-50000-full-k5000-r2.json",
+          "k": "5000",
+          "samples": 200,
+          "p50": 150.33,
+          "p95": 535.59,
+          "p99": 1376,
+          "rssDelta": 352,
+          "rssPeak": 478,
+          "degraded": 0
+        }
+      ]
+    },
+    {
+      "k": 20000,
+      "checks": [
+        {
+          "id": "S1 2,000 装置有序 resultIds",
+          "pass": true,
+          "reading": "0/276"
+        },
+        {
+          "id": "S1 2,000 装置 match_source",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "S1 50,000 档有序 resultIds（真截断）",
+          "pass": true,
+          "reading": "0/20"
+        },
+        {
+          "id": "S1 50,000 档 match_source",
+          "pass": true,
+          "reading": "0"
+        },
+        {
+          "id": "S8/T4 名次表仍含 gold（触达差异 0）",
+          "pass": true,
+          "reading": "0 条 query"
+        },
+        {
+          "id": "复现次数 ≥3",
+          "pass": true,
+          "reading": "3 次"
+        },
+        {
+          "id": "S2 每次 p95 < 300ms",
+          "pass": false,
+          "reading": "270.54 / 332.7 / 348.54ms"
+        },
+        {
+          "id": "S3 每次 p99 < 500ms",
+          "pass": false,
+          "reading": "410.01 / 448.83 / 524.03ms"
+        },
+        {
+          "id": "S4 每次循环内 RSS ≤ 512MB",
+          "pass": true,
+          "reading": "+324 / +335 / +378MB"
+        },
+        {
+          "id": "S5 每次进程峰值 ≤ 1024MB",
+          "pass": true,
+          "reading": "449 / 462 / 509MB"
+        },
+        {
+          "id": "S6 每次样本 ≥ 200",
+          "pass": true,
+          "reading": "200 / 200 / 200"
+        },
+        {
+          "id": "S7 degrade = 0",
+          "pass": true,
+          "reading": "0 / 0 / 0"
+        }
+      ],
+      "feasible": false,
+      "runs": [
+        {
+          "file": "perf-50000-full-k20000.json",
+          "k": "20000",
+          "samples": 200,
+          "p50": 143.13,
+          "p95": 270.54,
+          "p99": 410.01,
+          "rssDelta": 378,
+          "rssPeak": 509,
+          "degraded": 0
+        },
+        {
+          "file": "perf-50000-full-k20000-r3.json",
+          "k": "20000",
+          "samples": 200,
+          "p50": 185.78,
+          "p95": 348.54,
+          "p99": 448.83,
+          "rssDelta": 324,
+          "rssPeak": 449,
+          "degraded": 0
+        },
+        {
+          "file": "perf-50000-full-k20000-r2.json",
+          "k": "20000",
+          "samples": 200,
+          "p50": 182.31,
+          "p95": 332.7,
+          "p99": 524.03,
+          "rssDelta": 335,
+          "rssPeak": 462,
+          "degraded": 0
+        }
+      ]
+    }
+  ],
+  "selected": {
+    "semanticCandidatePool": "Infinity",
+    "semanticTopK": 1000
+  }
+}

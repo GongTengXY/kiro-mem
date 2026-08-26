@@ -1,0 +1,73 @@
+{
+  "provenance": {
+    "source": "acp",
+    "agent": "kiro-mem-compressor",
+    "kiroCli": "kiro-cli (see report)",
+    "target": "records",
+    "generatedAt": "2026-07-30T12:50:40.821Z",
+    "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+    "items": 4,
+    "failures": 0,
+    "retries": 0,
+    "wallTimeMs": 14752,
+    "itemLatencyMs": {
+      "p50": 13518,
+      "p95": 14752,
+      "max": 14752
+    }
+  },
+  "records": {
+    "x03": {
+      "title": "First-screen bundle reduced from 1.8MB to 620KB",
+      "summary": "Route-level code splitting combined with on-demand import of echarts reduced the first-screen bundle to 620KB. moment's locale is still bundled in full.",
+      "outcome": "vite build produced 620.14 kB; moment locale optimization was not done.",
+      "learned": "Chart libraries and locale are two typical major contributors to frontend bundle size; the gains from on-demand import far outweigh compression config tuning.",
+      "concepts": [
+        "bundle size",
+        "code splitting",
+        "echarts",
+        "vite",
+        "first screen"
+      ]
+    },
+    "x04": {
+      "title": "List changed to virtual scrolling, 10,000 rows at 58fps",
+      "summary": "Used react-window to render only the visible rows, scroll frame rate for 10,000 rows improved from 22fps to 58fps, replaced fixed row height with estimation plus dynamic measurement.",
+      "outcome": "components tests 28 pass 0 fail.",
+      "learned": "The performance bottleneck of long lists is the number of DOM nodes rather than the amount of data; virtual scrolling is the only method with an order-of-magnitude benefit.",
+      "concepts": [
+        "virtual scrolling",
+        "react-window",
+        "performance",
+        "DataTable",
+        "frame rate"
+      ]
+    },
+    "x02": {
+      "title": "Add 401 silent refresh and request replay to axios interceptor",
+      "summary": "On 401, first use the refresh token to exchange for a new access token, then replay the original request; a singleton Promise suppresses concurrent refreshes, and only jump to the login page if the refresh fails.",
+      "outcome": "api layer tests 15 pass 0 fail.",
+      "learned": "Silent refresh must dedupe concurrent requests, otherwise a batch of requests will trigger multiple refreshes that invalidate each other.",
+      "concepts": [
+        "axios",
+        "401",
+        "token refresh",
+        "concurrency dedup",
+        "interceptor"
+      ]
+    },
+    "x01": {
+      "title": "Unescaped regex in search box causes blank screen",
+      "summary": "SearchBar concatenated user input directly into the highlight regex; unclosed parentheses threw a SyntaxError that crashed the list. Changed to escape regex metacharacters first and added an ErrorBoundary.",
+      "outcome": "vitest 42 pass 0 fail, special characters no longer cause a blank screen.",
+      "learned": "User input must have metacharacters escaped before entering a regex, the same class of problem as parameterizing before entering SQL.",
+      "concepts": [
+        "React",
+        "Regex Escaping",
+        "SearchBar",
+        "ErrorBoundary",
+        "Blank Screen"
+      ]
+    }
+  }
+}

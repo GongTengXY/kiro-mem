@@ -1,0 +1,15 @@
+{
+  "frozen": true,
+  "frozenAt": "2026-08-05T10:25:40Z",
+  "criteria": "benchmark/reports/pool-policy-criteria.md §12.7",
+  "input": "benchmark/reports/pool-policy/codex-blind-audit-input.json",
+  "inputSha256": "34a4dd06e632019b1287553a4a989e877c5433bad3f93ca52a33bb8d9e235a25",
+  "fixtureFillerSha16": "10b572bd3ec7e4b9",
+  "precheck": {
+    "relevance": 24,
+    "hardNegative": 24,
+    "zeroFtsRelevance": 24,
+    "allGoldOutsideRecent200": true
+  },
+  "discipline": "Frozen before either pool=200 or pool=20000 semantic arm was executed."
+}

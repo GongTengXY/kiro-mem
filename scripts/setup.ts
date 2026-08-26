@@ -2,13 +2,11 @@
 /**
  * kiro-mem CLI: install, uninstall, config, status, start, stop, diagnose.
  *
- * v2.2.0 highlights:
- * - ACP-native: no LLM provider / API key prompts. Compression is handled by
- *   `kiro-cli acp` against an isolated KIRO_HOME.
- * - Embedding model ships with the npm package and is copied (not downloaded)
- *   into `~/.kiro-mem/models/` during install.
- * - i18n preserved (zh/en) for all user-visible CLI output and the compressor
- *   prompt that is written into the kiro-runtime layout.
+ * V3 highlights:
+ * - Atomic Observations with read-time organization and no V2 data migration.
+ * - ACP-native compression through an isolated KIRO_HOME.
+ * - Bundled local embedding model copied into `~/.kiro-mem/models/`.
+ * - Local Worker requests authenticated by an installer-generated token.
  */
 import {
   existsSync,
@@ -28,15 +26,32 @@ import {
   removeService,
   start,
   stop,
+  restart,
   status,
   ansi,
 } from './service';
 import type { Language } from '../src/config';
 import { t } from '../src/i18n';
 import { checkRuntimeHome } from '../src/acp/integrity';
+import { MemoryDB } from '../src/db';
+import { ensureLocalAuthToken, inspectLocalAuthToken, readLocalAuthToken } from '../src/auth-token';
+import { readCaptureMisses } from '../src/hooks/capture-log';
+import { resolveRuntimeHome } from '../src/config';
+import { PACKAGE_VERSION } from '../src/version';
 
 const HOME = process.env.HOME || '~';
-const DATA_DIR = join(HOME, '.kiro-mem');
+/**
+ * Where this installation's state lives.
+ *
+ * `KIRO_MEMORY_DATA_DIR` first, matching `getDataDir()` in `src/config.ts` —
+ * the Worker, the MCP server and every hook resolve it that way. This file used
+ * to look only at `HOME`, so the override silently isolated two of the three
+ * entry points: a command run with `KIRO_MEMORY_DATA_DIR=<tmp> kiro-mem repair`
+ * looked isolated and actually read, migrated and enqueued jobs into the
+ * developer's real database. Tests isolate by overriding `HOME`, so nothing
+ * caught it.
+ */
+const DATA_DIR = process.env.KIRO_MEMORY_DATA_DIR || join(HOME, '.kiro-mem');
 const KIRO_HOME = process.env.KIRO_HOME || join(HOME, '.kiro');
 const AGENT_DIR = join(KIRO_HOME, 'agents');
 
@@ -45,25 +60,24 @@ const SRC_DIR = join(PKG_ROOT, 'src');
 const MODELS_DIR = join(PKG_ROOT, 'models');
 
 /**
- * Single source of truth for the package version. Reads the main
- * `package.json` at install time and is written into the runtime
- * `~/.kiro-mem/package.json` so the MCP server's `serverInfo.version`
- * (a required field in the MCP protocol) is always populated.
+ * Where the compressor runtime actually lives for THIS installation.
+ *
+ * Read from config so install / config / diagnose / smoke all inspect the same
+ * directory the Worker will use. Previously these were three independent
+ * expressions, so a custom `runtime.kiroHome` produced a runtime that worked but
+ * that `diagnose` reported as broken, and a re-install silently discarded the
+ * setting.
  */
-const PKG_VERSION: string = (() => {
+function runtimeHomeFromDisk(): string {
   try {
-    const pkg = JSON.parse(
-      readFileSync(join(PKG_ROOT, 'package.json'), 'utf-8'),
-    ) as { version?: unknown };
-    return typeof pkg.version === 'string' && pkg.version.trim()
-      ? pkg.version
-      : '0.0.0';
+    const raw = JSON.parse(readFileSync(join(DATA_DIR, 'config.json'), 'utf-8'));
+    return resolveRuntimeHome(raw?.runtime?.kiroHome, DATA_DIR);
   } catch {
-    return '0.0.0';
+    return resolveRuntimeHome(undefined, DATA_DIR);
   }
-})();
+}
 
-const RUNTIME_DIR = join(DATA_DIR, 'kiro-runtime');
+const RUNTIME_DIR = runtimeHomeFromDisk();
 const RUNTIME_AGENT_DIR = join(RUNTIME_DIR, 'agents');
 const COMPRESSOR_AGENT_NAME = 'kiro-mem-compressor';
 
@@ -75,6 +89,15 @@ const MODEL_FILES = [
   'tokenizer_config.json',
   'onnx/model_quantized.onnx',
 ] as const;
+
+/**
+ * Web Viewer bundle. Built by `bun run build:ui` into `dist/ui` and published in
+ * the npm `files` list, so an installed package carries it without needing the
+ * source repository to still exist.
+ */
+const VIEWER_SRC_DIR = join(PKG_ROOT, 'dist', 'ui');
+const VIEWER_DEST_DIR = join(DATA_DIR, 'ui');
+const VIEWER_FILES = ['viewer.html', 'viewer.js', 'styles.css'] as const;
 
 // --- Resolve language from existing config (or default) ---
 
@@ -113,7 +136,13 @@ switch (command) {
     stop(lang);
     break;
   case 'diagnose':
-    diagnose();
+    await diagnose();
+    break;
+  case 'repair':
+    await repair();
+    break;
+  case 'viewer':
+    await viewer();
     break;
   default:
     help();
@@ -156,17 +185,27 @@ function askChoice(
   });
 }
 
+async function chooseInstallLanguage(): Promise<Language> {
+  const fromEnv = process.env.KIRO_MEMORY_LANGUAGE;
+  if (fromEnv === 'en' || fromEnv === 'zh') return fromEnv;
+  const rl = createRL();
+  const choice = await askChoice(rl, t('en').chooseLanguageBootstrap, [
+    t('en').langEn,
+    t('zh').langZh,
+  ]);
+  rl.close();
+  return choice === 0 ? 'en' : 'zh';
+}
+
 interface BootstrapConfig {
   language: Language;
   worker: { port: number; host: string; logLevel: string };
   compression: { concurrency: number; timeoutMs: number; maxRetries: number };
   context: {
-    maxMemories: number;
     maxOutputBytes: number;
-    includePinned: boolean;
-    includeSummary: boolean;
   };
   filter: { skipTools: string[] };
+  retrieval: { semanticDiscovery: boolean };
   runtime: { kiroHome: string };
 }
 
@@ -176,13 +215,16 @@ function defaultConfig(language: Language): BootstrapConfig {
     worker: { port: 37778, host: '127.0.0.1', logLevel: 'info' },
     compression: { concurrency: 3, timeoutMs: 30000, maxRetries: 2 },
     context: {
-      maxMemories: 50,
       maxOutputBytes: 8192,
-      includePinned: true,
-      includeSummary: false,
     },
     filter: { skipTools: ['introspect', 'todo_list', '@kiro-mem/*'] },
-    runtime: { kiroHome: RUNTIME_DIR },
+    // Written explicitly rather than left to the loader default so the rollback
+    // switch is discoverable in the file the user actually opens.
+    retrieval: { semanticDiscovery: true },
+    // Empty means "use the default under dataDir" (see resolveRuntimeHome).
+    // Writing the resolved absolute path here instead would freeze the data dir
+    // into the config file and make the setting look user-chosen when it isn't.
+    runtime: { kiroHome: '' },
   };
 }
 
@@ -273,29 +315,20 @@ async function install() {
           ...defaultConfig(lang).compression,
           ...(existing.compression || {}),
         },
-        runtime: { kiroHome: RUNTIME_DIR },
+        // Preserve a user-chosen runtime home. Overwriting it here meant a
+        // re-install silently moved the compressor runtime back to the default
+        // directory while the user's config still said otherwise.
+        runtime: { kiroHome: existing.runtime?.kiroHome ?? '' },
       };
     } catch {
       // Existing config unparseable — fall back to a fresh language choice.
-      const rl = createRL();
-      const langChoice = await askChoice(rl, t('en').chooseLanguageBootstrap, [
-        t('en').langEn,
-        t('zh').langZh,
-      ]);
-      lang = langChoice === 0 ? 'en' : 'zh';
+      lang = await chooseInstallLanguage();
       m = t(lang);
-      rl.close();
       config = defaultConfig(lang);
     }
   } else {
-    const rl = createRL();
-    const langChoice = await askChoice(rl, t('en').chooseLanguageBootstrap, [
-      t('en').langEn,
-      t('zh').langZh,
-    ]);
-    lang = langChoice === 0 ? 'en' : 'zh';
+    lang = await chooseInstallLanguage();
     m = t(lang);
-    rl.close();
     config = defaultConfig(lang);
   }
 
@@ -313,6 +346,9 @@ async function install() {
   }
   console.log(`\n${ansi.ok('✓')} ${m.created} ${ansi.dim(DATA_DIR)}`);
 
+  // Requests from Hooks to the loopback Worker use a local bearer token.
+  ensureLocalAuthToken(DATA_DIR);
+
   // 5. Save config
   writeFileSync(configPath, JSON.stringify(config, null, 2));
   console.log(`${ansi.ok('✓')} ${m.configSaved}`);
@@ -323,6 +359,8 @@ async function install() {
     'prompt-save.ts',
     'observation.ts',
     'stop.ts',
+    'session.ts',
+    'capture-log.ts',
   ]) {
     copyFileSync(join(SRC_DIR, 'hooks', hook), join(DATA_DIR, 'hooks', hook));
     chmodSync(join(DATA_DIR, 'hooks', hook), 0o755);
@@ -335,8 +373,29 @@ async function install() {
   mkdirSync(join(DATA_DIR, 'src', 'jobs'), { recursive: true });
   mkdirSync(join(DATA_DIR, 'src', 'acp'), { recursive: true });
   mkdirSync(join(DATA_DIR, 'src', 'types'), { recursive: true });
+  mkdirSync(join(DATA_DIR, 'src', 'hooks'), { recursive: true });
 
-  for (const file of ['worker.ts', 'mcp-server.ts']) {
+  // The installed layout puts hooks at <dataDir>/hooks but server code at
+  // <dataDir>/src/server, so no single relative path reaches capture-log from
+  // both. Ship the same source file to both trees rather than forking it: the
+  // hooks append misses, the Worker's /health reads them back.
+  copyFileSync(
+    join(SRC_DIR, 'hooks', 'capture-log.ts'),
+    join(DATA_DIR, 'src', 'hooks', 'capture-log.ts'),
+  );
+
+  for (const file of [
+    'worker.ts',
+    'mcp-server.ts',
+    'mcp-scope.ts',
+    'observation-search.ts',
+    // Viewer server surface. The Worker imports these directly, so a missing
+    // file here breaks the installed runtime while the in-tree build stays green
+    // — the case `missingInstalledImports` in setup.test.ts guards against.
+    'viewer-routes.ts',
+    'viewer-stream.ts',
+    'viewer-types.ts',
+  ]) {
     copyFileSync(
       join(SRC_DIR, 'server', file),
       join(DATA_DIR, 'src', 'server', file),
@@ -372,10 +431,21 @@ async function install() {
   for (const file of [
     'compressor.ts',
     'embedding.ts',
-    'context-builder.ts',
+    // Split out of embedding.ts so the MCP server can resolve the vector-space
+    // identity without pulling the inference runtime into every session.
+    'embedding-space.ts',
+    'semantic-en.ts',
+    'worker-embedder.ts',
+    // Subtree RSS sampling for /health. The Worker imports it, so omitting it
+    // here would break the installed runtime while the in-tree build stayed
+    // green — which is exactly what `missingInstalledImports` guards against.
+    'process-rss.ts',
+    'bootstrap-context.ts',
     'config.ts',
+    'auth-token.ts',
     'logger.ts',
     'i18n.ts',
+    'version.ts',
   ]) {
     copyFileSync(join(SRC_DIR, file), join(DATA_DIR, 'src', file));
   }
@@ -390,6 +460,18 @@ async function install() {
   }
   copyEmbeddingModel();
   console.log(`${ansi.ok('✓')} ${m.modelsCopied}`);
+
+  // 8b. Copy the Web Viewer bundle to <dataDir>/ui
+  //
+  // The Worker resolves the bundle from the INSTALLED directory first, because a
+  // real installation has no repository to fall back to. A missing bundle is not
+  // fatal — memory capture, compression and MCP all work without it, and `/ui`
+  // then answers with a build hint instead of the Worker refusing to start.
+  if (copyViewerBundle()) {
+    console.log(`${ansi.ok('✓')} ${m.viewerInstalled}`);
+  } else {
+    console.log(`${ansi.warn('!')} ${m.viewerMissing} ${ansi.cyan('bun run build:ui')}`);
+  }
 
   // 9. Copy main agent prompt
   copyFileSync(
@@ -432,26 +514,24 @@ async function install() {
 
   // 12. Install runtime dependencies
   const runtimePkg = join(DATA_DIR, 'package.json');
-  if (!existsSync(runtimePkg)) {
-    writeFileSync(
-      runtimePkg,
-      JSON.stringify(
-        {
-          name: 'kiro-mem-server',
-          version: PKG_VERSION,
-          private: true,
-          type: 'module',
-          dependencies: {
-            hono: '^4.12.0',
-            '@huggingface/transformers': '^4.2.0',
-            '@modelcontextprotocol/sdk': '^1.29.0',
-          },
+  writeFileSync(
+    runtimePkg,
+    JSON.stringify(
+      {
+        name: 'kiro-mem-server',
+        version: PACKAGE_VERSION,
+        private: true,
+        type: 'module',
+        dependencies: {
+          hono: '^4.12.0',
+          '@huggingface/transformers': '^4.2.0',
+          '@modelcontextprotocol/sdk': '^1.29.0',
         },
-        null,
-        2,
-      ),
-    );
-  }
+      },
+      null,
+      2,
+    ),
+  );
   const r = spawnSync('bun', ['install'], { cwd: DATA_DIR, stdio: 'pipe' });
   if (r.status === 0) {
     console.log(`${ansi.ok('✓')} ${m.depsInstalled}`);
@@ -462,10 +542,13 @@ async function install() {
     process.exit(1);
   }
 
-  // 13. Register system service & start worker
+  // 13. Register system service & (re)start worker
+  //
+  // restart(), not start(): step 7 just overwrote the runtime source, and a
+  // Worker left running from before the copy would keep serving the old build.
   const msg = registerService(lang);
   console.log(`${ansi.ok('✓')} ${msg}`);
-  start(lang);
+  restart(lang);
 
   console.log(`\n${ansi.ok('✅')} ${ansi.bold(m.installed)}`);
   console.log(
@@ -489,6 +572,24 @@ function copyEmbeddingModel() {
     mkdirSync(dirname(dest), { recursive: true });
     copyFileSync(join(src, file), dest);
   }
+}
+
+/**
+ * Copy `dist/ui` into `<dataDir>/ui`. Returns false when the package carries no
+ * built bundle (a source checkout that has not run `bun run build:ui`).
+ *
+ * All three files or none: a directory with `viewer.html` but no `viewer.js`
+ * would serve a blank page with no diagnosable error, which is worse than the
+ * "bundle not found" hint the Worker shows for an absent directory.
+ */
+function copyViewerBundle(): boolean {
+  const present = VIEWER_FILES.every((f) => existsSync(join(VIEWER_SRC_DIR, f)));
+  if (!present) return false;
+  mkdirSync(VIEWER_DEST_DIR, { recursive: true });
+  for (const file of VIEWER_FILES) {
+    copyFileSync(join(VIEWER_SRC_DIR, file), join(VIEWER_DEST_DIR, file));
+  }
+  return true;
 }
 
 function uninstall() {
@@ -515,6 +616,10 @@ function uninstall() {
     'node_modules',
     'logs',
     'kiro-runtime',
+    // The Viewer bundle is a build artefact of the installed package, not user
+    // data — it is reinstalled by `kiro-mem install`, so keeping it would leave a
+    // stale UI able to talk to a newer Worker.
+    'ui',
   ]) {
     const p = join(DATA_DIR, dir);
     if (existsSync(p)) rmSync(p, { recursive: true });
@@ -559,7 +664,10 @@ async function configCmd() {
     );
     console.log(`  ${m.maxRetriesLabel}     ${ansi.cyan(String(c.maxRetries ?? 2))}`);
     console.log(
-      `  ${m.runtimeHomeLabel}      ${ansi.cyan(r.kiroHome || RUNTIME_DIR)}`,
+      `  ${m.runtimeHomeLabel}      ${ansi.cyan(resolveRuntimeHome(r.kiroHome, DATA_DIR))}`,
+    );
+    console.log(
+      `  ${m.discoveryLabel}  ${current.retrieval?.semanticDiscovery === false ? ansi.warn('off (rollback)') : ansi.cyan('on')}`,
     );
     return;
   }
@@ -580,7 +688,9 @@ async function configCmd() {
     ...current,
     language: newLang,
     compression: newCfg.compression,
-    runtime: { kiroHome: r.kiroHome || RUNTIME_DIR },
+    // Kept verbatim: `kiro-mem config` edits language and compression only, so
+    // it must not turn an unset (default) runtime home into a hard-coded path.
+    runtime: { kiroHome: r.kiroHome ?? '' },
   };
   writeFileSync(configPath, JSON.stringify(merged, null, 2));
   console.log(`\n${ansi.ok('✓')} ${m.configUpdated}`);
@@ -591,8 +701,9 @@ async function configCmd() {
     'acp',
     newLang === 'en' ? 'compressor-prompt.en.md' : 'compressor-prompt.zh.md',
   );
-  const promptDest = join(RUNTIME_DIR, `${COMPRESSOR_AGENT_NAME}-prompt.md`);
-  if (existsSync(promptSrc) && existsSync(RUNTIME_DIR)) {
+  const runtimeHome = resolveRuntimeHome(r.kiroHome, DATA_DIR);
+  const promptDest = join(runtimeHome, `${COMPRESSOR_AGENT_NAME}-prompt.md`);
+  if (existsSync(promptSrc) && existsSync(runtimeHome)) {
     copyFileSync(promptSrc, promptDest);
   }
 
@@ -601,7 +712,7 @@ async function configCmd() {
   console.log(`${ansi.ok('✓')} ${m.workerRestarted}`);
 }
 
-function diagnose() {
+async function diagnose() {
   const cjkWidth = (s: string) =>
     [...s].reduce((w, c) => w + (c.charCodeAt(0) > 0x7f ? 2 : 1), 0);
   const padLabel = (s: string, width: number) =>
@@ -617,12 +728,7 @@ function diagnose() {
   console.log(ansi.bold(`│ ${' '.repeat(padL)}${title}${' '.repeat(padR)} │`));
   console.log(ansi.bold(`└${'─'.repeat(boxW + 2)}┘`));
 
-  try {
-    const pkg = JSON.parse(
-      readFileSync(resolve(import.meta.dir, '../package.json'), 'utf-8'),
-    );
-    console.log(`  version: ${ansi.cyan(pkg.version || '?')}`);
-  } catch {}
+  console.log(`  version: ${ansi.cyan(PACKAGE_VERSION)}`);
 
   const pidFile = join(DATA_DIR, '.worker.pid');
   const portFile = join(DATA_DIR, '.worker.port');
@@ -672,6 +778,98 @@ function diagnose() {
         console.log(
           `  ${ansi.ok('✓')} ${padLabel(m.diagHealth, 10)}v${h.version || '?'}, ${m.diagJobsLabel}: ${jobsInfo}`,
         );
+        // The running Worker holds the code it loaded at boot. If it predates
+        // the installed files, everything else here still looks healthy while
+        // the deployed fix is not actually live.
+        let installedVersion = '';
+        try {
+          installedVersion = JSON.parse(
+            readFileSync(join(DATA_DIR, 'package.json'), 'utf-8'),
+          ).version;
+        } catch {}
+        if (installedVersion && h.version && h.version !== installedVersion) {
+          console.log(
+            `  ${ansi.err('✗')} ${padLabel(m.diagVersionMatch, 10)}${m.versionMismatch} ${ansi.dim(`(worker v${h.version} / installed v${installedVersion})`)}`,
+          );
+        }
+
+        // --- Runtime footprint ---
+        //
+        // Only reachable from a live /health: RSS is per-process state that no
+        // amount of reading the database can reconstruct. Printed here rather
+        // than in the database section for that reason.
+        const mb = (bytes: number | null | undefined) =>
+          typeof bytes === 'number' && bytes >= 0
+            ? `${(bytes / 1048576).toFixed(1)}MB`
+            : '?';
+        const mem = h.memory;
+        if (mem) {
+          console.log(
+            `\n${ansi.bold(`── ${m.diagRuntimeSection} ──────────────────────`)}`,
+          );
+          console.log(
+            `  ${padLabel(m.diagWorkerRss, 14)}${ansi.cyan(mb(mem.workerSelfRssBytes))}`,
+          );
+          const slots: any[] = Array.isArray(mem.acpSlots) ? mem.acpSlots : [];
+          if (slots.length === 0) {
+            console.log(`  ${padLabel(m.diagAcpPool, 14)}${ansi.dim('0')}`);
+          } else {
+            console.log(
+              `  ${padLabel(m.diagAcpPool, 14)}${ansi.cyan(mb(mem.acpAttributedSubtreeRssBytes))} ${ansi.dim(`(${slots.length} ${m.diagAcpSlot})`)}`,
+            );
+            for (const s of slots) {
+              const state = s.busy
+                ? m.diagAcpBusy
+                : `${m.diagAcpIdle} ${Math.round((s.idleMs ?? 0) / 1000)}s`;
+              console.log(
+                `    ${ansi.dim(`pid ${s.pid ?? '?'} · ${mb(s.rssBytes)} · ${s.jobCount} ${m.diagAcpJobs} · ${state}`)}`,
+              );
+            }
+          }
+          const clients: any[] = Array.isArray(mem.mcpClientsSeen) ? mem.mcpClientsSeen : [];
+          if (clients.length > 0) {
+            const total = clients.reduce(
+              (sum, x) => sum + (typeof x.rssBytes === 'number' ? x.rssBytes : 0),
+              0,
+            );
+            console.log(
+              `  ${padLabel(m.diagMcpClients, 14)}${ansi.cyan(String(clients.length))} ${ansi.dim(`· ${mb(total)} ${m.diagTotal}`)}`,
+            );
+          }
+          // A failed `ps` makes every byte count above meaningless. Say so
+          // instead of letting the reader treat '?' as "small".
+          if (mem.rssMeasured === false) {
+            console.log(`  ${ansi.warn('⚠')} ${ansi.dim(m.diagRssUnmeasured)}`);
+          } else if (mem.rssSampleAt === null && (slots.some((s) => s.pid != null) || clients.length > 0)) {
+            console.log(`  ${ansi.warn('⚠')} ${ansi.dim(m.diagRssPending)}`);
+          } else if (typeof mem.rssSampleAgeMs === 'number' && mem.rssSampleAgeMs > 5000) {
+            console.log(`  ${ansi.warn('⚠')} ${ansi.dim(`${m.diagRssStale} ${Math.round(mem.rssSampleAgeMs / 1000)}s`)}`);
+          }
+          const ing = h.ingest_runtime;
+          if (ing && ing.samples > 0) {
+            const slow = (ing.latencyMsP95 ?? 0) >= 500;
+            console.log(
+              `  ${slow ? `${ansi.warn('⚠')} ` : ''}${padLabel(m.diagIngestLatency, slow ? 12 : 14)}p50 ${ansi.cyan(`${ing.latencyMsP50}ms`)} / p95 ${ansi.cyan(`${ing.latencyMsP95}ms`)} / max ${ansi.cyan(`${ing.latencyMsMax}ms`)}`,
+            );
+            if (slow) console.log(`    ${ansi.dim(m.diagIngestHint)}`);
+          }
+          const emb = h.embedding_runtime;
+          if (emb && emb.samples > 0) {
+            console.log(
+              `  ${padLabel(m.diagEmbedLatency, 14)}p50 ${ansi.cyan(`${emb.latencyMsP50}ms`)} / p95 ${ansi.cyan(`${emb.latencyMsP95}ms`)} / max ${ansi.cyan(`${emb.latencyMsMax}ms`)} ${ansi.dim(`· ${emb.rejected} ${m.diagEmbedRejected}`)}`,
+            );
+          }
+          if (h.runtime) {
+            console.log(
+              `  ${padLabel(m.diagRuntimeAge, 14)}${ansi.dim(`${Math.round((h.runtime.uptimeMs ?? 0) / 3600000)}h`)}`,
+            );
+          }
+          if (h.jobs && (h.jobs.oldestPendingMs > 0 || h.jobs.oldestLeasedMs > 0)) {
+            console.log(
+              `  ${padLabel(m.diagJobAge, 14)}${m.diagJobPendingAge} ${ansi.cyan(`${Math.round((h.jobs.oldestPendingMs ?? 0) / 1000)}s`)} / ${m.diagJobLeasedAge} ${ansi.cyan(`${Math.round((h.jobs.oldestLeasedMs ?? 0) / 1000)}s`)}`,
+            );
+          }
+        }
       } catch {
         console.log(
           `  ${ansi.warn('⚠')} ${padLabel(m.diagHealth, 10)}${m.diagUnparseable}`,
@@ -680,6 +878,52 @@ function diagnose() {
     } else {
       console.log(
         `  ${ansi.err('✗')} ${padLabel(m.diagHealth, 10)}${m.diagUnreachable}`,
+      );
+    }
+  }
+
+  // 2b. Local auth token + Hook -> Worker auth chain
+  //
+  // A rejected Hook request is invisible during normal use (Hooks are
+  // fire-and-forget), so diagnose is where a broken credential must surface.
+  const tokenInfo = inspectLocalAuthToken(DATA_DIR);
+  const tokenProblem: Record<string, string> = {
+    missing: m.authTokenMissing,
+    empty: m.authTokenEmpty,
+    weak: m.authTokenWeak,
+    insecure: m.authTokenInsecure,
+  };
+  console.log(
+    tokenInfo.ok
+      ? `  ${ansi.ok('✓')} ${padLabel(m.diagAuth, 10)}${ansi.cyan(m.authTokenOk)}`
+      : `  ${ansi.err('✗')} ${padLabel(m.diagAuth, 10)}${tokenProblem[tokenInfo.state] ?? tokenInfo.state}`,
+  );
+
+  if (workerOk && tokenInfo.state !== 'missing') {
+    // Probe a read-only authenticated route the same way a Hook would. Sent via
+    // fetch, not curl, so the token never lands in the process list.
+    const probeUrl = `http://127.0.0.1:${port}/context/bootstrap?cwd=${encodeURIComponent(process.cwd())}`;
+    let probeStatus = 0;
+    try {
+      const res = await fetch(probeUrl, {
+        headers: { Authorization: `Bearer ${readLocalAuthToken(DATA_DIR)}` },
+        signal: AbortSignal.timeout(2000),
+      });
+      probeStatus = res.status;
+    } catch {
+      probeStatus = 0;
+    }
+    if (probeStatus === 200) {
+      console.log(
+        `  ${ansi.ok('✓')} ${padLabel(m.diagAuthChain, 10)}${ansi.cyan(m.authChainOk)}`,
+      );
+    } else if (probeStatus === 401) {
+      console.log(
+        `  ${ansi.err('✗')} ${padLabel(m.diagAuthChain, 10)}${m.authChainRejected}`,
+      );
+    } else {
+      console.log(
+        `  ${ansi.warn('⚠')} ${padLabel(m.diagAuthChain, 10)}${m.authChainUnreachable}`,
       );
     }
   }
@@ -846,7 +1090,7 @@ try {
         `  ${padLabel(m.maxRetriesLabel, 14)}${ansi.cyan(String(cc.maxRetries ?? 2))}`,
       );
       console.log(
-        `  ${padLabel(m.runtimeHomeLabel, 14)}${ansi.cyan(rr.kiroHome || RUNTIME_DIR)}`,
+        `  ${padLabel(m.runtimeHomeLabel, 14)}${ansi.cyan(resolveRuntimeHome(rr.kiroHome, DATA_DIR))}`,
       );
     } catch {
       console.log(`  ${ansi.err('✗')} ${m.diagParseError}`);
@@ -863,40 +1107,104 @@ try {
   );
   if (existsSync(dbPath)) {
     try {
-      const { Database } = require('bun:sqlite');
-      const db = new Database(dbPath, { readonly: true });
-      const turns = db.query('SELECT COUNT(*) as c FROM turns').get() as {
-        c: number;
-      };
-      const memories = db.query('SELECT COUNT(*) as c FROM memories').get() as {
-        c: number;
-      };
-      const pinned = db
-        .query('SELECT COUNT(*) as c FROM memories WHERE is_pinned = 1')
-        .get() as { c: number };
-      const pendingJobs = db
-        .query("SELECT COUNT(*) as c FROM jobs WHERE state = 'pending'")
-        .get() as { c: number };
-      const topics = db.query('SELECT COUNT(*) as c FROM topics').get() as {
-        c: number;
-      };
+      // Open through MemoryDB so the query logic is shared with /health and the
+      // metric_events table is created if an older DB predates it (idempotent).
+      const mdb = new MemoryDB(dbPath);
+      const turns =
+        (mdb.raw.query('SELECT COUNT(*) AS c FROM turns').get() as { c: number } | null)?.c ?? 0;
+      const s = mdb.getObservabilityStats();
+      const pct = (n: number) => `${Math.round(n * 100)}%`;
+
+      console.log(`  ${padLabel(m.diagTurns, 14)}${ansi.cyan(String(turns))}`);
       console.log(
-        `  ${padLabel(m.diagTurns, 14)}${ansi.cyan(String(turns.c))}`,
+        `  ${padLabel(m.diagObservations, 14)}${ansi.cyan(String(s.observations.total))} ${ansi.dim(`(${s.observations.normal} ${m.diagReady} / ${s.observations.fallback} ${m.diagFallback} / ${s.observations.pinned} ${m.diagPinned})`)}`,
       );
       console.log(
-        `  ${padLabel(m.diagMemories, 14)}${ansi.cyan(String(memories.c))} ${ansi.dim(`(${pinned.c} ${m.diagPinned})`)}`,
+        `  ${padLabel(m.diagEmbedded, 14)}${ansi.cyan(`${s.embeddings.ready}/${s.observations.total}`)} ${ansi.dim(`(${pct(s.embeddings.coverage)} ${m.diagCoverage})`)}`,
       );
       console.log(
-        `  ${padLabel(m.diagTopics, 14)}${ansi.cyan(String(topics.c))}`,
+        `  ${padLabel(m.diagJobsLabel, 14)}${ansi.cyan(String(s.jobs.pending))} ${m.diagJobsPending} / ${ansi.cyan(String(s.jobs.leased))} ${m.diagJobsLeased} / ${ansi.cyan(String(s.jobs.dead))} ${m.diagJobsDead}`,
+      );
+      // Nothing prunes either of these: `turn_events` gains a row per tool call
+      // and `succeeded` jobs are only ever marked, never deleted. Both are
+      // monotonic, so they belong next to the jobs line rather than in a
+      // "current state" group.
+      console.log(
+        `  ${padLabel(m.diagTurnEvents, 14)}${ansi.cyan(String(s.storage.turnEventsApprox))} ${ansi.dim(`· ${m.diagJobsSucceeded} ${s.storage.jobsSucceeded} ${m.diagJobsSucceededHint}`)}`,
       );
       console.log(
-        `  ${padLabel(m.diagPendingJobs, 14)}${ansi.cyan(String(pendingJobs.c))}`,
+        `  ${padLabel(m.diagSearch, 14)}${ansi.cyan(String(s.search24h.requests))} / ${ansi.cyan(pct(s.search24h.degradeRate))} ${m.diagDegrade} / p50 ${ansi.cyan(`${s.search24h.latencyMsP50}ms`)} / p95 ${ansi.cyan(`${s.search24h.latencyMsP95}ms`)}`,
       );
-      const stat = Bun.file(dbPath);
+      // Independent semantic recall (phase 2C) only works in the English vector
+      // space, so its coverage is the number that decides whether the feature is
+      // actually reachable in this install — not the offline benchmark.
+      const cfgRetrieval = (() => {
+        try {
+          const raw = JSON.parse(readFileSync(configPath, 'utf-8'));
+          return raw?.retrieval?.semanticDiscovery !== false;
+        } catch {
+          return true;
+        }
+      })();
       console.log(
-        `  ${padLabel(m.diagSize, 14)}${ansi.cyan((stat.size / 1024 / 1024).toFixed(1) + ' MB')}`,
+        `  ${padLabel(m.diagDiscovery, 14)}${cfgRetrieval ? ansi.cyan('on') : ansi.warn('off (rollback)')} ${ansi.dim(`· ${m.diagSemanticEn} ${pct(s.search24h.semanticEnRate)} (${s.search24h.protocolSemanticEn}/${s.search24h.requests})`)}`,
       );
-      db.close();
+      if (s.search24h.zeroFts > 0 || s.search24h.semanticOnlyTotal > 0) {
+        console.log(
+          `  ${padLabel(m.diagZeroFts, 14)}${ansi.cyan(`${s.search24h.zeroFtsRecalled}/${s.search24h.zeroFts}`)} ${ansi.dim(`· ${m.diagSemanticOnly} ${s.search24h.semanticOnlyPerRequest} ${m.diagPerRequest} / max ${s.search24h.semanticOnlyMax}`)}`,
+        );
+      }
+      // scope 内向量数（方案 §8.2）：语义召回在这个 workspace 上到底有没有可能。
+      // 只在测量过的请求上报，`emptyScopeRequests` 非 0 时升级成告警——那批请求的
+      // 语义腿是结构性不可能，不是"没有相关记录"。
+      if (s.search24h.scopeVectorsMeasured > 0) {
+        const empty = s.search24h.emptyScopeRequests;
+        console.log(
+          `  ${empty > 0 ? `${ansi.warn('⚠')} ` : ''}${padLabel(m.diagScopeVectors, empty > 0 ? 12 : 14)} ${ansi.cyan(String(s.search24h.scopeVectorsAvg))} ${ansi.dim(`· min ${s.search24h.scopeVectorsMin} · ${m.diagEmptyScope} ${empty}/${s.search24h.scopeVectorsMeasured}`)}`,
+        );
+      }
+      // Only when something was actually refused or omitted: a healthy install
+      // where the agent always passes the English form should stay quiet.
+      const issues = Object.entries(s.search24h.semanticQueryIssues);
+      if (issues.length > 0) {
+        console.log(
+          `  ${ansi.warn('⚠')} ${padLabel(m.diagSemanticQueryIssues, 12)} ${ansi.dim(issues.map(([r, c]) => `${r}:${c}`).join(' '))}`,
+        );
+      }
+      console.log(
+        `  ${padLabel(m.diagAcpWindow, 14)}${m.diagRepairs}: ${ansi.cyan(String(s.acp24h.repairs))} / ${m.diagContam}: ${ansi.cyan(String(s.acp24h.contaminations))}`,
+      );
+      // Only surfaced when non-zero: a silent Hook rejection is worth a line,
+      // a healthy install should stay quiet.
+      if (s.auth24h.unauthorized > 0) {
+        console.log(
+          `  ${ansi.warn('⚠')} ${padLabel(m.diagAuthRejected, 12)}${ansi.cyan(String(s.auth24h.unauthorized))} ${m.diagAuthRejectedHint}`,
+        );
+      }
+      // Capture is best-effort: a dropped raw event is unrecoverable, so make
+      // the gap visible instead of letting it look like an idle period.
+      const misses = readCaptureMisses(DATA_DIR);
+      if (misses.total > 0) {
+        const detail = Object.entries(misses.byReason)
+          .map(([reason, count]) => `${reason}:${count}`)
+          .join(' ');
+        console.log(
+          `  ${ansi.warn('⚠')} ${padLabel(m.diagCaptureMissed, 12)}${ansi.cyan(String(misses.total))} ${ansi.dim(detail)} ${m.diagCaptureMissedHint}`,
+        );
+      }
+      // Size comes from the stats read above, not a second `Bun.file()` stat, so
+      // this line and `/health` can never disagree. WAL is reported beside it
+      // because a WAL several times the main database is a checkpoint-starvation
+      // signal — a different defect, with a different fix, than "the corpus grew".
+      const sizeMb = (bytes: number) =>
+        bytes >= 0 ? `${(bytes / 1048576).toFixed(1)} MB` : m.diagStorageUnavailable;
+      console.log(
+        `  ${padLabel(m.diagSize, 14)}${ansi.cyan(sizeMb(s.storage.dbBytes))} ${ansi.dim(`· ${m.diagWalSize} ${sizeMb(s.storage.walBytes)}`)}`,
+      );
+      if (s.storage.dbBytes > 0 && s.storage.walBytes > s.storage.dbBytes * 2) {
+        console.log(`  ${ansi.warn('⚠')} ${ansi.dim(m.diagWalHint)}`);
+      }
+      mdb.close();
     } catch (e) {
       console.log(
         `  ${ansi.err('✗')} Error: ${e instanceof Error ? e.message : e}`,
@@ -932,6 +1240,79 @@ try {
   console.log('');
 }
 
+/**
+ * Reconcile the Truth Layer against its projections (P0-5).
+ *
+ * A dropped raw event is gone for good, but a MISSING PROJECTION is recoverable:
+ * the turn and its events are still there. Before this command existed, a
+ * summarize job that reached `dead` left that turn permanently without an
+ * Observation, and the cross-state dedupe index made re-enqueueing silently
+ * impossible — the memory gap had no repair path at all.
+ *
+ * This never deletes a terminal job row: the original `last_error` is the only
+ * record of why the projection failed, and repair must not destroy evidence.
+ */
+async function repair() {
+  const dbPath = join(DATA_DIR, 'kiro-mem.db');
+  if (!existsSync(dbPath)) {
+    console.error(`${ansi.err('✗')} ${m.repairNoDb} ${ansi.dim(dbPath)}`);
+    process.exit(1);
+  }
+
+  const mdb = new MemoryDB(dbPath);
+  try {
+    // 动态引入：`src/embedding.ts` 会静态拉入 transformers，其它 CLI 子命令不该为它付启动成本。
+    // `embedding-space.ts` / `semantic-en.ts` 本身不含推理运行时，但保持同一处引入更好读。
+    const { DIMENSIONS } = await import('../src/embedding-space');
+    const { embeddingSpaceKey, RAW_PROTOCOL, SEMANTIC_EN_PROTOCOL } = await import('../src/semantic-en');
+    // 向量孤儿只认 raw-v1：它是本地可重算的那一腿（不需要 ACP 翻译）。
+    // semantic-en-v1 的向量不靠这里补——它依赖英文派生值先 ready，所以下面单独找
+    // "缺派生值"的 observation 并排 renormalize_observation，由 Worker 走 ACP 补译，
+    // 补完后那条 job 自己会排 embed。
+    const vector = {
+      embeddingModel: embeddingSpaceKey(RAW_PROTOCOL),
+      embeddingDimensions: DIMENSIONS,
+    };
+    const found = mdb.findOrphans(vector);
+    const turns = found.turnsWithoutObservation.length;
+    const observations = found.observationsWithoutEmbedding.length;
+    const missingSemantic = mdb.findObservationsMissingSemanticText({
+      protocol: SEMANTIC_EN_PROTOCOL,
+    }).length;
+    // `failed` 不进重建队列（护栏两次拒绝过同一份内容），但必须显示出来，否则它就是
+    // 一个永远不会自愈、也没人知道的黑洞。
+    const semanticStatus = mdb.countObservationSemanticTexts(SEMANTIC_EN_PROTOCOL);
+
+    if (turns === 0 && observations === 0 && missingSemantic === 0) {
+      console.log(`${ansi.ok('✓')} ${m.repairNothing}`);
+      if (semanticStatus.failed > 0) {
+        console.log(
+          `  ${ansi.dim(`${m.repairSemanticFailed} ${semanticStatus.failed}`)}`,
+        );
+      }
+      return;
+    }
+
+    console.log(`${m.repairFound}`);
+    const pad = (s: string) => s.padEnd(30, ' ');
+    if (turns > 0) console.log(`  ${pad(m.repairTurns)}${ansi.cyan(String(turns))}`);
+    if (observations > 0) console.log(`  ${pad(m.repairEmbeddings)}${ansi.cyan(String(observations))}`);
+    if (missingSemantic > 0) console.log(`  ${pad(m.repairSemanticTexts)}${ansi.cyan(String(missingSemantic))}`);
+
+    const queued = mdb.requeueOrphans(vector);
+    const queuedSemantic = mdb.requeueSemanticTextRebuild({ protocol: SEMANTIC_EN_PROTOCOL });
+    console.log(
+      `${ansi.ok('✓')} ${m.repairQueued} ${ansi.cyan(String(queued.summarize))} summarize_turn / ${ansi.cyan(String(queued.embed))} embed_observation / ${ansi.cyan(String(queuedSemantic))} renormalize_observation`,
+    );
+    if (semanticStatus.failed > 0) {
+      console.log(`  ${ansi.dim(`${m.repairSemanticFailed} ${semanticStatus.failed}`)}`);
+    }
+    console.log(`  ${ansi.dim(m.repairHint)}`);
+  } finally {
+    mdb.close();
+  }
+}
+
 function help() {
   console.log(`kiro-mem <command>
 
@@ -944,5 +1325,65 @@ Commands:
   status               ${m.helpStatus}
   start                ${m.helpStart}
   stop                 ${m.helpStop}
-  diagnose             ${m.helpDiagnose}`);
+  diagnose             ${m.helpDiagnose}
+  repair               ${m.helpRepair}
+  viewer               ${m.helpViewer}`);
+}
+
+/**
+ * Open the Web Viewer in the default browser (plan §6.1).
+ *
+ * The token travels in the URL FRAGMENT. A fragment is never sent to the server,
+ * so it stays out of the Worker's access log and out of any Referer; the page then
+ * moves it into that tab's `sessionStorage` and rewrites the URL. A query
+ * parameter would have put a live credential into browser history.
+ *
+ * The Viewer opens on all workspaces by default. The user can narrow the feed
+ * from the workspace selector after the page has authenticated.
+ */
+async function viewer() {
+  if (!existsSync(join(DATA_DIR, 'config.json'))) {
+    console.log(`${ansi.err('✗')} ${m.notInstalled} ${ansi.cyan('kiro-mem install')}`);
+    return;
+  }
+
+  const token = readLocalAuthToken(DATA_DIR);
+  if (!token) {
+    console.log(`${ansi.err('✗')} ${m.viewerNoToken} ${ansi.cyan('kiro-mem install')}`);
+    return;
+  }
+
+  // The running Worker's port, not the configured one: they differ while a config
+  // edit is waiting for a restart, and the Viewer has to reach the live process.
+  const portFile = join(DATA_DIR, '.worker.port');
+  let port = 37778;
+  try {
+    const fromConfig = JSON.parse(readFileSync(join(DATA_DIR, 'config.json'), 'utf-8'))?.worker?.port;
+    if (Number.isInteger(fromConfig)) port = fromConfig;
+  } catch {}
+  if (existsSync(portFile)) {
+    const fromDisk = Number(readFileSync(portFile, 'utf-8').trim());
+    if (Number.isInteger(fromDisk) && fromDisk > 0) port = fromDisk;
+  }
+
+  const base = `http://127.0.0.1:${port}`;
+  try {
+    const health = await fetch(`${base}/health`, { signal: AbortSignal.timeout(2000) });
+    if (!health.ok) throw new Error(String(health.status));
+  } catch {
+    console.log(`${ansi.err('✗')} ${m.viewerWorkerDown} ${ansi.cyan('kiro-mem start')}`);
+    return;
+  }
+
+  const url = `${base}/ui#token=${encodeURIComponent(token)}`;
+
+  console.log(`${ansi.ok('✓')} ${m.viewerOpening}`);
+  const opener = process.platform === 'darwin' ? 'open' : 'xdg-open';
+  const opened = spawnSync(opener, [url], { stdio: 'ignore' });
+  if (opened.status !== 0) {
+    // No desktop session (SSH, headless): print the URL instead of failing. It
+    // carries a live token, so say so rather than logging it silently.
+    console.log(`${ansi.warn('!')} ${m.viewerOpenManually}`);
+    console.log(`   ${ansi.cyan(url)}`);
+  }
 }

@@ -1,0 +1,1811 @@
+{
+  "meta": {
+    "step": "P2 第 4 步：query 集，已随记录一起一次性冻结（p2-calibration-freeze.json）。",
+    "criteria": "benchmark/reports/safety-round/p2-calibration-criteria.md",
+    "criteriaSha256": "dd61359bd938011eebe17eab6262cbc421fa818af2667b7e1a25fe597a0035a1",
+    "executionRuling": "benchmark/reports/safety-round/p2-step3-review-and-step4-ruling.md",
+    "records": "benchmark/dataset/turns-safety-round.json（40 条）",
+    "authoring_order": "判据 §7.2：先按「间接问法」规则成批撰写，撰写时**不看任何余弦**；全部写完后一次性测量 query→primary_gold 的余弦并分层，不足 8 条落在 [0.200,0.310) 时**只补写、不删除**。",
+    "gold_rules": "primary_gold 只能是本轮新记录（从未当过 gold）；acceptable_gold 是所有能实质回答该 query 的记录，含旧 26 条。裁决 1.4：related 不等于自动进入 acceptable_gold，必须逐 query 判断该记录能不能回答这个具体问题。",
+    "coverage_requirement": "裁决 1.4：每条新记录至少要在一条 query 中作为 primary_gold。校验脚本硬失败。",
+    "negative_rules": "判据 §4.5：每条 hard-negative 必须带 negative_type（near-domain / foreign-domain）与 negative_type_basis；empty 40 条里 foreign-domain ≥12，词面锚点 30 条里 ≥8。",
+    "semantic_query_en": {
+      "source": "生产 ACP 译者（kiro-mem-compressor），与记录侧同一份 prompt 规则、分开的进程调用",
+      "mirror": "benchmark/dataset/mirror-en-acp-queries-safety-round.json",
+      "guardrail": "全部 131 条通过生产 checkSemanticEnQuery",
+      "firstPassSuccess": "首批 111 条：88 成功（79.3%），两轮定向重试补齐。失败形状全为 JSON 解析失败（模型回解释而不是 JSON），与阶段 1b 实测一致。",
+      "laterBatches": "低分正例补写的 20 条（第 2–4 轮）与零 FTS 改写后重译的 33 条分批产出，逐批重试至全部通过护栏；最终 131/131。"
+    },
+    "counts": {
+      "total": 131,
+      "relevance": 61,
+      "emptyZeroFtsHardNegative": 40,
+      "lexicalAnchorHardNegative": 30
+    }
+  },
+  "queries": [
+    {
+      "id": "sr-r01",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "记忆和提问必须用同一种语言处理吗？只处理其中一边会怎样",
+      "semantic_query_en": "Do memory and query have to be processed in the same language? What happens if only one side is processed?",
+      "primary_gold": [
+        "s01"
+      ],
+      "acceptable_gold": [
+        "s01",
+        "s02"
+      ],
+      "annotation_basis": "s01 是这个问题的直接答案：只译记录侧实测 MRR 0.437，低于两侧都不译的 0.529。s02 能补充解释为什么——两侧协议不一致时空间不可比。旧 26 条里没有涉及语言归一化的记录（t23 只讲量化与维度）。"
+    },
+    {
+      "id": "sr-r02",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "同一个模型出来的向量，存一张表里按模型名区分够不够",
+      "semantic_query_en": "Is it enough to store vectors from the same model in one table and distinguish by model name?",
+      "primary_gold": [
+        "s02"
+      ],
+      "acceptable_gold": [
+        "s02",
+        "t23"
+      ],
+      "annotation_basis": "s02 直接回答：不够，身份键要含量化、维度与文本协议四段。t23 记录了量化与维度这两段的取值，能部分回答「身份键里有什么」，因此计入 acceptable。t23 不解释为什么模型名不够，所以不能当 primary。"
+    },
+    {
+      "id": "sr-r03",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "上次那轮验收最后卡在哪一项上，换个时间范围能绕过去吗",
+      "semantic_query_en": "Where did that last acceptance round get stuck on, can a different time range get around it?",
+      "primary_gold": [
+        "s03"
+      ],
+      "acceptable_gold": [
+        "s03",
+        "c23"
+      ],
+      "annotation_basis": "s03 直接回答：卡在误召回那一项，实测 1.900；对照臂 1.800，回滚只降 0.100 绕不过去。c23 是同一次验收里通过的那一半（召回收益），能说明「为什么不能靠回滚解决」，因此计入 acceptable。"
+    },
+    {
+      "id": "sr-r04",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "测试语料里有重复内容的时候，返回条数这个指标会不会算多了",
+      "semantic_query_en": "When there's duplicate content in the test corpus, will the returned-count metric end up being counted too many times?",
+      "primary_gold": [
+        "s04"
+      ],
+      "acceptable_gold": [
+        "s04",
+        "c24",
+        "c29"
+      ],
+      "annotation_basis": "s04 直接回答：会，虚高 0.6，去重后 1.3。c24 给出同一现象在页面替换指标上的表现（两套口径差近一半），c29 解释语料为什么有重复（一万条原文复制五份），两条都能实质回答，计入 acceptable。c25 讲的是正例侧有没有被掩盖，不回答「指标算不算多」，不计入。"
+    },
+    {
+      "id": "sr-r05",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "判断一条结果够不够像，用它相对全库的突出程度比用绝对分数好吗",
+      "semantic_query_en": "Is it better to judge how good a result is by how much it stands out relative to the whole corpus, rather than by an absolute score?",
+      "primary_gold": [
+        "s05"
+      ],
+      "acceptable_gold": [
+        "s05",
+        "c38"
+      ],
+      "annotation_basis": "s05 直接回答：更差，分离度从 0.841 掉到 0.735，机制是负例的背景均值更低。c38 把结论推广到分位数与差值写法，能回答同一个问题的变体形式，计入 acceptable。"
+    },
+    {
+      "id": "sr-r06",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "两年前的记录现在还搜得到吗，默认会不会被时间挡掉",
+      "semantic_query_en": "Can records from two years ago still be searched now, or would they be blocked by the default time limit?",
+      "primary_gold": [
+        "s06"
+      ],
+      "acceptable_gold": [
+        "s06"
+      ],
+      "annotation_basis": "s06 是唯一能回答的记录：默认窗已从 90 天改为无界，因此两年前的记录可达。旧 26 条里没有任何记录涉及默认时间窗——t21 讲融合与地板线，t02 讲嵌入超时降级，都不回答时间范围。这是判据 §3.4 要求写明单 gold 理由的情形。"
+    },
+    {
+      "id": "sr-r07",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "查询语句本身没变，只是把一个数字改成占位符传进去，为什么就慢了",
+      "semantic_query_en": "The query itself hasn't changed, I just changed a number to a placeholder before passing it in, why did it get slow",
+      "primary_gold": [
+        "s07"
+      ],
+      "acceptable_gold": [
+        "s07"
+      ],
+      "annotation_basis": "s07 是唯一能回答的记录：优化器失去行数信息，计划从索引驱动翻转成全表扫加临时排序，0.93ms 变 1506.57ms。旧 26 条里 t01 也改 FTS 查询，但那是把用户输入字面量化以避免语法报错，与执行计划无关，不能回答本问题。"
+    },
+    {
+      "id": "sr-r08",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "一页最多两条这个限制，是不是意味着最多只会有两条不靠谱的结果",
+      "semantic_query_en": "Does this limit of at most two per page mean there can only be at most two unreliable results?",
+      "primary_gold": [
+        "s08"
+      ],
+      "acceptable_gold": [
+        "s08",
+        "c26"
+      ],
+      "annotation_basis": "s08 直接回答：不是，它只约束纯语义来源那一类，关键词命中不受限。c26 从另一侧回答同一件事——把这个上限降到 1 会让门槛变成算术恒真，说明它不是整页护栏，计入 acceptable。"
+    },
+    {
+      "id": "sr-r09",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "把最像的那条的分数拿去加权，能不能让排序更准",
+      "semantic_query_en": "Can we weight the score of the closest match to make the ranking more accurate?",
+      "primary_gold": [
+        "c09"
+      ],
+      "acceptable_gold": [
+        "c09",
+        "t21",
+        "s05"
+      ],
+      "annotation_basis": "c09 直接回答：不能，融合只用名次，分数只用于与地板线比较和定名次。t21 记录了融合与地板线的设计，能实质说明融合用的是什么，计入 acceptable。s05 说明了想用分数大小时唯一可行的用法是绝对阈值，也能实质回答，计入。"
+    },
+    {
+      "id": "sr-r10",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "语料变多之后，有些老记录是不是就不会被拿去比较了",
+      "semantic_query_en": "Once the corpus grows, do some of the older records just stop being compared at all?",
+      "primary_gold": [
+        "c10"
+      ],
+      "acceptable_gold": [
+        "c10",
+        "c28"
+      ],
+      "annotation_basis": "c10 直接回答：不会，池子是全量，被限制的是保留名次那一步。c28 用实测支持同一结论——只保住四千多条里的一百六十三条，返回页面逐条不变，计入 acceptable。"
+    },
+    {
+      "id": "sr-r11",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "参数配错了会直接报错还是悄悄没生效",
+      "semantic_query_en": "If a parameter is misconfigured, does it throw an error directly or silently fail to take effect?",
+      "primary_gold": [
+        "c11"
+      ],
+      "acceptable_gold": [
+        "c11",
+        "t06"
+      ],
+      "annotation_basis": "c11 直接回答检索策略侧：地板线超出余弦值域等非法值在装配时报错，不再表现为功能消失。t06 是 MCP 入参侧的边界校验与错误返回，同样回答「配错了会怎样」，属于另一层但能实质回答，计入 acceptable。"
+    },
+    {
+      "id": "sr-r12",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "要是这套新的召回方式出问题，能退回到以前的行为吗，退回去要调几个地方",
+      "semantic_query_en": "If this new recall approach has problems, can it be rolled back to the previous behavior, and how many places need to be changed to roll it back",
+      "primary_gold": [
+        "c12"
+      ],
+      "acceptable_gold": [
+        "c12",
+        "c33"
+      ],
+      "annotation_basis": "c12 直接回答：退回是整组切换，四个值一并生效，不需要逐项调。c33 回答退回的代价面（不动持久化、新会话生效），与本问题的后半句直接相关，计入 acceptable。两条已在复核中裁决为 related-with-correction，c12 里复述 c33 的那句已删。"
+    },
+    {
+      "id": "sr-r13",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "没给英文提问形式的那些请求，以前是不是也在算相似度",
+      "semantic_query_en": "Did requests that didn't provide an English query form also used to have similarity computed for them?",
+      "primary_gold": [
+        "c13"
+      ],
+      "acceptable_gold": [
+        "c13",
+        "s01",
+        "c14"
+      ],
+      "annotation_basis": "c13 直接回答：是，只要有一条关键词命中就照样打分，且用的是为另一个空间校准的地板线，该路径已整段删除。s01 说明协议为什么必须两侧一致，c14 说明那个空间为什么配不出阈值，两条都能实质回答「为什么不该算」，计入 acceptable。"
+    },
+    {
+      "id": "sr-r14",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "中文那条辅助切分最后到底用上了没有",
+      "semantic_query_en": "Did that Chinese auxiliary segmentation aid actually end up being used or not",
+      "primary_gold": [
+        "c15"
+      ],
+      "acceptable_gold": [
+        "c15"
+      ],
+      "annotation_basis": "c15 是唯一能回答的记录：第二轮十个组合可行零个，保持关闭。旧 26 条里没有涉及中文切分的记录；t01 是 FTS 字面量化，与分词策略无关。这是判据 §3.4 要求写明单 gold 理由的情形。"
+    },
+    {
+      "id": "sr-r15",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "现在这个相似度门槛当初是拿多少条数据试出来的",
+      "semantic_query_en": "How many data points were actually used to test out this similarity threshold in the first place?",
+      "primary_gold": [
+        "c17"
+      ],
+      "acceptable_gold": [
+        "c17",
+        "t21",
+        "c22"
+      ],
+      "annotation_basis": "c17 直接回答：三十条 turn，当时单查询候选最多十一条。t21 记录了地板线的最初来源，能实质说明它是怎么定的，计入 acceptable。c22 说明不同规模的校准集会给出相反的代价答案，与本问题的含义直接相关，计入。"
+    },
+    {
+      "id": "sr-r16",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "那道门槛实际拦下了多大比例的内容",
+      "semantic_query_en": "What proportion of content did that threshold actually block",
+      "primary_gold": [
+        "c18"
+      ],
+      "acceptable_gold": [
+        "c18",
+        "c17"
+      ],
+      "annotation_basis": "c18 直接回答：几乎没拦，一次查询平均 16% 的语料过线，最高 48.7%。c17 提供对照——当初校准时候选最多十一条，能解释这个比例为什么会崩，计入 acceptable。"
+    },
+    {
+      "id": "sr-r17",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "报告里语义候选数一直是差不多两百条，这个稳定值说明了什么",
+      "semantic_query_en": "The number of semantic candidates in the report has been staying at around two hundred, what does this stable value indicate?",
+      "primary_gold": [
+        "c19"
+      ],
+      "acceptable_gold": [
+        "c19",
+        "c10",
+        "c28"
+      ],
+      "annotation_basis": "c19 直接回答：那是保留集长度撞上上限的产物，不是过线数量。c10 说明保留与池子是两件事，c28 给出保留集截断的实测影响，两条都能实质解释这个稳定值的来源，计入 acceptable。"
+    },
+    {
+      "id": "sr-r18",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "把门槛提高一点，那些完全不相干的提问就不会有结果了吧",
+      "semantic_query_en": "If I raise the threshold a bit, those completely unrelated questions won't return any results, right?",
+      "primary_gold": [
+        "c20"
+      ],
+      "acceptable_gold": [
+        "c20",
+        "c21",
+        "c22"
+      ],
+      "annotation_basis": "c20 直接回答：能归零，但代价是丢掉得分最低那条正例。c21 回答同一动作对另一类负例无效，c22 回答代价在不同集合上的读数相反，两条都能实质回答「提高门槛的后果」，计入 acceptable。"
+    },
+    {
+      "id": "sr-r19",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "问一件技术上挨得很近但项目没做过的事，能不能靠调门槛让它一条都不返回",
+      "semantic_query_en": "If I ask about something technically close but that this project has never actually done, can adjusting the threshold make it return zero results?",
+      "primary_gold": [
+        "c21"
+      ],
+      "acceptable_gold": [
+        "c21",
+        "c20"
+      ],
+      "annotation_basis": "c21 直接回答：不能，去重后平均只从 1.50 降到 1.15。c20 提供对照——同一批取值下完全异域那类可以归零，能实质说明两类的差别，计入 acceptable。"
+    },
+    {
+      "id": "sr-r20",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "同一个门槛值，为什么在两批测试数据上得出的代价完全不一样",
+      "semantic_query_en": "Same threshold value, why do the costs turn out completely different on two batches of test data",
+      "primary_gold": [
+        "c22"
+      ],
+      "acceptable_gold": [
+        "c22",
+        "c17"
+      ],
+      "annotation_basis": "c22 直接回答：因为一批的正例得分全部在 0.308 以上，低于 0.30 的门槛对它免费。c17 说明校准规模决定了能看见多少代价，能实质回答，计入 acceptable。"
+    },
+    {
+      "id": "sr-r21",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "换了新的召回方式之后，以前找不到的旧记录现在找得回来多少",
+      "semantic_query_en": "After switching to the new recall method, how many of the old records that couldn't be found before can now be found?",
+      "primary_gold": [
+        "c23"
+      ],
+      "acceptable_gold": [
+        "c23",
+        "s03"
+      ],
+      "annotation_basis": "c23 直接回答：从零升到 80.77%，二十一条进前五，零退化。s03 是同一次验收的另一半结论（误召回门未通过），能说明这个收益的处境，计入 acceptable。"
+    },
+    {
+      "id": "sr-r22",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "去掉时间限制之后，返回的内容换掉了多少",
+      "semantic_query_en": "After removing the time limit, how much of the returned content changed",
+      "primary_gold": [
+        "c24"
+      ],
+      "acceptable_gold": [
+        "c24",
+        "s04",
+        "s06"
+      ],
+      "annotation_basis": "c24 直接回答：物理行 109/105，折叠后 55/53。s04 解释两套口径为什么差近一半，s06 是那次改动本身，两条都能实质回答，计入 acceptable。"
+    },
+    {
+      "id": "sr-r23",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "有几条本该找到的记录没找到，是不是因为位置被重复内容占了",
+      "semantic_query_en": "Several records that should have been found weren't found — is it because the slots were taken up by duplicate content?",
+      "primary_gold": [
+        "c25"
+      ],
+      "acceptable_gold": [
+        "c25",
+        "s04"
+      ],
+      "annotation_basis": "c25 直接回答：四条整页被同源副本占满，但去重一条都救不回——名次本来就在页面容量之外。s04 提供同一装置在负例侧的读数，能实质说明副本结构的影响范围，计入 acceptable。"
+    },
+    {
+      "id": "sr-r24",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "把每页允许的条数降到一条，验收指标是不是就自动达标了",
+      "semantic_query_en": "If I lower the number of entries allowed per page to one, would the acceptance metric automatically pass?",
+      "primary_gold": [
+        "c26"
+      ],
+      "acceptable_gold": [
+        "c26",
+        "s08"
+      ],
+      "annotation_basis": "c26 直接回答：那是算术恒真，与检索质量无关，因此预先登记为诊断臂。s08 说明这个上限只约束一类来源，能实质回答为什么它管不了整页，计入 acceptable。"
+    },
+    {
+      "id": "sr-r25",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "数据量最大的那一档，一次检索要多久、吃多少内存",
+      "semantic_query_en": "For the largest data volume tier, how long does one search take and how much memory does it use?",
+      "primary_gold": [
+        "c27"
+      ],
+      "acceptable_gold": [
+        "c27"
+      ],
+      "annotation_basis": "c27 是唯一能回答的记录：p95 158 到 286 毫秒，常驻内存增量 225 到 324 兆。旧 26 条里没有任何性能读数；t17、t19 是端到端与故障路径验收，不含延迟或内存数字。这是判据 §3.4 要求写明单 gold 理由的情形。"
+    },
+    {
+      "id": "sr-r26",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "只给一部分候选记名次，返回的东西会不会因此变了",
+      "semantic_query_en": "Only some of the candidates get a rank assigned, will that change what's returned?",
+      "primary_gold": [
+        "c28"
+      ],
+      "acceptable_gold": [
+        "c28",
+        "c10",
+        "c09"
+      ],
+      "annotation_basis": "c28 直接回答：逐条相同，只保住四千六百多条里的一百六十三条。c10 说明保留与池子的分工，c09 给出机制解释（名次到几千位对融合分的贡献够不到页面），两条都能实质回答，计入 acceptable。"
+    },
+    {
+      "id": "sr-r27",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "那份用来撑规模的测试数据是怎么造出来的",
+      "semantic_query_en": "How was that test data made to support the scale testing?",
+      "primary_gold": [
+        "c29"
+      ],
+      "acceptable_gold": [
+        "c29",
+        "c30",
+        "s04"
+      ],
+      "annotation_basis": "c29 直接回答：一万条原文复制五份，跨度一千零九十五天。c30 回答生成规则那一面（禁用表与词面校验），s04 回答这个构造对指标的后果，两条都能实质回答，计入 acceptable。"
+    },
+    {
+      "id": "sr-r28",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "造出来的假数据会不会正好撞上测试用的提问词",
+      "semantic_query_en": "Could the fabricated fake data happen to collide with the test query terms?",
+      "primary_gold": [
+        "c30"
+      ],
+      "acceptable_gold": [
+        "c30",
+        "c29"
+      ],
+      "annotation_basis": "c30 直接回答：靠禁用表加机械校验，词面违规读数为零。c29 说明这批数据的构造方式，能实质补充回答，计入 acceptable。"
+    },
+    {
+      "id": "sr-r29",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "开新会话时塞进去的那份清单，占多少空间，会不会超",
+      "semantic_query_en": "How much space does the list that gets injected when starting a new session take up, will it exceed the limit",
+      "primary_gold": [
+        "c31"
+      ],
+      "acceptable_gold": [
+        "c31",
+        "t18"
+      ],
+      "annotation_basis": "c31 直接回答：预算 8192 字节，压在接口一万字节上限之下。t18 记录了实测占用（487 字节 / 跨 workspace 227 字节），能实质回答「占多少」，计入 acceptable。t18 不含预算与上限，所以不能当 primary。"
+    },
+    {
+      "id": "sr-r30",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "一次性把很多条详情拉出来，回复会被截断吗",
+      "semantic_query_en": "If I pull a lot of detail entries at once, will the response get truncated?",
+      "primary_gold": [
+        "c32"
+      ],
+      "acceptable_gold": [
+        "c32",
+        "t06"
+      ],
+      "annotation_basis": "c32 直接回答：有字节上限，按累计字节裁掉后续条目且至少保证返回第一条。t06 是同一接口的入参边界与错误返回，能实质回答「这个接口对超限怎么处理」，计入 acceptable。"
+    },
+    {
+      "id": "sr-r31",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "关掉那个开关要不要重新算一遍向量，数据会丢吗",
+      "semantic_query_en": "If I turn off that switch, do I need to recompute the vectors, and will the data be lost?",
+      "primary_gold": [
+        "c33"
+      ],
+      "acceptable_gold": [
+        "c33",
+        "c12"
+      ],
+      "annotation_basis": "c33 直接回答：不需要重算也不会丢，因为开关不动库结构、存储向量与嵌入协议。c12 回答退回之后具体是哪一组参数，与本问题相邻但不同，计入 acceptable。"
+    },
+    {
+      "id": "sr-r32",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "改完设置怎么确认它真的生效了，不想去翻代码",
+      "semantic_query_en": "How do I confirm the setting change actually took effect after I changed it, without having to go dig through the code?",
+      "primary_gold": [
+        "c34"
+      ],
+      "acceptable_gold": [
+        "c34",
+        "c33"
+      ],
+      "annotation_basis": "c34 直接回答：健康接口每次调用从磁盘读档位，但报的是下一个会话会用的档位。c33 回答同一开关的作用范围与生效时机，能实质补充，计入 acceptable。旧 26 条的 t15 是 diagnose 的版本漂移检查，不回答检索档位是否生效，不计入。"
+    },
+    {
+      "id": "sr-r33",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "分数一样高的时候按什么决定先后，这个字段是中立的吗",
+      "semantic_query_en": "When the scores are equally high, what decides the order — is this field neutral?",
+      "primary_gold": [
+        "c35"
+      ],
+      "acceptable_gold": [
+        "c35",
+        "t20",
+        "s06"
+      ],
+      "annotation_basis": "c35 直接回答：按主键升序，而主键与插入时间相关，所以它实际编码了旧的优先，不中立。t20 记录了另一处排序锚点的同类问题（自增 ID 不是时间顺序的可靠代理），能实质回答，计入 acceptable。s06 说明为什么无界之后这件事才暴露，计入。"
+    },
+    {
+      "id": "sr-r34",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "排序那件事能不能跟这一轮一起测掉，省一轮时间",
+      "semantic_query_en": "Can we test the sorting thing together with this round, to save a round of time?",
+      "primary_gold": [
+        "c36"
+      ],
+      "acceptable_gold": [
+        "c36",
+        "c35",
+        "c39"
+      ],
+      "annotation_basis": "c36 直接回答：不能合并，只能并行取证并单独裁定。c35 是那件事本身，c39 是同一条纪律的另一个应用（结果去重也延后），两条都能实质回答，计入 acceptable。"
+    },
+    {
+      "id": "sr-r35",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "上次验收用过的那批提问，还能拿来调参数吗",
+      "semantic_query_en": "That batch of questions used for the last acceptance test, can they still be used for tuning parameters?",
+      "primary_gold": [
+        "c37"
+      ],
+      "acceptable_gold": [
+        "c37",
+        "t26"
+      ],
+      "annotation_basis": "c37 直接回答：不能，已消耗的验收集只能做描述性测量。t26 是质量基准集在内测与发布上的要求，能实质说明验收集与选参集为什么必须分开，计入 acceptable。"
+    },
+    {
+      "id": "sr-r36",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "那个思路换成用中位数做基准再试一次呢",
+      "semantic_query_en": "What about trying that idea again using the median as the baseline?",
+      "primary_gold": [
+        "c38"
+      ],
+      "acceptable_gold": [
+        "c38",
+        "s05"
+      ],
+      "annotation_basis": "c38 直接回答：所有以背景水平代表难度为前提的写法共享同一个错误，整体禁用。s05 是那个前提被否掉的原始测量，能实质回答，计入 acceptable。"
+    },
+    {
+      "id": "sr-r37",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "同一件事记了好几条，搜出来一页全是重复的，什么时候能修",
+      "semantic_query_en": "The same thing got recorded several times, a whole page of search results is duplicates, when will this be fixed",
+      "primary_gold": [
+        "c39"
+      ],
+      "acceptable_gold": [
+        "c39",
+        "c25"
+      ],
+      "annotation_basis": "c39 直接回答：确认目前没有任何按内容去重的步骤，改动延后到本轮之后单独立项，理由是它同时影响两个指标。c25 提供同一现象在测量上的表现，能实质回答，计入 acceptable。"
+    },
+    {
+      "id": "sr-r38",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "候选那几个数是怎么挑出来的，为什么不只试最有希望的",
+      "semantic_query_en": "How were those candidate numbers picked, and why not just try the most promising one?",
+      "primary_gold": [
+        "c40"
+      ],
+      "acceptable_gold": [
+        "c40",
+        "c37"
+      ],
+      "annotation_basis": "c40 直接回答：其中一个值来自已消耗集的事后横扫，因此改为按固定步长等距铺开。c37 说明已消耗集为什么不能参与选参，能实质回答，计入 acceptable。"
+    },
+    {
+      "id": "sr-r39",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "基准测试里嵌入的文本和线上真的一模一样吗",
+      "semantic_query_en": "Is the text embedded in the benchmark exactly the same as what's used in production?",
+      "primary_gold": [
+        "c41"
+      ],
+      "acceptable_gold": [
+        "c41",
+        "s02"
+      ],
+      "annotation_basis": "c41 直接回答：基准不自己拼，走生产的拼接器，任何一端改规则两端一起变。s02 说明两个协议共用同一拼接器时靠什么保证不可比，能实质补充，计入 acceptable。"
+    },
+    {
+      "id": "sr-r40",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "压缩那一步失败之后，那一轮对话是彻底没记录了，还是留了个残缺的",
+      "semantic_query_en": "After the compression step fails, is that turn completely unrecorded, or is a partial one left behind?",
+      "primary_gold": [
+        "c13"
+      ],
+      "acceptable_gold": [
+        "c13",
+        "t08"
+      ],
+      "annotation_basis": "本条的 primary 不是降级 Observation（那是旧 gold t08 的事实，本轮不得重述），而是问「失败之后走哪条路」时新记录能给出的部分：c13 说明缺少合法英文提问形式的请求会退化为纯关键词，即失败不会让请求彻底无结果。t08 回答降级 Observation 那一面，计入 acceptable。此条刻意保留，用于检验一条问法贴近旧 gold 时，系统会不会只召回旧记录而找不到新记录——判据 §3.2 正是为这种情形要求拆开两个字段。"
+    },
+    {
+      "id": "sr-r41",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "那个不再打分的空间，给它单独定一个自己的判定线不就行了",
+      "semantic_query_en": "Why not just set its own separate threshold for that space that no longer gets scored?",
+      "primary_gold": [
+        "c14"
+      ],
+      "acceptable_gold": [
+        "c14",
+        "c13",
+        "s01"
+      ],
+      "annotation_basis": "c14 直接回答：定不出来，该空间里真阳性跨 0.080–0.607、噪声上界 0.431，两段重叠，任何阈值要么砍真答案要么放噪声。c13 说明那条路径最终被整段删除，s01 说明协议为什么必须两侧一致，两条都能实质回答，计入 acceptable。"
+    },
+    {
+      "id": "sr-n01",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是检索层里一件具体机制，检索层本项目确实工作过，所以属于同区域。",
+      "query": "检索是否曾按点击反馈调节过结果次序",
+      "semantic_query_en": "Has retrieval ever adjusted result ordering based on click feedback",
+      "gold": [],
+      "annotation_basis": "本项目从未有过点击反馈或任何交互信号的采集与利用：融合权重固定 1:1，没有任何记录讨论、拒绝或登记过点击反馈。既没有实现，也没有「明确说不做」的记录，因此属于 empty hard-negative 而不是 negative-answer relevance。"
+    },
+    {
+      "id": "sr-n02",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在检索层，问的是一种本项目没做过的候选生成方式。",
+      "query": "是否试验过先聚类分组再只在最近一组内查找",
+      "semantic_query_en": "Have you tried clustering into groups first and only searching within the most recent group?",
+      "gold": [],
+      "annotation_basis": "候选生成始终是「scope 内全量打分 + Top-K 保留」，从未引入任何聚类或分区结构。没有记录讨论过聚类召回，也没有记录拒绝过它。"
+    },
+    {
+      "id": "sr-n03",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在检索层，问的是一种本项目没有的重排结构。",
+      "query": "召回之后是否接过一个交叉打分模块做精排",
+      "semantic_query_en": "After recall, is there a cross-scoring module used for reranking?",
+      "gold": [],
+      "annotation_basis": "只有两条腿加名次融合，没有任何第二阶段模型。全部记录里不存在交叉编码或精排模型的讨论、试验或拒绝记录。"
+    },
+    {
+      "id": "sr-n04",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在存储与向量这一层，问的是一种本项目没采用的索引结构。",
+      "query": "向量是不是建了近似最近邻索引，不然全量算得过来吗",
+      "semantic_query_en": "Isn't there an approximate nearest neighbor index built for the vectors? Otherwise how could full computation keep up?",
+      "gold": [],
+      "annotation_basis": "向量按行读入后逐条算余弦，没有任何近似最近邻索引。虽然有关于候选池与保留的记录，但没有一条讨论、拒绝或登记过近似索引这件事。"
+    },
+    {
+      "id": "sr-n05",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在压缩这一层，问的是一种本项目没有的产出形态。",
+      "query": "压缩阶段是否会把若干相邻轮合成单条摘要",
+      "semantic_query_en": "Does the compression stage merge several adjacent turns into a single summary?",
+      "gold": [],
+      "annotation_basis": "架构上是一个闭合 turn 对应一条不可变 Observation，从不聚合、从不合并、从不取代。没有任何记录讨论过跨轮次合并摘要这件事。"
+    },
+    {
+      "id": "sr-n06",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在压缩与存储这一层，问的是一种本项目没有的生命周期策略。",
+      "query": "陈旧条目是否会被自动缩写以节省空间",
+      "semantic_query_en": "Are stale entries automatically abbreviated to save space?",
+      "gold": [],
+      "annotation_basis": "文本一旦写入永不改写，也没有任何按时间压缩或降级的机制。全部记录里不存在关于分层存储或摘要降级的讨论。"
+    },
+    {
+      "id": "sr-n07",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在捕获这一层，问的是一种本项目没有的采集口径。",
+      "query": "编辑器光标位置与当前打开列表会被采集吗",
+      "semantic_query_en": "Is the editor cursor position and current open list collected?",
+      "gold": [],
+      "annotation_basis": "捕获对象是 hook 送来的原始事件负载，不含任何编辑器状态。没有记录讨论过采集光标或打开文件列表。"
+    },
+    {
+      "id": "sr-n08",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在检索接口这一层，问的是一种本项目没提供的查询能力。",
+      "query": "是否支持按路径反查所有触及它的条目",
+      "semantic_query_en": "Does it support looking up all entries that touch a given path?",
+      "gold": [],
+      "annotation_basis": "对外只有四个工具，没有按文件反查的入口；文件列表只作为记录字段存在，没有独立的反查索引或接口。没有记录讨论或拒绝过这个能力。"
+    },
+    {
+      "id": "sr-n09",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在检索接口这一层，问的是一种本项目没有的结果形态。",
+      "query": "结果是否支持按主题自动归类展示",
+      "semantic_query_en": "Does the result support automatic categorization and display by topic?",
+      "gold": [],
+      "annotation_basis": "架构上明确不做写入期主题聚类，读取期也只返回有序列表，没有任何归类结构。没有记录讨论过对搜索结果做主题归类。"
+    },
+    {
+      "id": "sr-n10",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在配置这一层，问的是一种本项目没有的可调项。",
+      "query": "两路权重是否开放给使用者自行配置",
+      "semantic_query_en": "Are the weights of the two channels open for users to configure themselves?",
+      "gold": [],
+      "annotation_basis": "配置文件里没有权重项，权重固定在策略常量里且本轮冻结不动。没有记录讨论过把权重开放给用户配置。"
+    },
+    {
+      "id": "sr-n11",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在运行时这一层，问的是一种本项目没有的部署形态。",
+      "query": "后台常驻进程可否横向扩到多台机器",
+      "semantic_query_en": "Can the background daemon process be scaled out horizontally to multiple machines?",
+      "gold": [],
+      "annotation_basis": "整体是本机单进程加本地库，没有跨机部署或共享存储的设计。没有记录讨论过多机部署这件事。"
+    },
+    {
+      "id": "sr-n12",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在压缩这一层，问的是一种本项目没做过的质量手段。",
+      "query": "压缩产出是否经过人工标注评分",
+      "semantic_query_en": "Has the compression output been manually annotated and scored?",
+      "gold": [],
+      "annotation_basis": "压缩质量只有确定性校验与降级标记，没有任何人工标注打分流程。没有记录讨论过建立人工评分。"
+    },
+    {
+      "id": "sr-n13",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在检索这一层，问的是一种本项目没有的个性化机制。",
+      "query": "是否会依据近期查询偏好调节默认返回内容",
+      "semantic_query_en": "Does it adjust the default returned content based on recent query preferences?",
+      "gold": [],
+      "annotation_basis": "检索行为只由策略常量与显式参数决定，没有任何用户画像或历史查询偏好。指标只存计数与延迟，不存 query 文本，结构上也无从做个性化。没有记录讨论过这件事。"
+    },
+    {
+      "id": "sr-n14",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在数据模型这一层，问的是一种本项目没有的关系结构。",
+      "query": "条目之间是否存过引用边，例如此条为前一条的后续",
+      "semantic_query_en": "Are reference edges stored between entries, for example marking this entry as a follow-up to the previous one?",
+      "gold": [],
+      "annotation_basis": "记录之间只有时间与来源 turn 的邻接，没有显式引用边或后继关系表。没有记录讨论过建立记录间引用关系。"
+    },
+    {
+      "id": "sr-n15",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在隐私这一层，问的是一种本项目没有的处理方式。",
+      "query": "是否实现过自动识别并抹除证件号与电话号",
+      "semantic_query_en": "Have we implemented automatic detection and redaction of ID numbers and phone numbers?",
+      "gold": [],
+      "annotation_basis": "脱敏只有用户显式标签这一种触发方式，没有任何模式识别或自动检测。没有记录讨论过自动识别个人信息。"
+    },
+    {
+      "id": "sr-n16",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在检索评估这一层，问的是一种本项目没做过的评估手段。",
+      "query": "是否做过线上分流实验以观察真实点击",
+      "semantic_query_en": "Have we done an online traffic-splitting experiment to observe real clicks?",
+      "gold": [],
+      "annotation_basis": "全部评估都是离线装置上的对照臂，没有任何线上分流或真实用户行为数据。没有记录讨论过线上实验。"
+    },
+    {
+      "id": "sr-n17",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在存储这一层，问的是一种本项目没有的数据出口。",
+      "query": "是否支持导出为单份文件迁移至另一台机器",
+      "semantic_query_en": "Does it support exporting to a single file for migration to another machine?",
+      "gold": [],
+      "annotation_basis": "没有导出功能，也没有跨机同步；卸载时是整体删除且不可恢复。没有记录讨论过实现导出——限制表里写的是「没有导出」这个状态，不是一次关于要不要做的讨论，因此不构成 negative-answer relevance。"
+    },
+    {
+      "id": "sr-n18",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在向量这一层，问的是一种本项目没做过的模型工作。",
+      "query": "嵌入权重是否用本项目语料微调过",
+      "semantic_query_en": "Have the embedding weights been fine-tuned with this project's corpus",
+      "gold": [],
+      "annotation_basis": "模型是随包分发的预训练权重，从未训练或微调；相关工作只有选型对比与文本协议归一化。没有记录讨论过微调。"
+    },
+    {
+      "id": "sr-n19",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在任务队列这一层，问的是一种本项目没有的调度能力。",
+      "query": "任务表是否支持按紧急程度插队",
+      "semantic_query_en": "Does the task table support jumping the queue based on urgency",
+      "gold": [],
+      "annotation_basis": "队列只有状态与重试，没有优先级字段或插队机制。没有记录讨论过给任务加优先级。"
+    },
+    {
+      "id": "sr-n20",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在检索接口这一层，问的是一种本项目没有的交互能力。",
+      "query": "检索时是否会先反问一句以缩小范围",
+      "semantic_query_en": "Does it ask a clarifying question first to narrow down the scope when searching?",
+      "gold": [],
+      "annotation_basis": "工具是一次调用一次返回，没有任何多轮澄清或反问机制。没有记录讨论过交互式澄清。"
+    },
+    {
+      "id": "sr-n21",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是本项目整个技术版图之外的事——本项目不含任何图形渲染工作。",
+      "query": "三维场景中阴影贴图的分辨率通常如何取值",
+      "semantic_query_en": "How is the resolution of shadow maps in 3D scenes usually chosen",
+      "gold": [],
+      "annotation_basis": "本项目是本机记忆系统，不涉及任何图形学工作。没有任何记录能确认、否定或解释这件事。"
+    },
+    {
+      "id": "sr-n22",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是本项目版图之外的事——不含任何硬件或嵌入式工作。",
+      "query": "单片机上怎么给电机做闭环调速",
+      "semantic_query_en": "How do you do closed-loop motor speed control on a microcontroller",
+      "gold": [],
+      "annotation_basis": "本项目没有任何硬件、固件或控制系统相关工作。没有任何记录能确认、否定或解释这件事。"
+    },
+    {
+      "id": "sr-n23",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是本项目版图之外的事——不含任何账务或税务逻辑。",
+      "query": "跨境电商的增值税是按发货地还是收货地算",
+      "semantic_query_en": "Is cross-border e-commerce VAT calculated based on the shipping origin or the destination?",
+      "gold": [],
+      "annotation_basis": "本项目不含任何业务财务逻辑。没有任何记录能确认、否定或解释这件事。"
+    },
+    {
+      "id": "sr-n24",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是本项目版图之外的事——不含任何生物信息学工作。",
+      "query": "基因序列比对一般用哪种打分矩阵",
+      "semantic_query_en": "Which scoring matrix is usually used for gene sequence alignment?",
+      "gold": [],
+      "annotation_basis": "本项目不涉及生物信息学。虽然「比对」「打分」两个词与检索相似度有表面关联，但本条是零 FTS 负例，语料里不存在能确认、否定或解释这件事的记录。"
+    },
+    {
+      "id": "sr-n25",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是本项目版图之外的事——不含任何音视频处理工作。",
+      "query": "直播推流时关键帧间距设为多少较稳",
+      "semantic_query_en": "What keyframe interval is more stable for live streaming?",
+      "gold": [],
+      "annotation_basis": "本项目不涉及音视频。没有任何记录能确认、否定或解释这件事。"
+    },
+    {
+      "id": "sr-n26",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是本项目版图之外的事——不含任何容器编排工作。",
+      "query": "集群里怎么让有状态服务滚动升级不断连接",
+      "semantic_query_en": "How do I do a rolling upgrade of stateful services in the cluster without breaking connections?",
+      "gold": [],
+      "annotation_basis": "本项目是本机单进程加系统级保活，不涉及集群或容器编排。没有任何记录能确认、否定或解释这件事。"
+    },
+    {
+      "id": "sr-n27",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是本项目版图之外的事——不含任何前端界面工作。",
+      "query": "移动端列表的下拉刷新手势怎么做得顺",
+      "semantic_query_en": "How to make the pull-to-refresh gesture on mobile list feel smooth",
+      "gold": [],
+      "annotation_basis": "本项目没有界面层。需要注意：另一个 scope 的记录里有前端相关内容，但那些记录不属于本 scope，跨 scope 硬隔离下不会参与本 scope 的排序，因此本条在本 scope 内确实没有任何相关记录。"
+    },
+    {
+      "id": "sr-n28",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是本项目版图之外的事——不含任何地理信息工作。",
+      "query": "经纬度网格编码用哪种精度比较合适",
+      "semantic_query_en": "Which precision is more appropriate for latitude/longitude grid encoding",
+      "gold": [],
+      "annotation_basis": "本项目不涉及地理信息。没有任何记录能确认、否定或解释这件事。"
+    },
+    {
+      "id": "sr-n29",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是本项目版图之外的事——不含任何支付或对账工作。",
+      "query": "第三方支付回调重复到达怎么做幂等对账",
+      "semantic_query_en": "How to do idempotent reconciliation when third-party payment callbacks arrive repeatedly",
+      "gold": [],
+      "annotation_basis": "本项目不涉及支付。「幂等」这个词与压缩任务的幂等性有表面关联，但本条问的是支付对账，语料里没有任何记录能确认、否定或解释它。"
+    },
+    {
+      "id": "sr-n30",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是本项目版图之外的事——不含任何编译器实现工作。",
+      "query": "写编译器的时候寄存器分配一般用什么算法",
+      "semantic_query_en": "What algorithm is generally used for register allocation when writing a compiler?",
+      "gold": [],
+      "annotation_basis": "本项目不实现编译器。没有任何记录能确认、否定或解释这件事。"
+    },
+    {
+      "id": "sr-n31",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是本项目版图之外的事——不含任何邮件系统工作。",
+      "query": "自建邮件服务器怎么配才不会被判成垃圾邮件",
+      "semantic_query_en": "How should I configure a self-hosted mail server so it doesn't get flagged as spam?",
+      "gold": [],
+      "annotation_basis": "本项目不涉及邮件。没有任何记录能确认、否定或解释这件事。"
+    },
+    {
+      "id": "sr-n32",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是本项目版图之外的事——不含任何机器人或运动规划工作。",
+      "query": "移动机器人在动态障碍下怎么重规划路径",
+      "semantic_query_en": "How does a mobile robot replan its path under dynamic obstacles",
+      "gold": [],
+      "annotation_basis": "本项目不涉及机器人。没有任何记录能确认、否定或解释这件事。"
+    },
+    {
+      "id": "sr-n33",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是本项目版图之外的事——不含任何风控建模工作。",
+      "query": "信贷评分卡里怎么处理缺失特征",
+      "semantic_query_en": "How to handle missing features in the credit scorecard",
+      "gold": [],
+      "annotation_basis": "本项目不涉及风控或评分建模。「评分」与检索打分有表面关联，但本条问的是信贷模型，语料里没有任何记录能确认、否定或解释它。"
+    },
+    {
+      "id": "sr-n34",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是本项目版图之外的事——不含任何游戏服务端工作。",
+      "query": "多人对战里怎么处理客户端预测和回滚",
+      "semantic_query_en": "How to handle client-side prediction and rollback in multiplayer combat",
+      "gold": [],
+      "annotation_basis": "本项目不涉及游戏网络同步。「回滚」与检索档位回滚有表面关联，但本条问的是帧同步预测，语料里没有任何记录能确认、否定或解释它。"
+    },
+    {
+      "id": "sr-n35",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是本项目版图之外的事——不含任何操作系统内核工作。",
+      "query": "内核里怎么给设备驱动做中断合并",
+      "semantic_query_en": "How to do interrupt coalescing for device drivers in the kernel",
+      "gold": [],
+      "annotation_basis": "本项目不涉及内核开发。没有任何记录能确认、否定或解释这件事。"
+    },
+    {
+      "id": "sr-n36",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在检索这一层，问的是一种本项目没有的查询语法能力。",
+      "query": "检索语法支持布尔表达，例如 A 且非 B 吗",
+      "semantic_query_en": "Does the search syntax support boolean expressions, like A and not B?",
+      "gold": [],
+      "annotation_basis": "用户输入被整体字面量化以避免被当成查询语法，因此不存在布尔表达式能力。旧 gold t01 记录的是字面量化这个修复，但它不回答「支不支持布尔表达式」这个问题——它甚至不讨论要不要支持。判据 §4.1 的口径是「能实质确认、否定或解释所问事实」，t01 只能解释为什么特殊字符不报错，因此本条仍为 empty。"
+    },
+    {
+      "id": "sr-n37",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在指标这一层，问的是一种本项目没有的指标能力。",
+      "query": "是否按天输出过一份趋势报表",
+      "semantic_query_en": "Was a trend report output by day?",
+      "gold": [],
+      "annotation_basis": "运行指标只有滚动窗口的计数、原因枚举与延迟，没有任何按天聚合或趋势报表。没有记录讨论过做趋势报表。"
+    },
+    {
+      "id": "sr-n38",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在压缩这一层，问的是一种本项目没有的模型选择能力。",
+      "query": "压缩是否支持切换其他权重，或按长度分流",
+      "semantic_query_en": "Does compression support switching to other weights, or routing by length?",
+      "gold": [],
+      "annotation_basis": "压缩固定走一个隔离子 agent，没有模型选择或按长度路由的机制。没有记录讨论过多模型路由。"
+    },
+    {
+      "id": "sr-n39",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是本项目版图之外的事——不含任何分布式共识工作。",
+      "query": "多个实例之间如何选主，采用哪种共识协议",
+      "semantic_query_en": "How do multiple instances elect a leader among themselves, and which consensus protocol is used?",
+      "gold": [],
+      "annotation_basis": "本项目是本机单进程，没有副本也没有选主。「副本」这个词在语料里出现过，但指的是测试装置里复制的文本行，与分布式副本无关，且那些记录无法确认、否定或解释选主这件事。"
+    },
+    {
+      "id": "sr-n40",
+      "kind": "hard-negative",
+      "cohort": "empty-zero-fts",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是本项目版图之外的事——不含任何浏览器扩展工作。",
+      "query": "浏览器扩展怎么在页面里注入脚本又不被 CSP 拦掉",
+      "semantic_query_en": "How does a browser extension inject scripts into a page without getting blocked by CSP?",
+      "gold": [],
+      "annotation_basis": "本项目不涉及浏览器扩展。没有任何记录能确认、否定或解释这件事。"
+    },
+    {
+      "id": "sr-a01",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "问的是检索层里一件本项目没做过的事，检索层本项目确实工作过。",
+      "lexical_anchor": "地板线",
+      "lexical_anchor_basis": "「地板线」在多条记录里出现（t21 与本轮多条），会造成词面命中；但那些记录讲的是它的取值与校准，不是「按记录类型分别设不同的地板线」。",
+      "query": "不同类型的记录能不能各设一条自己的地板线",
+      "semantic_query_en": "Can different types of records each have their own floor line?",
+      "gold": [],
+      "annotation_basis": "地板线始终是全局单值，从未按记录类型分叉；也没有任何记录讨论、拒绝或登记过按类型分设阈值这件事。词面重叠只是因为「地板线」这个词，问题主题（按类型分叉）在语料里不存在。"
+    },
+    {
+      "id": "sr-a02",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在检索层，问的是一种本项目没有的配额形态。",
+      "lexical_anchor": "配额",
+      "lexical_anchor_basis": "「配额」在 s08、c26 等记录里出现，会造成词面命中；但那些记录讲的是每页纯语义结果的上限，不是「按时间段分配名额」。",
+      "query": "配额能不能按时间段分，比如最近一周至少留两个名额",
+      "semantic_query_en": "Can the quota be split by time period, like reserving at least two slots for the most recent week?",
+      "gold": [],
+      "annotation_basis": "配额只有「每页纯语义结果条数」这一种形态，从未按时间分桶；没有任何记录讨论或拒绝过时间分桶配额。"
+    },
+    {
+      "id": "sr-a03",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在向量这一层，问的是一种本项目没做过的度量替换。",
+      "lexical_anchor": "相似度",
+      "lexical_anchor_basis": "「相似度」是语料里真实存在的三字串（c09、c11 等多条）；两字的「余弦」在 trigram 分词下单独无法命中，因此锚点改用三字串。",
+      "query": "相似度的算法换成欧氏距离或者内积，效果对比过吗",
+      "semantic_query_en": "Have you compared the effect of switching the similarity algorithm to Euclidean distance or inner product?",
+      "gold": [],
+      "annotation_basis": "全程只用余弦（向量已归一化，点积即余弦），从未做过度量替换的对比实验，也没有记录讨论或拒绝过换度量。"
+    },
+    {
+      "id": "sr-a04",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在压缩这一层，问的是一种本项目没有的并发形态。",
+      "lexical_anchor": "压缩",
+      "lexical_anchor_basis": "「压缩」在大量记录里出现，会造成词面命中；但没有一条讨论按 CPU 负载动态调并发。",
+      "query": "压缩的并发数会不会根据机器负载自动调",
+      "semantic_query_en": "Will the compression concurrency automatically adjust based on machine load?",
+      "gold": [],
+      "annotation_basis": "并发数是配置里的固定值，没有任何自适应调节；没有记录讨论、拒绝或登记过按负载动态调并发。"
+    },
+    {
+      "id": "sr-a05",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在捕获这一层，问的是一种本项目没有的重试形态。",
+      "lexical_anchor": "hook",
+      "lexical_anchor_basis": "「hook」在 t03 与本轮多条记录里出现，会造成词面命中；但那些讲的是超时预算与误重启，不是「超时后排队补送」。",
+      "query": "hook 超时之后会不会把没送到的事件排队补送",
+      "semantic_query_en": "After a hook times out, will the events that didn't get through be queued and resent?",
+      "gold": [],
+      "annotation_basis": "超时即放弃，丢失只被计数不被补送；没有任何记录讨论、拒绝或登记过补送队列这件事。这一条与「捕获是 best-effort」相邻但不同：后者说的是会丢，没有说要不要补。"
+    },
+    {
+      "id": "sr-a06",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在隔离这一层，问的是一种本项目没有的共享能力。",
+      "lexical_anchor": "scope",
+      "lexical_anchor_basis": "「scope」在 t22 与本轮多条记录里出现，会造成词面命中；但那些讲的是硬隔离，不是「跨 scope 共享白名单」。",
+      "query": "能不能配一个白名单让两个 scope 互相看到对方的记录",
+      "semantic_query_en": "Can we configure a whitelist so that two scopes can see each other's records?",
+      "gold": [],
+      "annotation_basis": "隔离是硬的，只有显式指定 scope 或浏览全部两种入口，没有白名单机制；没有记录讨论或拒绝过跨 scope 共享白名单。"
+    },
+    {
+      "id": "sr-a07",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在指标这一层，问的是一种本项目没有的告警能力。",
+      "lexical_anchor": "指标",
+      "lexical_anchor_basis": "「指标」在多条记录里出现，会造成词面命中；但那些讲的是存什么、不存什么，没有一条讨论告警。",
+      "query": "指标超过阈值的时候会不会主动告警",
+      "semantic_query_en": "Will it proactively alert when a metric exceeds the threshold?",
+      "gold": [],
+      "annotation_basis": "指标只被读取展示，没有任何阈值判定或告警通道；没有记录讨论、拒绝或登记过告警。"
+    },
+    {
+      "id": "sr-a08",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在任务这一层，问的是一种本项目没有的补偿机制。",
+      "lexical_anchor": "重试耗尽",
+      "lexical_anchor_basis": "「重试耗尽」在 t08 与 c-series 里出现，是真实存在的四字串；两字的「重试」在 trigram 下无法单独命中。",
+      "query": "重试耗尽之前的间隔是按指数退避排的吗",
+      "semantic_query_en": "Are the intervals before retries are exhausted arranged with exponential backoff?",
+      "gold": [],
+      "annotation_basis": "重试次数有上限，但没有任何退避策略的设计或讨论；语料里没有记录能确认、否定或解释退避间隔这件事。"
+    },
+    {
+      "id": "sr-a09",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在安装这一层，问的是一种本项目没有的升级能力。",
+      "lexical_anchor": "安装",
+      "lexical_anchor_basis": "「安装」在 t09、t13、t14 等记录里出现，会造成词面命中；但那些讲的是清装闭环与复制清单，不是「自动检查新版本」。",
+      "query": "会不会自己检查有没有新版本并提示升级",
+      "semantic_query_en": "Does it automatically check for new versions and prompt for an upgrade?",
+      "gold": [],
+      "annotation_basis": "没有任何联网检查或升级提示；t15 的版本漂移检查比对的是本机各处版本是否一致，不是与远端比较，因此它无法确认或否定「自动检查新版本」这件事。"
+    },
+    {
+      "id": "sr-a10",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在脱敏这一层，问的是一种本项目没有的可配置能力。",
+      "lexical_anchor": "脱敏",
+      "lexical_anchor_basis": "「脱敏」在 t04 与本轮记录里出现，会造成词面命中；但那些讲的是错误日志与用户标签两种既有脱敏，不是「自定义规则」。",
+      "query": "脱敏规则能不能自己写，比如按正则匹配内部域名",
+      "semantic_query_en": "Can I write my own redaction rules myself, like matching internal domain names with regex",
+      "gold": [],
+      "annotation_basis": "脱敏只有固定的两种：用户显式标签与 ACP 错误日志。没有任何可配置规则入口，也没有记录讨论或拒绝过自定义脱敏规则。"
+    },
+    {
+      "id": "sr-a11",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在向量这一层，问的是一种本项目没做过的存储优化。",
+      "lexical_anchor": "向量",
+      "lexical_anchor_basis": "「向量」在大量记录里出现，会造成词面命中；但没有一条讨论把向量再压成更低位宽。",
+      "query": "向量存的时候有没有再压位宽，比如压成一字节",
+      "semantic_query_en": "When storing the vectors, is the bit width compressed further, like compressing to one byte?",
+      "gold": [],
+      "annotation_basis": "存储是定长浮点数组，模型侧的量化与存储侧的位宽是两件事，后者从未被压缩或讨论过。t23 讲的是模型量化与维度，不能确认或否定存储位宽这件事。"
+    },
+    {
+      "id": "sr-a12",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在 timeline 这一层，问的是一种本项目没有的展示能力。",
+      "lexical_anchor": "timeline",
+      "lexical_anchor_basis": "「timeline」在 t20 与本轮记录里出现，会造成词面命中；但那些讲的是锚点与邻居模式，不是「按天折叠展示」。",
+      "query": "timeline 能不能按天折叠，一天只显示一行摘要",
+      "semantic_query_en": "Can timeline collapse by day, showing only one summary line per day?",
+      "gold": [],
+      "annotation_basis": "timeline 只返回前后若干条邻居，没有任何按时间折叠或聚合的展示形态；没有记录讨论过按天折叠。"
+    },
+    {
+      "id": "sr-a13",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在检索这一层，问的是一种本项目没有的缓存机制。",
+      "lexical_anchor": "延迟",
+      "lexical_anchor_basis": "「延迟」在 c27 与多条记录里出现，会造成词面命中；但那些是延迟读数，没有一条讨论查询缓存。",
+      "query": "重复的查询会不会走缓存，省掉重复打分的延迟",
+      "semantic_query_en": "Will duplicate queries hit the cache, saving the latency of duplicate scoring?",
+      "gold": [],
+      "annotation_basis": "每次检索都完整执行，没有任何查询结果缓存层；没有记录讨论、拒绝或登记过加缓存。"
+    },
+    {
+      "id": "sr-a14",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在种子与可复现这一层，问的是一种本项目没做过的验证方式。",
+      "lexical_anchor": "种子",
+      "lexical_anchor_basis": "「种子」在 c30 与本轮年龄随机化的记录里出现，会造成词面命中；但那些讲的是用种子保证可复现，不是「换多个种子做稳健性检验」。",
+      "query": "换十个不同种子跑一遍，看结论稳不稳，做过吗",
+      "semantic_query_en": "Have you run it with ten different seeds to see if the conclusion is stable?",
+      "gold": [],
+      "annotation_basis": "种子被固定用于可复现，从未做过多种子的稳健性扫描；没有记录讨论或拒绝过多种子重复实验。本条与「不得重新洗牌」这条纪律相邻但不同：后者禁的是看结果后重洗，没有回答「做没做过多种子检验」。"
+    },
+    {
+      "id": "sr-a15",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在配置这一层，问的是一种本项目没有的粒度。",
+      "lexical_anchor": "schema",
+      "lexical_anchor_basis": "「schema」在 s06、c16 相关记录里出现，会造成词面命中；但那些讲的是默认值该不该写，不是「按 workspace 分别配置」。",
+      "query": "配置能不能按 workspace 分开写，不同项目用不同策略",
+      "semantic_query_en": "Can the config be split per workspace, with different projects using different strategies?",
+      "gold": [],
+      "annotation_basis": "配置是单份全局文件，没有任何按 workspace 分叉的机制；没有记录讨论或拒绝过按 workspace 配置。"
+    },
+    {
+      "id": "sr-a16",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是搜索引擎优化，属于本项目整个技术版图之外的事。",
+      "lexical_anchor": "关键词",
+      "lexical_anchor_basis": "「关键词」在大量检索记录里出现；两字的「排名」在 trigram 下无法单独命中，因此锚点改用「关键词」。",
+      "query": "怎么把网站在搜索引擎里的关键词排名提上去",
+      "semantic_query_en": "How do I improve my website's keyword ranking in search engines",
+      "gold": [],
+      "annotation_basis": "本项目是本机记忆系统，不涉及公开搜索引擎或站点优化。没有任何记录能确认、否定或解释这件事。"
+    },
+    {
+      "id": "sr-a17",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是数据库主从复制，属于本项目版图之外——本项目是本机单进程单库。",
+      "lexical_anchor": "多个副本",
+      "lexical_anchor_basis": "「多个副本」在 s04、c25、c29 里出现（实测共享三字串包含「多个副」「个副本」）；两字的「副本」单独无法命中。",
+      "query": "主库挂掉之后多个副本要多久才能接上写入",
+      "semantic_query_en": "How long does it take for multiple replicas to pick up writes after the primary goes down",
+      "gold": [],
+      "annotation_basis": "没有任何多实例或复制架构，语料里的「副本」是装置概念。没有任何记录能确认、否定或解释数据库故障切换这件事。"
+    },
+    {
+      "id": "sr-a18",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是深度学习训练，属于本项目版图之外——本项目只用预训练权重做推理。",
+      "lexical_anchor": "持久化",
+      "lexical_anchor_basis": "「持久化」在多条记录里出现（任务队列的持久化、回滚不动持久化状态），是语料里真实存在的三字串；两字的「模型」在 trigram 分词下无法单独命中。",
+      "query": "把权重持久化下来再继续训练，学习率一般怎么衰减",
+      "semantic_query_en": "Persist the weights and then continue training, how does the learning rate usually decay",
+      "gold": [],
+      "annotation_basis": "本项目从不训练模型，只加载随包分发的权重做推理，也没有任何训练中断续训的场景。「持久化」在语料里指的是任务与状态的持久化，与训练检查点无关；没有任何记录能确认、否定或解释学习率衰减这件事。"
+    },
+    {
+      "id": "sr-a19",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是网络安全渗透，属于本项目版图之外。",
+      "lexical_anchor": "token",
+      "lexical_anchor_basis": "「token」在 t11 与本轮记录里出现，会造成词面命中；但那些讲的是本机回环鉴权凭据，与公网 API 的越权测试无关。",
+      "query": "怎么测一个公网接口的 token 有没有越权漏洞",
+      "semantic_query_en": "How do I test whether a public-facing API's token has a privilege escalation vulnerability",
+      "gold": [],
+      "annotation_basis": "本项目只有本机回环鉴权，不涉及公网接口或安全测试方法。没有任何记录能确认、否定或解释渗透测试这件事。"
+    },
+    {
+      "id": "sr-a20",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是消息中间件运维，属于本项目版图之外——本项目的队列是本地表。",
+      "lexical_anchor": "持久化",
+      "lexical_anchor_basis": "「持久化」是语料里真实存在的三字串；两字的「队列」在 trigram 分词下无法单独命中。",
+      "query": "消息中间件里持久化的消息积压了几百万条，怎么快速消费掉",
+      "semantic_query_en": "There are millions of persisted messages backed up in the message middleware, how do I quickly consume them?",
+      "gold": [],
+      "annotation_basis": "本项目的任务队列是本地库里的一张表，规模在个位到百位量级，不涉及消息中间件运维。「持久化」在语料里指本地任务与状态的持久化，与中间件的消息持久化无关；没有任何记录能确认、否定或解释积压治理这件事。"
+    },
+    {
+      "id": "sr-a21",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是推荐系统的冷启动，属于本项目版图之外——本项目没有用户画像或物品库。",
+      "lexical_anchor": "召回",
+      "lexical_anchor_basis": "「召回」在大量记录里出现，会造成词面命中；但那些指的是把旧记录找回来，与推荐系统的召回层无关。",
+      "query": "新用户没有行为数据的时候，推荐的召回层怎么做冷启动",
+      "semantic_query_en": "How should the recall layer of the recommendation system handle cold start when a new user has no behavioral data?",
+      "gold": [],
+      "annotation_basis": "本项目不含推荐系统，也没有用户画像或物品库。没有任何记录能确认、否定或解释冷启动这件事。"
+    },
+    {
+      "id": "sr-a22",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是移动端性能优化，属于本项目版图之外。",
+      "lexical_anchor": "常驻内存",
+      "lexical_anchor_basis": "「常驻内存」在 c27 里出现；两字的「内存」在 trigram 下无法单独命中。",
+      "query": "手机上图片太多导致常驻内存吃紧，一般怎么优化",
+      "semantic_query_en": "Too many photos on the phone causing tight resident memory usage, how to optimize this generally",
+      "gold": [],
+      "annotation_basis": "本项目没有移动端也不处理图片。没有任何记录能确认、否定或解释这件事。"
+    },
+    {
+      "id": "sr-a23",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "foreign-domain",
+      "negative_type_basis": "问的是数据仓库的报表口径治理，属于本项目整个技术版图之外的事。",
+      "lexical_anchor": "指标口径",
+      "lexical_anchor_basis": "「指标口径」在 c19、c24 里出现；原先想用的两字「维度」在 trigram 下无法单独命中，因此换成同为版图之外的数仓口径问题并改用四字锚点。",
+      "query": "数仓里不同报表的指标口径不一致该怎么统一",
+      "semantic_query_en": "How should we unify the metric definitions when different reports in the data warehouse are inconsistent?",
+      "gold": [],
+      "annotation_basis": "本项目不含数据仓库或报表体系。「指标口径」这个词在语料里指的是检索指标的读数口径，与数仓报表的口径治理无关，语料里没有任何记录能确认、否定或解释后者。"
+    },
+    {
+      "id": "sr-a24",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在检索这一层，问的是一种本项目没有的多语言能力。",
+      "lexical_anchor": "英文",
+      "lexical_anchor_basis": "「英文」在 s01、s02、c13 等记录里出现，会造成词面命中；但那些讲的是中英两侧归一化，不涉及第三种语言。",
+      "query": "日文或者韩文的记录能不能一样搜到",
+      "semantic_query_en": "Can records in Japanese or Korean be searched the same way?",
+      "gold": [],
+      "annotation_basis": "归一化协议只处理「译成英文」这一步，从未针对日文韩文做过任何测量或设计；没有记录讨论、拒绝或登记过第三种语言的支持情况。"
+    },
+    {
+      "id": "sr-a25",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在压缩这一层，问的是一种本项目没有的成本核算。",
+      "lexical_anchor": "ACP",
+      "lexical_anchor_basis": "「ACP」在大量记录里出现，会造成词面命中；但那些讲的是纯度、失败降级与池子，没有一条讨论成本统计。",
+      "query": "走 ACP 压缩一条记录大概花多少 token，有统计吗",
+      "semantic_query_en": "About how many tokens does it cost to compress one record via ACP, is there any statistic on that?",
+      "gold": [],
+      "annotation_basis": "没有任何 token 计数或成本统计，指标里也不含用量字段；没有记录讨论、拒绝或登记过成本核算。"
+    },
+    {
+      "id": "sr-a26",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在检索这一层，问的是一种本项目没有的结果解释能力。",
+      "lexical_anchor": "来源",
+      "lexical_anchor_basis": "「来源」「match_source」在 s08 等记录里出现，会造成词面命中；但那些讲的是标签取值与它约束什么，不是「解释为什么命中」。",
+      "query": "能不能告诉我某条结果具体是因为哪个词命中的",
+      "semantic_query_en": "Can you tell me which specific word caused a given result to match?",
+      "gold": [],
+      "annotation_basis": "返回项只带来源标签与相似度分数，没有任何命中词高亮或归因输出；没有记录讨论、拒绝或登记过命中解释。"
+    },
+    {
+      "id": "sr-a27",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在存储这一层，问的是一种本项目没有的运维能力。",
+      "lexical_anchor": "SQLite",
+      "lexical_anchor_basis": "「SQLite」在 t01 等记录里出现，会造成词面命中；但那些讲的是查询语法与执行计划，不是备份。",
+      "query": "库文件有没有定期备份，坏了怎么恢复",
+      "semantic_query_en": "Is there any regular backup for the database file, and how do I recover it if it's corrupted?",
+      "gold": [],
+      "annotation_basis": "没有任何备份或恢复机制；卸载时整体删除且不可恢复。t09 的清装闭环讲的是重新安装，不是数据恢复，无法确认或否定备份这件事。"
+    },
+    {
+      "id": "sr-a28",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在注入这一层，问的是一种本项目没有的裁剪策略。",
+      "lexical_anchor": "预算",
+      "lexical_anchor_basis": "「预算」在 c31、c27 等记录里出现，会造成词面命中；但那些讲的是字节预算与延迟预算的取值，不是「超预算时按重要性裁剪」。",
+      "query": "注入内容超预算的时候按什么顺序裁掉，会看重要性吗",
+      "semantic_query_en": "When the injected content exceeds the budget, in what order does it get trimmed, does it consider importance?",
+      "gold": [],
+      "annotation_basis": "注入内容的组织顺序固定，超预算时按位置截断，没有任何按重要性排序再裁的机制；没有记录讨论过按重要性裁剪。"
+    },
+    {
+      "id": "sr-a29",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在评估这一层，问的是一种本项目没做过的统计方法。",
+      "lexical_anchor": "分位数",
+      "lexical_anchor_basis": "「分位数」在 c38 与 pilot 报告里出现，会造成词面命中；但那些讲的是分位数归一化被禁用，不是「给指标算置信区间」。",
+      "query": "这些指标有没有算过置信区间或者显著性",
+      "semantic_query_en": "Have confidence intervals or significance been calculated for these metrics?",
+      "gold": [],
+      "annotation_basis": "全部读数都是点估计与分位数描述，从未做过区间估计或显著性检验；没有记录讨论、拒绝或登记过显著性检验。"
+    },
+    {
+      "id": "sr-a30",
+      "kind": "hard-negative",
+      "cohort": "lexical-anchor",
+      "negative_type": "near-domain",
+      "negative_type_basis": "同在记录写入这一层，问的是一种本项目没有的编辑能力。",
+      "lexical_anchor": "不可变",
+      "lexical_anchor_basis": "「不可变」在多条记录里出现，会造成词面命中；但那些讲的是文本永不改写这个性质，不是「提供人工修正入口」。",
+      "query": "发现某条记录写错了，有没有办法改掉它",
+      "semantic_query_en": "I found a record that was written wrong, is there any way to fix it",
+      "gold": [],
+      "annotation_basis": "记录写入后不可改写，也没有任何人工修正或标注纠错入口。限制表里写的是「没有细粒度删除」这个状态，不是一次关于要不要提供修正入口的讨论，因此不构成 negative-answer relevance。"
+    },
+    {
+      "id": "sr-r42",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 2,
+      "query": "同样一套设置，数据从几十条长到几万条之后，为什么表现就不一样了",
+      "semantic_query_en": "With the same set of settings, why does the behavior change once the data grows from a few dozen records to tens of thousands?",
+      "primary_gold": [
+        "c18"
+      ],
+      "acceptable_gold": [
+        "c18",
+        "c17",
+        "c22"
+      ],
+      "annotation_basis": "c18 直接回答：门槛是绝对数值，规模一变过线比例就崩到平均 16%。c17 给出它当初的校准规模，c22 给出同一门槛在两套集合上代价相反的读数，两条都能实质回答，计入 acceptable。本条是第 2 轮补写的间接问法（判据 §7.2），刻意不使用记录里的术语。"
+    },
+    {
+      "id": "sr-r43",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 2,
+      "query": "跑分用的那一套和真正上线跑的那一套，会不会悄悄变成两回事",
+      "semantic_query_en": "Could the benchmark setup and the actual production setup quietly end up being two different things?",
+      "primary_gold": [
+        "c41"
+      ],
+      "acceptable_gold": [
+        "c41",
+        "s02"
+      ],
+      "annotation_basis": "c41 直接回答：基准不自己拼文本，走生产的拼接器，任何一端改规则两端一起变。s02 说明协议成分被编进空间身份后跨协议比较变得表达不出来，能实质回答同一类风险，计入 acceptable。第 2 轮补写的间接问法。"
+    },
+    {
+      "id": "sr-r44",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 2,
+      "query": "同一份东西在库里存了好几遍，会不会让某些统计数字看起来比实际好或者差",
+      "semantic_query_en": "If the same thing is stored multiple times in the database, could that make some of the statistics look better or worse than they actually are?",
+      "primary_gold": [
+        "s04"
+      ],
+      "acceptable_gold": [
+        "s04",
+        "c24",
+        "c25",
+        "c29"
+      ],
+      "annotation_basis": "s04 直接回答：会，误召回读数虚高 0.6。c24 是同一现象在页面替换指标上的表现，c25 是它在正例侧没有掩盖收益的结论，c29 是重复从何而来，三条都能实质回答，计入 acceptable。第 2 轮补写的间接问法。"
+    },
+    {
+      "id": "sr-r45",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 2,
+      "query": "东西越攒越多，用起来会不会明显变卡",
+      "semantic_query_en": "As more stuff piles up, will it get noticeably slower to use?",
+      "primary_gold": [
+        "c27"
+      ],
+      "acceptable_gold": [
+        "c27",
+        "c28",
+        "c10"
+      ],
+      "annotation_basis": "c27 直接回答：最大档 p95 158–286 毫秒，内存增量 225–324 兆，都在预算内。c28 说明截断保留集不改变页面因此不必为延迟牺牲结果，c10 说明池子随规模增长而保留有上界，两条都能实质回答，计入 acceptable。第 2 轮补写的间接问法。"
+    },
+    {
+      "id": "sr-r46",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 2,
+      "query": "自己造的测试数据会不会不小心帮了倒忙，让结果偏好看",
+      "semantic_query_en": "Could the test data I made up myself accidentally end up making the results look better than they should?",
+      "primary_gold": [
+        "c30"
+      ],
+      "acceptable_gold": [
+        "c30",
+        "c29",
+        "s04"
+      ],
+      "annotation_basis": "c30 直接回答：靠禁用表加机械校验把词面违规压到零，正是为了不让造出来的数据帮倒忙。c29 与 s04 给出这批数据确实在另一个方向影响了读数（副本结构抬高误召回），能实质回答同一个担忧，计入 acceptable。第 2 轮补写的间接问法。"
+    },
+    {
+      "id": "sr-r47",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 2,
+      "query": "两条东西不分高下的时候，谁排前面其实有没有偏向",
+      "semantic_query_en": "When two things are tied, is there actually a bias toward which one ranks first?",
+      "primary_gold": [
+        "c35"
+      ],
+      "acceptable_gold": [
+        "c35",
+        "t20"
+      ],
+      "annotation_basis": "c35 直接回答：按主键升序，而主键与插入时间相关，所以它实际偏向旧的那条。t20 是同类问题在另一处的记录（自增 ID 不是时间顺序的可靠代理），能实质回答，计入 acceptable。第 2 轮补写的间接问法。"
+    },
+    {
+      "id": "sr-r48",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 3,
+      "query": "两条路都找到同一条的时候，是看它有多像还是看它排第几",
+      "semantic_query_en": "When both paths find the same one, does it go by how similar it is or by what rank it's at",
+      "primary_gold": [
+        "c09"
+      ],
+      "acceptable_gold": [
+        "c09",
+        "t21"
+      ],
+      "annotation_basis": "c09 直接回答：看排第几，相似度只用于与地板线比较和定名次。t21 记录了融合的设计，能实质说明融合用什么，计入 acceptable。第 3 轮补写的间接问法（判据 §7.2）。"
+    },
+    {
+      "id": "sr-r49",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 3,
+      "query": "开会话时先塞进去的那点东西，是有个固定额度还是有多少塞多少",
+      "semantic_query_en": "The stuff that gets stuffed in at the start of a session — is there a fixed budget for that, or does it just stuff in as much as there is?",
+      "primary_gold": [
+        "c31"
+      ],
+      "acceptable_gold": [
+        "c31",
+        "t18"
+      ],
+      "annotation_basis": "c31 直接回答：有固定字节预算，且刻意压在接口上限之下。t18 给出实测占用（487 字节 / 跨 workspace 227 字节），能实质回答「占多少」，计入 acceptable。第 3 轮补写的间接问法（判据 §7.2）。"
+    },
+    {
+      "id": "sr-r50",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 3,
+      "query": "把新方式关掉之后，之前算好的那些东西是废了还是还能用",
+      "semantic_query_en": "After turning off the new method, is the stuff that was already computed before wasted, or can it still be used?",
+      "primary_gold": [
+        "c33"
+      ],
+      "acceptable_gold": [
+        "c33",
+        "c12"
+      ],
+      "annotation_basis": "c33 直接回答：还能用，开关不动存储向量与嵌入协议，因此无需重建也不丢数据。c12 回答关掉之后具体切到哪一组参数，计入 acceptable。第 3 轮补写的间接问法。"
+    },
+    {
+      "id": "sr-r51",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 3,
+      "query": "同一个改动在两批数据上得出的结论不一样，该信哪一批",
+      "semantic_query_en": "Same change gives different conclusions on two batches of data, which one should I trust",
+      "primary_gold": [
+        "c22"
+      ],
+      "acceptable_gold": [
+        "c22",
+        "c17",
+        "c37"
+      ],
+      "annotation_basis": "c22 直接回答：差别来自两批的难度分布，得分全部偏高的那批看不见代价，因此不能只信它。c17 说明校准规模决定看得见多少，c37 说明已消耗集的读数只能做描述性用途，两条都能实质回答，计入 acceptable。第 3 轮补写的间接问法。"
+    },
+    {
+      "id": "sr-r52",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 3,
+      "query": "拿验收用过的题目再去调参数，算不算作弊",
+      "semantic_query_en": "Does it count as cheating to reuse the questions from acceptance testing to tune the parameters?",
+      "primary_gold": [
+        "c37"
+      ],
+      "acceptable_gold": [
+        "c37",
+        "c40"
+      ],
+      "annotation_basis": "c37 直接回答：算，已消耗的验收集只能做描述性测量，不得用于选参。c40 是同一纪律的具体后果（候选清单被消耗集塑造过就必须重铺），计入 acceptable。第 3 轮补写的间接问法。"
+    },
+    {
+      "id": "sr-r53",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 3,
+      "query": "同一件事出现好几遍这个毛病，是现在顺手修还是留到以后",
+      "semantic_query_en": "This same issue has shown up several times now — should I just fix it now while I'm at it, or leave it for later?",
+      "primary_gold": [
+        "c39"
+      ],
+      "acceptable_gold": [
+        "c39",
+        "c36"
+      ],
+      "annotation_basis": "c39 直接回答：留到以后单独立项，因为它同时影响两个指标会让归因失效。c36 是同一条纪律在排序取证上的应用，计入 acceptable。第 3 轮补写的间接问法。"
+    },
+    {
+      "id": "sr-r54",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 3,
+      "query": "把上限压到一条，指标好看了到底算不算真的变好",
+      "semantic_query_en": "If we push the cap down to one, and the metrics look better, does that actually count as a real improvement?",
+      "primary_gold": [
+        "c26"
+      ],
+      "acceptable_gold": [
+        "c26",
+        "s08"
+      ],
+      "annotation_basis": "c26 直接回答：不算，那是算术恒真，与检索质量无关。s08 说明这个上限只约束一类来源，计入 acceptable。第 3 轮补写的间接问法。"
+    },
+    {
+      "id": "sr-r55",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 3,
+      "query": "改了设置之后是当场就变，还是要等下一次才算数",
+      "semantic_query_en": "After changing the setting, does it take effect immediately, or only starting from the next time?",
+      "primary_gold": [
+        "c34"
+      ],
+      "acceptable_gold": [
+        "c34",
+        "c33"
+      ],
+      "annotation_basis": "c34 直接回答：健康接口报的是下一个会话会用的档位，已在运行的会话保持启动时的设置。c33 说明同一开关的作用范围，计入 acceptable。第 3 轮补写的间接问法。"
+    },
+    {
+      "id": "sr-r56",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 4,
+      "query": "库里东西多了以后，是每条都会被拿来比一遍，还是只挑一部分比",
+      "semantic_query_en": "Once there's a lot of stuff in the database, does it compare against every single one, or does it only pick a subset to compare?",
+      "primary_gold": [
+        "c10"
+      ],
+      "acceptable_gold": [
+        "c10",
+        "c28",
+        "c19"
+      ],
+      "annotation_basis": "c10 直接回答：每条都比，被限制的是保留名次那一步。c28 给出截断保留集不改变页面的实测，c19 说明保留集长度撞上限造成的误读，两条都能实质回答，计入 acceptable。第 4 轮补写的间接问法（判据 §7.2）。"
+    },
+    {
+      "id": "sr-r57",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 4,
+      "query": "标准定严一点，是不相干的都没了，还是会连带牺牲一些该找到的",
+      "semantic_query_en": "If the criteria are set stricter, will it just remove the irrelevant ones, or will it also end up sacrificing some that should have been found?",
+      "primary_gold": [
+        "c20"
+      ],
+      "acceptable_gold": [
+        "c20",
+        "c21",
+        "c22"
+      ],
+      "annotation_basis": "c20 直接回答：会连带牺牲——异域那类能归零，但会丢掉得分最低的那条正例。c21 说明另一类清不干净，c22 说明代价在不同集合上读数相反，两条都能实质回答，计入 acceptable。第 4 轮补写的间接问法。"
+    },
+    {
+      "id": "sr-r58",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 4,
+      "query": "去掉那个限制之后，出来的东西是基本没变还是换了一大半",
+      "semantic_query_en": "After removing that restriction, is the output basically unchanged or did more than half of it change?",
+      "primary_gold": [
+        "c24"
+      ],
+      "acceptable_gold": [
+        "c24",
+        "s06",
+        "s04"
+      ],
+      "annotation_basis": "c24 直接回答：物理行新增 109 移除 105，折叠后 55/53，即换了相当一部分。s06 是那次改动本身，s04 解释两套口径为什么差近一半，两条都能实质回答，计入 acceptable。第 4 轮补写的间接问法。"
+    },
+    {
+      "id": "sr-r59",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 4,
+      "query": "造数据是随手生成的，还是有一套规则挡着不许撞词",
+      "semantic_query_en": "Is the test data generated randomly, or is there a set of rules blocking it from colliding with existing words?",
+      "primary_gold": [
+        "c30"
+      ],
+      "acceptable_gold": [
+        "c30",
+        "c29"
+      ],
+      "annotation_basis": "c30 直接回答：有禁用表加机械校验，词面违规读数为零，且种子写进元数据可重放。c29 说明这批数据的构造方式，计入 acceptable。第 4 轮补写的间接问法。"
+    },
+    {
+      "id": "sr-r60",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 4,
+      "query": "报告里那个数字每次都一样，是巧合还是撞到了什么上限",
+      "semantic_query_en": "The number in the report is the same every time — is that a coincidence or did it hit some kind of limit?",
+      "primary_gold": [
+        "c19"
+      ],
+      "acceptable_gold": [
+        "c19",
+        "c10"
+      ],
+      "annotation_basis": "c19 直接回答：撞到了保留上限，五十六条查询里四十三条的物理行数正好顶在一千。c10 说明保留与池子是两件事，计入 acceptable。第 4 轮补写的间接问法。"
+    },
+    {
+      "id": "sr-r61",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "lowScoreRound": 4,
+      "query": "那个不再参与打分的部分，是彻底没法用还是只是暂时停着",
+      "semantic_query_en": "That part that's no longer participating in the scoring — is it completely unusable, or just temporarily disabled?",
+      "primary_gold": [
+        "c14"
+      ],
+      "acceptable_gold": [
+        "c14",
+        "c13",
+        "c15"
+      ],
+      "annotation_basis": "c14 直接回答：彻底没法用——正例与噪声区间重叠，阈值这个工具本身不适用。c13 说明那条路径已整段删除，c15 是另一个被判定机制收敛的部分，两条都能实质回答「是停着还是不能用」，计入 acceptable。第 4 轮补写的间接问法。"
+    }
+  ]
+}

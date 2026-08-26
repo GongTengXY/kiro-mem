@@ -1,0 +1,23 @@
+{
+  // Browser project for the Web Viewer bundle. Separate from the root config on
+  // purpose: the Worker/MCP project must NOT have DOM globals in scope, or a
+  // server file could reference `document` and still typecheck.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    // `bun` rather than `[]`: the UI tests import `bun:test`. Bun's own types and
+    // the DOM lib coexist safely HERE because nothing under src/ui touches a Bun
+    // stream — that clash is why the server project keeps DOM out entirely.
+    "types": ["bun"]
+  },
+  "include": [
+    "src/ui/**/*.ts",
+    "src/ui/**/*.tsx",
+    "src/server/viewer-types.ts",
+    "tests/ui/**/*.ts",
+    "tests/ui/**/*.tsx"
+  ],
+  "exclude": []
+}

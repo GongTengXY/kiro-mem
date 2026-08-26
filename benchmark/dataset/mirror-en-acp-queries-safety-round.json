@@ -1,0 +1,350 @@
+{
+  "provenance": {
+    "source": "merged-acp-runs",
+    "target": "queries",
+    "querySet": "safety-round",
+    "inputs": [
+      {
+        "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-queries-safety-round.json",
+        "provenance": {
+          "source": "merged-acp-runs",
+          "target": "queries",
+          "querySet": "safety-round",
+          "inputs": [
+            {
+              "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-queries-safety-round.json",
+              "provenance": {
+                "source": "merged-acp-runs",
+                "target": "queries",
+                "querySet": "safety-round",
+                "inputs": [
+                  {
+                    "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-queries-safety-round.json",
+                    "provenance": {
+                      "source": "merged-acp-runs",
+                      "target": "queries",
+                      "querySet": "safety-round",
+                      "inputs": [
+                        {
+                          "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-queries-safety-round.json",
+                          "provenance": {
+                            "source": "merged-acp-runs",
+                            "target": "queries",
+                            "querySet": "safety-round",
+                            "inputs": [
+                              {
+                                "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-queries-safety-round.json.failed-1786441502158.json",
+                                "provenance": {
+                                  "source": "acp",
+                                  "agent": "kiro-mem-compressor",
+                                  "kiroCli": "kiro-cli (see report)",
+                                  "target": "queries",
+                                  "querySet": "safety-round",
+                                  "generatedAt": "2026-08-11T09:45:02.142Z",
+                                  "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+                                  "items": 88,
+                                  "failures": 23,
+                                  "retries": 93,
+                                  "wallTimeMs": 83459,
+                                  "itemLatencyMs": {
+                                    "p50": 56975,
+                                    "p95": 70961,
+                                    "max": 83197
+                                  }
+                                }
+                              },
+                              {
+                                "path": "/tmp/acp-q-retry1.json.failed-1786447214476.json",
+                                "provenance": {
+                                  "source": "acp",
+                                  "agent": "kiro-mem-compressor",
+                                  "kiroCli": "kiro-cli (see report)",
+                                  "target": "queries",
+                                  "querySet": "safety-round",
+                                  "generatedAt": "2026-08-11T11:20:14.475Z",
+                                  "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+                                  "items": 21,
+                                  "failures": 2,
+                                  "retries": 7,
+                                  "wallTimeMs": 33897,
+                                  "itemLatencyMs": {
+                                    "p50": 15667,
+                                    "p95": 22802,
+                                    "max": 33891
+                                  }
+                                }
+                              },
+                              {
+                                "path": "/tmp/acp-q-retry2.json",
+                                "provenance": {
+                                  "source": "acp",
+                                  "agent": "kiro-mem-compressor",
+                                  "kiroCli": "kiro-cli (see report)",
+                                  "target": "queries",
+                                  "querySet": "safety-round",
+                                  "generatedAt": "2026-08-11T11:20:31.900Z",
+                                  "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+                                  "items": 2,
+                                  "failures": 0,
+                                  "retries": 1,
+                                  "wallTimeMs": 11981,
+                                  "itemLatencyMs": {
+                                    "p50": 8830,
+                                    "p95": 11979,
+                                    "max": 11979
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "path": "/tmp/acp-q-r2.json",
+                          "provenance": {
+                            "source": "acp",
+                            "agent": "kiro-mem-compressor",
+                            "kiroCli": "kiro-cli (see report)",
+                            "target": "queries",
+                            "querySet": "safety-round",
+                            "generatedAt": "2026-08-11T11:23:01.385Z",
+                            "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+                            "items": 6,
+                            "failures": 0,
+                            "retries": 1,
+                            "wallTimeMs": 18472,
+                            "itemLatencyMs": {
+                              "p50": 12461,
+                              "p95": 18470,
+                              "max": 18470
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "path": "/tmp/acp-q-r3.json",
+                    "provenance": {
+                      "source": "acp",
+                      "agent": "kiro-mem-compressor",
+                      "kiroCli": "kiro-cli (see report)",
+                      "target": "queries",
+                      "querySet": "safety-round",
+                      "generatedAt": "2026-08-11T11:24:50.600Z",
+                      "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+                      "items": 8,
+                      "failures": 0,
+                      "retries": 4,
+                      "wallTimeMs": 20867,
+                      "itemLatencyMs": {
+                        "p50": 13178,
+                        "p95": 20863,
+                        "max": 20863
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "path": "/tmp/acp-q-r4.json",
+              "provenance": {
+                "source": "acp",
+                "agent": "kiro-mem-compressor",
+                "kiroCli": "kiro-cli (see report)",
+                "target": "queries",
+                "querySet": "safety-round",
+                "generatedAt": "2026-08-11T11:25:53.837Z",
+                "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+                "items": 6,
+                "failures": 0,
+                "retries": 0,
+                "wallTimeMs": 19660,
+                "itemLatencyMs": {
+                  "p50": 11186,
+                  "p95": 19656,
+                  "max": 19656
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "path": "/tmp/acp-q-fix.json.failed-1786447881874.json",
+        "provenance": {
+          "source": "acp",
+          "agent": "kiro-mem-compressor",
+          "kiroCli": "kiro-cli (see report)",
+          "target": "queries",
+          "querySet": "safety-round",
+          "generatedAt": "2026-08-11T11:31:21.873Z",
+          "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+          "items": 32,
+          "failures": 1,
+          "retries": 6,
+          "wallTimeMs": 32806,
+          "itemLatencyMs": {
+            "p50": 17788,
+            "p95": 29678,
+            "max": 32786
+          }
+        }
+      },
+      {
+        "path": "/tmp/acp-q-fix2.json",
+        "provenance": {
+          "source": "acp",
+          "agent": "kiro-mem-compressor",
+          "kiroCli": "kiro-cli (see report)",
+          "target": "queries",
+          "querySet": "safety-round",
+          "generatedAt": "2026-08-11T11:31:39.675Z",
+          "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+          "items": 1,
+          "failures": 0,
+          "retries": 0,
+          "wallTimeMs": 7330,
+          "itemLatencyMs": {
+            "p50": 7329,
+            "p95": 7329,
+            "max": 7329
+          }
+        }
+      }
+    ]
+  },
+  "queries": {
+    "sr-r28": "Could the fabricated fake data happen to collide with the test query terms?",
+    "sr-r08": "Does this limit of at most two per page mean there can only be at most two unreliable results?",
+    "sr-r16": "What proportion of content did that threshold actually block",
+    "sr-r41": "Why not just set its own separate threshold for that space that no longer gets scored?",
+    "sr-r22": "After removing the time limit, how much of the returned content changed",
+    "sr-r19": "If I ask about something technically close but that this project has never actually done, can adjusting the threshold make it return zero results?",
+    "sr-n05": "Does the compression stage merge several adjacent turns into a single summary?",
+    "sr-n11": "Can the background daemon process be scaled out horizontally to multiple machines?",
+    "sr-n04": "Isn't there an approximate nearest neighbor index built for the vectors? Otherwise how could full computation keep up?",
+    "sr-r14": "Did that Chinese auxiliary segmentation aid actually end up being used or not",
+    "sr-r07": "The query itself hasn't changed, I just changed a number to a placeholder before passing it in, why did it get slow",
+    "sr-r37": "The same thing got recorded several times, a whole page of search results is duplicates, when will this be fixed",
+    "sr-r15": "How many data points were actually used to test out this similarity threshold in the first place?",
+    "sr-r23": "Several records that should have been found weren't found — is it because the slots were taken up by duplicate content?",
+    "sr-r04": "When there's duplicate content in the test corpus, will the returned-count metric end up being counted too many times?",
+    "sr-n15": "Have we implemented automatic detection and redaction of ID numbers and phone numbers?",
+    "sr-r18": "If I raise the threshold a bit, those completely unrelated questions won't return any results, right?",
+    "sr-r35": "That batch of questions used for the last acceptance test, can they still be used for tuning parameters?",
+    "sr-r36": "What about trying that idea again using the median as the baseline?",
+    "sr-r31": "If I turn off that switch, do I need to recompute the vectors, and will the data be lost?",
+    "sr-n29": "How to do idempotent reconciliation when third-party payment callbacks arrive repeatedly",
+    "sr-n21": "How is the resolution of shadow maps in 3D scenes usually chosen",
+    "sr-r33": "When the scores are equally high, what decides the order — is this field neutral?",
+    "sr-r11": "If a parameter is misconfigured, does it throw an error directly or silently fail to take effect?",
+    "sr-n31": "How should I configure a self-hosted mail server so it doesn't get flagged as spam?",
+    "sr-a04": "Will the compression concurrency automatically adjust based on machine load?",
+    "sr-n30": "What algorithm is generally used for register allocation when writing a compiler?",
+    "sr-a14": "Have you run it with ten different seeds to see if the conclusion is stable?",
+    "sr-r02": "Is it enough to store vectors from the same model in one table and distinguish by model name?",
+    "sr-n13": "Does it adjust the default returned content based on recent query preferences?",
+    "sr-n40": "How does a browser extension inject scripts into a page without getting blocked by CSP?",
+    "sr-a25": "About how many tokens does it cost to compress one record via ACP, is there any statistic on that?",
+    "sr-a23": "How should we unify the metric definitions when different reports in the data warehouse are inconsistent?",
+    "sr-a06": "Can we configure a whitelist so that two scopes can see each other's records?",
+    "sr-n37": "Was a trend report output by day?",
+    "sr-a19": "How do I test whether a public-facing API's token has a privilege escalation vulnerability",
+    "sr-n08": "Does it support looking up all entries that touch a given path?",
+    "sr-a13": "Will duplicate queries hit the cache, saving the latency of duplicate scoring?",
+    "sr-a01": "Can different types of records each have their own floor line?",
+    "sr-a29": "Have confidence intervals or significance been calculated for these metrics?",
+    "sr-n07": "Is the editor cursor position and current open list collected?",
+    "sr-r12": "If this new recall approach has problems, can it be rolled back to the previous behavior, and how many places need to be changed to roll it back",
+    "sr-a07": "Will it proactively alert when a metric exceeds the threshold?",
+    "sr-a27": "Is there any regular backup for the database file, and how do I recover it if it's corrupted?",
+    "sr-a20": "There are millions of persisted messages backed up in the message middleware, how do I quickly consume them?",
+    "sr-a15": "Can the config be split per workspace, with different projects using different strategies?",
+    "sr-a21": "How should the recall layer of the recommendation system handle cold start when a new user has no behavioral data?",
+    "sr-a22": "Too many photos on the phone causing tight resident memory usage, how to optimize this generally",
+    "sr-n12": "Has the compression output been manually annotated and scored?",
+    "sr-r13": "Did requests that didn't provide an English query form also used to have similarity computed for them?",
+    "sr-n22": "How do you do closed-loop motor speed control on a microcontroller",
+    "sr-r39": "Is the text embedded in the benchmark exactly the same as what's used in production?",
+    "sr-n35": "How to do interrupt coalescing for device drivers in the kernel",
+    "sr-r30": "If I pull a lot of detail entries at once, will the response get truncated?",
+    "sr-n32": "How does a mobile robot replan its path under dynamic obstacles",
+    "sr-n02": "Have you tried clustering into groups first and only searching within the most recent group?",
+    "sr-n34": "How to handle client-side prediction and rollback in multiplayer combat",
+    "sr-a18": "Persist the weights and then continue training, how does the learning rate usually decay",
+    "sr-a17": "How long does it take for multiple replicas to pick up writes after the primary goes down",
+    "sr-n17": "Does it support exporting to a single file for migration to another machine?",
+    "sr-a05": "After a hook times out, will the events that didn't get through be queued and resent?",
+    "sr-a11": "When storing the vectors, is the bit width compressed further, like compressing to one byte?",
+    "sr-n25": "What keyframe interval is more stable for live streaming?",
+    "sr-r20": "Same threshold value, why do the costs turn out completely different on two batches of test data",
+    "sr-r09": "Can we weight the score of the closest match to make the ranking more accurate?",
+    "sr-a30": "I found a record that was written wrong, is there any way to fix it",
+    "sr-n03": "After recall, is there a cross-scoring module used for reranking?",
+    "sr-r25": "For the largest data volume tier, how long does one search take and how much memory does it use?",
+    "sr-r06": "Can records from two years ago still be searched now, or would they be blocked by the default time limit?",
+    "sr-r03": "Where did that last acceptance round get stuck on, can a different time range get around it?",
+    "sr-a12": "Can timeline collapse by day, showing only one summary line per day?",
+    "sr-n20": "Does it ask a clarifying question first to narrow down the scope when searching?",
+    "sr-n19": "Does the task table support jumping the queue based on urgency",
+    "sr-r27": "How was that test data made to support the scale testing?",
+    "sr-n10": "Are the weights of the two channels open for users to configure themselves?",
+    "sr-r34": "Can we test the sorting thing together with this round, to save a round of time?",
+    "sr-n39": "How do multiple instances elect a leader among themselves, and which consensus protocol is used?",
+    "sr-r01": "Do memory and query have to be processed in the same language? What happens if only one side is processed?",
+    "sr-r21": "After switching to the new recall method, how many of the old records that couldn't be found before can now be found?",
+    "sr-r17": "The number of semantic candidates in the report has been staying at around two hundred, what does this stable value indicate?",
+    "sr-r24": "If I lower the number of entries allowed per page to one, would the acceptance metric automatically pass?",
+    "sr-a08": "Are the intervals before retries are exhausted arranged with exponential backoff?",
+    "sr-r32": "How do I confirm the setting change actually took effect after I changed it, without having to go dig through the code?",
+    "sr-r10": "Once the corpus grows, do some of the older records just stop being compared at all?",
+    "sr-a10": "Can I write my own redaction rules myself, like matching internal domain names with regex",
+    "sr-n28": "Which precision is more appropriate for latitude/longitude grid encoding",
+    "sr-r40": "After the compression step fails, is that turn completely unrecorded, or is a partial one left behind?",
+    "sr-r26": "Only some of the candidates get a rank assigned, will that change what's returned?",
+    "sr-r29": "How much space does the list that gets injected when starting a new session take up, will it exceed the limit",
+    "sr-n23": "Is cross-border e-commerce VAT calculated based on the shipping origin or the destination?",
+    "sr-n01": "Has retrieval ever adjusted result ordering based on click feedback",
+    "sr-n14": "Are reference edges stored between entries, for example marking this entry as a follow-up to the previous one?",
+    "sr-n38": "Does compression support switching to other weights, or routing by length?",
+    "sr-n16": "Have we done an online traffic-splitting experiment to observe real clicks?",
+    "sr-n33": "How to handle missing features in the credit scorecard",
+    "sr-a16": "How do I improve my website's keyword ranking in search engines",
+    "sr-n27": "How to make the pull-to-refresh gesture on mobile list feel smooth",
+    "sr-n06": "Are stale entries automatically abbreviated to save space?",
+    "sr-r38": "How were those candidate numbers picked, and why not just try the most promising one?",
+    "sr-a09": "Does it automatically check for new versions and prompt for an upgrade?",
+    "sr-n26": "How do I do a rolling upgrade of stateful services in the cluster without breaking connections?",
+    "sr-a03": "Have you compared the effect of switching the similarity algorithm to Euclidean distance or inner product?",
+    "sr-n36": "Does the search syntax support boolean expressions, like A and not B?",
+    "sr-n18": "Have the embedding weights been fine-tuned with this project's corpus",
+    "sr-n09": "Does the result support automatic categorization and display by topic?",
+    "sr-a28": "When the injected content exceeds the budget, in what order does it get trimmed, does it consider importance?",
+    "sr-a26": "Can you tell me which specific word caused a given result to match?",
+    "sr-n24": "Which scoring matrix is usually used for gene sequence alignment?",
+    "sr-a24": "Can records in Japanese or Korean be searched the same way?",
+    "sr-r05": "Is it better to judge how good a result is by how much it stands out relative to the whole corpus, rather than by an absolute score?",
+    "sr-a02": "Can the quota be split by time period, like reserving at least two slots for the most recent week?",
+    "sr-r42": "With the same set of settings, why does the behavior change once the data grows from a few dozen records to tens of thousands?",
+    "sr-r45": "As more stuff piles up, will it get noticeably slower to use?",
+    "sr-r44": "If the same thing is stored multiple times in the database, could that make some of the statistics look better or worse than they actually are?",
+    "sr-r47": "When two things are tied, is there actually a bias toward which one ranks first?",
+    "sr-r46": "Could the test data I made up myself accidentally end up making the results look better than they should?",
+    "sr-r43": "Could the benchmark setup and the actual production setup quietly end up being two different things?",
+    "sr-r48": "When both paths find the same one, does it go by how similar it is or by what rank it's at",
+    "sr-r55": "After changing the setting, does it take effect immediately, or only starting from the next time?",
+    "sr-r53": "This same issue has shown up several times now — should I just fix it now while I'm at it, or leave it for later?",
+    "sr-r50": "After turning off the new method, is the stuff that was already computed before wasted, or can it still be used?",
+    "sr-r54": "If we push the cap down to one, and the metrics look better, does that actually count as a real improvement?",
+    "sr-r51": "Same change gives different conclusions on two batches of data, which one should I trust",
+    "sr-r49": "The stuff that gets stuffed in at the start of a session — is there a fixed budget for that, or does it just stuff in as much as there is?",
+    "sr-r52": "Does it count as cheating to reuse the questions from acceptance testing to tune the parameters?",
+    "sr-r56": "Once there's a lot of stuff in the database, does it compare against every single one, or does it only pick a subset to compare?",
+    "sr-r58": "After removing that restriction, is the output basically unchanged or did more than half of it change?",
+    "sr-r60": "The number in the report is the same every time — is that a coincidence or did it hit some kind of limit?",
+    "sr-r59": "Is the test data generated randomly, or is there a set of rules blocking it from colliding with existing words?",
+    "sr-r57": "If the criteria are set stricter, will it just remove the irrelevant ones, or will it also end up sacrificing some that should have been found?",
+    "sr-r61": "That part that's no longer participating in the scoring — is it completely unusable, or just temporarily disabled?"
+  }
+}

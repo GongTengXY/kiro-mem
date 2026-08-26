@@ -25,5 +25,15 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
-  }
+  },
+
+  // The browser bundle needs DOM lib + preact JSX, which the server project
+  // deliberately does not have. Two reasons, both load-bearing:
+  //   1. DOM globals in scope here would let a Worker file reference `document`
+  //      and still typecheck.
+  //   2. `preact/src/jsx.d.ts` carries `/// <reference lib="dom" />`, and DOM's
+  //      `ReadableStream` (no async iterator) then shadows Bun's — which breaks
+  //      unrelated server/benchmark files that iterate a Bun stream.
+  // `bun run typecheck:viewer` checks these paths against tsconfig.viewer.json.
+  "exclude": ["src/ui", "tests/ui", "dist"]
 }

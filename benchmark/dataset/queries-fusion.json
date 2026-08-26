@@ -1,0 +1,1787 @@
+[
+  {
+    "id": "w01",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "超时降级之后还能不能搜到东西",
+    "expect": [
+      "t02"
+    ],
+    "note": "t02.concepts 含「超时降级」「FTS-only」；t02.outcome 写明降级后 search 按时返回 FTS 结果",
+    "precheck": {
+      "intent": "S1",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 2,
+      "bigramCount": 9,
+      "bigramUnits": 13,
+      "hitUnits": [
+        "超时",
+        "时降",
+        "降级"
+      ],
+      "lcsCjk": {
+        "len": 4,
+        "sample": "超时降级"
+      }
+    }
+  },
+  {
+    "id": "w02",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "资源池里的死锁是怎么解决的",
+    "expect": [
+      "t07"
+    ],
+    "note": "t07.concepts 含「ACPPool」「资源池」「死锁」「recycle」",
+    "precheck": {
+      "intent": "S1",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 1,
+      "bigramUnits": 12,
+      "hitUnits": [
+        "资源",
+        "源池",
+        "死锁"
+      ],
+      "lcsCjk": {
+        "len": 3,
+        "sample": "资源池"
+      }
+    }
+  },
+  {
+    "id": "w03",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "workspace 隔离是靠什么做的",
+    "expect": [
+      "t22"
+    ],
+    "note": "t22.title「scope_key 硬隔离」；concepts 含「workspace 隔离」「computeScopeKey」",
+    "precheck": {
+      "intent": "S1",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 2,
+      "bigramCount": 3,
+      "bigramUnits": 7,
+      "hitUnits": [
+        "隔离"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "隔离"
+      }
+    }
+  },
+  {
+    "id": "w04",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "测试隔离改到临时目录之后有什么变化",
+    "expect": [
+      "t12"
+    ],
+    "note": "t12.title「测试数据目录隔离到临时目录」；concepts 含「测试隔离」",
+    "precheck": {
+      "intent": "S1",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 2,
+      "bigramCount": 15,
+      "bigramUnits": 16,
+      "hitUnits": [
+        "测试",
+        "试隔",
+        "隔离",
+        "到临",
+        "临时",
+        "时目",
+        "目录"
+      ],
+      "lcsCjk": {
+        "len": 5,
+        "sample": "到临时目录"
+      }
+    }
+  },
+  {
+    "id": "w05",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "版本漂移检查是怎么加进去的",
+    "expect": [
+      "t15"
+    ],
+    "note": "t15.title「diagnose 增加版本漂移检查」；concepts 含「版本漂移」",
+    "precheck": {
+      "intent": "S1",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 6,
+      "bigramUnits": 12,
+      "hitUnits": [
+        "版本",
+        "本漂",
+        "漂移",
+        "移检",
+        "检查"
+      ],
+      "lcsCjk": {
+        "len": 6,
+        "sample": "版本漂移检查"
+      }
+    }
+  },
+  {
+    "id": "w06",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "字节预算和 scope 过滤都验过了吗",
+    "expect": [
+      "t18"
+    ],
+    "note": "t18.outcome「字节预算与 scope 硬过滤均按预期生效」",
+    "precheck": {
+      "intent": "S1",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 4,
+      "bigramCount": 5,
+      "bigramUnits": 10,
+      "hitUnits": [
+        "字节",
+        "节预",
+        "预算",
+        "过滤"
+      ],
+      "lcsCjk": {
+        "len": 4,
+        "sample": "字节预算"
+      }
+    }
+  },
+  {
+    "id": "w07",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "故障路径里的隐私脱敏结论是什么",
+    "expect": [
+      "t19"
+    ],
+    "note": "t19.concepts 含「故障路径」「隐私脱敏」「REDACTED」",
+    "precheck": {
+      "intent": "S1",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 9,
+      "bigramUnits": 14,
+      "hitUnits": [
+        "故障",
+        "障路",
+        "路径",
+        "隐私",
+        "私脱",
+        "脱敏"
+      ],
+      "lcsCjk": {
+        "len": 4,
+        "sample": "故障路径"
+      }
+    }
+  },
+  {
+    "id": "w08",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "语义地板线最后设成多少",
+    "expect": [
+      "t21"
+    ],
+    "note": "t21.title 含「0.2 语义地板线」；concepts 含「语义地板线」",
+    "precheck": {
+      "intent": "S1",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 2,
+      "bigramUnits": 10,
+      "hitUnits": [
+        "语义",
+        "义地",
+        "地板",
+        "板线"
+      ],
+      "lcsCjk": {
+        "len": 5,
+        "sample": "语义地板线"
+      }
+    }
+  },
+  {
+    "id": "w09",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "命名决策最后保留了哪个写法",
+    "expect": [
+      "t10"
+    ],
+    "note": "t10.title「job 命名保留 summarize_turn / embed_observation」；concepts 含「命名决策」",
+    "precheck": {
+      "intent": "S1",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 4,
+      "bigramUnits": 12,
+      "hitUnits": [
+        "命名",
+        "名决",
+        "决策",
+        "保留"
+      ],
+      "lcsCjk": {
+        "len": 4,
+        "sample": "命名决策"
+      }
+    }
+  },
+  {
+    "id": "w10",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "质量基准集的优先级是怎么定的",
+    "expect": [
+      "t26"
+    ],
+    "note": "t26.title「质量基准集：内测不阻塞，对外发布前必须完成」；concepts 含「质量基准集」",
+    "precheck": {
+      "intent": "S1",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 2,
+      "bigramUnits": 13,
+      "hitUnits": [
+        "质量",
+        "量基",
+        "基准",
+        "准集",
+        "集的",
+        "的优",
+        "优先",
+        "先级"
+      ],
+      "lcsCjk": {
+        "len": 9,
+        "sample": "质量基准集的优先级"
+      }
+    }
+  },
+  {
+    "id": "w11",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "AgentSpawn hook Worker restart",
+    "expect": [
+      "t03"
+    ],
+    "note": "t03.title「AgentSpawn hook 不再重启 Worker」；concepts 含 hook / AgentSpawn",
+    "precheck": {
+      "intent": "S2",
+      "stratum": "S2",
+      "ftsHasGold": true,
+      "bigramHasGold": false,
+      "semanticHasGold": true,
+      "ftsCount": 12,
+      "bigramCount": 0,
+      "bigramUnits": 0,
+      "hitUnits": [],
+      "lcsCjk": {
+        "len": 0,
+        "sample": ""
+      }
+    }
+  },
+  {
+    "id": "w12",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "all-MiniLM-L6-v2 q8 384 dimensions",
+    "expect": [
+      "t23"
+    ],
+    "note": "t23.concepts 含「all-MiniLM-L6-v2」「q8 量化」「384 维」",
+    "precheck": {
+      "intent": "S2",
+      "stratum": "S2",
+      "ftsHasGold": true,
+      "bigramHasGold": false,
+      "semanticHasGold": true,
+      "ftsCount": 2,
+      "bigramCount": 0,
+      "bigramUnits": 0,
+      "hitUnits": [],
+      "lcsCjk": {
+        "len": 0,
+        "sample": ""
+      }
+    }
+  },
+  {
+    "id": "w13",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "PACKAGE_VERSION npm pack single source",
+    "expect": [
+      "t05"
+    ],
+    "note": "t05.concepts 含「PACKAGE_VERSION」「npm pack」；outcome 写明 npm pack 产出 3.0.0.tgz",
+    "precheck": {
+      "intent": "S2",
+      "stratum": "S2",
+      "ftsHasGold": true,
+      "bigramHasGold": false,
+      "semanticHasGold": true,
+      "ftsCount": 5,
+      "bigramCount": 0,
+      "bigramUnits": 0,
+      "hitUnits": [],
+      "lcsCjk": {
+        "len": 0,
+        "sample": ""
+      }
+    }
+  },
+  {
+    "id": "w14",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "computeScopeKey all_scopes leakage",
+    "expect": [
+      "t22"
+    ],
+    "note": "t22.concepts 含「computeScopeKey」「all_scopes」「泄漏」",
+    "precheck": {
+      "intent": "S2",
+      "stratum": "S2",
+      "ftsHasGold": true,
+      "bigramHasGold": false,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 0,
+      "bigramUnits": 0,
+      "hitUnits": [],
+      "lcsCjk": {
+        "len": 0,
+        "sample": ""
+      }
+    }
+  },
+  {
+    "id": "w15",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "KIRO_MEMORY_DATA_DIR bunfig preload",
+    "expect": [
+      "t12"
+    ],
+    "note": "t12.concepts 含「KIRO_MEMORY_DATA_DIR」「bunfig」「preload」",
+    "precheck": {
+      "intent": "S2",
+      "stratum": "S2",
+      "ftsHasGold": true,
+      "bigramHasGold": false,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 0,
+      "bigramUnits": 0,
+      "hitUnits": [],
+      "lcsCjk": {
+        "len": 0,
+        "sample": ""
+      }
+    }
+  },
+  {
+    "id": "w16",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "ACPPool recycle slot concurrency",
+    "expect": [
+      "t07"
+    ],
+    "note": "t07.concepts 含「ACPPool」「recycle」「并发」；outcome 提到 concurrency=1",
+    "precheck": {
+      "intent": "S2",
+      "stratum": "S2",
+      "ftsHasGold": true,
+      "bigramHasGold": false,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 0,
+      "bigramUnits": 0,
+      "hitUnits": [],
+      "lcsCjk": {
+        "len": 0,
+        "sample": ""
+      }
+    }
+  },
+  {
+    "id": "w17",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "fallback quality job retry integration test",
+    "expect": [
+      "t08"
+    ],
+    "note": "t08.concepts 含「fallback」「quality」「job 重试」「集成测试」",
+    "precheck": {
+      "intent": "S2",
+      "stratum": "S2",
+      "ftsHasGold": true,
+      "bigramHasGold": false,
+      "semanticHasGold": true,
+      "ftsCount": 16,
+      "bigramCount": 0,
+      "bigramUnits": 0,
+      "hitUnits": [],
+      "lcsCjk": {
+        "len": 0,
+        "sample": ""
+      }
+    }
+  },
+  {
+    "id": "w18",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "TS2345 typecheck auth middleware",
+    "expect": [
+      "t25"
+    ],
+    "note": "t25.concepts 含「typecheck」「TS2345」「auth 中间件」",
+    "precheck": {
+      "intent": "S2",
+      "stratum": "S2",
+      "ftsHasGold": true,
+      "bigramHasGold": false,
+      "semanticHasGold": true,
+      "ftsCount": 3,
+      "bigramCount": 0,
+      "bigramUnits": 0,
+      "hitUnits": [],
+      "lcsCjk": {
+        "len": 0,
+        "sample": ""
+      }
+    }
+  },
+  {
+    "id": "w19",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "timeline source turn mode scope",
+    "expect": [
+      "t20"
+    ],
+    "note": "t20.title「timeline 锚定 source turn」；concepts 含「mode=scope」",
+    "precheck": {
+      "intent": "S2",
+      "stratum": "S2",
+      "ftsHasGold": true,
+      "bigramHasGold": false,
+      "semanticHasGold": true,
+      "ftsCount": 9,
+      "bigramCount": 0,
+      "bigramUnits": 0,
+      "hitUnits": [],
+      "lcsCjk": {
+        "len": 0,
+        "sample": ""
+      }
+    }
+  },
+  {
+    "id": "w20",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "RRF hybrid search cosine floor",
+    "expect": [
+      "t21"
+    ],
+    "note": "t21.concepts 含「RRF」「hybrid search」「余弦相似度」",
+    "precheck": {
+      "intent": "S2",
+      "stratum": "S2",
+      "ftsHasGold": true,
+      "bigramHasGold": false,
+      "semanticHasGold": true,
+      "ftsCount": 5,
+      "bigramCount": 0,
+      "bigramUnits": 0,
+      "hitUnits": [],
+      "lcsCjk": {
+        "len": 0,
+        "sample": ""
+      }
+    }
+  },
+  {
+    "id": "w21",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "转义规则是按哪一套来的",
+    "expect": [
+      "t01"
+    ],
+    "note": "t01.concepts 含「特殊字符转义」；learned 写明双引号翻倍是 FTS5 的转义方式",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S3",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 0,
+      "bigramCount": 1,
+      "bigramUnits": 10,
+      "hitUnits": [
+        "转义"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "转义"
+      }
+    }
+  },
+  {
+    "id": "w22",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "脱敏之后还能分清是哪种失败吗",
+    "expect": [
+      "t04"
+    ],
+    "note": "t04.outcome「四类失败仍可区分」；concepts 含「日志脱敏」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S3",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 0,
+      "bigramCount": 7,
+      "bigramUnits": 13,
+      "hitUnits": [
+        "脱敏",
+        "失败"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "脱敏"
+      }
+    }
+  },
+  {
+    "id": "w23",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "清单漏了东西会导致什么后果",
+    "expect": [
+      "t13"
+    ],
+    "note": "t13.title「安装器复制清单漏 src/auth-token.ts 导致 Worker 起不来」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 4,
+      "bigramUnits": 12,
+      "hitUnits": [
+        "清单",
+        "单漏",
+        "导致"
+      ],
+      "lcsCjk": {
+        "len": 3,
+        "sample": "清单漏"
+      }
+    }
+  },
+  {
+    "id": "w24",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "幂等这件事上踩过什么坑",
+    "expect": [
+      "t14"
+    ],
+    "note": "t14.concepts 含「幂等陷阱」；title 提到覆盖源码后仍跑旧进程",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S3",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 0,
+      "bigramCount": 1,
+      "bigramUnits": 10,
+      "hitUnits": [
+        "幂等"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "幂等"
+      }
+    }
+  },
+  {
+    "id": "w25",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "验收当时哪一步是人工绕过的",
+    "expect": [
+      "t16"
+    ],
+    "note": "t16.outcome 写明「安装第 12 步的依赖下载被人工绕过」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 3,
+      "bigramUnits": 12,
+      "hitUnits": [
+        "验收",
+        "人工",
+        "工绕",
+        "绕过"
+      ],
+      "lcsCjk": {
+        "len": 4,
+        "sample": "人工绕过"
+      }
+    }
+  },
+  {
+    "id": "w26",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "端到端那轮有没有覆盖交互式会话",
+    "expect": [
+      "t17"
+    ],
+    "note": "t17.outcome 写明「真实交互式会话下的触发尚未覆盖」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 8,
+      "bigramUnits": 14,
+      "hitUnits": [
+        "端到",
+        "到端",
+        "覆盖",
+        "交互",
+        "互式",
+        "式会",
+        "会话"
+      ],
+      "lcsCjk": {
+        "len": 5,
+        "sample": "交互式会话"
+      }
+    }
+  },
+  {
+    "id": "w27",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "认证这块最后是留还是去",
+    "expect": [
+      "t11"
+    ],
+    "note": "t11.title「保留本地 token 认证并做到用户无感」；concepts 含「token 认证」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S3",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 0,
+      "bigramCount": 2,
+      "bigramUnits": 10,
+      "hitUnits": [
+        "认证"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "认证"
+      }
+    }
+  },
+  {
+    "id": "w28",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "边界值校验补在哪一层",
+    "expect": [
+      "t06"
+    ],
+    "note": "t06.concepts 含「参数校验」「边界值」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 2,
+      "bigramUnits": 9,
+      "hitUnits": [
+        "边界",
+        "界值",
+        "校验"
+      ],
+      "lcsCjk": {
+        "len": 3,
+        "sample": "边界值"
+      }
+    }
+  },
+  {
+    "id": "w29",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "本地化是怎么接进去的",
+    "expect": [
+      "t24"
+    ],
+    "note": "t24.concepts 含「i18n」「本地化」「MCP 工具描述」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 4,
+      "bigramUnits": 9,
+      "hitUnits": [
+        "本地",
+        "地化"
+      ],
+      "lcsCjk": {
+        "len": 3,
+        "sample": "本地化"
+      }
+    }
+  },
+  {
+    "id": "w30",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "清理动作在安装之前做了什么",
+    "expect": [
+      "t09"
+    ],
+    "note": "t09.title「purge → clean install 闭环测试」；concepts 含「purge」「clean install」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S3",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 2,
+      "bigramCount": 13,
+      "bigramUnits": 12,
+      "hitUnits": [
+        "安装"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "安装"
+      }
+    }
+  },
+  {
+    "id": "w31",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "23M 是怎么来的",
+    "expect": [
+      "t23"
+    ],
+    "note": "t23.outcome「模型目录实测 23M」",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S5",
+      "ftsHasGold": true,
+      "bigramHasGold": false,
+      "semanticHasGold": false,
+      "ftsCount": 1,
+      "bigramCount": 0,
+      "bigramUnits": 4,
+      "hitUnits": [],
+      "lcsCjk": {
+        "len": 1,
+        "sample": "来"
+      }
+    }
+  },
+  {
+    "id": "w32",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "487 字节那次量的是什么",
+    "expect": [
+      "t18"
+    ],
+    "note": "t18.title「bootstrap 索引 487 字节」",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 2,
+      "bigramUnits": 8,
+      "hitUnits": [
+        "字节"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "字节"
+      }
+    }
+  },
+  {
+    "id": "w33",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "131 pass 那次修的是什么",
+    "expect": [
+      "t01"
+    ],
+    "note": "t01.outcome「bun test 131 pass 0 fail」；key_facts 含「131 pass」",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S5",
+      "ftsHasGold": true,
+      "bigramHasGold": false,
+      "semanticHasGold": false,
+      "ftsCount": 17,
+      "bigramCount": 0,
+      "bigramUnits": 6,
+      "hitUnits": [],
+      "lcsCjk": {
+        "len": 1,
+        "sample": "修"
+      }
+    }
+  },
+  {
+    "id": "w34",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "三个类型错误分别是什么",
+    "expect": [
+      "t25"
+    ],
+    "note": "t25.title「typecheck 报 3 个类型错误，尚未修复」",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 4,
+      "bigramUnits": 10,
+      "hitUnits": [
+        "个类",
+        "类型",
+        "型错",
+        "错误"
+      ],
+      "lcsCjk": {
+        "len": 5,
+        "sample": "个类型错误"
+      }
+    }
+  },
+  {
+    "id": "w35",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "乱序写入还能按顺序出来吗",
+    "expect": [
+      "t20"
+    ],
+    "note": "t20.outcome「乱序写入的 Observation 仍按真实 turn 顺序返回」",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 4,
+      "bigramUnits": 11,
+      "hitUnits": [
+        "乱序",
+        "序写",
+        "写入",
+        "顺序"
+      ],
+      "lcsCjk": {
+        "len": 4,
+        "sample": "乱序写入"
+      }
+    }
+  },
+  {
+    "id": "w36",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "不虚构结论这条是怎么验的",
+    "expect": [
+      "t08"
+    ],
+    "note": "t08.outcome「确认 fallback 不虚构 outcome」",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 2,
+      "bigramUnits": 11,
+      "hitUnits": [
+        "不虚",
+        "虚构",
+        "结论"
+      ],
+      "lcsCjk": {
+        "len": 3,
+        "sample": "不虚构"
+      }
+    }
+  },
+  {
+    "id": "w37",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "静默失败是几秒内结束",
+    "expect": [
+      "t03"
+    ],
+    "note": "t03.outcome「hook 在 1 秒内结束、stdout 为空、退出码 0」",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 2,
+      "bigramCount": 7,
+      "bigramUnits": 9,
+      "hitUnits": [
+        "静默",
+        "默失",
+        "失败",
+        "秒内",
+        "内结",
+        "结束"
+      ],
+      "lcsCjk": {
+        "len": 4,
+        "sample": "静默失败"
+      }
+    }
+  },
+  {
+    "id": "w38",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "依赖下载那步为什么没验",
+    "expect": [
+      "t16"
+    ],
+    "note": "t16.outcome「安装第 12 步的依赖下载被人工绕过，未在干净网络环境验证」",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 3,
+      "bigramUnits": 10,
+      "hitUnits": [
+        "依赖",
+        "赖下",
+        "下载"
+      ],
+      "lcsCjk": {
+        "len": 4,
+        "sample": "依赖下载"
+      }
+    }
+  },
+  {
+    "id": "w39",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "评估脚本当时存在吗",
+    "expect": [
+      "t26"
+    ],
+    "note": "t26.outcome「数据集与评估脚本都还不存在」",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 2,
+      "bigramUnits": 8,
+      "hitUnits": [
+        "评估",
+        "估脚",
+        "脚本",
+        "存在"
+      ],
+      "lcsCjk": {
+        "len": 4,
+        "sample": "评估脚本"
+      }
+    }
+  },
+  {
+    "id": "w40",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "other",
+    "query": "620KB 是哪个项目的数字",
+    "expect": [
+      "x03"
+    ],
+    "note": "x03.outcome「vite build 产出 620.14 kB」；该 turn 属 other scope，用于确认硬隔离",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S2",
+      "ftsHasGold": true,
+      "bigramHasGold": false,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 0,
+      "bigramUnits": 7,
+      "hitUnits": [],
+      "lcsCjk": {
+        "len": 1,
+        "sample": "是"
+      }
+    }
+  },
+  {
+    "id": "w41",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "降级的时候到底发生了什么",
+    "expect": [
+      "t02"
+    ],
+    "note": "t02.title 含「FTS-only 降级」；concepts 含「超时降级」。共享词「降级」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S3",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 0,
+      "bigramCount": 4,
+      "bigramUnits": 11,
+      "hitUnits": [
+        "降级"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "降级"
+      }
+    }
+  },
+  {
+    "id": "w42",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "融合这一步具体在算什么",
+    "expect": [
+      "t21"
+    ],
+    "note": "t21.title「RRF 融合与 0.2 语义地板线」。共享词「融合」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S3",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 0,
+      "bigramCount": 1,
+      "bigramUnits": 10,
+      "hitUnits": [
+        "融合"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "融合"
+      }
+    }
+  },
+  {
+    "id": "w43",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "泄漏这件事是怎么确认的",
+    "expect": [
+      "t22"
+    ],
+    "note": "t22.concepts 含「泄漏」；outcome「跨 workspace 自动召回为 0」。共享词「泄漏」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S4",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": false,
+      "ftsCount": 0,
+      "bigramCount": 8,
+      "bigramUnits": 10,
+      "hitUnits": [
+        "泄漏",
+        "确认"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "泄漏"
+      }
+    }
+  },
+  {
+    "id": "w44",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "校验要是没做会怎么样",
+    "expect": [
+      "t06"
+    ],
+    "note": "t06.concepts 含「参数校验」。共享词「校验」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S3",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 0,
+      "bigramCount": 2,
+      "bigramUnits": 9,
+      "hitUnits": [
+        "校验"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "校验"
+      }
+    }
+  },
+  {
+    "id": "w45",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "隔离没做之前会写到哪里去",
+    "expect": [
+      "t12"
+    ],
+    "note": "t12.concepts 含「测试隔离」；request 提到不再写入开发者真实数据目录。共享词「隔离」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S4",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": false,
+      "ftsCount": 0,
+      "bigramCount": 4,
+      "bigramUnits": 11,
+      "hitUnits": [
+        "隔离"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "隔离"
+      }
+    }
+  },
+  {
+    "id": "w46",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "漂移是靠什么发现的",
+    "expect": [
+      "t15"
+    ],
+    "note": "t15.concepts 含「版本漂移」。共享词「漂移」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S3",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 0,
+      "bigramCount": 4,
+      "bigramUnits": 8,
+      "hitUnits": [
+        "漂移",
+        "发现"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "漂移"
+      }
+    }
+  },
+  {
+    "id": "w47",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "注入的那段东西有多大",
+    "expect": [
+      "t18"
+    ],
+    "note": "t18.concepts 含「上下文注入」；title 写明 487 字节。共享词「注入」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S3",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 0,
+      "bigramCount": 6,
+      "bigramUnits": 9,
+      "hitUnits": [
+        "注入"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "注入"
+      }
+    }
+  },
+  {
+    "id": "w48",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "描述文案怎么切语言",
+    "expect": [
+      "t24"
+    ],
+    "note": "t24.concepts 含「MCP 工具描述」「i18n」。共享词「描述」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S3",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 0,
+      "bigramCount": 1,
+      "bigramUnits": 8,
+      "hitUnits": [
+        "描述",
+        "语言"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "描述"
+      }
+    }
+  },
+  {
+    "id": "w49",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "导入路径为什么解析不了",
+    "expect": [
+      "t13"
+    ],
+    "note": "t13.concepts 含「相对导入」；outcome「安装产物的相对导入全部可解析」。共享词「导入」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S3",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 12,
+      "bigramUnits": 10,
+      "hitUnits": [
+        "导入",
+        "解析"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "导入"
+      }
+    }
+  },
+  {
+    "id": "w50",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "重试到最后还是不行会怎样",
+    "expect": [
+      "t08"
+    ],
+    "note": "t08.concepts 含「job 重试」；title 提到最终失败写 fallback。共享词「重试」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S3",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 0,
+      "bigramCount": 4,
+      "bigramUnits": 11,
+      "hitUnits": [
+        "重试"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "重试"
+      }
+    }
+  },
+  {
+    "id": "w51",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "保活这块是谁在管",
+    "expect": [
+      "t19"
+    ],
+    "note": "t19.concepts 含「launchd 保活」。共享词「保活」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S3",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 0,
+      "bigramCount": 2,
+      "bigramUnits": 7,
+      "hitUnits": [
+        "保活"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "保活"
+      }
+    }
+  },
+  {
+    "id": "w52",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "量化选的是哪一档",
+    "expect": [
+      "t23"
+    ],
+    "note": "t23.concepts 含「q8 量化」；title 写明 q8 量化 384 维。共享词「量化」",
+    "precheck": {
+      "intent": "S3",
+      "stratum": "S3",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 0,
+      "bigramCount": 2,
+      "bigramUnits": 7,
+      "hitUnits": [
+        "量化"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "量化"
+      }
+    }
+  },
+  {
+    "id": "w53",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "并发跑会不会撞",
+    "expect": [
+      "t07"
+    ],
+    "note": "t07.concepts 含「并发」；outcome 提到 concurrency=1 场景。共享词「并发」",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S3",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 0,
+      "bigramCount": 3,
+      "bigramUnits": 6,
+      "hitUnits": [
+        "并发"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "并发"
+      }
+    }
+  },
+  {
+    "id": "w54",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "命名那次定了啥",
+    "expect": [
+      "t10"
+    ],
+    "note": "t10.concepts 含「命名决策」。共享词「命名」",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S3",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 0,
+      "bigramCount": 1,
+      "bigramUnits": 6,
+      "hitUnits": [
+        "命名"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "命名"
+      }
+    }
+  },
+  {
+    "id": "w55",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "绕过之后补上了吗",
+    "expect": [
+      "t16"
+    ],
+    "note": "t16.outcome「安装第 12 步的依赖下载被人工绕过，未在干净网络环境验证」。共享词「绕过」",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S4",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": false,
+      "ftsCount": 0,
+      "bigramCount": 1,
+      "bigramUnits": 7,
+      "hitUnits": [
+        "绕过"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "绕过"
+      }
+    }
+  },
+  {
+    "id": "w56",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "覆盖到哪一步为止",
+    "expect": [
+      "t17"
+    ],
+    "note": "t17.concepts 含「coverage」；outcome 写明交互式会话尚未覆盖。共享词「覆盖」",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S3",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 0,
+      "bigramCount": 6,
+      "bigramUnits": 7,
+      "hitUnits": [
+        "覆盖"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "覆盖"
+      }
+    }
+  },
+  {
+    "id": "w57",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "优先级排在哪",
+    "expect": [
+      "t26"
+    ],
+    "note": "t26.request「决定质量基准集的优先级与阻塞范围」。共享词「优先」",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S1",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 1,
+      "bigramCount": 1,
+      "bigramUnits": 5,
+      "hitUnits": [
+        "优先",
+        "先级"
+      ],
+      "lcsCjk": {
+        "len": 3,
+        "sample": "优先级"
+      }
+    }
+  },
+  {
+    "id": "w58",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "收敛到几个地方",
+    "expect": [
+      "t05"
+    ],
+    "note": "t05.title「版本号收敛到单一来源 3.0.0」。共享词「收敛」",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S4",
+      "ftsHasGold": true,
+      "bigramHasGold": true,
+      "semanticHasGold": false,
+      "ftsCount": 1,
+      "bigramCount": 1,
+      "bigramUnits": 6,
+      "hitUnits": [
+        "收敛",
+        "敛到"
+      ],
+      "lcsCjk": {
+        "len": 3,
+        "sample": "收敛到"
+      }
+    }
+  },
+  {
+    "id": "w59",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "隐私这块验了什么",
+    "expect": [
+      "t04"
+    ],
+    "note": "t04.concepts 含「隐私」「privacy」。共享词「隐私」",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S3",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": true,
+      "ftsCount": 0,
+      "bigramCount": 2,
+      "bigramUnits": 7,
+      "hitUnits": [
+        "隐私"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "隐私"
+      }
+    }
+  },
+  {
+    "id": "w60",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "快速失败那次改了啥",
+    "expect": [
+      "t03"
+    ],
+    "note": "t03.request「保证 hook 快速静默失败」。共享词「快速」",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S4",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": false,
+      "ftsCount": 0,
+      "bigramCount": 7,
+      "bigramUnits": 8,
+      "hitUnits": [
+        "快速",
+        "失败"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "快速"
+      }
+    }
+  },
+  {
+    "id": "w61",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "锚定用的是哪个键",
+    "expect": [
+      "t20"
+    ],
+    "note": "t20.title「timeline 锚定 source turn 而非 Observation ID」。共享词「锚定」",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S4",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": false,
+      "ftsCount": 0,
+      "bigramCount": 1,
+      "bigramUnits": 7,
+      "hitUnits": [
+        "锚定"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "锚定"
+      }
+    }
+  },
+  {
+    "id": "w62",
+    "kind": "relevance",
+    "origin": "fusion",
+    "scope": "primary",
+    "query": "未完的那几个是啥",
+    "expect": [
+      "t25"
+    ],
+    "note": "t25.concepts 含「未完成」；outcome「错误已定位但未修复」。共享词「未完」",
+    "precheck": {
+      "intent": "S4",
+      "stratum": "S4",
+      "ftsHasGold": false,
+      "bigramHasGold": true,
+      "semanticHasGold": false,
+      "ftsCount": 0,
+      "bigramCount": 2,
+      "bigramUnits": 7,
+      "hitUnits": [
+        "未完"
+      ],
+      "lcsCjk": {
+        "len": 2,
+        "sample": "未完"
+      }
+    }
+  }
+]

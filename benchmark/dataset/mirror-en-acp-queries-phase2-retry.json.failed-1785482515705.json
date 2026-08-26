@@ -1,0 +1,69 @@
+{
+  "provenance": {
+    "source": "acp",
+    "agent": "kiro-mem-compressor",
+    "kiroCli": "kiro-cli (see report)",
+    "target": "queries",
+    "querySet": "phase2",
+    "generatedAt": "2026-07-31T07:21:55.704Z",
+    "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+    "items": 17,
+    "failures": 7,
+    "retries": 14,
+    "wallTimeMs": 42983,
+    "itemLatencyMs": {
+      "p50": 17909,
+      "p95": 31159,
+      "max": 42970
+    }
+  },
+  "queries": {
+    "y29": "How to merge conflicts when collaborating with multiple people?",
+    "y37": "How much would it cost to switch to a bigger encoder",
+    "z07": "When troubleshooting, will it leave what I said in a file?",
+    "y01": "How do I deal with a refrigerator compressor that's making a lot of noise?",
+    "y13": "After switching to Postgres, how should I tune the connection count?",
+    "y20": "How do you generate primary keys after sharding the database and tables?",
+    "z19": "Has it been run through end-to-end on a real device yet?",
+    "z50": "Why sacrifice a bit of precision in exchange for bundling it with the package?",
+    "y23": "how do you sync between multiple machines",
+    "z48": "Can the number that comes out of the ranking calculation be treated as a relevance score?",
+    "y04": "Should I see a doctor if my knee hurts after running?",
+    "z17": "I clearly overrode it, so why is it still behaving the same as before?",
+    "y05": "Is it worth paying off the mortgage early?",
+    "y07": "How do I choose piano exam repertoire?",
+    "z36": "When reclaiming, even a new one can't be created — how do we wrap this up",
+    "z12": "Will there be any old stuff left over if I uninstall cleanly and do it again?",
+    "y02": "How do you explain the chicken-and-rabbit problem to elementary school students?"
+  },
+  "failuresDetail": [
+    {
+      "id": "y11",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "z14",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "z21",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "y03",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "y12",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "z32",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "y08",
+      "reason": "JSON 解析失败"
+    }
+  ]
+}

@@ -3,7 +3,5 @@ export { startMcpServer } from "./src/server/mcp-server";
 export { ACPCompressor } from "./src/acp/compressor";
 export type {
   MemoryCompressor,
-  TurnSummaryResult,
-  NormalizeTopicResult,
-  TopicSummaryResult,
+  ObservationSummaryResult,
 } from "./src/compressor";

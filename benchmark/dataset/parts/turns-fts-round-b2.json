@@ -1,0 +1,283 @@
+{
+  "batch": "b2",
+  "records": [
+    {
+      "id": "n09",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/safety-round/p3-completion.md",
+          "section": "§3 的门判定表与 §4 的 N1 分解",
+          "supports": "同一道门在两层上的结果相反：词面锚点那 22 条 near-domain 全部失败，零 FTS 那 23 条全部通过；因此失败位置按层拆开才可见，并据此把责任归到词面准入"
+        }
+      ],
+      "prompt": "那道要求返回项全来自语义的门，到底是整体不行还是某一层不行？",
+      "assistant_response": "按层拆开看就清楚了：零词面命中那 23 条全部通过，一条都没失败；有词面锚点那 22 条全部失败。也就是说门本身在一层上完全成立，问题集中在另一层——那批查询的定义就是会命中词面索引，页面必然含词面来源。所以结论不是门太严，而是这道门管不到词面那一路。",
+      "events": [
+        { "tool": "shell", "input": { "command": "bun run benchmark/run-safety-round-grid.ts --by-cohort" }, "response": { "exit_status": 0, "stdout": "zero-fts 0/23 fail; lexical-anchor 22/22 fail" } }
+      ],
+      "annotation": {
+        "request": "判断来源门是整体失败还是分层失败",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["benchmark/run-safety-round-grid.ts"],
+        "key_facts": ["22/22", "0/23"],
+        "unfinished": [],
+        "title": "同一道门在两层上结果相反，失败集中在有词面命中的那一层",
+        "summary": "把判定按负例分层拆开：零词面命中的二十三条全部通过，有词面锚点的二十二条全部失败。那批查询的定义就是会命中词面索引，页面必然含词面来源，所以这道门在结构上管不到它们。分层报告是唯一能看出这件事的方式，汇总数字只会给出一个含糊的失败率。",
+        "outcome": "责任明确归到词面准入，语义参数不再继续调。",
+        "learned": "汇总一个失败率会把两层完全不同的结论平均掉；分层报告的价值就在于让归因成为可能。",
+        "concepts": ["分层报告", "来源门", "词面命中", "归因", "结构性失败"]
+      }
+    },
+    {
+      "id": "n10",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/safety-round/p3-completion.md",
+          "section": "§4.1 的锚点去重返回随 floor 变化那一行",
+          "supports": "词面锚点侧去重后的返回数从 4.955 降到 4.227（地板线 0.197 → 0.325），跨越整个网格几乎不动"
+        }
+      ],
+      "prompt": "地板线扫一整轮下来，词面那一侧的返回数量降了多少？",
+      "assistant_response": "几乎没降。词面锚点那一侧去重后的平均返回从 4.955 变到 4.227，而地板线是从 0.197 一路抬到 0.325——整个网格的跨度换来不到 0.8 条的下降，而且始终远高于门槛。这条曲线的形状本身就是结论：这个变量对这一侧没有控制力。",
+      "events": [
+        { "tool": "shell", "input": { "command": "bun run benchmark/select-safety-round-arm.ts" }, "response": { "exit_status": 0, "stdout": "anchor distinctContent 4.955 -> 4.227" } }
+      ],
+      "annotation": {
+        "request": "量出词面锚点侧的返回数量随地板线的变化幅度",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["src/server/observation-search.ts"],
+        "key_facts": ["4.955", "4.227"],
+        "unfinished": [],
+        "title": "整个地板线网格只让词面侧的返回数从 4.955 降到 4.227",
+        "summary": "词面锚点那一侧去重后的平均返回数，在地板线从 0.197 抬到 0.325 的全程里只从 4.955 降到 4.227，始终远高于门槛。这个近乎水平的曲线说明该变量对这一侧没有控制力，而不是说明它需要更大的取值。",
+        "outcome": "确认该变量在这一侧没有可谈判的区间，网格方向被否。",
+        "learned": "一条几乎水平的取舍曲线比一条陡峭但通不过的曲线信息量更大：它说明你在调一个错的旋钮。",
+        "concepts": ["取舍曲线", "去重返回数", "控制力", "网格扫描", "无效变量"]
+      }
+    },
+    {
+      "id": "n11",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/safety-round/p3-completion.md",
+          "section": "§4.1 的分层对照表（near-domain 两层各自的去重返回）",
+          "supports": "零词面命中那一层的去重返回从 1.565 降到 0.826，在 0.325 上已压到门槛之内；若门只覆盖那 23 条，它会通过"
+        }
+      ],
+      "prompt": "如果那道容量门只覆盖零词面命中的那批，会通过吗？",
+      "assistant_response": "会。那一层的去重返回从 1.565 降到 0.826，在最高那档地板线上已经压到门槛以内。但整道门覆盖的是两层合计，另一层贴着 4 以上不动，所以合起来仍然不通过。这个对比值得单独记下来：同一道门的成败完全取决于覆盖范围怎么划，而覆盖范围是判据写死的，不是数据决定的。",
+      "events": [
+        { "tool": "shell", "input": { "command": "bun run benchmark/run-safety-round-grid.ts --arm=f0.325-c2 --by-cohort" }, "response": { "exit_status": 0, "stdout": "zero-fts 0.826; anchor 4.227" } }
+      ],
+      "annotation": {
+        "request": "核算容量门在只覆盖零词面命中层时是否通过",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["benchmark/run-safety-round-grid.ts"],
+        "key_facts": ["1.565", "0.826"],
+        "unfinished": [],
+        "title": "同一道容量门缩小覆盖范围就能通过，说明覆盖范围本身是判据决定的",
+        "summary": "零词面命中那一层的去重返回从 1.565 降到 0.826，在最高档地板线上已进入门槛；但整道门覆盖两层合计，另一层始终在 4 以上，所以整体不通过。成败完全由覆盖范围划法决定，而覆盖范围属于判据，不属于数据。",
+        "outcome": "记录下这道门的通过条件与覆盖范围的依赖关系，防止后续用缩小范围换通过。",
+        "learned": "报告一道门的结果时必须同时报覆盖范围，否则同一份数据可以支持相反的结论。",
+        "concepts": ["覆盖范围", "容量门", "分层对照", "判据决定", "通过条件"]
+      }
+    },
+    {
+      "id": "n12",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/safety-round/p3-completion.md",
+          "section": "§1 的自证表 S1 与 §11 第 2 条",
+          "supports": "冻结校验实际是 16 项 = 判据 1 项 + 其余 15 项，但脚本打印的是 15/15，漏掉单独校验的判据那一项；已登记为下一轮必须修的脚本缺陷"
+        }
+      ],
+      "prompt": "自证那一行打印的 15/15，覆盖的是全部被冻结的输入吗？",
+      "assistant_response": "不是。脚本先单独校验判据文件，再循环校验其余十五项输入，但打印的计数只覆盖后者。所以真实是十六项——一项判据加十五项输入——而控制台读起来像十五项。读数本身没错，错的是标签；但一个说少了一项的标签会让复核以为某样东西没被冻结。已经登记成下一轮必须修的缺陷。",
+      "events": [
+        { "tool": "read", "input": { "path": "benchmark/run-safety-round-grid.ts", "pattern": "selfChecks[0].name" }, "response": { "exit_status": 0, "stdout": "'15/15'" } }
+      ],
+      "annotation": {
+        "request": "核对冻结自证的计数标签与实际校验项数是否一致",
+        "completed": true,
+        "memory_type": "bugfix",
+        "key_files": ["benchmark/run-safety-round-grid.ts"],
+        "key_facts": ["16", "15", "1"],
+        "unfinished": ["标签修正留到下一轮，本轮刻意不改以免影响已产出读数"],
+        "title": "冻结自证的计数标签少报一项，真实是判据一项加输入十五项",
+        "summary": "脚本先单独校验判据文件，再循环校验其余十五项输入，而打印的计数只覆盖后者，于是十六项被写成十五项。校验本身完整，缺陷只在标签；但少报一项会让复核以为有东西没被冻结。修正留到下一轮，避免在已产出读数上做改动。",
+        "outcome": "缺陷登记，计数标签的生成方式改为由工具产出而非手写。",
+        "learned": "自证的计数标签必须由代码从被校验集合生成；只要允许手写，它就会与实际项数分叉。",
+        "concepts": ["自证标签", "计数缺陷", "冻结校验", "手写数字", "标签与读数分离"]
+      }
+    },
+    {
+      "id": "n13",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/safety-round/p3-completion.md",
+          "section": "§1 的自证表 S3 与其下方说明",
+          "supports": "在真正的五份填充装置上重新确认：四十条空返回负例的词面命中数全为零，三十条锚点全部命中且区间为 1…50；前一阶段只播了一份填充语料，那次确认不足以支撑"
+        }
+      ],
+      "prompt": "零词面命中这件事，前一阶段已经确认过了，还要再测吗？",
+      "assistant_response": "要，因为它是相对语料成立的事实。前一阶段只播了一份填充语料就确认了零命中，而正式装置是五份副本，语料一变命中就可能出现。在正式装置上重测的结果是四十条全为零、三十条锚点全部命中且落在 1 到 50 之间。这类「相对某个语料才成立」的断言必须在实际装置上重新确认，不能沿用。",
+      "events": [
+        { "tool": "shell", "input": { "command": "bun run benchmark/verify-safety-round-zero-fts.ts" }, "response": { "exit_status": 0, "stdout": "empty 40/40 zero; anchor 30/30 hit (1..50)" } }
+      ],
+      "annotation": {
+        "request": "在正式装置上重新确认零词面命中与锚点命中",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["benchmark/verify-safety-round-zero-fts.ts"],
+        "key_facts": ["40/40", "30/30", "1…50"],
+        "unfinished": [],
+        "title": "零词面命中是相对语料成立的断言，换装置必须重新确认",
+        "summary": "空返回负例的零命中在前一阶段只在一份填充语料上确认过，而正式装置是五份副本，语料变化会让命中出现。正式装置上重测的结果是四十条全为零、三十条锚点全部命中且区间落在 1 到 50。这类断言的成立范围绑在语料上，不能跨装置沿用。",
+        "outcome": "装置自证补齐，两侧的命中前提在正式规模上重新成立。",
+        "learned": "凡是「这条查询查不到任何东西」的断言，都是关于语料的断言，语料一动就要重测。",
+        "concepts": ["零命中", "语料相对性", "装置自证", "副本规模", "断言复测"]
+      }
+    },
+    {
+      "id": "n14",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/gate-shape-ruling.md",
+          "section": "§2 的 Q4 与 §6 第四条不授权项",
+          "supports": "上限值 2 早于该轮产生、由更早一次预登记选择得出，因此没被污染；但它不是独立安全证据，不得依据同一份数据把它调高"
+        }
+      ],
+      "prompt": "那个上限值 2 是这轮数据挑出来的吗？能不能调高一点？",
+      "assistant_response": "它不是这轮挑的，是更早一次预登记选择的产物，所以没有被这轮数据污染，可以继续用。但「没被污染」不等于「有独立证据支持」——它只是当时那次选择的结果。因此裁定明确不授权依据同一份数据把它调高：那等于用同一批读数既选值又证明值合理。",
+      "events": [
+        { "tool": "read", "input": { "path": "benchmark/reports/phase2b-selection.md" }, "response": { "exit_status": 0, "stdout": "cap in {1,2,3,5}; 3 与 5 越界被淘汰" } }
+      ],
+      "annotation": {
+        "request": "确认结果条数上限的来源以及能否调高",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["src/server/observation-search.ts"],
+        "key_facts": ["2"],
+        "unfinished": [],
+        "title": "上限值未被本轮数据污染，但也不是独立证据，不得据同一数据调高",
+        "summary": "该上限来自更早一次预登记选择，因此在时间上先于本轮，不存在被本轮读数反向挑选的问题，可以继续沿用。但它同时也不构成独立的安全证据；裁定据此不授权用同一份数据把它调高，否则就是用一批读数既选值又自证。",
+        "outcome": "上限沿用原值，调高路径被明确关闭。",
+        "learned": "参数来源合法与参数有独立证据是两件事，前者只保证没有反向挑选，不保证值本身被支持。",
+        "concepts": ["预登记选择", "污染", "独立证据", "参数沿用", "不授权调高"]
+      }
+    },
+    {
+      "id": "n15",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/gate-shape-ruling.md",
+          "section": "§4 第 4 项与 §7 第 2 条的本地复核",
+          "supports": "那份八千字节的预算只用于会话开始时注入的索引，检索工具返回页不引用它；复核实测该常量只在注入构建那一处被使用"
+        },
+        {
+          "kind": "code",
+          "path": "src/bootstrap-context.ts",
+          "line": 43,
+          "supports": "预算常量的唯一使用点在注入构建里"
+        }
+      ],
+      "prompt": "错误结果多占几行，会不会撑爆那个八千字节的预算？",
+      "assistant_response": "不会，因为那个预算不管这件事。它只约束会话开始时注入的那份索引，检索工具的返回页根本不引用它——实测那个常量只在注入构建那一处被使用。所以「多占预算」这个说法不成立；真实代价要换个说法：错误结果会额外占用助手的上下文与注意力。",
+      "events": [
+        { "tool": "shell", "input": { "command": "grep -rn maxOutputBytes src/" }, "response": { "exit_status": 0, "stdout": "src/bootstrap-context.ts:43" } }
+      ],
+      "annotation": {
+        "request": "核实返回页是否受注入索引的字节预算约束",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["src/bootstrap-context.ts", "src/server/mcp-server.ts"],
+        "key_facts": ["8192", "43"],
+        "unfinished": [],
+        "title": "注入索引的字节预算不约束检索返回页，代价要改成上下文与注意力",
+        "summary": "那份八千字节的预算只作用于会话开始时注入的索引，检索工具的返回页不引用它；实测该常量在源码里只有一个使用点，位于注入构建。因此把误召回的代价说成撑爆预算是事实错误，正确的说法是错误结果额外占用助手的上下文与注意力。",
+        "outcome": "论证里的事实错误被纠正，代价改用可辩护的表述。",
+        "learned": "引用一个预算之前先查它的使用点；预算的名字听起来适用于全局，实际往往只作用于一条路径。",
+        "concepts": ["字节预算", "注入索引", "返回页", "事实纠正", "使用点核查"]
+      }
+    },
+    {
+      "id": "n16",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/gate-shape-ruling.md",
+          "section": "§4 第 5 项（修改 AUC 论证）",
+          "supports": "0.841 只说明查询级最高分存在区分信号，不能据此推出候选级排序可以把位移归零；下一步必须先在新数据上做候选级排序取证"
+        }
+      ],
+      "prompt": "既然最高分的区分度有 0.841，把分数放进排序是不是就能把位移压到零？",
+      "assistant_response": "推不出来。0.841 是查询级最高分的区分度，它说的是「整条查询里最高的那个分数能不能区分两类查询」；而位移是候选之间的相对位置问题，属于候选级。前者有信号不代表后者可控。裁定要求先在新数据上单独做候选级排序取证，不能直接把「分数进排序」当成实施方案。",
+      "events": [
+        { "tool": "read", "input": { "path": "benchmark/reports/safety-round/p40-relative-score-probe.md" }, "response": { "exit_status": 0, "stdout": "raw top-1 AUC 0.841 / z-score 0.735" } }
+      ],
+      "annotation": {
+        "request": "判断查询级区分度能否支撑候选级排序方案",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["benchmark/analyze-relative-score-probe.ts"],
+        "key_facts": ["0.841", "0.735"],
+        "unfinished": ["候选级排序取证尚未开展，需在新数据上单独进行"],
+        "title": "查询级区分度不能外推成候选级排序方案，需另做取证",
+        "summary": "那个 0.841 是查询级最高分的区分度，回答的是「整条查询的最高分能否区分两类查询」；而位移问题发生在候选之间的相对位置上，属于候选级。前者有信号不等于后者可控，裁定因此要求先在新数据上单独做候选级排序取证，不得把分数进排序直接当实施方案。",
+        "outcome": "实施方案被降级为待取证候选，取证轨道单独立项。",
+        "learned": "同一个分数在不同粒度上的可分性是两个问题；查询级的区分度不构成候选级排序的证据。",
+        "concepts": ["查询级", "候选级", "区分度", "外推边界", "取证轨道"]
+      }
+    }
+  ]
+}

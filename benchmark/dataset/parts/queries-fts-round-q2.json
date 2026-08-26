@@ -1,0 +1,167 @@
+{
+  "batch": "q2",
+  "queries": [
+    {
+      "id": "fr-r05",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "为什么同一个检查在一批查询上全通过、在另一批上全失败",
+      "primary_gold": ["n09"],
+      "acceptable_gold": ["n09", "n01"],
+      "annotation_basis": "n09 是直接答案：按层拆开后零词面命中那 23 条全过、有词面锚点那 22 条全败，说明门管不到词面那一路。n01 能解释同一机制的另一面（页面被词面命中填满）。"
+    },
+    {
+      "id": "fr-r06",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "一个参数扫完整个范围效果几乎不动，这说明什么",
+      "primary_gold": ["n10"],
+      "acceptable_gold": ["n10", "n19"],
+      "annotation_basis": "n10 是直接答案：去重返回从 4.955 到 4.227，跨整个网格几乎水平，说明该变量对这一侧没有控制力。n19 是同一形状的另一例（频率上限在无竞争语料上也平坦），能解释这类曲线怎么读。"
+    },
+    {
+      "id": "fr-r07",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "把判定的适用范围缩小一点，结论会跟着变吗",
+      "primary_gold": ["n11"],
+      "acceptable_gold": ["n11", "n09"],
+      "annotation_basis": "n11 是直接答案：同一道容量门只覆盖零词面命中那层就会通过（0.826），覆盖两层合计则不通过。n09 说明分层报告是看出这件事的前提。"
+    },
+    {
+      "id": "fr-r08",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "控制台打印的校验项数会不会比实际校验的少",
+      "primary_gold": ["n12"],
+      "acceptable_gold": ["n12"],
+      "annotation_basis": "n12 是唯一相关记录：先单独校验判据再循环校验十五项输入，而打印只覆盖后者，真实是一加十五共十六项。其余记录都不涉及计数标签。"
+    },
+    {
+      "id": "fr-r09",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "上一阶段已经确认过某条查询什么都查不到，换了语料还要再确认吗",
+      "primary_gold": ["n13"],
+      "acceptable_gold": ["n13", "n05"],
+      "annotation_basis": "n13 是直接答案：零命中是相对语料成立的断言，正式装置上重测得到 40/40 与 30/30。n05 解释了语料构成本身如何决定这类断言（含中文只有 66 行）。"
+    },
+    {
+      "id": "fr-r10",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "结果条数的上限当初是怎么定下来的，现在能不能放宽",
+      "primary_gold": ["n14"],
+      "acceptable_gold": ["n14"],
+      "annotation_basis": "n14 是唯一相关记录：该上限来自更早一次预登记选择，未被本轮数据污染，但也不是独立证据，因此不授权依据同一数据调高。"
+    },
+    {
+      "id": "fr-r11",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "返回结果多几行会不会超出注入内容的字节限制",
+      "primary_gold": ["n15"],
+      "acceptable_gold": ["n15"],
+      "annotation_basis": "n15 是唯一相关记录：那份字节预算只作用于会话开始时注入的索引，检索返回页不引用它，实测该常量只有一个使用点。"
+    },
+    {
+      "id": "fr-r12",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "最高分能区分两类提问，是不是就能把它拿去做排序",
+      "primary_gold": ["n16"],
+      "acceptable_gold": ["n16", "n02"],
+      "annotation_basis": "n16 是直接答案：查询级区分度不能外推成候选级排序方案，需另做取证。n02 提供同一空间里两侧分布重叠的读数，能解释为什么外推不成立。"
+    },
+    {
+      "id": "fr-r13",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "一条不相关的记录被找出来，通常是因为命中了几个词",
+      "primary_gold": ["n17"],
+      "acceptable_gold": ["n17", "n06"],
+      "annotation_basis": "n17 是直接答案：109 行里 97 行只命中一个单元，而每条查询平均切出 18.5 个。n06 解释了那些单元是什么（跨词边界的三字滑窗）。"
+    },
+    {
+      "id": "fr-r14",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "要求多命中几个词才算候选，代价有多大",
+      "primary_gold": ["n18"],
+      "acceptable_gold": ["n18", "n17"],
+      "annotation_basis": "n18 是直接答案：要求两个单元时误召回行从 109 降到 12，真答案行从 22 降到 14；三个时真答案只剩 6。n17 提供了这条规则为什么有效的机制读数。"
+    },
+    {
+      "id": "fr-r15",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "给出现得太频繁的词设个上限，能挡住虚词碎片吗",
+      "primary_gold": ["n19"],
+      "acceptable_gold": ["n19", "n05"],
+      "annotation_basis": "n19 是直接答案：上限从千分之一扫到十分之一都看不出效果，因为命中单元的频率中位数只有万分之一，装置里没有高频单元可挡。n05 说明这个装置为什么没有高频中文单元。"
+    },
+    {
+      "id": "fr-r16",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "为了观测方便，在脚本里复制一份被测逻辑有什么风险",
+      "primary_gold": ["n20"],
+      "acceptable_gold": ["n20"],
+      "annotation_basis": "n20 是唯一相关记录：诊断里的分类是生产实现的重算副本，生产一改它不会报错，只会给出不一致的归因，因此写进诚实边界。"
+    },
+    {
+      "id": "fr-r17",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "多轮实验共用同一个临时目录会出什么问题",
+      "primary_gold": ["n21"],
+      "acceptable_gold": ["n21"],
+      "annotation_basis": "n21 是唯一相关记录：钩子会把当轮会话采集进临时库并压缩成记录，后一轮可能搜到前一轮对话产生的记录，因此每个试次必须从冻结快照重建。"
+    },
+    {
+      "id": "fr-r18",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "助手压根没看到那条线索的那一次，应该算成安全吗",
+      "primary_gold": ["n22"],
+      "acceptable_gold": ["n22"],
+      "annotation_basis": "n22 是唯一相关记录：没调用检索、卡没进页、卡没送达三种情况按原编码都落成无动作从而拉低指标，因此新增暴露门并改走替补。"
+    },
+    {
+      "id": "fr-r19",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "一次都没出现，能不能对外说风险是零",
+      "primary_gold": ["n23"],
+      "acceptable_gold": ["n23"],
+      "annotation_basis": "n23 是唯一相关记录：零观测只能给出上界，六十次零观测的单侧上界约百分之四点八七；分母写成二百四十会把上界缩到四分之一。"
+    },
+    {
+      "id": "fr-r20",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "两个对照先后各跑一整批，会不会把时间因素混进结果",
+      "primary_gold": ["n24"],
+      "acceptable_gold": ["n24"],
+      "annotation_basis": "n24 是唯一相关记录：服务侧随时间变化会与臂完全混淆且事后无法拆开，因此以三元组为区块做区块内与区块间双重随机并交错执行。"
+    },
+    {
+      "id": "fr-r21",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "怎么分辨助手是真的去核实了，还是只是嘴上说会核实",
+      "primary_gold": ["n25"],
+      "acceptable_gold": ["n25", "n22"],
+      "annotation_basis": "n25 是直接答案：任务必须是做错了会留下可机械判定产物的那种，正确做法依赖一条历史决定。n22 说明还要先确认它确实看到了线索，否则无从判断。"
+    },
+    {
+      "id": "fr-r22",
+      "kind": "relevance",
+      "cohort": "new-relevance",
+      "query": "只给其中一种情况写了判定规则，会有什么后果",
+      "primary_gold": ["n26"],
+      "acceptable_gold": ["n26"],
+      "annotation_basis": "n26 是唯一相关记录：判定依据只覆盖一侧时，另一道门的主读数没有判定依据，那道门会变成无法执行，因此要求两个条件各写死规则。"
+    }
+  ]
+}

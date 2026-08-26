@@ -5,80 +5,92 @@
 
 import { ACPPool } from './pool';
 import type { ACPPoolOptions } from './types';
-import type {
-  MemoryCompressor,
-  TurnSummaryResult,
-  NormalizeTopicResult,
-  TopicSummaryResult,
-} from '../compressor';
+import type { MemoryCompressor, ObservationSummaryResult } from '../compressor';
+import {
+  coerceSemanticEnRecord,
+  type SemanticEnRecord,
+  type SemanticEnRecordSource,
+} from '../semantic-en';
 import { logError } from '../logger';
 
-const TURN_SUMMARY_FALLBACK: TurnSummaryResult = {
-  title: '', summary: '', request: '', investigated: '', learned: '',
-  completed: '', next_steps: '', memory_type: 'change', files_touched: [],
-  concepts: [], topic_candidate: '', importance_score: 0.5,
-  confidence_score: 0, unresolved_score: 0,
+// An empty Observation result. When the model exhausts repair retries the job
+// (summarize_turn) detects the empty title/summary and writes a
+// quality='fallback' Observation composed from deterministic artifacts.
+const OBSERVATION_SUMMARY_FALLBACK: ObservationSummaryResult = {
+  title: '', summary: '', request: '', outcome: '', learned: '',
+  next_steps: '', memory_type: 'change', files_touched: [], concepts: [],
+  evidence: [], importance_score: 0, confidence_score: 0, unresolved_score: 0,
+  semantic_en: null,
 };
 
 export interface ACPCompressorOptions extends ACPPoolOptions {
   maxRetries?: number;
 }
 
-export class ACPCompressor implements MemoryCompressor {
-  private pool: ACPPool;
-  private maxRetries: number;
+type ACPPoolLike = Pick<ACPPool, 'run' | 'close' | 'stats'>;
 
-  constructor(opts: ACPCompressorOptions = {}) {
-    this.maxRetries = opts.maxRetries ?? 1;
-    this.pool = new ACPPool(opts);
+export class ACPCompressor implements MemoryCompressor {
+  private pool: ACPPoolLike;
+  private maxRetries: number;
+  private _repairCount = 0;
+  private _fallbackCount = 0;
+  private onMetric: (kind: 'repair' | 'contamination') => void;
+
+  constructor(opts: ACPCompressorOptions = {}, pool?: ACPPoolLike) {
+    // Matches the documented `compression.maxRetries` default in config.json.
+    // Diverging here meant a direct `new ACPCompressor()` retried once while the
+    // README and the config file both promised two.
+    this.maxRetries = opts.maxRetries ?? 2;
+    this.onMetric = opts.onMetric ?? (() => {});
+    this.pool = pool ?? new ACPPool(opts);
   }
 
   get stats() {
-    return this.pool.stats;
+    return {
+      ...this.pool.stats,
+      repairs: this._repairCount,
+      parseFallbacks: this._fallbackCount,
+    };
   }
 
-  async summarizeTurn(input: {
-    prompt_text: string;
-    artifacts: { tool_names: string[]; files_touched: string[]; commands: string[]; error_signals: string[] };
-    event_digest?: string;
-  }): Promise<TurnSummaryResult> {
-    const prompt = buildTurnSummaryPrompt(input);
-    return this.runAndParse(prompt, 16384, TURN_SUMMARY_FALLBACK, 'summarizeTurn', TURN_SUMMARY_SCHEMA);
-  }
-
-  async normalizeTopic(input: {
-    candidate: string;
-    existing_topics: Array<{ canonical_label: string; aliases: string[] }>;
-    memory_title: string;
-  }): Promise<NormalizeTopicResult> {
-    const prompt = buildNormalizeTopicPrompt(input);
-    return this.runAndParse(prompt, 4096, {
-      action: 'new', canonical_label: input.candidate.trim() || input.memory_title.slice(0, 40) || 'untitled', aliases: [],
-    }, 'normalizeTopic', NORMALIZE_TOPIC_SCHEMA);
-  }
-
-  async summarizeTopic(input: {
-    topic_label: string;
-    memories: Array<{ title: string; summary: string; learned?: string; next_steps?: string }>;
-  }): Promise<TopicSummaryResult> {
-    const prompt = buildSummarizeTopicPrompt(input);
-    return this.runAndParse(prompt, 8192, {
-      summary: '', unresolved_summary: '',
-    }, 'summarizeTopic', SUMMARIZE_TOPIC_SCHEMA);
-  }
-
-  async mergeTurnMemories(input: {
-    memories: Array<{ title: string; summary: string; learned?: string; next_steps?: string }>;
-    topic_label: string;
-  }): Promise<TurnSummaryResult> {
-    const prompt = buildMergePrompt(input);
-    return this.runAndParse(prompt, 16384, {
-      ...TURN_SUMMARY_FALLBACK, topic_candidate: input.topic_label,
-    }, 'mergeTurnMemories', TURN_SUMMARY_SCHEMA);
+  async summarizeObservation(input: {
+    user_prompt: string;
+    assistant_response: string;
+    artifacts: {
+      files_touched: string[];
+      commands: string[];
+      test_signals: string[];
+      error_signals: string[];
+      facts: string[];
+    };
+  }): Promise<ObservationSummaryResult> {
+    const prompt = buildObservationSummaryPrompt(input);
+    return this.runAndParse(prompt, 16384, OBSERVATION_SUMMARY_FALLBACK, 'summarizeObservation', OBSERVATION_SUMMARY_SCHEMA);
   }
 
   async close(): Promise<void> {
     await this.pool.close();
+  }
+
+  /**
+   * Second attempt at the English derived value, translation only.
+   *
+   * Returns null rather than throwing on any failure: by the time this runs the
+   * Observation is already being written, and the caller's contract is "no
+   * English vector" — never "fail the whole turn because a derived value could
+   * not be produced".
+   */
+  async normalizeSemanticEn(source: SemanticEnRecordSource): Promise<SemanticEnRecord | null> {
+    try {
+      const raw = await this.runWithRetry(buildSemanticEnPrompt(source), 8192);
+      const cleaned = raw.replace(/^```json?\n?/m, '').replace(/\n?```$/m, '').trim();
+      return boundedSemanticEn(JSON.parse(cleaned));
+    } catch (error) {
+      logError('acp-compressor/semantic-en', {
+        error_type: error instanceof Error ? error.name : 'UnknownError',
+      });
+      return null;
+    }
   }
 
   // --- Internal ---
@@ -104,15 +116,25 @@ export class ACPCompressor implements MemoryCompressor {
     const first = tryParseAndValidate<T>(raw, fallback, context);
     if (first.ok) return first.value;
 
-    // Repair retry
+    let lastOutputBytes = Buffer.byteLength(raw, 'utf8');
+    let lastErrorType = first.error;
     for (let i = 0; i < this.maxRetries; i++) {
+      this._repairCount++;
+      this.onMetric('repair');
       const repairPrompt = buildRepairPrompt(schema, raw, first.error);
       const repairRaw = await this.runWithRetry(repairPrompt, maxBytes);
+      lastOutputBytes = Buffer.byteLength(repairRaw, 'utf8');
       const retry = tryParseAndValidate<T>(repairRaw, fallback, context);
       if (retry.ok) return retry.value;
+      lastErrorType = retry.error;
     }
 
-    logError(`acp-compressor/repair-exhausted/${context}`, raw.slice(0, 500));
+    logError(`acp-compressor/repair-exhausted/${context}`, {
+      error_type: lastErrorType,
+      repair_attempts: this.maxRetries,
+      output_bytes: lastOutputBytes,
+    });
+    this._fallbackCount++;
     return fallback;
   }
 }
@@ -139,15 +161,14 @@ function tryParseAndValidate<T>(raw: string, fallback: T, context: string): Pars
     const cleaned = raw.replace(/^```json?\n?/m, '').replace(/\n?```$/m, '').trim();
     const parsed = JSON.parse(cleaned);
     const validated = validateSchema(parsed, fallback, context);
-    // For normalizeTopic, reject empty canonical_label as invalid
-    if (context === 'normalizeTopic' && !(validated as any).canonical_label?.trim()) {
-      return { ok: false, error: 'empty canonical_label', value: fallback };
-    }
     return { ok: true, value: validated };
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    logError(`acp-compressor/parse/${context}`, JSON.stringify({ error: msg, raw: raw.slice(0, 500) }));
-    return { ok: false, error: msg, value: fallback };
+    const errorType = error instanceof Error ? error.name : 'UnknownError';
+    logError(`acp-compressor/parse/${context}`, {
+      error_type: errorType,
+      output_bytes: Buffer.byteLength(raw, 'utf8'),
+    });
+    return { ok: false, error: errorType, value: fallback };
   }
 }
 
@@ -160,64 +181,98 @@ Invalid output: ${invalidOutput.slice(0, 1000)}
 Validation error: ${error}`;
 }
 
-// --- Schema descriptions for repair prompts ---
+const OBSERVATION_SUMMARY_SCHEMA = '{"title":"string","summary":"string","request":"string","outcome":"string","learned":"string","next_steps":"string","memory_type":"decision|bugfix|feature|refactor|discovery|change","files_touched":["string"],"concepts":["string"],"evidence":["string"],"importance_score":0-1,"confidence_score":0-1,"unresolved_score":0-1,"semantic_en":{"title":"string","summary":"string","outcome":"string","learned":"string","concepts":["string"]}}';
 
-const TURN_SUMMARY_SCHEMA = '{"title":"string","summary":"string","request":"string","investigated":"string","learned":"string","completed":"string","next_steps":"string","memory_type":"decision|bugfix|feature|refactor|discovery|change","files_touched":["string"],"concepts":["string"],"topic_candidate":"string","importance_score":0-1,"confidence_score":0-1,"unresolved_score":0-1}';
+/** Translation-only schema for the second (and last) derived-value attempt. */
+const SEMANTIC_EN_SCHEMA = '{"title":"string","summary":"string","outcome":"string","learned":"string","concepts":["string"]}';
 
-const NORMALIZE_TOPIC_SCHEMA = '{"action":"existing|new","canonical_label":"string (non-empty)","aliases":["string"]}';
+// --- Output size bounds (S2) ---
+//
+// The only limit on compressor output used to be the 16KB ACP read cap, so a
+// single verbose Observation could carry multi-KB prose and dozens of evidence
+// items straight into storage. That is not just a disk cost: it inflates the FTS
+// trigram index, skews the read-cost estimate shown in the injected index, and
+// eats the pull-side response budget. Bound it at the boundary, before it
+// becomes immutable.
 
-const SUMMARIZE_TOPIC_SCHEMA = '{"summary":"string","unresolved_summary":"string"}';
+/** Per-field character cap for the prose fields. */
+const FIELD_MAX_CHARS = 2000;
+/** `title` is rendered in the injected index, so it is far tighter. */
+const TITLE_MAX_CHARS = 200;
+/** Array fields: item count and per-item length. */
+const ARRAY_MAX_ITEMS = 30;
+const ARRAY_ITEM_MAX_CHARS = 400;
 
-/** Validate and coerce parsed JSON to match expected schema. */
-function validateSchema<T>(parsed: any, fallback: T, context: string): T {
+function boundedString(val: unknown, max: number): string {
+  const s = typeof val === 'string' ? val : '';
+  return s.length > max ? s.slice(0, max) : s;
+}
+
+function boundedStringArray(val: unknown): string[] {
+  if (!Array.isArray(val)) return [];
+  return val
+    .filter((x): x is string => typeof x === 'string')
+    .slice(0, ARRAY_MAX_ITEMS)
+    .map((s) => (s.length > ARRAY_ITEM_MAX_CHARS ? s.slice(0, ARRAY_ITEM_MAX_CHARS) : s));
+}
+
+/**
+ * Bound the English derived value with the same caps as the fields it mirrors.
+ * Returns null for a missing/unusable shape — an absent derived value costs one
+ * Observation its English vector, while an unbounded one would carry model prose
+ * straight into storage.
+ */
+function boundedSemanticEn(val: unknown): SemanticEnRecord | null {
+  const coerced = coerceSemanticEnRecord(val);
+  if (!coerced) return null;
+  return {
+    title: boundedString(coerced.title, TITLE_MAX_CHARS),
+    summary: boundedString(coerced.summary, FIELD_MAX_CHARS),
+    outcome: boundedString(coerced.outcome, FIELD_MAX_CHARS),
+    learned: boundedString(coerced.learned, FIELD_MAX_CHARS),
+    concepts: boundedStringArray(coerced.concepts),
+  };
+}
+
+/**
+ * Validate and coerce parsed JSON to match the Observation schema.
+ *
+ * Exported for tests: the unknown-context branch is unreachable through the
+ * public API today, and an invariant that cannot be observed is an invariant
+ * that quietly rots.
+ */
+export function validateSchema<T>(parsed: any, fallback: T, context: string): T {
   if (!parsed || typeof parsed !== 'object') return fallback;
 
-  if (context === 'summarizeTurn' || context === 'mergeTurnMemories') {
+  if (context === 'summarizeObservation') {
     return {
-      title: ensureString(parsed.title, (fallback as any).title ?? ''),
-      summary: ensureString(parsed.summary, ''),
-      request: ensureString(parsed.request, ''),
-      investigated: ensureString(parsed.investigated, ''),
-      learned: ensureString(parsed.learned, ''),
-      completed: ensureString(parsed.completed, ''),
-      next_steps: ensureString(parsed.next_steps, ''),
+      title: boundedString(parsed.title, TITLE_MAX_CHARS),
+      summary: boundedString(parsed.summary, FIELD_MAX_CHARS),
+      request: boundedString(parsed.request, FIELD_MAX_CHARS),
+      outcome: boundedString(parsed.outcome, FIELD_MAX_CHARS),
+      learned: boundedString(parsed.learned, FIELD_MAX_CHARS),
+      next_steps: boundedString(parsed.next_steps, FIELD_MAX_CHARS),
       memory_type: ensureEnum(parsed.memory_type, ['decision', 'bugfix', 'feature', 'refactor', 'discovery', 'change'], 'change'),
-      files_touched: ensureStringArray(parsed.files_touched),
-      concepts: ensureStringArray(parsed.concepts),
-      topic_candidate: ensureString(parsed.topic_candidate, (fallback as any).topic_candidate ?? ''),
+      files_touched: boundedStringArray(parsed.files_touched),
+      concepts: boundedStringArray(parsed.concepts),
+      evidence: boundedStringArray(parsed.evidence),
       importance_score: clampScore(parsed.importance_score),
       confidence_score: clampScore(parsed.confidence_score),
       unresolved_score: clampScore(parsed.unresolved_score),
+      // Shape coercion only. Whether this value may enter the
+      // `semantic-en-v1` vector space is decided later, by
+      // `checkSemanticEnRecord()` against the fields actually stored — the
+      // caller is the only place that knows those (it applies its own
+      // defaults and fallbacks first).
+      semantic_en: boundedSemanticEn(parsed.semantic_en),
     } as T;
   }
 
-  if (context === 'normalizeTopic') {
-    const label = ensureString(parsed.canonical_label, (fallback as any).canonical_label ?? '');
-    if (!label.trim()) return fallback; // Reject empty label
-    return {
-      action: ensureEnum(parsed.action, ['existing', 'new'], 'new'),
-      canonical_label: label,
-      aliases: ensureStringArray(parsed.aliases),
-    } as T;
-  }
-
-  if (context === 'summarizeTopic') {
-    return {
-      summary: ensureString(parsed.summary, ''),
-      unresolved_summary: ensureString(parsed.unresolved_summary, ''),
-    } as T;
-  }
-
-  return parsed as T;
-}
-
-function ensureString(val: unknown, fallback: string): string {
-  return typeof val === 'string' ? val : fallback;
-}
-
-function ensureStringArray(val: unknown): string[] {
-  if (!Array.isArray(val)) return [];
-  return val.filter((x): x is string => typeof x === 'string');
+  // S8: an unrecognized context used to `return parsed as T` — i.e. the one
+  // path that skips validation entirely was also the silent one. There is
+  // exactly one caller today, so reaching here means a new call site forgot to
+  // add its branch; fall back rather than let unvalidated model output through.
+  return fallback;
 }
 
 function ensureEnum<T extends string>(val: unknown, allowed: T[], fallback: T): T {
@@ -229,98 +284,101 @@ function clampScore(val: unknown): number {
   return Math.max(0, Math.min(1, n));
 }
 
-// --- Prompt builders ---
+// --- Prompt builder ---
 //
-// Body language is intentionally Chinese to match upstream (private fork)
-// behavior that has been validated against multiple Kiro models. Memory-level
-// language follows the user's actual prompt language (the model copies it
-// into title/summary/etc.), so the body language here only affects the
-// model's "thinking" framing, not what users see in their memory entries.
+// Body language is intentionally Chinese to match upstream behavior validated
+// against multiple Kiro models. Memory-level language follows the user's actual
+// prompt language, so the body language here only affects the model's framing.
 
-function buildTurnSummaryPrompt(input: {
-  prompt_text: string;
-  artifacts: { tool_names: string[]; files_touched: string[]; commands: string[]; error_signals: string[] };
-  event_digest?: string;
+function clampText(s: string, max: number): string {
+  if (!s) return '';
+  if (s.length <= max) return s;
+  const head = Math.floor(max * 0.6);
+  const tail = Math.max(0, max - head - 3);
+  return `${s.slice(0, head)}\n…\n${s.slice(s.length - tail)}`;
+}
+
+// Single implementation. Tests reach it through `ACPCompressor` with a fake pool
+// (`tests/support/fake-acp-pool.ts`) and script responses by the distinctive
+// "本轮事实来源" marker; there is no second copy of this builder to keep in sync.
+function buildObservationSummaryPrompt(input: {
+  user_prompt: string;
+  assistant_response: string;
+  artifacts: {
+    files_touched: string[];
+    commands: string[];
+    test_signals: string[];
+    error_signals: string[];
+    facts: string[];
+  };
 }): string {
   const a = input.artifacts;
-  const tools = a.tool_names.join(', ') || 'none';
-  const files = a.files_touched.slice(0, 10).join(', ') || 'none';
-  const cmds = a.commands.slice(0, 5).join('; ') || 'none';
-  const errors = a.error_signals.slice(0, 3).join('; ') || 'none';
-  const digest = input.event_digest ? `\n- Event digest: ${input.event_digest}` : '';
+  const files = a.files_touched.slice(0, 12).join(', ') || 'none';
+  const cmds = a.commands.slice(0, 8).join('; ') || 'none';
+  const tests = a.test_signals.slice(0, 6).join('; ') || 'none';
+  const errors = a.error_signals.slice(0, 4).join('; ') || 'none';
+  const facts = a.facts.slice(0, 8).join('; ') || 'none';
+  const prompt = clampText(input.user_prompt, 2000);
+  const resp = clampText(input.assistant_response, 3000) || 'none';
 
-  return `## 本轮输入
-- 用户 Prompt: ${input.prompt_text.slice(0, 2000)}
-- 使用工具: ${tools}
+  return `## 本轮事实来源（可信度：工具结果 > 命令退出 > 文件变更 > 明确错误 > 助手叙述）
+- 用户请求: ${prompt}
 - 涉及文件: ${files}
 - 命令: ${cmds}
-- 错误: ${errors}${digest}
+- 测试/构建/lint: ${tests}
+- 错误信号: ${errors}
+- 事实片段: ${facts}
+- 助手最终回复(补足结论/理由/下一步，非无条件真相): ${resp}
 
-## 输出要求
-返回 JSON：
-{"title":"一句话标题(<40字)","summary":"2-4句摘要","request":"用户要什么","investigated":"探索了什么","learned":"关键发现/决策","completed":"完成了什么","next_steps":"后续事项","memory_type":"decision|bugfix|feature|refactor|discovery|change","files_touched":["文件路径"],"concepts":["标签,中英文都要"],"topic_candidate":"规范化主题","importance_score":0.0-1.0,"confidence_score":0.0-1.0,"unresolved_score":0.0-1.0}`;
+## 规则
+- 只描述"本轮"这一个 turn，不要归类到任何主题，不要合并或引用其它历史。
+- outcome 必须与上面证据一致；没有成功证据时明确写"未验证/未完成"，不要虚构完成状态或证据中不存在的数字、文件、测试结论。
+- assistant_response 用于补足最终结论/理由/下一步，但工具结果与命令退出优先。
+- concepts 是可检索标签(中英文都要)，可重复可变化，不需要规范命名。
+- evidence 是少量可解释证据(命令、错误、测试结果、关键文件)，不要复制完整输出。
+
+## semantic_en（英文语义归一化，同一次响应内产出，不要另起解释）
+- 把 title / summary / outcome / learned / concepts **忠实翻译成英文**，逐句对应。
+- 不要摘要、不要补充背景、不要合并或拆分句子；原文该字段为空则英文也留空。
+- 文件路径、标识符、函数名、命令、配置键、数字、错误码一律原样保留，不要翻译。
+- concepts 逐项翻译，数量与顺序必须与上面的 concepts 完全一致。
+- 原文本来就是英文时，照抄或仅规范措辞即可，不要改写标识符。
+- 不允许输出 "..."、"N/A"、"unknown" 这类占位内容；写不出就说明上面的字段本身是空的。
+
+## 输出（只返回 JSON）
+{"title":"一句话工作标题(<40字)","summary":"2-4句紧凑事实摘要","request":"用户想完成什么","outcome":"实际完成/验证结果/未完成状态","learned":"可复用的技术事实或取舍","next_steps":"明确未完成项，没有则空串","memory_type":"decision|bugfix|feature|refactor|discovery|change","files_touched":["文件路径"],"concepts":["标签"],"evidence":["证据"],"importance_score":0.0-1.0,"confidence_score":0.0-1.0,"unresolved_score":0.0-1.0,"semantic_en":{"title":"English title","summary":"English summary","outcome":"English outcome","learned":"English learned","concepts":["English tag"]}}`;
 }
 
-function buildNormalizeTopicPrompt(input: {
-  candidate: string;
-  existing_topics: Array<{ canonical_label: string; aliases: string[] }>;
-  memory_title: string;
-}): string {
-  const existingLines = input.existing_topics
-    .slice(0, 30)
-    .map((t) => {
-      const aliasList = t.aliases.filter((a) => a && a !== t.canonical_label).slice(0, 8);
-      return aliasList.length
-        ? `- ${t.canonical_label} (aliases: ${aliasList.join(', ')})`
-        : `- ${t.canonical_label}`;
-    })
-    .join('\n');
-  const existing = existingLines || '（无）';
+// ---------------------------------------------------------------------------
+// Translation-only prompt (second and last derived-value attempt)
+// ---------------------------------------------------------------------------
+//
+// Separate from the summary prompt on purpose: when the derived value that came
+// back with the summary fails the guardrails, re-running the whole compression
+// would also re-roll the Observation text — which is immutable by then, so the
+// two would disagree. This prompt sees only the fields it must mirror.
 
-  return `候选主题: "${input.candidate}"
-记忆标题: "${input.memory_title}"
-已有主题（含已知别名）：
-${existing}
+function buildSemanticEnPrompt(source: SemanticEnRecordSource): string {
+  const input = {
+    title: source.title,
+    summary: source.summary,
+    outcome: source.outcome ?? '',
+    learned: source.learned ?? '',
+    concepts: source.concepts,
+  };
+  return `把下面这条开发记忆的字段忠实翻译成英文。
 
-如果候选与已有主题等价——无论匹配 canonical label 还是任一列出的 alias，语义相同只是措辞不同——返回：
-{"action":"existing","canonical_label":"<已有 canonical label>","aliases":["${input.candidate}"]}
-否则返回：
-{"action":"new","canonical_label":"${input.candidate}","aliases":[]}`;
-}
+规则：
+- 逐句对应。不要摘要、不要补充、不要合并或拆分句子。
+- 输入为空的字段，输出也必须为空字符串。
+- 文件路径、标识符、函数名、命令、配置键、数字、错误码一律原样保留。
+- concepts 逐项翻译，数量与顺序必须与输入完全一致。
+- 不允许输出 "..."、"N/A"、"unknown" 这类占位内容。
+- 只输出 JSON，不要 markdown 代码块，不要解释。
 
-function buildSummarizeTopicPrompt(input: {
-  topic_label: string;
-  memories: Array<{ title: string; summary: string; learned?: string; next_steps?: string }>;
-}): string {
-  const items = input.memories
-    .slice(0, 20)
-    .map((m, i) => {
-      const learned = m.learned ? ` | Learned: ${m.learned.slice(0, 120)}` : '';
-      const next = m.next_steps ? ` | Next: ${m.next_steps.slice(0, 120)}` : '';
-      return `${i + 1}. ${m.title}: ${m.summary.slice(0, 160)}${learned}${next}`;
-    })
-    .join('\n');
+schema：
+${SEMANTIC_EN_SCHEMA}
 
-  return `主题: ${input.topic_label}
-
-该主题下最近的 active 记忆（最新在前）:
-${items}
-
-请产出紧凑的主题进展对象。
-- "summary": 2-3 句话概括该主题整体进展。
-- "unresolved_summary": 单行不超过 80 字，列出当前仍未完成/被阻塞的关键事项；若全部完成返回空串。
-
-只返回 JSON:
-{"summary":"...","unresolved_summary":"..."}`;
-}
-
-function buildMergePrompt(input: {
-  memories: Array<{ title: string; summary: string; learned?: string; next_steps?: string }>;
-  topic_label: string;
-}): string {
-  const items = input.memories.map((m, i) =>
-    `${i + 1}. ${m.title}: ${m.summary}${m.learned ? ' | Learned: ' + m.learned : ''}${m.next_steps ? ' | Next: ' + m.next_steps : ''}`,
-  ).join('\n');
-
-  return `主题: ${input.topic_label}\n\n待合并的 turn 记忆:\n${items}\n\n返回 JSON：\n{"title":"合并标题","summary":"3-5句完整摘要","request":"总体目标","investigated":"跨轮探索了什么","learned":"关键发现汇总","completed":"完成了什么","next_steps":"剩余事项","memory_type":"decision|bugfix|feature|refactor|discovery|change","files_touched":[],"concepts":[],"topic_candidate":"${input.topic_label}","importance_score":0.0-1.0,"confidence_score":0.0-1.0,"unresolved_score":0.0-1.0}`;
+待翻译：
+${JSON.stringify(input, null, 2)}`;
 }

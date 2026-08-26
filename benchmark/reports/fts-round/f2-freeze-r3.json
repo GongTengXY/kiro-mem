@@ -1,0 +1,1243 @@
+{
+  "frozen": true,
+  "frozenAt": "2026-08-14T05:58:46.489Z",
+  "round": "fts-safety-round-2026-08-12-r2",
+  "phase": "F2",
+  "criteria": {
+    "name": "criteria",
+    "path": "benchmark/reports/fts-round/f1-criteria-r4.md",
+    "sha256": "6f2aece66a01ad0b863fc0e7c4234914b6e216bc5eb9eff2858fd349b727a069",
+    "bytes": 8540
+  },
+  "inputs": [
+    {
+      "name": "criteriaBaselineR3",
+      "path": "benchmark/reports/fts-round/f1-criteria.md",
+      "sha256": "18be34b1e15285874074a10252c2d3a7f6d51227851090de6803ce2b8219e7aa",
+      "bytes": 47644
+    },
+    {
+      "name": "f1FreezeR3",
+      "path": "benchmark/reports/fts-round/f1-freeze-r3.json",
+      "sha256": "109b4d11371fd2c5f1c99636eed901386a5eeb79c341208f6f606fc97eed1211",
+      "bytes": 15830
+    },
+    {
+      "name": "f1FreezeR1Historical",
+      "path": "benchmark/reports/fts-round/f1-freeze.json",
+      "sha256": "de168b5b9aa4d2f609e20f1750e2d9fb25c95a75533b23ee2d511bb54e192ee9",
+      "bytes": 8625
+    },
+    {
+      "name": "f1FreezeR2Historical",
+      "path": "benchmark/reports/fts-round/f1-freeze-r2.json",
+      "sha256": "3ac2263cb353649e0ef05aa2f62a386a684174894e07ff269c786e511e378ea6",
+      "bytes": 13022
+    },
+    {
+      "name": "f2FreezeR2Historical",
+      "path": "benchmark/reports/fts-round/f2-freeze-r2.json",
+      "sha256": "4f5e9d8891fd530656e2671999831690495c8297cad8580aa3be31f5e1ae1eb3",
+      "bytes": 17551
+    },
+    {
+      "name": "fixtureSelfCert",
+      "path": "benchmark/reports/fts-round/f2-fixture-r2.json",
+      "sha256": "834f2677d1e9210087c5870d9f3f95b044467fa92475dcff9e198d65557d244a",
+      "bytes": 20450
+    },
+    {
+      "name": "strataPreFreeze",
+      "path": "benchmark/reports/fts-round/f2-strata-r2.json",
+      "sha256": "a3830847e19ce206b7fed39966ea25b5f5bd0e78f8282499a3817ba24d97e589",
+      "bytes": 23190
+    },
+    {
+      "name": "strataVerifyPostFreeze",
+      "path": "benchmark/reports/fts-round/f2-strata-verify-r3.json",
+      "sha256": "d871a9c38a079e5838160e02913df89239af88cffff101f873902c29f4072458",
+      "bytes": 34668
+    },
+    {
+      "name": "kLadder",
+      "path": "benchmark/reports/fts-round/f2-kladder-r2.json",
+      "sha256": "3695cfb5318ecfe8683bbcf01fff65eb56fd6a5a0076e06a3ec0ee676b564bd3",
+      "bytes": 6601
+    },
+    {
+      "name": "precheck",
+      "path": "benchmark/reports/fts-round/f1-precheck-r2.json",
+      "sha256": "f49e62faf9ae7e3035f641f2653e76994ee2b95fa5853e20471d0603fde936b5",
+      "bytes": 28314
+    },
+    {
+      "name": "admissionImpl",
+      "path": "benchmark/fts-round-admission.ts",
+      "sha256": "e539bc2518a51cc6d4eefe105c5b2eff964e3fa4fa9a816b964245dd75fe1b14",
+      "bytes": 11614
+    },
+    {
+      "name": "fixtureBuilder",
+      "path": "benchmark/run-fts-round-f2-fixture.ts",
+      "sha256": "9c04e81bc4a03b507753c5b10be1b990479345b7df812b96cd17d68d3be0d311",
+      "bytes": 20914
+    },
+    {
+      "name": "strataRunner",
+      "path": "benchmark/run-fts-round-f2-strata.ts",
+      "sha256": "e567edc6fafb63451fdec7093410f6f4f9ef2076e93558ba9a725639037795ea",
+      "bytes": 8231
+    },
+    {
+      "name": "strataVerifyRunner",
+      "path": "benchmark/verify-fts-round-f2-strata.ts",
+      "sha256": "8cdb93ff60f71acb28acfbf452510acaec56549fb85ef609e0547db9d217d403",
+      "bytes": 11512
+    },
+    {
+      "name": "kLadderRunner",
+      "path": "benchmark/run-fts-round-f2-kladder.ts",
+      "sha256": "349aef5349fa95129e95b7680f0075b265150c67c21836c0cf59680749843d2c",
+      "bytes": 8788
+    },
+    {
+      "name": "f1FreezeRunnerR3",
+      "path": "benchmark/freeze-fts-round-f1-r3.ts",
+      "sha256": "d70e5d7036edbb734175fea5c8564162b5a303f9209c195612e2b1b57405d962",
+      "bytes": 13732
+    },
+    {
+      "name": "validatorR1",
+      "path": "benchmark/validate-fts-round-dataset.ts",
+      "sha256": "cc56ef921e2e6ef7681d6d3cb0abfe1d3f9aa60747f0cc7d22ecd7f23102110f",
+      "bytes": 11486
+    },
+    {
+      "name": "validatorR2",
+      "path": "benchmark/validate-fts-round-dataset-r2.ts",
+      "sha256": "cf81527bce6151f344391b1eb5053ecbc831388e97ea8f36e167bde3d777c48b",
+      "bytes": 12438
+    },
+    {
+      "name": "freezeUtil",
+      "path": "benchmark/freeze-util.ts",
+      "sha256": "89542a873b8c3318c5e28c2ed341dbdf18af55112111cb95174e72bac2cf4ca5",
+      "bytes": 9803
+    }
+  ],
+  "itemCountLabel": "1 + 19",
+  "itemCount": 20,
+  "note": "证据链闭合冻结（Codex F2 验收第 3–5 项）。装置、K = 200、四档分层、S2–S4、S6 全部沿用 f2-freeze-r2.json 的同一批测量，数据与 60,066 行编码未重新生成。本记录新增三件事：显式冻结三份历史冻结记录的字节、要求 strata 的冻结后复现通过、预登记 F3 的负例分组报告口径。F3 必须在本记录固定的 K 与装置上跑，全程不得改动 K。",
+  "payload": {
+    "chain": {
+      "revision": "r3",
+      "kind": "evidence-chain-repair",
+      "trigger": "Codex F2 验收：F2 暂不通过，阻塞点是冻结证据链而不是读数。",
+      "codexFindings": [
+        {
+          "item": 1,
+          "finding": "把当前 validator 固化为版本化新路径",
+          "resolution": "benchmark/validate-fts-round-dataset-r2.ts，逐字节复制（SHA 保持 cf81527b…，与 F2 实际跑过的字节相同）"
+        },
+        {
+          "item": 2,
+          "finding": "恢复旧 validator 原始字节，旧冻结回到 14/14",
+          "resolution": "原路径恢复 cc56ef92…；旧 f1-freeze.json 现为「判据 1/1 + 输入 14/14」"
+        },
+        {
+          "item": 3,
+          "finding": "不覆盖现有 r2 冻结，生成新冻结链并显式冻结旧 freeze record",
+          "resolution": "f1-freeze-r3.json + 本记录；三份历史记录作为输入项被钉住字节，原文件逐字节未动"
+        },
+        {
+          "item": 4,
+          "finding": "冻结后另出 strata 复现报告，F2 冻结必须要求其校验通过",
+          "resolution": "benchmark/verify-fts-round-f2-strata.ts → f2-strata-verify-r3.json；本脚本的 G-f 是那道硬前置"
+        },
+        {
+          "item": 5,
+          "finding": "F3 对 40 条负例额外按「修补/未修补」与 ftsCount 档报告",
+          "resolution": "口径与基线条数预登记在 payload.nextPhase.f3.negativeBreakdown，先写后跑"
+        }
+      ],
+      "historicalRecords": [
+        {
+          "name": "f1-freeze.json",
+          "role": "r1 冻结（14 项输入）",
+          "recordedFrozenAt": "2026-08-14T02:56:32.823Z",
+          "verifyNow": "判据 1/1 + 输入 14/14",
+          "status": "恢复后通过"
+        },
+        {
+          "name": "f1-freeze-r2.json",
+          "role": "r2 冻结（21 项输入）",
+          "recordedFrozenAt": "2026-08-14T04:24:34.280Z",
+          "verifyNow": "判据 1/1 + 输入 20/21",
+          "status": "结构性失败，已登记",
+          "knownFailure": "validator 一项：该记录把 r2 字节钉在原路径上，而原路径已按裁定恢复 r1 字节。两者不可同时成立，因此本轮改用版本化路径（f1-freeze-r3.json）承接同一份实现的字节。其余 20 项仍逐项一致，文件逐字节未被修改。"
+        },
+        {
+          "name": "f2-freeze-r2.json",
+          "role": "F2 冻结（10 项输入）",
+          "recordedFrozenAt": "2026-08-14T05:17:14.490Z",
+          "verifyNow": "判据 1/1 + 输入 10/10",
+          "status": "通过"
+        }
+      ],
+      "unchanged": {
+        "data": "记录、query、镜像、中文语料、英文 filler 全部逐字节未变（f1-freeze-r3 的 diffVsR2 自证 20/21 相同）",
+        "fixture": "60066 行装置与 20066 次真实编码未重新生成",
+        "k": "K = 200，由 S7a 的正确性阶梯选出，本次未重跑、未改动",
+        "strata": "四档分层读数不变（20/19/14/27），本次只增加冻结后复现"
+      }
+    },
+    "selectedK": 200,
+    "kSelection": {
+      "ladder": [
+        200,
+        1000,
+        5000,
+        "EXACT"
+      ],
+      "rule": "取最小的 K，使 16 个 (r,d) 设置 × 120 条 query 与 EXACT 的候选差集逐 query 为 0（r3 §2.2.1）",
+      "comparisons": 1920,
+      "mismatches": 0,
+      "basis": "只用正确性判定，未看任何门的读数",
+      "exactByConstruction": "EXACT 差集恒为 0，阶梯不会走空；其成本由 §6.6 性能门在 F3 判定"
+    },
+    "fixture": {
+      "dbPath": "/var/folders/m8/2nqfmnqd7mnfdz5q5vc33lmc0000gn/T//fts-round-f2-r2.db",
+      "rows": 60066,
+      "scopeVectors": 60066,
+      "composition": {
+        "newGold": 40,
+        "oldGold": 26,
+        "fillerEn": 50000,
+        "fillerEnSourceRows": 10000,
+        "fillerZh": 10000
+      },
+      "realEncodes": 20066,
+      "embeddingModel": "all-MiniLM-L6-v2",
+      "spaceKey": "all-MiniLM-L6-v2:q8:384:semantic-en-v1",
+      "layoutSeed": 15867942,
+      "ageDays": [
+        {
+          "id": "n01",
+          "ageDays": 40
+        },
+        {
+          "id": "n02",
+          "ageDays": 833
+        },
+        {
+          "id": "n03",
+          "ageDays": 628
+        },
+        {
+          "id": "n04",
+          "ageDays": 410
+        },
+        {
+          "id": "n05",
+          "ageDays": 709
+        },
+        {
+          "id": "n06",
+          "ageDays": 822
+        },
+        {
+          "id": "n07",
+          "ageDays": 808
+        },
+        {
+          "id": "n08",
+          "ageDays": 227
+        },
+        {
+          "id": "n09",
+          "ageDays": 889
+        },
+        {
+          "id": "n10",
+          "ageDays": 642
+        },
+        {
+          "id": "n11",
+          "ageDays": 184
+        },
+        {
+          "id": "n12",
+          "ageDays": 135
+        },
+        {
+          "id": "n13",
+          "ageDays": 319
+        },
+        {
+          "id": "n14",
+          "ageDays": 760
+        },
+        {
+          "id": "n15",
+          "ageDays": 40
+        },
+        {
+          "id": "n16",
+          "ageDays": 243
+        },
+        {
+          "id": "n17",
+          "ageDays": 428
+        },
+        {
+          "id": "n18",
+          "ageDays": 755
+        },
+        {
+          "id": "n19",
+          "ageDays": 859
+        },
+        {
+          "id": "n20",
+          "ageDays": 617
+        },
+        {
+          "id": "n21",
+          "ageDays": 718
+        },
+        {
+          "id": "n22",
+          "ageDays": 51
+        },
+        {
+          "id": "n23",
+          "ageDays": 237
+        },
+        {
+          "id": "n24",
+          "ageDays": 309
+        },
+        {
+          "id": "n25",
+          "ageDays": 122
+        },
+        {
+          "id": "n26",
+          "ageDays": 565
+        },
+        {
+          "id": "n27",
+          "ageDays": 566
+        },
+        {
+          "id": "n28",
+          "ageDays": 543
+        },
+        {
+          "id": "n29",
+          "ageDays": 413
+        },
+        {
+          "id": "n30",
+          "ageDays": 159
+        },
+        {
+          "id": "n31",
+          "ageDays": 41
+        },
+        {
+          "id": "n32",
+          "ageDays": 814
+        },
+        {
+          "id": "n33",
+          "ageDays": 503
+        },
+        {
+          "id": "n34",
+          "ageDays": 73
+        },
+        {
+          "id": "n35",
+          "ageDays": 456
+        },
+        {
+          "id": "n36",
+          "ageDays": 302
+        },
+        {
+          "id": "n37",
+          "ageDays": 711
+        },
+        {
+          "id": "n38",
+          "ageDays": 365
+        },
+        {
+          "id": "n39",
+          "ageDays": 287
+        },
+        {
+          "id": "n40",
+          "ageDays": 70
+        }
+      ],
+      "insertionOrder": [
+        "n11",
+        "n31",
+        "n27",
+        "n22",
+        "n06",
+        "n36",
+        "n07",
+        "n39",
+        "n09",
+        "n24",
+        "n13",
+        "n29",
+        "n21",
+        "n14",
+        "n37",
+        "n03",
+        "n19",
+        "n28",
+        "n12",
+        "n01",
+        "n33",
+        "n32",
+        "n02",
+        "n18",
+        "n26",
+        "n30",
+        "n16",
+        "n40",
+        "n35",
+        "n17",
+        "n34",
+        "n10",
+        "n20",
+        "n05",
+        "n08",
+        "n23",
+        "n38",
+        "n25",
+        "n15",
+        "n04"
+      ]
+    },
+    "selfCert": {
+      "s2": {
+        "rows": 60066,
+        "totalRows": 60066,
+        "scopeVectors": 60066,
+        "protocols": [
+          "semantic-en-v1"
+        ],
+        "zhRows": 10066
+      },
+      "s3FunctionWords": [
+        {
+          "word": "能不能",
+          "df": 1000,
+          "target": 0.1,
+          "dfOverZhRecords": 0.1,
+          "dfOverScope": 0.0166,
+          "relativeDeviation": 0,
+          "pass": true
+        },
+        {
+          "word": "有没有",
+          "df": 1001,
+          "target": 0.1,
+          "dfOverZhRecords": 0.1001,
+          "dfOverScope": 0.0167,
+          "relativeDeviation": 0.001,
+          "pass": true
+        },
+        {
+          "word": "是不是",
+          "df": 800,
+          "target": 0.08,
+          "dfOverZhRecords": 0.08,
+          "dfOverScope": 0.0133,
+          "relativeDeviation": 0,
+          "pass": true
+        },
+        {
+          "word": "为什么",
+          "df": 801,
+          "target": 0.08,
+          "dfOverZhRecords": 0.0801,
+          "dfOverScope": 0.0133,
+          "relativeDeviation": 0.0013,
+          "pass": true
+        },
+        {
+          "word": "的时候",
+          "df": 2501,
+          "target": 0.25,
+          "dfOverZhRecords": 0.2501,
+          "dfOverScope": 0.0416,
+          "relativeDeviation": 0.0004,
+          "pass": true
+        },
+        {
+          "word": "的模型",
+          "df": 500,
+          "target": 0.05,
+          "dfOverZhRecords": 0.05,
+          "dfOverScope": 0.0083,
+          "relativeDeviation": 0,
+          "pass": true
+        },
+        {
+          "word": "会不会",
+          "df": 601,
+          "target": 0.06,
+          "dfOverZhRecords": 0.0601,
+          "dfOverScope": 0.01,
+          "relativeDeviation": 0.0017,
+          "pass": true
+        },
+        {
+          "word": "什么时候",
+          "df": 500,
+          "target": 0.05,
+          "dfOverZhRecords": 0.05,
+          "dfOverScope": 0.0083,
+          "relativeDeviation": 0,
+          "pass": true
+        }
+      ],
+      "s4NegativeFtsCountRange": [
+        1,
+        2899
+      ],
+      "precheckConsistency": "负例 40 + 保护线 40 逐条一致",
+      "s6Identity": {
+        "checked": 120,
+        "mismatches": []
+      },
+      "checks": [
+        {
+          "name": "r4 §16.2 预检一致",
+          "pass": true
+        },
+        {
+          "name": "S2 物理行数",
+          "pass": true
+        },
+        {
+          "name": "S2 无跨域行",
+          "pass": true
+        },
+        {
+          "name": "S2 向量齐全",
+          "pass": true
+        },
+        {
+          "name": "S2 协议单一",
+          "pass": true
+        },
+        {
+          "name": "S3 中文行数",
+          "pass": true
+        },
+        {
+          "name": "S3 功能词占比",
+          "pass": true
+        },
+        {
+          "name": "S4 负例词面命中",
+          "pass": true
+        }
+      ],
+      "strataPostFreezeVerify": {
+        "path": "benchmark/reports/fts-round/f2-strata-verify-r3.json",
+        "pass": true,
+        "freezeVerify": "判据 1/1 + 输入 21/21",
+        "rowsCompared": 80,
+        "maxAbsDelta": 0.000497,
+        "cosineEps": 0.0005,
+        "checks": [
+          {
+            "name": "冻结校验通过",
+            "pass": true
+          },
+          {
+            "name": "逐条 band 一致",
+            "pass": true
+          },
+          {
+            "name": "逐条余弦一致",
+            "pass": true
+          },
+          {
+            "name": "英文形一致",
+            "pass": true
+          },
+          {
+            "name": "三套四档条数与冻结一致",
+            "pass": true
+          },
+          {
+            "name": "并集每档 ≥ 8",
+            "pass": true
+          }
+        ],
+        "note": "预冻结报告 f2-strata-r2.json 逐字节保留（它记录的 --pre-freeze 跳过是裁定顺序的产物），本项是它的冻结后对照。"
+      }
+    },
+    "strata": {
+      "union": {
+        "<0.200": 20,
+        "0.200-0.310": 19,
+        "0.310-0.400": 14,
+        ">=0.400": 27
+      },
+      "relevance": {
+        "<0.200": 3,
+        "0.200-0.310": 9,
+        "0.310-0.400": 10,
+        ">=0.400": 18
+      },
+      "protection": {
+        "<0.200": 17,
+        "0.200-0.310": 10,
+        "0.310-0.400": 4,
+        ">=0.400": 9
+      },
+      "bands": [
+        "<0.200",
+        "0.200-0.310",
+        "0.310-0.400",
+        ">=0.400"
+      ]
+    },
+    "admissionReadings": {
+      "note": "准入机制自身的读数（判据 §5.4），不是门读数；F3 会在完整检索链上重出。",
+      "perArm": [
+        {
+          "arm": "r0-d1.00",
+          "policy": {
+            "windowCoverageRatio": 0,
+            "unitDfRatioCeiling": 1
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 0,
+          "zeroReturn": 4,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 0,
+          "returnedMean": 17.78
+        },
+        {
+          "arm": "r0-d0.30",
+          "policy": {
+            "windowCoverageRatio": 0,
+            "unitDfRatioCeiling": 0.3
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 0,
+          "zeroReturn": 4,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 0,
+          "returnedMean": 17.78
+        },
+        {
+          "arm": "r0-d0.10",
+          "policy": {
+            "windowCoverageRatio": 0,
+            "unitDfRatioCeiling": 0.1
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 0,
+          "zeroReturn": 4,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 1,
+          "returnedMean": 17.39
+        },
+        {
+          "arm": "r0-d0.03",
+          "policy": {
+            "windowCoverageRatio": 0,
+            "unitDfRatioCeiling": 0.03
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 0,
+          "zeroReturn": 4,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 7,
+          "returnedMean": 15.48
+        },
+        {
+          "arm": "r0.1-d1.00",
+          "policy": {
+            "windowCoverageRatio": 0.1,
+            "unitDfRatioCeiling": 1
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 71,
+          "zeroReturn": 26,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 0,
+          "returnedMean": 5.23
+        },
+        {
+          "arm": "r0.1-d0.30",
+          "policy": {
+            "windowCoverageRatio": 0.1,
+            "unitDfRatioCeiling": 0.3
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 71,
+          "zeroReturn": 26,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 0,
+          "returnedMean": 5.23
+        },
+        {
+          "arm": "r0.1-d0.10",
+          "policy": {
+            "windowCoverageRatio": 0.1,
+            "unitDfRatioCeiling": 0.1
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 71,
+          "zeroReturn": 26,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 1,
+          "returnedMean": 5.23
+        },
+        {
+          "arm": "r0.1-d0.03",
+          "policy": {
+            "windowCoverageRatio": 0.1,
+            "unitDfRatioCeiling": 0.03
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 71,
+          "zeroReturn": 27,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 7,
+          "returnedMean": 4.82
+        },
+        {
+          "arm": "r0.2-d1.00",
+          "policy": {
+            "windowCoverageRatio": 0.2,
+            "unitDfRatioCeiling": 1
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 79,
+          "zeroReturn": 57,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 0,
+          "returnedMean": 1.96
+        },
+        {
+          "arm": "r0.2-d0.30",
+          "policy": {
+            "windowCoverageRatio": 0.2,
+            "unitDfRatioCeiling": 0.3
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 79,
+          "zeroReturn": 57,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 0,
+          "returnedMean": 1.96
+        },
+        {
+          "arm": "r0.2-d0.10",
+          "policy": {
+            "windowCoverageRatio": 0.2,
+            "unitDfRatioCeiling": 0.1
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 79,
+          "zeroReturn": 57,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 1,
+          "returnedMean": 1.96
+        },
+        {
+          "arm": "r0.2-d0.03",
+          "policy": {
+            "windowCoverageRatio": 0.2,
+            "unitDfRatioCeiling": 0.03
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 78,
+          "zeroReturn": 57,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 7,
+          "returnedMean": 1.96
+        },
+        {
+          "arm": "r0.3-d1.00",
+          "policy": {
+            "windowCoverageRatio": 0.3,
+            "unitDfRatioCeiling": 1
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 82,
+          "zeroReturn": 76,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 0,
+          "returnedMean": 1.37
+        },
+        {
+          "arm": "r0.3-d0.30",
+          "policy": {
+            "windowCoverageRatio": 0.3,
+            "unitDfRatioCeiling": 0.3
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 82,
+          "zeroReturn": 76,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 0,
+          "returnedMean": 1.37
+        },
+        {
+          "arm": "r0.3-d0.10",
+          "policy": {
+            "windowCoverageRatio": 0.3,
+            "unitDfRatioCeiling": 0.1
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 82,
+          "zeroReturn": 76,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 1,
+          "returnedMean": 1.37
+        },
+        {
+          "arm": "r0.3-d0.03",
+          "policy": {
+            "windowCoverageRatio": 0.3,
+            "unitDfRatioCeiling": 0.03
+          },
+          "emptyBranch": 0,
+          "likeBranch": 8,
+          "shrunkPages": 81,
+          "zeroReturn": 76,
+          "exemptTotal": 86,
+          "droppedUnitsTotal": 7,
+          "returnedMean": 1.37
+        }
+      ],
+      "observed": {
+        "v1Bites": "r 从 0 到 0.3，逐 arm 平均返回 17.78 → 5.23 → 1.96 → 1.37；空返回 4 → 26 → 57 → 76（共 120 条）",
+        "v2Inert": "d 从 1.0 到 0.03，被丢弃单元共 0 / 0 / 1 / 7 个——60,066 行下连最高频功能词的 df/scope 也只有 0.0416，低于 0.10。刻度已冻结，不因此读数改动（§2.4 第 2 条）",
+        "exemption": "精确单元豁免命中在所有 arm 上恒为 86，它是拉丁 / 路径 / 数字 query 不被覆盖度打死的原因（§2.1 边界 1）"
+      }
+    },
+    "nextPhase": {
+      "f3": {
+        "scope": "在本记录固定的 K 与装置上扫 16 个 arm，出 G1–G4 + 五类召回保护线 + 性能门读数，S5–S9 每 arm 自证",
+        "forbidden": "F3 不得改动 K、不得改动网格刻度、不得改动语义侧任何参数、不得修订判据",
+        "negativeBreakdown": {
+          "requirement": "Codex 第 5 项：40 条词面负例的 G2 读数必须**额外**按「修补 / 未修补」× ftsCount 档分组报告，并逐条给出 ftsCount，使任何阈值口径都可复算。分组不改变 G2 的判定（仍是逐条 distinctContent ≤ 2）。",
+          "patchedDefinition": "query 带 `repair` 字段 = r2 补丁表改过它的 token；不带 = r1 原样",
+          "ftsBands": [
+            "1",
+            "2-9",
+            "10-99",
+            "100-999",
+            ">=1000"
+          ],
+          "ftsBandsProvenance": "等比铺开（1 / 2-9 / 10-99 / 100-999 / ≥1000），与判据 §2.4 的刻度生成规则同一形态，不引用任何门读数",
+          "baseline": {
+            "total": 40,
+            "patched": {
+              "n": 26,
+              "byFtsBand": {
+                "1": 3,
+                "2-9": 14,
+                "10-99": 0,
+                "100-999": 5,
+                ">=1000": 4
+              }
+            },
+            "unpatched": {
+              "n": 14,
+              "byFtsBand": {
+                "1": 1,
+                "2-9": 9,
+                "10-99": 0,
+                "100-999": 3,
+                ">=1000": 1
+              }
+            },
+            "byClass": {
+              "false-premise": {
+                "n": 15,
+                "patched": 9,
+                "unpatched": 6
+              },
+              "same-word-other-thing": {
+                "n": 15,
+                "patched": 10,
+                "unpatched": 5
+              },
+              "stale-state-confusion": {
+                "n": 10,
+                "patched": 7,
+                "unpatched": 3
+              }
+            },
+            "ftsCountRange": [
+              1,
+              2899
+            ]
+          },
+          "perQuery": [
+            {
+              "id": "fr-a01",
+              "lexicalNegativeClass": "false-premise",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 5,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a02",
+              "lexicalNegativeClass": "same-word-other-thing",
+              "negativeType": "near-domain",
+              "patched": false,
+              "ftsCount": 403,
+              "ftsBand": "100-999"
+            },
+            {
+              "id": "fr-a03",
+              "lexicalNegativeClass": "stale-state-confusion",
+              "negativeType": "near-domain",
+              "patched": false,
+              "ftsCount": 4,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a04",
+              "lexicalNegativeClass": "false-premise",
+              "negativeType": "near-domain",
+              "patched": false,
+              "ftsCount": 2,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a05",
+              "lexicalNegativeClass": "false-premise",
+              "negativeType": "near-domain",
+              "patched": false,
+              "ftsCount": 3,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a06",
+              "lexicalNegativeClass": "false-premise",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 7,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a07",
+              "lexicalNegativeClass": "false-premise",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 4,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a08",
+              "lexicalNegativeClass": "false-premise",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 2502,
+              "ftsBand": ">=1000"
+            },
+            {
+              "id": "fr-a09",
+              "lexicalNegativeClass": "false-premise",
+              "negativeType": "near-domain",
+              "patched": false,
+              "ftsCount": 3,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a10",
+              "lexicalNegativeClass": "false-premise",
+              "negativeType": "near-domain",
+              "patched": false,
+              "ftsCount": 673,
+              "ftsBand": "100-999"
+            },
+            {
+              "id": "fr-a11",
+              "lexicalNegativeClass": "false-premise",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 526,
+              "ftsBand": "100-999"
+            },
+            {
+              "id": "fr-a12",
+              "lexicalNegativeClass": "false-premise",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 8,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a13",
+              "lexicalNegativeClass": "false-premise",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 198,
+              "ftsBand": "100-999"
+            },
+            {
+              "id": "fr-a14",
+              "lexicalNegativeClass": "false-premise",
+              "negativeType": "foreign-domain",
+              "patched": false,
+              "ftsCount": 7,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a15",
+              "lexicalNegativeClass": "false-premise",
+              "negativeType": "foreign-domain",
+              "patched": true,
+              "ftsCount": 2511,
+              "ftsBand": ">=1000"
+            },
+            {
+              "id": "fr-a16",
+              "lexicalNegativeClass": "false-premise",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 2503,
+              "ftsBand": ">=1000"
+            },
+            {
+              "id": "fr-a17",
+              "lexicalNegativeClass": "false-premise",
+              "negativeType": "near-domain",
+              "patched": false,
+              "ftsCount": 5,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a18",
+              "lexicalNegativeClass": "same-word-other-thing",
+              "negativeType": "near-domain",
+              "patched": false,
+              "ftsCount": 618,
+              "ftsBand": "100-999"
+            },
+            {
+              "id": "fr-a19",
+              "lexicalNegativeClass": "same-word-other-thing",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 1,
+              "ftsBand": "1"
+            },
+            {
+              "id": "fr-a20",
+              "lexicalNegativeClass": "same-word-other-thing",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 4,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a21",
+              "lexicalNegativeClass": "same-word-other-thing",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 8,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a22",
+              "lexicalNegativeClass": "same-word-other-thing",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 199,
+              "ftsBand": "100-999"
+            },
+            {
+              "id": "fr-a23",
+              "lexicalNegativeClass": "same-word-other-thing",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 6,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a24",
+              "lexicalNegativeClass": "same-word-other-thing",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 3,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a25",
+              "lexicalNegativeClass": "same-word-other-thing",
+              "negativeType": "near-domain",
+              "patched": false,
+              "ftsCount": 2899,
+              "ftsBand": ">=1000"
+            },
+            {
+              "id": "fr-a26",
+              "lexicalNegativeClass": "same-word-other-thing",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 501,
+              "ftsBand": "100-999"
+            },
+            {
+              "id": "fr-a27",
+              "lexicalNegativeClass": "same-word-other-thing",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 2503,
+              "ftsBand": ">=1000"
+            },
+            {
+              "id": "fr-a28",
+              "lexicalNegativeClass": "same-word-other-thing",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 3,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a29",
+              "lexicalNegativeClass": "same-word-other-thing",
+              "negativeType": "foreign-domain",
+              "patched": true,
+              "ftsCount": 182,
+              "ftsBand": "100-999"
+            },
+            {
+              "id": "fr-a30",
+              "lexicalNegativeClass": "same-word-other-thing",
+              "negativeType": "near-domain",
+              "patched": false,
+              "ftsCount": 1,
+              "ftsBand": "1"
+            },
+            {
+              "id": "fr-a31",
+              "lexicalNegativeClass": "same-word-other-thing",
+              "negativeType": "near-domain",
+              "patched": false,
+              "ftsCount": 2,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a32",
+              "lexicalNegativeClass": "stale-state-confusion",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 2,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a33",
+              "lexicalNegativeClass": "stale-state-confusion",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 1,
+              "ftsBand": "1"
+            },
+            {
+              "id": "fr-a34",
+              "lexicalNegativeClass": "stale-state-confusion",
+              "negativeType": "near-domain",
+              "patched": false,
+              "ftsCount": 2,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a35",
+              "lexicalNegativeClass": "stale-state-confusion",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 7,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a36",
+              "lexicalNegativeClass": "stale-state-confusion",
+              "negativeType": "near-domain",
+              "patched": false,
+              "ftsCount": 4,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a37",
+              "lexicalNegativeClass": "stale-state-confusion",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 2,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a38",
+              "lexicalNegativeClass": "stale-state-confusion",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 3,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a39",
+              "lexicalNegativeClass": "stale-state-confusion",
+              "negativeType": "near-domain",
+              "patched": true,
+              "ftsCount": 2,
+              "ftsBand": "2-9"
+            },
+            {
+              "id": "fr-a40",
+              "lexicalNegativeClass": "stale-state-confusion",
+              "negativeType": "foreign-domain",
+              "patched": true,
+              "ftsCount": 1,
+              "ftsBand": "1"
+            }
+          ],
+          "note": "10-99 档在两侧都为 0 是数据的真实形态（词面命中要么只有个别行、要么成百上千行），**不因此调整档位**——档位是报告口径，不是门槛。"
+        },
+        "pageLimitInherited": {
+          "value": 10,
+          "provenance": "F1 判据冻结了 internalCandidateLimit = 50（V4，FTS 腿返回内核的条数），但**没有冻结请求级页面 limit**。G2 的「≤ 2」是 Phase 2B 在 limit = 10 下预登记选出的，P3 网格同样用 10（p3-grid-freeze.json）。F3 因此只能沿用 10：换任何其他值都会改变那个已冻结阈值的含义。",
+          "status": "判据缺口，按继承处理并在此登记；不是本轮新选的取值"
+        }
+      }
+    }
+  },
+  "generatedBy": "benchmark/freeze-util.ts"
+}

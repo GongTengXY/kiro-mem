@@ -1,0 +1,48 @@
+{
+  "provenance": {
+    "source": "acp",
+    "agent": "kiro-mem-compressor",
+    "kiroCli": "kiro-cli (see report)",
+    "target": "queries",
+    "querySet": "heldout",
+    "generatedAt": "2026-07-30T07:28:01.411Z",
+    "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+    "items": 16,
+    "failures": 2,
+    "retries": 13,
+    "wallTimeMs": 113038,
+    "itemLatencyMs": {
+      "p50": 26013,
+      "p95": 113029,
+      "max": 113029
+    }
+  },
+  "queries": {
+    "q32": "will it crash if the search term has quotes or parentheses",
+    "q41": "How is the memory of two different repositories separated?",
+    "q29": "What algorithm is used to merge the two retrieval results?",
+    "q34": "Will the error log write the model's raw output into it?",
+    "q28": "Has anyone actually run a full round of memory generation end to end?",
+    "q31": "What type errors are still left to fix?",
+    "q35": "How many files do I need to touch to bump the version number once?",
+    "q38": "Where is the database file for unit tests placed?",
+    "q30": "How is the Chinese UI and Chinese prompts support implemented?",
+    "q40": "How many bytes does the index injected at the start of the session take up",
+    "q42": "How many dimensions is the vector, and what quantization was used",
+    "q27": "Has this been verified/tested after a fresh install on a clean machine?",
+    "q36": "What happens if a subprocess in the connection pool dies?",
+    "q25": "Will purge followed by reinstall leave behind old tables?",
+    "q26": "Has the job type name been changed at some point?",
+    "q39": "What happens if a file is missed during installation copying?"
+  },
+  "failuresDetail": [
+    {
+      "id": "q33",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "q37",
+      "reason": "JSON 解析失败"
+    }
+  ]
+}

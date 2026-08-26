@@ -1,0 +1,242 @@
+{
+  "purpose": "F4 确定性选择（判据 r3 §8）。判据要求本步必须由脚本计算，包含「没有安全 arm」这一结论。",
+  "round": "fts-safety-round-2026-08-12-r2",
+  "phase": "F4",
+  "generatedAt": "2026-08-14T07:23:54.953Z",
+  "freeze": {
+    "path": "benchmark/reports/fts-round/f2-freeze-r3.json",
+    "verify": "判据 1/1 + 输入 19/19",
+    "selectedK": 200
+  },
+  "preconditions": [
+    {
+      "name": "P0 S7a 通过（K 由正确性阶梯选定）",
+      "pass": true,
+      "detail": "K = 200，16 arm × 120 query 差集 0"
+    },
+    {
+      "name": "P1 S1–S4 通过（装置自证）",
+      "pass": true,
+      "detail": "8 项自证全过"
+    }
+  ],
+  "algorithm": "前置 P0（S7a）+ P1（S1–S4）→ 结构排除基线 → G1∧G2∧G3 → G4 ∧ 保护线 ∧ 性能门 → 字典序 (hit@5, MRR, 准入更强, arm id)（§8）",
+  "tieBreakOrder": [
+    "primary hit@5 ↓",
+    "primary MRR ↓",
+    "r ↑（准入更强）",
+    "d ↓（准入更强）",
+    "arm id ↑"
+  ],
+  "baselineArm": "r0-d1.00",
+  "counts": {
+    "arms": 16,
+    "candidates": 15,
+    "feasible": 0,
+    "eligible": 0
+  },
+  "feasibleArms": [],
+  "eligibleArms": [],
+  "selected": null,
+  "verdict": "no-safe-arm",
+  "verdictText": "本轮没有安全 arm：15 个候选 arm 在安全过滤（G1∧G2∧G3）阶段全部被淘汰。按判据 §8 第 4 步与 §9 第 9 条，结论是「本轮不通过」，不得下调门槛、不得删掉保护线中的任何一类、不得放宽 G2 的 2、不得加密网格刻度再扫一遍。",
+  "elimination": [
+    {
+      "arm": "r0-d0.30",
+      "policy": {
+        "windowCoverageRatio": 0,
+        "unitDfRatioCeiling": 0.3
+      },
+      "eliminatedBy": [
+        "G1(污染 73 次 / 30 条 query，primary 缺席 11)",
+        "G2(超限 38/40，最坏 distinctContent 10)"
+      ],
+      "selfCertPass": true
+    },
+    {
+      "arm": "r0-d0.10",
+      "policy": {
+        "windowCoverageRatio": 0,
+        "unitDfRatioCeiling": 0.1
+      },
+      "eliminatedBy": [
+        "G1(污染 73 次 / 30 条 query，primary 缺席 11)",
+        "G2(超限 38/40，最坏 distinctContent 10)"
+      ],
+      "selfCertPass": true
+    },
+    {
+      "arm": "r0-d0.03",
+      "policy": {
+        "windowCoverageRatio": 0,
+        "unitDfRatioCeiling": 0.03
+      },
+      "eliminatedBy": [
+        "G1(污染 73 次 / 30 条 query，primary 缺席 11)",
+        "G2(超限 38/40，最坏 distinctContent 10)"
+      ],
+      "selfCertPass": true
+    },
+    {
+      "arm": "r0.1-d1.00",
+      "policy": {
+        "windowCoverageRatio": 0.1,
+        "unitDfRatioCeiling": 1
+      },
+      "eliminatedBy": [
+        "G1(污染 63 次 / 25 条 query，primary 缺席 14)",
+        "G2(超限 29/40，最坏 distinctContent 10)",
+        "G4(回退 4 项)"
+      ],
+      "selfCertPass": true
+    },
+    {
+      "arm": "r0.1-d0.30",
+      "policy": {
+        "windowCoverageRatio": 0.1,
+        "unitDfRatioCeiling": 0.3
+      },
+      "eliminatedBy": [
+        "G1(污染 63 次 / 25 条 query，primary 缺席 14)",
+        "G2(超限 29/40，最坏 distinctContent 10)",
+        "G4(回退 4 项)"
+      ],
+      "selfCertPass": true
+    },
+    {
+      "arm": "r0.1-d0.10",
+      "policy": {
+        "windowCoverageRatio": 0.1,
+        "unitDfRatioCeiling": 0.1
+      },
+      "eliminatedBy": [
+        "G1(污染 63 次 / 25 条 query，primary 缺席 14)",
+        "G2(超限 29/40，最坏 distinctContent 10)",
+        "G4(回退 4 项)"
+      ],
+      "selfCertPass": true
+    },
+    {
+      "arm": "r0.1-d0.03",
+      "policy": {
+        "windowCoverageRatio": 0.1,
+        "unitDfRatioCeiling": 0.03
+      },
+      "eliminatedBy": [
+        "G1(污染 63 次 / 25 条 query，primary 缺席 14)",
+        "G2(超限 28/40，最坏 distinctContent 10)",
+        "G4(回退 4 项)"
+      ],
+      "selfCertPass": true
+    },
+    {
+      "arm": "r0.2-d1.00",
+      "policy": {
+        "windowCoverageRatio": 0.2,
+        "unitDfRatioCeiling": 1
+      },
+      "eliminatedBy": [
+        "G1(污染 58 次 / 23 条 query，primary 缺席 17)",
+        "G2(超限 17/40，最坏 distinctContent 10)",
+        "G4(回退 6 项)"
+      ],
+      "selfCertPass": true
+    },
+    {
+      "arm": "r0.2-d0.30",
+      "policy": {
+        "windowCoverageRatio": 0.2,
+        "unitDfRatioCeiling": 0.3
+      },
+      "eliminatedBy": [
+        "G1(污染 58 次 / 23 条 query，primary 缺席 17)",
+        "G2(超限 17/40，最坏 distinctContent 10)",
+        "G4(回退 6 项)"
+      ],
+      "selfCertPass": true
+    },
+    {
+      "arm": "r0.2-d0.10",
+      "policy": {
+        "windowCoverageRatio": 0.2,
+        "unitDfRatioCeiling": 0.1
+      },
+      "eliminatedBy": [
+        "G1(污染 58 次 / 23 条 query，primary 缺席 17)",
+        "G2(超限 17/40，最坏 distinctContent 10)",
+        "G4(回退 6 项)"
+      ],
+      "selfCertPass": true
+    },
+    {
+      "arm": "r0.2-d0.03",
+      "policy": {
+        "windowCoverageRatio": 0.2,
+        "unitDfRatioCeiling": 0.03
+      },
+      "eliminatedBy": [
+        "G1(污染 58 次 / 23 条 query，primary 缺席 17)",
+        "G2(超限 17/40，最坏 distinctContent 10)",
+        "G4(回退 6 项)"
+      ],
+      "selfCertPass": true
+    },
+    {
+      "arm": "r0.3-d1.00",
+      "policy": {
+        "windowCoverageRatio": 0.3,
+        "unitDfRatioCeiling": 1
+      },
+      "eliminatedBy": [
+        "G1(污染 59 次 / 24 条 query，primary 缺席 19)",
+        "G2(超限 9/40，最坏 distinctContent 3)",
+        "G4(回退 7 项)"
+      ],
+      "selfCertPass": true
+    },
+    {
+      "arm": "r0.3-d0.30",
+      "policy": {
+        "windowCoverageRatio": 0.3,
+        "unitDfRatioCeiling": 0.3
+      },
+      "eliminatedBy": [
+        "G1(污染 59 次 / 24 条 query，primary 缺席 19)",
+        "G2(超限 9/40，最坏 distinctContent 3)",
+        "G4(回退 7 项)"
+      ],
+      "selfCertPass": true
+    },
+    {
+      "arm": "r0.3-d0.10",
+      "policy": {
+        "windowCoverageRatio": 0.3,
+        "unitDfRatioCeiling": 0.1
+      },
+      "eliminatedBy": [
+        "G1(污染 59 次 / 24 条 query，primary 缺席 19)",
+        "G2(超限 9/40，最坏 distinctContent 3)",
+        "G4(回退 7 项)"
+      ],
+      "selfCertPass": true
+    },
+    {
+      "arm": "r0.3-d0.03",
+      "policy": {
+        "windowCoverageRatio": 0.3,
+        "unitDfRatioCeiling": 0.03
+      },
+      "eliminatedBy": [
+        "G1(污染 59 次 / 24 条 query，primary 缺席 19)",
+        "G2(超限 9/40，最坏 distinctContent 3)",
+        "G4(回退 7 项)"
+      ],
+      "selfCertPass": true
+    }
+  ],
+  "eliminationHistogram": {
+    "G1": 15,
+    "G2": 15,
+    "G4": 12
+  }
+}

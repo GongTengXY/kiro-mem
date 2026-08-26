@@ -1,0 +1,604 @@
+{
+  "provenance": {
+    "author": "Codex final recall acceptance audit",
+    "purpose": "Phase 3C P6 final ruling after raw-v1 degradation was changed to FTS-only",
+    "constructedWithoutRetrievalOutputs": true,
+    "semanticArmsRunBeforeFreeze": false,
+    "previouslyViewedSetsExcluded": [
+      "benchmark/dataset/queries.json",
+      "benchmark/dataset/queries-phase2.json",
+      "benchmark/dataset/queries-empty-ext.json",
+      "benchmark/reports/phase2b-codex-blind-audit-input.json",
+      "benchmark/reports/pool-policy/codex-blind-audit-input.json",
+      "benchmark/reports/topk/codex-blind-audit-input.json"
+    ],
+    "annotationRule": "Positive labels come only from benchmark/dataset/turns.json annotations. Negative labels assert absence across all 26 primary annotations and are never selected from retrieval output.",
+    "blindnessBoundary": "Before freeze, only schema validation, semantic_query_en guard validation, and text-only FTS precheck are allowed. Query embeddings, stored-vector scoring, semantic ranks, final pages, and either time-window arm are forbidden.",
+    "fixtureContract": {
+      "primaryFacts": "benchmark/dataset/turns.json primary t01-t26",
+      "primarySemanticRecords": "benchmark/dataset/mirror-en-acp-records.json",
+      "oldCorpusSource": "benchmark/dataset/pool-policy-filler-10k.json repeated five times",
+      "oldCorpusSize": 50000,
+      "oldCorpusSpreadDays": 1095,
+      "goldAgeDays": 400,
+      "pairedArms": ["days=90", "unbounded"],
+      "sameDatabaseForBothArms": true,
+      "requestLimit": 10,
+      "productionPolicyOnly": true,
+      "bigramAux": false
+    }
+  },
+  "queries": [
+    {
+      "id": "fra-r01",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "问题里夹着冒号、减号或只写了一半的引语符号时，怎样避免把它们误认成检索指令",
+      "semantic_query_en": "How does search avoid interpreting colons, hyphens, or an unmatched quotation mark in a question as retrieval syntax?",
+      "gold": ["t01"],
+      "annotation_basis": "turns.json t01 annotation: user text is quoted as an FTS5 literal and embedded quotes are doubled."
+    },
+    {
+      "id": "fra-r02",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "数值编码一直算不出来时，交互查找凭什么还能在期限内交还已有的文字命中",
+      "semantic_query_en": "What lets an interactive lookup return its lexical matches within a deadline when numeric encoding never finishes?",
+      "gold": ["t02"],
+      "annotation_basis": "turns.json t02 annotation: query embedding has a 1200ms deadline and failures fall back to FTS-only."
+    },
+    {
+      "id": "fra-r03",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "开场那一步联系不上常驻组件时，缘何宁可无声收手也不接管拉起职责",
+      "semantic_query_en": "Why should the synchronous session-start callback exit quietly instead of taking responsibility for launching an unavailable background service?",
+      "gold": ["t03"],
+      "annotation_basis": "turns.json t03 annotation: process management and sleeps were removed from the AgentSpawn hook; service managers own keepalive."
+    },
+    {
+      "id": "fra-r04",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "提炼器吐出意外结构时，排障材料怎样既能分类又不留下交谈内容",
+      "semantic_query_en": "When automatic summarization emits malformed data, how do diagnostics remain distinguishable without persisting the conversation text?",
+      "gold": ["t04"],
+      "annotation_basis": "turns.json t04 annotation: logs retain only error type, attempts, and byte counts; model output is excluded."
+    },
+    {
+      "id": "fra-r05",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "协议端和常驻程序各自抄一份发行标识造成漂移后，后来怎样让它们共用一个事实来源",
+      "semantic_query_en": "How were protocol endpoints and resident processes made to share one source of truth after duplicated release identifiers drifted?",
+      "gold": ["t05"],
+      "annotation_basis": "turns.json t05 annotation: PACKAGE_VERSION is read from package.json and reused by ACP, MCP, Worker health, and diagnose."
+    },
+    {
+      "id": "fra-r06",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "调用者交来异常的页长，何处把它拦下以免一次读穿资料表",
+      "semantic_query_en": "Which boundary stops a negative or nonnumeric count from becoming an unlimited database read?",
+      "gold": ["t06"],
+      "annotation_basis": "turns.json t06 annotation: MCP schema and handler both bound pagination and search arguments because negative SQLite LIMIT is unbounded."
+    },
+    {
+      "id": "fra-r07",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "并发资源替换失败以后，如何清掉那个已死却仍占名额的成员，免得后续申请永远等候",
+      "semantic_query_en": "After replacement of a concurrent resource fails, how is the dead member removed so later acquisitions do not wait forever?",
+      "gold": ["t07"],
+      "annotation_basis": "turns.json t07 annotation: failed recycle removes the dead slot and rejects waiters rather than leaving capacity occupied."
+    },
+    {
+      "id": "fra-r08",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "提炼过程屡遭运行环境中断，落盘替代物为何把结论空着而不臆造已完成",
+      "semantic_query_en": "When content synthesis repeatedly suffers infrastructure failures, why does the persisted fallback leave conclusions empty instead of guessing completion?",
+      "gold": ["t08"],
+      "annotation_basis": "turns.json t08 annotation: retry exhaustion writes a fallback Observation containing deterministic evidence and no invented outcome."
+    },
+    {
+      "id": "fra-r09",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "彻底移除再重新部署的自动验收，怎样同时证明私人资料没被碰触且上一代结构没有残留",
+      "semantic_query_en": "How does the automated remove-and-redeploy acceptance prove both that private data was untouched and that the previous storage layout did not remain?",
+      "gold": ["t09"],
+      "annotation_basis": "turns.json t09 annotation: purge and clean install run in injected temporary paths and verify only the V3 layout remains."
+    },
+    {
+      "id": "fra-r10",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "既然升级必定重建资料库，后台作业的名字为什么没有再附上一段代际编号",
+      "semantic_query_en": "Why were generation suffixes omitted from background job names when the upgrade always recreates the database?",
+      "gold": ["t10"],
+      "annotation_basis": "turns.json t10 annotation: destructive upgrade removes compatibility value from _v3 job suffixes, so simple names were retained."
+    },
+    {
+      "id": "fra-r11",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "只监听本机的接口若找不到访问凭据，为什么要重新建立凭据并继续拒绝请求，而不能临时开放",
+      "semantic_query_en": "If a loopback-only endpoint cannot find its access credential, why must it recreate the credential and keep denying requests instead of temporarily opening access?",
+      "gold": ["t11"],
+      "annotation_basis": "turns.json t11 annotation: local token authentication is deny-by-default; a missing token is rebuilt rather than failing open."
+    },
+    {
+      "id": "fra-r12",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "验收产生的排障痕迹怎样从启动之初就导向用后即弃的位置，不接触个人存储",
+      "semantic_query_en": "How are automated-check error records redirected to disposable storage from process startup so they cannot land in the developer data area?",
+      "gold": ["t12"],
+      "annotation_basis": "turns.json t12 annotation: bunfig preload redirects the data directory to a temporary location before tests execute."
+    },
+    {
+      "id": "fra-r13",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "成品曾缺少间接依赖的源文件后，用何种遍历断言代替手写搬运名单",
+      "semantic_query_en": "After a deployed package omitted source reached by a relative import, what automated assertion replaced reliance on a manually maintained copy list?",
+      "gold": ["t13"],
+      "annotation_basis": "turns.json t13 annotation: an import-graph completeness test now verifies every relative module is included."
+    },
+    {
+      "id": "fra-r14",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "新材料落盘而旧常驻体仍活动时，为何部署必须换掉活进程而非确认它存在",
+      "semantic_query_en": "When installation overwrites files while an old instance is still alive, why is ensuring it is started insufficient and a stop-then-start required?",
+      "gold": ["t14"],
+      "annotation_basis": "turns.json t14 annotation: install uses restart rather than idempotent start so overwritten code is actually loaded."
+    },
+    {
+      "id": "fra-r15",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "要识别修补后仍由上一版响应，应拿活体自报值与哪份落地值互证",
+      "semantic_query_en": "How can the identity of the serving build be compared with the release on disk to detect old code still running after repair installation?",
+      "gold": ["t15"],
+      "annotation_basis": "turns.json t15 annotation: diagnose compares Worker health version with the installed package version."
+    },
+    {
+      "id": "fra-r16",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "一台空机器初次装妥，哪三类独立迹象需互相印证才能排除半成品",
+      "semantic_query_en": "After installation from an empty state on a real machine, which independent evidence must be checked together to avoid missing a half-installed state?",
+      "gold": ["t16"],
+      "annotation_basis": "turns.json t16 annotation: acceptance cross-checks runtime version, database tables, and token permissions."
+    },
+    {
+      "id": "fra-r17",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "绕开聊天界面直接触发已装事件入口，能核验原始记录到数值表示层的哪段闭环",
+      "semantic_query_en": "Which fact-recording and numeric-representation persistence stages can be verified by directly driving installed event scripts without the interactive interface?",
+      "gold": ["t17"],
+      "annotation_basis": "turns.json t17 annotation: installed hooks produced a closed turn, events, a normal Observation, and a 384-dimensional embedding."
+    },
+    {
+      "id": "fra-r18",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "换到另一个工程目录后，开场材料缩成一小段用法提示且不含历史条目，这证明了什么边界",
+      "semantic_query_en": "What boundary is demonstrated when startup material shrinks to a usage note with no historical entries after switching project directories?",
+      "gold": ["t18"],
+      "annotation_basis": "turns.json t18 annotation: bootstrap context is small and scope filtering removes Observations in another workspace."
+    },
+    {
+      "id": "fra-r19",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "强制结束常驻进程以后，如何把自动恢复、前台回调时限和敏感内容零暴露放在一次故障验收里验证",
+      "semantic_query_en": "After forcibly terminating the resident process, how were automatic recovery, foreground callback deadlines, and zero sensitive-content exposure verified in one failure acceptance?",
+      "gold": ["t19"],
+      "annotation_basis": "turns.json t19 annotation: kill recovery, hook latency, empty stdout, and privacy scans were verified together."
+    },
+    {
+      "id": "fra-r20",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "并发重做使派生主键不再代表发生顺序，邻接关系该听从原始事件的哪组锚点",
+      "semantic_query_en": "When asynchronous retries make derived auto-increment identifiers stop representing order, which truth-layer ordering should anchor timeline neighbors?",
+      "gold": ["t20"],
+      "annotation_basis": "turns.json t20 annotation: timeline order uses source-turn time and sequence rather than Observation ID."
+    },
+    {
+      "id": "fra-r21",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "文字候选和向量候选按名次合并后，什么约束防止只有微弱相似性的条目独自占据页面",
+      "semantic_query_en": "After lexical and vector candidates are fused by rank, what constraint stops a weak similarity-only item from occupying the page by itself?",
+      "gold": ["t21"],
+      "annotation_basis": "turns.json t21 annotation: reciprocal-rank fusion is paired with a cosine floor for semantic-only candidates."
+    },
+    {
+      "id": "fra-r22",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "目录别名会改变绝对位置时，项目归属为何要在资料诞生那刻定死",
+      "semantic_query_en": "When paths can change through symbolic links and repository detection, why must cross-project ownership be fixed at write time?",
+      "gold": ["t22"],
+      "annotation_basis": "turns.json t22 annotation: scope_key is frozen on write and is a hard retrieval filter across path representations."
+    },
+    {
+      "id": "fra-r23",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "随包携带的表征器采取何种低精度形式，向量轴数又是多少",
+      "semantic_query_en": "What tradeoff among numeric precision, vector width, and disk size made sentence encoding practical to ship offline with the installer?",
+      "gold": ["t23"],
+      "annotation_basis": "turns.json t23 annotation: all-MiniLM-L6-v2 uses q8, remains 384-dimensional, and occupies about 23MB."
+    },
+    {
+      "id": "fra-r24",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "选择华文交互以后，为什么代理读到的命令说明和开场提示也必须一起切换语言",
+      "semantic_query_en": "Why must command descriptions and startup hints visible to the agent switch language together when Chinese interaction is selected?",
+      "gold": ["t24"],
+      "annotation_basis": "turns.json t24 annotation: i18n covers MCP descriptions, context usage notes, CLI output, and compression prompts."
+    },
+    {
+      "id": "fra-r25",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "可缺省的凭据被当作必有文本使用时，编译审查指出几处矛盾，后续处置是否完成",
+      "semantic_query_en": "What unresolved policy issue did static checking expose when authentication middleware passed a possibly absent credential to a string-only function?",
+      "gold": ["t25"],
+      "annotation_basis": "turns.json t25 annotation: typecheck reported three string-or-null token errors and the expected missing-token behavior remained unresolved."
+    },
+    {
+      "id": "fra-r26",
+      "kind": "relevance",
+      "cohort": "old-relevance",
+      "query": "同事先尝鲜可暂缓哪类量具，而面向外界前为何不可再欠账",
+      "semantic_query_en": "Why may internal team use temporarily proceed without retrieval-quality samples while a public stable release must supply that evidence?",
+      "gold": ["t26"],
+      "annotation_basis": "turns.json t26 annotation: the quality benchmark does not block internal trials but does block public stable release."
+    },
+
+    {
+      "id": "fra-n01",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "检索器是否部署了可不停服更新的同义表达词库",
+      "semantic_query_en": "Was a synonym lexicon that can update without service interruption deployed for retrieval?",
+      "gold": [],
+      "annotation_basis": "Absent across turns.json primary t01-t26; closest work t01 only literalizes FTS5 input."
+    },
+    {
+      "id": "fra-n02",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "句子向量是否迁移到远端加速器并自动合并并发请求",
+      "semantic_query_en": "Was sentence-vector inference moved to a remote accelerator that automatically coalesces concurrent requests?",
+      "gold": [],
+      "annotation_basis": "Absent across turns.json primary t01-t26; t02 and t23 use a local model and timeouts, not a remote batching service."
+    },
+    {
+      "id": "fra-n03",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "后台服务是否采用租约心跳在两个实例之间自动选主",
+      "semantic_query_en": "Does the background service use lease heartbeats to elect a leader between two instances?",
+      "gold": [],
+      "annotation_basis": "Absent across turns.json primary t01-t26; service recovery uses launchd/systemd rather than active-standby election."
+    },
+    {
+      "id": "fra-n04",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "诊断记录是否被同步到具备防篡改保证的外部归档库",
+      "semantic_query_en": "Are diagnostic records synchronized to an external archive with tamper-evidence guarantees?",
+      "gold": [],
+      "annotation_basis": "Absent across turns.json primary t01-t26; t04 only constrains local log contents."
+    },
+    {
+      "id": "fra-n05",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "发行身份是否由源码标签自动推导并附上密码学签名",
+      "semantic_query_en": "Is release identity derived automatically from source tags and accompanied by a cryptographic signature?",
+      "gold": [],
+      "annotation_basis": "Absent across turns.json primary t01-t26; t05 centralizes the package version but does not sign it."
+    },
+    {
+      "id": "fra-n06",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "接口翻页是否已经改用加密续页令牌而非数字位置",
+      "semantic_query_en": "Was interface pagination changed from numeric positions to encrypted continuation tokens?",
+      "gold": [],
+      "annotation_basis": "Absent across turns.json primary t01-t26; t06 adds bounds only."
+    },
+    {
+      "id": "fra-n07",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "任务调度器能否让紧急事项中途夺走普通事项的执行权",
+      "semantic_query_en": "Can the concurrency executor preempt running low-priority work for higher-priority work?",
+      "gold": [],
+      "annotation_basis": "Absent across turns.json primary t01-t26; t07 repairs dead-slot recycling only."
+    },
+    {
+      "id": "fra-n08",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "摘要器屡次失手后，会不会把整段会话转交给真人审核",
+      "semantic_query_en": "After repeated automatic synthesis failures, is the complete conversation sent to a human review queue?",
+      "gold": [],
+      "annotation_basis": "Absent and contradicted by turns.json t04/t08 privacy and deterministic-fallback annotations."
+    },
+    {
+      "id": "fra-n09",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "彻底卸载是否会联络云端并擦除其他设备上的副本",
+      "semantic_query_en": "Does complete uninstall contact a cloud service and erase copies on other devices?",
+      "gold": [],
+      "annotation_basis": "Absent across turns.json primary t01-t26; t09 concerns isolated local paths only."
+    },
+    {
+      "id": "fra-n10",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "后台作业是否改由消息代理投递并承诺恰好处理一次",
+      "semantic_query_en": "Were background jobs moved to a message broker with exactly-once processing guarantees?",
+      "gold": [],
+      "annotation_basis": "Absent across turns.json primary t01-t26; t10 discusses names, not queue delivery semantics."
+    },
+    {
+      "id": "fra-n11",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "本机访问凭据是否交由硬件密钥仓保管并用生物特征解锁",
+      "semantic_query_en": "Are local access credentials held by a hardware key vault and unlocked biometrically?",
+      "gold": [],
+      "annotation_basis": "Absent across turns.json primary t01-t26; t11 stores a file token with mode 0600."
+    },
+    {
+      "id": "fra-n12",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "自动检查是否在完整操作系统快照里运行并在结束后回滚整机状态",
+      "semantic_query_en": "Do automated checks run inside a full operating-system snapshot that rolls back the whole machine afterward?",
+      "gold": [],
+      "annotation_basis": "Absent across turns.json primary t01-t26; t12 redirects only the application data directory."
+    },
+    {
+      "id": "fra-n13",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "成品会不会列出全部第三方组成，并因安全公告而拒绝出货",
+      "semantic_query_en": "Does the deliverable generate a dependency bill of materials and block releases containing known vulnerabilities?",
+      "gold": [],
+      "annotation_basis": "Absent across turns.json primary t01-t26; t13 checks relative-import completeness only."
+    },
+    {
+      "id": "fra-n14",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "服务升级是否通过双实例切换流量做到完全无重启",
+      "semantic_query_en": "Do service upgrades switch traffic between two instances with no restart at all?",
+      "gold": [],
+      "annotation_basis": "Absent and contradicted by turns.json t14, which intentionally restarts the process."
+    },
+    {
+      "id": "fra-n15",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "健康探测是否会构建依赖关系图并自动给出根因",
+      "semantic_query_en": "Does health probing build a dependency graph and automatically determine root causes?",
+      "gold": [],
+      "annotation_basis": "Absent across turns.json primary t01-t26; t15 compares only runtime and disk versions."
+    },
+    {
+      "id": "fra-n16",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "事件处理链是否接入跨进程追踪并输出调用火焰图",
+      "semantic_query_en": "Was the event-processing chain connected to cross-process tracing that emits call flame graphs?",
+      "gold": [],
+      "annotation_basis": "Absent across turns.json primary t01-t26; t17 validates local persisted artifacts only."
+    },
+    {
+      "id": "fra-n17",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "工程隔离是否允许用户配置一组可互相共享历史的白名单",
+      "semantic_query_en": "Does project isolation let users configure an allowlist of workspaces that may share history?",
+      "gold": [],
+      "annotation_basis": "Absent across turns.json primary t01-t26; t18/t22 enforce isolation except explicit global search."
+    },
+    {
+      "id": "fra-n18",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "常驻程序反复崩溃时是否启用指数等待和断路保护",
+      "semantic_query_en": "When the resident process repeatedly crashes, are exponential delays and circuit breaking enabled?",
+      "gold": [],
+      "annotation_basis": "Absent across turns.json primary t01-t26; t19 verifies service-manager relaunch only."
+    },
+    {
+      "id": "fra-n19",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "历史浏览页能否抛开日期，改按语义相近程度分组",
+      "semantic_query_en": "Can the timeline switch to vector-cluster display instead of event chronology?",
+      "gold": [],
+      "annotation_basis": "Absent and contradicted by turns.json t20 chronological source-turn ordering."
+    },
+    {
+      "id": "fra-n20",
+      "kind": "hard-negative",
+      "negative_type": "near-domain",
+      "query": "混合排序是否训练了监督学习模型来取代固定名次公式",
+      "semantic_query_en": "Was a supervised ranking model trained to replace the fixed rank-fusion formula?",
+      "gold": [],
+      "annotation_basis": "Absent across turns.json primary t01-t26; t21 uses fixed reciprocal-rank fusion."
+    },
+    {
+      "id": "fra-n21",
+      "kind": "hard-negative",
+      "negative_type": "foreign-domain",
+      "query": "古典吉他面板的扇形音梁如何影响低频响应",
+      "semantic_query_en": "How does fan bracing in a classical guitar soundboard affect bass response?",
+      "gold": [],
+      "annotation_basis": "No musical-instrument work exists in turns.json primary t01-t26."
+    },
+    {
+      "id": "fra-n22",
+      "kind": "hard-negative",
+      "negative_type": "foreign-domain",
+      "query": "陶瓷还原焰烧成时怎样控制釉面铜红发色",
+      "semantic_query_en": "How is copper-red glaze coloration controlled during reduction firing of ceramics?",
+      "gold": [],
+      "annotation_basis": "No ceramics work exists in turns.json primary t01-t26."
+    },
+    {
+      "id": "fra-n23",
+      "kind": "hard-negative",
+      "negative_type": "foreign-domain",
+      "query": "海水水族箱的蛋白质分离器进气量应怎样调节",
+      "semantic_query_en": "How should air intake be adjusted on a protein skimmer for a marine aquarium?",
+      "gold": [],
+      "annotation_basis": "No aquarium work exists in turns.json primary t01-t26."
+    },
+    {
+      "id": "fra-n24",
+      "kind": "hard-negative",
+      "negative_type": "foreign-domain",
+      "query": "长曝光星野摄影如何避免赤道仪周期误差形成拖线",
+      "semantic_query_en": "How can long-exposure astrophotography prevent periodic tracking error from creating star trails?",
+      "gold": [],
+      "annotation_basis": "No astronomy or photography work exists in turns.json primary t01-t26."
+    },
+    {
+      "id": "fra-n25",
+      "kind": "hard-negative",
+      "negative_type": "foreign-domain",
+      "query": "酸种面包在低温发酵后为什么会失去面筋张力",
+      "semantic_query_en": "Why can sourdough lose gluten tension after cold fermentation?",
+      "gold": [],
+      "annotation_basis": "No baking work exists in turns.json primary t01-t26."
+    },
+    {
+      "id": "fra-n26",
+      "kind": "hard-negative",
+      "negative_type": "foreign-domain",
+      "query": "公路车真空胎在低压过弯时怎样防止脱圈",
+      "semantic_query_en": "How can a tubeless road-bike tire avoid burping off the rim while cornering at low pressure?",
+      "gold": [],
+      "annotation_basis": "No bicycle work exists in turns.json primary t01-t26."
+    },
+    {
+      "id": "fra-n27",
+      "kind": "hard-negative",
+      "negative_type": "foreign-domain",
+      "query": "蜂群越冬前应依据什么判断储蜜量是否充足",
+      "semantic_query_en": "How should a beekeeper judge whether a colony has enough stored honey before winter?",
+      "gold": [],
+      "annotation_basis": "No beekeeping work exists in turns.json primary t01-t26."
+    },
+    {
+      "id": "fra-n28",
+      "kind": "hard-negative",
+      "negative_type": "foreign-domain",
+      "query": "小提琴音柱位置偏移会怎样改变高音弦的响应",
+      "semantic_query_en": "How does displacement of a violin soundpost change the response of the treble strings?",
+      "gold": [],
+      "annotation_basis": "No string-instrument work exists in turns.json primary t01-t26."
+    },
+    {
+      "id": "fra-n29",
+      "kind": "hard-negative",
+      "negative_type": "foreign-domain",
+      "query": "木工手刨的刃口角度怎样影响逆纹表面的撕裂",
+      "semantic_query_en": "How does a hand-plane cutting angle affect tear-out on reversing wood grain?",
+      "gold": [],
+      "annotation_basis": "No woodworking work exists in turns.json primary t01-t26."
+    },
+    {
+      "id": "fra-n30",
+      "kind": "hard-negative",
+      "negative_type": "foreign-domain",
+      "query": "围棋官子阶段如何估算逆收与后手的目数差",
+      "semantic_query_en": "How is the point-value difference between reverse sente and gote estimated in the endgame of Go?",
+      "gold": [],
+      "annotation_basis": "No board-game work exists in turns.json primary t01-t26."
+    }
+  ],
+  "raw_controls": [
+    {
+      "id": "fra-g01",
+      "query": "FTS5 遇到冒号时如何处理",
+      "semantic_input_case": "missing",
+      "semantic_query_en": null,
+      "expected_lexical_gold": ["t01"],
+      "annotation_basis": "turns.json t01 explicitly records FTS5 punctuation handling."
+    },
+    {
+      "id": "fra-g02",
+      "query": "1200ms 超时以后查询怎样返回",
+      "semantic_input_case": "placeholder",
+      "semantic_query_en": "...",
+      "expected_lexical_gold": ["t02"],
+      "annotation_basis": "turns.json t02 explicitly records the 1200ms query deadline."
+    },
+    {
+      "id": "fra-g03",
+      "query": "launchctl 为什么不能放进开场回调",
+      "semantic_input_case": "untranslated",
+      "semantic_query_en": "launchctl 为什么不能放进开场回调",
+      "expected_lexical_gold": ["t03"],
+      "annotation_basis": "turns.json t03 explicitly records removal of launchctl from the hook."
+    },
+    {
+      "id": "fra-g04",
+      "query": "health.version 怎样发现运行版本漂移",
+      "semantic_input_case": "lost_tokens",
+      "semantic_query_en": "How is a running release mismatch detected?",
+      "expected_lexical_gold": ["t15"],
+      "annotation_basis": "turns.json t15 explicitly records health.version comparison; the English form intentionally loses the protected token."
+    },
+    {
+      "id": "fra-g05",
+      "query": "turn_stopped_at 为什么比自增编号更适合排序",
+      "semantic_input_case": "missing",
+      "semantic_query_en": null,
+      "expected_lexical_gold": ["t20"],
+      "annotation_basis": "turns.json t20 explicitly records source-turn timestamp ordering."
+    },
+    {
+      "id": "fra-g06",
+      "query": "all-MiniLM-L6-v2 为什么采用 q8",
+      "semantic_input_case": "placeholder",
+      "semantic_query_en": "N/A",
+      "expected_lexical_gold": ["t23"],
+      "annotation_basis": "turns.json t23 explicitly records the model and q8 choice."
+    },
+    {
+      "id": "fra-g07",
+      "query": "string | null 导致了哪类静态错误",
+      "semantic_input_case": "untranslated",
+      "semantic_query_en": "string | null 导致了哪类静态错误",
+      "expected_lexical_gold": ["t25"],
+      "annotation_basis": "turns.json t25 explicitly records string-or-null type errors."
+    },
+    {
+      "id": "fra-g08",
+      "query": "observation_search.ts 的语义地板线在哪里生效",
+      "semantic_input_case": "lost_tokens",
+      "semantic_query_en": "Where is the semantic floor applied?",
+      "expected_lexical_gold": ["t21"],
+      "annotation_basis": "turns.json t21 records the semantic floor; the English form intentionally loses the protected file token."
+    }
+  ]
+}

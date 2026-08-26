@@ -1,0 +1,329 @@
+{
+  "generatedAt": "2026-08-05T02:04:47.944Z",
+  "provenance": {
+    "criteria": "benchmark/reports/fix-fts-limit-criteria.md",
+    "criteriaSha256": "376e50fdda17fdd7",
+    "fillerSha256": "10b572bd3ec7e4b9",
+    "auditScriptSha256": "ab1b7651bb5c34f4",
+    "bun": "1.2.20",
+    "platform": "darwin-arm64",
+    "seededRecords": 1970,
+    "repeatPerMeasurement": 5,
+    "flipRule": "驱动表不同 | 参数形式多出 TEMP B-TREE | 某表 SEARCH→SCAN",
+    "scopeRule": "翻转 AND 耗时比 > 10×"
+  },
+  "rows": [
+    {
+      "line": 574,
+      "method": "listTurnsBySession",
+      "verified": true,
+      "literal": {
+        "ms": 0.028,
+        "rows": 50,
+        "plan": [
+          "SEARCH turns USING INDEX idx_turns_session_seq (session_id=?)"
+        ]
+      },
+      "param": {
+        "ms": 0.028,
+        "rows": 50,
+        "plan": [
+          "SEARCH turns USING INDEX idx_turns_session_seq (session_id=?)"
+        ]
+      },
+      "ratio": 1,
+      "flipped": false,
+      "flipReasons": [],
+      "inScope": false
+    },
+    {
+      "line": 1071,
+      "method": "findObservationsMissingSemanticText",
+      "verified": true,
+      "literal": {
+        "ms": 0.112,
+        "rows": 500,
+        "plan": [
+          "SCAN o",
+          "CORRELATED SCALAR SUBQUERY 1",
+          "SEARCH j USING INDEX idx_jobs_dedupe_active (job_type=? AND dedupe_key=?)",
+          "SEARCH s USING INDEX sqlite_autoindex_observation_semantic_texts_1 (observation_id=? AND protocol=?) LEFT-JOIN"
+        ]
+      },
+      "param": {
+        "ms": 0.112,
+        "rows": 500,
+        "plan": [
+          "SCAN o",
+          "CORRELATED SCALAR SUBQUERY 1",
+          "SEARCH j USING INDEX idx_jobs_dedupe_active (job_type=? AND dedupe_key=?)",
+          "SEARCH s USING INDEX sqlite_autoindex_observation_semantic_texts_1 (observation_id=? AND protocol=?) LEFT-JOIN"
+        ]
+      },
+      "ratio": 1,
+      "flipped": false,
+      "flipReasons": [],
+      "inScope": false
+    },
+    {
+      "line": 1135,
+      "method": "searchObservationsFts（LIKE 兜底）",
+      "verified": true,
+      "literal": {
+        "ms": 0.257,
+        "rows": 50,
+        "plan": [
+          "SEARCH observations USING INDEX idx_observations_scope_time (scope_key=? AND turn_stopped_at>?)",
+          "USE TEMP B-TREE FOR RIGHT PART OF ORDER BY"
+        ]
+      },
+      "param": {
+        "ms": 0.238,
+        "rows": 50,
+        "plan": [
+          "SEARCH observations USING INDEX idx_observations_scope_time (scope_key=? AND turn_stopped_at>?)",
+          "USE TEMP B-TREE FOR RIGHT PART OF ORDER BY"
+        ]
+      },
+      "ratio": 0.9,
+      "flipped": false,
+      "flipReasons": [],
+      "inScope": false
+    },
+    {
+      "line": 1160,
+      "method": "searchObservationsFts（FTS MATCH 主路径）",
+      "verified": true,
+      "literal": {
+        "ms": 0.641,
+        "rows": 49,
+        "plan": [
+          "SCAN fts VIRTUAL TABLE INDEX 32:M9",
+          "SEARCH o USING INTEGER PRIMARY KEY (rowid=?)"
+        ]
+      },
+      "param": {
+        "ms": 995.982,
+        "rows": 49,
+        "plan": [
+          "SEARCH o USING INDEX idx_observations_scope_time (scope_key=? AND turn_stopped_at>?)",
+          "SCAN fts VIRTUAL TABLE INDEX 32:=M9",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "ratio": 1553.8,
+      "flipped": true,
+      "flipReasons": [
+        "驱动表不同",
+        "参数形式多出 TEMP B-TREE 排序"
+      ],
+      "inScope": true
+    },
+    {
+      "line": 1324,
+      "method": "getRecentObservationIds",
+      "verified": true,
+      "literal": {
+        "ms": 0.011,
+        "rows": 200,
+        "plan": [
+          "SEARCH observations USING COVERING INDEX idx_observations_scope_time (scope_key=? AND turn_stopped_at>?)"
+        ]
+      },
+      "param": {
+        "ms": 0.014,
+        "rows": 200,
+        "plan": [
+          "SEARCH observations USING COVERING INDEX idx_observations_scope_time (scope_key=? AND turn_stopped_at>?)"
+        ]
+      },
+      "ratio": 1.3,
+      "flipped": false,
+      "flipReasons": [],
+      "inScope": false
+    },
+    {
+      "line": 1393,
+      "method": "observationTimeline（older）",
+      "verified": true,
+      "literal": {
+        "ms": 0.079,
+        "rows": 3,
+        "plan": [
+          "SEARCH observations USING INDEX idx_observations_scope_time (scope_key=?)",
+          "USE TEMP B-TREE FOR RIGHT PART OF ORDER BY"
+        ]
+      },
+      "param": {
+        "ms": 0.064,
+        "rows": 3,
+        "plan": [
+          "SEARCH observations USING INDEX idx_observations_scope_time (scope_key=?)",
+          "USE TEMP B-TREE FOR RIGHT PART OF ORDER BY"
+        ]
+      },
+      "ratio": 0.8,
+      "flipped": false,
+      "flipReasons": [],
+      "inScope": false
+    },
+    {
+      "line": 1405,
+      "method": "observationTimeline（newer）",
+      "verified": true,
+      "literal": {
+        "ms": 0.067,
+        "rows": 3,
+        "plan": [
+          "SEARCH observations USING INDEX idx_observations_scope_time (scope_key=?)",
+          "USE TEMP B-TREE FOR RIGHT PART OF ORDER BY"
+        ]
+      },
+      "param": {
+        "ms": 0.076,
+        "rows": 3,
+        "plan": [
+          "SEARCH observations USING INDEX idx_observations_scope_time (scope_key=?)",
+          "USE TEMP B-TREE FOR RIGHT PART OF ORDER BY"
+        ]
+      },
+      "ratio": 1.1,
+      "flipped": false,
+      "flipReasons": [],
+      "inScope": false
+    },
+    {
+      "line": 1420,
+      "method": "getPinnedObservations",
+      "verified": true,
+      "literal": {
+        "ms": 0.008,
+        "rows": 1,
+        "plan": [
+          "SEARCH observations USING INDEX idx_observations_pinned (is_pinned=?)",
+          "USE TEMP B-TREE FOR RIGHT PART OF ORDER BY"
+        ]
+      },
+      "param": {
+        "ms": 0.007,
+        "rows": 1,
+        "plan": [
+          "SEARCH observations USING INDEX idx_observations_pinned (is_pinned=?)",
+          "USE TEMP B-TREE FOR RIGHT PART OF ORDER BY"
+        ]
+      },
+      "ratio": 0.9,
+      "flipped": false,
+      "flipReasons": [],
+      "inScope": false
+    },
+    {
+      "line": 1434,
+      "method": "getRecentObservations",
+      "verified": true,
+      "literal": {
+        "ms": 0.039,
+        "rows": 20,
+        "plan": [
+          "SEARCH observations USING INDEX idx_observations_scope_time (scope_key=?)",
+          "USE TEMP B-TREE FOR RIGHT PART OF ORDER BY"
+        ]
+      },
+      "param": {
+        "ms": 0.056,
+        "rows": 20,
+        "plan": [
+          "SEARCH observations USING INDEX idx_observations_scope_time (scope_key=?)",
+          "USE TEMP B-TREE FOR RIGHT PART OF ORDER BY"
+        ]
+      },
+      "ratio": 1.4,
+      "flipped": false,
+      "flipReasons": [],
+      "inScope": false
+    },
+    {
+      "line": 1492,
+      "method": "listJobsByState",
+      "verified": true,
+      "literal": {
+        "ms": 0.001,
+        "rows": 0,
+        "plan": [
+          "SEARCH jobs USING INDEX idx_jobs_fetch (state=?)"
+        ]
+      },
+      "param": {
+        "ms": 0.003,
+        "rows": 0,
+        "plan": [
+          "SEARCH jobs USING INDEX idx_jobs_fetch (state=?)"
+        ]
+      },
+      "ratio": 3,
+      "flipped": false,
+      "flipReasons": [],
+      "inScope": false
+    },
+    {
+      "line": 1544,
+      "method": "findOrphans（turns 无 observation）",
+      "verified": true,
+      "literal": {
+        "ms": 0.419,
+        "rows": 0,
+        "plan": [
+          "SEARCH t USING COVERING INDEX idx_turns_state (state=?)",
+          "CORRELATED SCALAR SUBQUERY 1",
+          "SEARCH j USING INDEX idx_jobs_dedupe_active (job_type=? AND dedupe_key=?)",
+          "SEARCH o USING COVERING INDEX sqlite_autoindex_observations_1 (turn_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "param": {
+        "ms": 0.397,
+        "rows": 0,
+        "plan": [
+          "SEARCH t USING COVERING INDEX idx_turns_state (state=?)",
+          "CORRELATED SCALAR SUBQUERY 1",
+          "SEARCH j USING INDEX idx_jobs_dedupe_active (job_type=? AND dedupe_key=?)",
+          "SEARCH o USING COVERING INDEX sqlite_autoindex_observations_1 (turn_id=?) LEFT-JOIN",
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      },
+      "ratio": 0.9,
+      "flipped": false,
+      "flipReasons": [],
+      "inScope": false
+    },
+    {
+      "line": 1565,
+      "method": "findOrphans（observation 无 embedding）",
+      "verified": true,
+      "literal": {
+        "ms": 0.09,
+        "rows": 500,
+        "plan": [
+          "SCAN o",
+          "CORRELATED SCALAR SUBQUERY 1",
+          "SEARCH j USING INDEX idx_jobs_dedupe_active (job_type=? AND dedupe_key=?)",
+          "SEARCH e USING INDEX sqlite_autoindex_observation_embeddings_1 (observation_id=? AND model=?) LEFT-JOIN"
+        ]
+      },
+      "param": {
+        "ms": 0.214,
+        "rows": 500,
+        "plan": [
+          "SCAN o",
+          "CORRELATED SCALAR SUBQUERY 1",
+          "SEARCH j USING INDEX idx_jobs_dedupe_active (job_type=? AND dedupe_key=?)",
+          "SEARCH e USING INDEX sqlite_autoindex_observation_embeddings_1 (observation_id=? AND model=?) LEFT-JOIN"
+        ]
+      },
+      "ratio": 2.4,
+      "flipped": false,
+      "flipReasons": [],
+      "inScope": false
+    }
+  ]
+}

@@ -1,0 +1,2537 @@
+{
+  "meta": {
+    "step": "P2 第 4 步第 1 阶段：40 条记录**候选**。按执行裁定（p2-step3-review-and-step4-ruling.md §2.2）本文件不冻结——复核可能删除或替换记录，冻结点后移到复核完成之后一次性进行。",
+    "criteria": "benchmark/reports/safety-round/p2-calibration-criteria.md",
+    "criteriaSha256": "dd61359bd938011eebe17eab6262cbc421fa818af2667b7e1a25fe597a0035a1",
+    "executionRuling": "benchmark/reports/safety-round/p2-step3-review-and-step4-ruling.md",
+    "executionRulingSha256": "0782b971152a44f764cd89cdaf9b61fc8aa30713389618d3655d22381ed3e99a",
+    "formal_name": "基于真实产物重建的 gold fixture",
+    "not_real_capture": "不得称其为真实捕获的对话、真实会话记录或生产数据（判据 §8.1）。",
+    "reconstructed_fields": "prompt / assistant_response / events 只满足 fixture 结构，刻意保持简短，不参与 Observation、向量与 FTS，也不用于 ACP 质量评估（裁决 1.3）。",
+    "commit_source_rule": "凡「某行为曾经存在、后来被删除或替换」的事实必须由 commit 佐证；当前状态可由代码或报告支持。不设配额（裁决 1.1）。",
+    "carried_from_sample": "s01–s08 来自第 3 步已过审的 turns-safety-round-sample.json，逐字搬运（脚本复制，非重新撰写）；唯一改动是按裁决 1.1 给 s06 补了 commit 来源。",
+    "adjudicationApplied": {
+      "ruling": "benchmark/reports/safety-round/p2-overlap-adjudication-safety-round-candidates.json",
+      "removed": [
+        {
+          "id": "c16",
+          "verdict": "duplicate",
+          "pairedWith": "s06",
+          "cosine": 0.636
+        }
+      ],
+      "corrected": [
+        {
+          "id": "c12",
+          "verdict": "related-with-correction",
+          "pairedWith": "c33",
+          "cosine": 0.752,
+          "change": "删掉 summary 与 assistant_response 里复述 c33 核心事实的那句，concepts 去掉「无需重建」"
+        }
+      ],
+      "recordsBefore": 41,
+      "recordsAfter": 40
+    },
+    "ageAssignment": {
+      "ruling": "p2-step3-review-and-step4-ruling.md §1.2",
+      "seedHex": "dd61359b",
+      "script": "benchmark/assign-safety-round-ages.ts",
+      "scriptSha256": "022230bec8ac637d6b23b86557f3a36f2ff69febcb30c75d493801df79f98fed",
+      "report": "benchmark/reports/safety-round/p2-age-assignment.json",
+      "spearman": {
+        "ageVsSearchTextLength": -0.031,
+        "ageVsInsertionOrder": -0.146
+      }
+    }
+  },
+  "records": [
+    {
+      "id": "s01",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/probe-en-normalization.md",
+          "section": "§「query zh」一行（第 37 行）与结论第 1 条（第 179 行）",
+          "supports": "只译记录侧、query 保持中文，tuned MRR 实测 0.437，低于 0.529 的原始基线；结论明写「只译记录的廉价版被否掉，query 侧翻译是必需项」"
+        },
+        {
+          "kind": "code",
+          "path": "src/semantic-en.ts",
+          "line": 15,
+          "supports": "文件头把这条读数登记为协议的载荷前提：缺失或非法的英文 query 绝不能与 semantic-en-v1 向量比较"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "line": 620,
+          "symbol": "semanticLegEligible",
+          "supports": "落地形式：协议不是 semantic-en-v1 时语义腿整条不运行"
+        }
+      ],
+      "prompt": "只在入库时把记忆译成英文、query 一个字不改，这样最省事，能不能就这么干？",
+      "assistant_response": "补测了这一格：只译记录侧、query 保持中文，tuned MRR 是 0.437，比什么都不译的 0.529 还低。单侧翻译把两侧放进了不同的空间，相似度数值不再可比。所以英文归一化必须两侧同时做，且缺英文 query 时要让语义腿整条停掉，而不是拿中文 query 去比英文向量。",
+      "events": [
+        {
+          "tool": "shell",
+          "input": {
+            "command": "bun run benchmark/probe-semantic-rank.ts --lang=zh2en"
+          },
+          "response": {
+            "exit_status": 0,
+            "stdout": "tuned MRR 0.437"
+          }
+        },
+        {
+          "tool": "write",
+          "input": {
+            "path": "benchmark/reports/probe-en-normalization.md",
+            "command": "strReplace"
+          },
+          "response": {
+            "success": true
+          }
+        }
+      ],
+      "annotation": {
+        "request": "评估\"只译记录侧、query 不译\"这个省事方案能不能用",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": [
+          "src/semantic-en.ts",
+          "src/server/observation-search.ts"
+        ],
+        "key_facts": [
+          "0.437",
+          "0.529"
+        ],
+        "unfinished": [],
+        "title": "英文语义归一化必须两侧同时做，只译记录侧实测更差",
+        "summary": "补测了缺的那一格：记录译成英文、query 保持中文，tuned MRR 只有 0.437，低于两侧都不译的 0.529 基线。单侧翻译把比较的两端放进了不同空间，相似度数值失去意义。因此协议规定要么两侧都归一化，要么整条语义腿不运行，缺英文提问形式时不得拿原文去比英文向量。",
+        "outcome": "省工程量的单侧方案被读数否掉，两侧归一化成为协议的硬前提。",
+        "learned": "跨语言检索里\"翻译一侧\"不是折中方案而是错误方案——它把可比性破坏掉了，代价比不翻译更大。",
+        "concepts": [
+          "英文归一化",
+          "单侧翻译",
+          "MRR",
+          "语义腿准入",
+          "可比性"
+        ]
+      },
+      "age_days": 432,
+      "insertion_index": 28
+    },
+    {
+      "id": "s02",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/semantic-en.ts",
+          "symbol": "embeddingSpaceKey",
+          "supports": "空间身份键由模型名、量化方式、维度、文本协议四段拼成，写入 observation_embeddings.model 并作为读取过滤条件"
+        },
+        {
+          "kind": "report",
+          "path": "benchmark/reports/probe-en-normalization.md",
+          "section": "§混合空间对照（第 125 行「未翻译 / 英文」一行）",
+          "supports": "同一模型、同一维度，两侧协议不一致时读数 0.613，与两侧一致时的 0.972 相差 0.359"
+        }
+      ],
+      "prompt": "两个协议都是同一个模型出来的 384 维向量，存一张表里按模型名过滤不就行了？",
+      "assistant_response": "不行。实测同一模型、同一维度，两侧协议对不上时读数 0.613，两侧一致时 0.972，差 0.359——模型名和维度相同并不意味着可比。所以空间身份键做成模型:量化:维度:协议四段，写进 observation_embeddings.model 并当读取过滤器用，两个协议因此能共存于同一张表却无法互相排名。",
+      "events": [
+        {
+          "tool": "write",
+          "input": {
+            "path": "src/semantic-en.ts",
+            "command": "strReplace"
+          },
+          "response": {
+            "success": true
+          }
+        },
+        {
+          "tool": "shell",
+          "input": {
+            "command": "bun test tests/integration/semantic-en-search.test.ts"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "确定向量空间的版本键该包含哪些成分",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": [
+          "src/semantic-en.ts"
+        ],
+        "key_facts": [
+          "0.613",
+          "0.972"
+        ],
+        "unfinished": [],
+        "title": "向量空间身份是模型、量化、维度、协议四段，不是模型名",
+        "summary": "两个文本协议都产出同一模型的 384 维向量，看起来混用无害，实测不是：两侧协议对不上时读数 0.613，两侧一致时 0.972。于是空间身份键做成四段拼接，写入向量行的模型列并同时充当读取过滤条件，让两个协议共存于一张表却无法互相排名。",
+        "outcome": "跨协议比较从\"要靠纪律避免\"变成\"表达不出来\"。",
+        "learned": "版本键要覆盖所有影响可比性的成分；漏掉文本协议这一段，混用就会静默发生而且看起来很正常。",
+        "concepts": [
+          "空间身份",
+          "版本键",
+          "量化",
+          "协议隔离",
+          "向量表"
+        ]
+      },
+      "age_days": 752,
+      "insertion_index": 25
+    },
+    {
+      "id": "s03",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/codex-p6-ruling.md",
+          "section": "§1 正式结论",
+          "supports": "冻结判据 C1 要求无界臂 hard-negative 平均返回 ≤1，实测 1.900，因此 P6 不通过、Phase 3C 最终状态为不通过"
+        },
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/codex-blind-audit-report.md",
+          "section": "§4.1 与 §4.3",
+          "supports": "无界臂 1.900 的逐条读数；days=90 对照臂自身 1.800，回滚只降 0.100"
+        }
+      ],
+      "prompt": "最终盲审结果出来了，误召回这一门到底过没过？如果没过，回滚时间窗能不能救？",
+      "assistant_response": "没过：无界臂 hard-negative 平均返回 1.900，判据要求 ≤1。回滚救不了——days=90 对照臂自身是 1.800，只降 0.100，仍然不达标，却会撤掉独立盲审确认的旧记录召回收益。所以正式结论是 P6 不通过、Phase 3C 最终不通过，补救方式是另开安全策略轮次，不回滚默认时间窗。",
+      "events": [
+        {
+          "tool": "read",
+          "input": {
+            "path": "benchmark/reports/final-recall/codex-blind-audit-result.json"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        },
+        {
+          "tool": "write",
+          "input": {
+            "path": "benchmark/reports/final-recall/codex-p6-ruling.md",
+            "command": "create"
+          },
+          "response": {
+            "success": true
+          }
+        }
+      ],
+      "annotation": {
+        "request": "对最终盲审的误召回门给出正式裁定，并决定要不要回滚时间窗",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": [],
+        "key_facts": [
+          "1.900",
+          "1.800"
+        ],
+        "unfinished": [
+          "另开安全策略轮次，同时扫 floor 与 cap"
+        ],
+        "title": "误召回门以 1.900 不通过，回滚时间窗救不了",
+        "summary": "无界臂的 hard-negative 平均返回 1.900，判据要求不超过 1，因此这一门失败、整轮不通过。回滚时间窗被排除：对照臂自身 1.800，只降 0.100 仍不达标，却会撤掉已被独立盲审确认的旧记录召回收益。补救方式定为另开一个只动相似度门槛与配额的安全轮次。",
+        "outcome": "对外稳定发布继续阻塞，工作分支保留默认无界以保留已确认收益。",
+        "learned": "一个门槛失败时，先问\"候选修法能不能让它通过\"，再问\"代价是什么\"——这里第一问就已经是否定的。",
+        "concepts": [
+          "误召回门",
+          "无界时间窗",
+          "回滚评估",
+          "发布阻塞",
+          "安全轮次"
+        ]
+      },
+      "age_days": 580,
+      "insertion_index": 3
+    },
+    {
+      "id": "s04",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/duplicate-supplement.md",
+          "section": "§3.1 双口径读数",
+          "supports": "无界臂 physicalRows 均值 1.9、distinctContent 均值 1.3；两套口径都没有通过 ≤1"
+        },
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/duplicate-supplement.md",
+          "section": "§4 复印件命中分布",
+          "supports": "无界臂 30 条 hard-negative 里 18 条返回了同一原文的副本（60.0%），所有同源副本对的余弦分数逐位相同"
+        }
+      ],
+      "prompt": "5 万条那个装置是 1 万条原文复制五份来的，误召回读数会不会因此虚高？",
+      "assistant_response": "会，但没高到能翻盘。按不同原文去重后，无界臂的平均返回从 1.9 降到 1.3，仍然超过 ≤1 的要求。30 条负例里 18 条确实返回了同一原文的两个副本，占 60%，且这些副本对的余弦逐位相同，直接确认了副本复用向量。所以装置贡献了 0.6，剩下的 1.3 是真实的不同假线索数量；正式读数保持 1.900 不变，1.300 只作并列的补充读数。",
+      "events": [
+        {
+          "tool": "write",
+          "input": {
+            "path": "benchmark/analyze-duplicate-supplement.ts",
+            "command": "create"
+          },
+          "response": {
+            "success": true
+          }
+        },
+        {
+          "tool": "shell",
+          "input": {
+            "command": "bun run benchmark/analyze-duplicate-supplement.ts"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "量化装置里的复印件对误召回读数的贡献",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": [
+          "benchmark/analyze-duplicate-supplement.ts"
+        ],
+        "key_facts": [
+          "1.3",
+          "18 / 30"
+        ],
+        "unfinished": [],
+        "title": "复印件让误召回读数虚高 0.6，去重后仍未达标",
+        "summary": "按不同原文去重后，误召回的平均返回从 1.9 降到 1.3，两套口径都没有通过不超过 1 的要求。30 条负例里 18 条返回的是同一原文的两个副本，占六成，且这些副本对的相似度分数逐位相同，直接确认副本复用了向量。装置因此解释了 0.6 的差值，剩下的是真实的不同假线索数量。",
+        "outcome": "正式失败读数保持不变，去重口径作为并列的补充读数登记，两套同时报告。",
+        "learned": "指标数的是页面行数而不是不同内容数；语料里存在近似或精确重复时，这两件事必须分开报。",
+        "concepts": [
+          "复印件",
+          "去重口径",
+          "误召回",
+          "并列读数",
+          "装置偏差"
+        ]
+      },
+      "age_days": 943,
+      "insertion_index": 27
+    },
+    {
+      "id": "s05",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/safety-round/p40-relative-score-probe.md",
+          "section": "§分离度对照表（AUC 一节）",
+          "supports": "原始 top1 分数 AUC 0.841，z(top1) AUC 0.735；保全全部正例的 z 阈值放进 29/30 条负例，绝对分数阈值只放进 19/30"
+        },
+        {
+          "kind": "report",
+          "path": "benchmark/reports/safety-round/p40-relative-score-probe.md",
+          "section": "§μ_q 分层表",
+          "supports": "负例的 μ_q 中位 0.095，低于正例的 0.129——问一件没做过的事，整个语料对它都更不像，均值被拉低"
+        }
+      ],
+      "prompt": "把相似度换成\"相对这次查询的语料背景有多突出\"，是不是就能把没做过的事挡掉？",
+      "assistant_response": "方向是反的。按查询在候选池上的均值与标准差做标准化之后，分离度从 0.841 掉到 0.735：负例的背景均值中位 0.095，比正例的 0.129 更低，因为问一件项目没做过的事时整个语料对它都更不像，均值被拉低，同一个绝对分数于是被除出更大的相对值。这条规则系统性地奖励\"语料里什么都不相关\"的查询，所以作废，不要换一种归一化再试一遍。",
+      "events": [
+        {
+          "tool": "write",
+          "input": {
+            "path": "benchmark/analyze-relative-score-probe.ts",
+            "command": "create"
+          },
+          "response": {
+            "success": true
+          }
+        },
+        {
+          "tool": "shell",
+          "input": {
+            "command": "bun run benchmark/analyze-relative-score-probe.ts"
+          },
+          "response": {
+            "exit_status": 0,
+            "stdout": "self-check 56/56"
+          }
+        }
+      ],
+      "annotation": {
+        "request": "证伪\"用相对语料背景的突出程度做准入\"这条规则",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": [
+          "benchmark/analyze-relative-score-probe.ts"
+        ],
+        "key_facts": [
+          "0.841",
+          "0.735",
+          "0.095"
+        ],
+        "unfinished": [],
+        "title": "相对语料背景归一化比绝对分数更差，该方向作废",
+        "summary": "按查询在候选池上的均值与标准差做标准化后，分离度从 0.841 掉到 0.735；保全全部正例的相对阈值会放进 29 条负例，而绝对阈值只放进 19 条。机制是方向相反：没做过的事对应的背景均值中位 0.095，比有答案的 0.129 更低，同一个绝对分数被除出更大的相对值，规则于是奖励\"什么都不相关\"的查询。",
+        "outcome": "该方向当场作废，本轮收敛回只调绝对门槛与配额的单一路径。",
+        "learned": "以\"背景水平能代表这次查询的难度\"为前提的规则，在\"问一件没做过的事\"上前提恰好是反的；换成分位数或差值版本会踩同一个坑。",
+        "concepts": [
+          "相对准入",
+          "标准化",
+          "分离度",
+          "背景均值",
+          "证伪探针"
+        ]
+      },
+      "age_days": 743,
+      "insertion_index": 30
+    },
+    {
+      "id": "s06",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/db/index.ts",
+          "line": 72,
+          "symbol": "DEFAULT_SEARCH_DAYS",
+          "supports": "DEFAULT_SEARCH_DAYS = Number.POSITIVE_INFINITY，默认不设时间窗"
+        },
+        {
+          "kind": "report",
+          "path": "benchmark/reports/phase3c-criteria.md",
+          "section": "§改动点表（默认 search 一行）与 §4.1「无界」的表达方式",
+          "supports": "改动前默认是 90 天，落在四处：FTS 与 LIKE 兜底、bigram 腿、检索内核、MCP schema 的 default: 90；判据要求改完之后 src/ 下不得再有任何一处 ?? 90 或等价兜底"
+        },
+        {
+          "kind": "commit",
+          "sha": "b1df06f",
+          "supports": "该 commit 把 src/db/index.ts 的 `opts?.days ?? 90` 换成 `?? DEFAULT_SEARCH_DAYS` 并把常量定义为 Number.POSITIVE_INFINITY，同时删掉 src/server/mcp-server.ts 里 search schema 的 `default: 90` 与 `boundedInteger(a.days, 90, 1, 3650)` 的 90 兜底。四处 90 天兜底的存在与消失只能由这个 diff 佐证，当前代码里查不到它们。"
+        }
+      ],
+      "prompt": "search 默认只查最近 90 天，两年前的记录就搜不到了，把这个默认窗去掉。",
+      "assistant_response": "去掉了。默认值改成正无穷，四处 90 天兜底全部清掉，包括 MCP schema 里的 default: 90——那个值留着会向 agent 谎报默认行为。显式传 days=N 仍可收窄。代价是语义腿的工作集随语料增长，而且没有任何东西会过期。",
+      "events": [
+        {
+          "tool": "write",
+          "input": {
+            "path": "src/db/index.ts",
+            "command": "strReplace"
+          },
+          "response": {
+            "success": true
+          }
+        },
+        {
+          "tool": "write",
+          "input": {
+            "path": "src/server/mcp-server.ts",
+            "command": "strReplace"
+          },
+          "response": {
+            "success": true
+          }
+        },
+        {
+          "tool": "shell",
+          "input": {
+            "command": "grep -rn '?? 90' src/"
+          },
+          "response": {
+            "exit_status": 1,
+            "stdout": ""
+          }
+        }
+      ],
+      "annotation": {
+        "request": "去掉 search 的 90 天默认时间窗，让整段历史都可检索",
+        "completed": true,
+        "memory_type": "change",
+        "key_files": [
+          "src/db/index.ts",
+          "src/server/mcp-server.ts",
+          "src/server/observation-search.ts"
+        ],
+        "key_facts": [
+          "DEFAULT_SEARCH_DAYS"
+        ],
+        "unfinished": [],
+        "title": "默认时间窗从 90 天改为无界",
+        "summary": "默认窗改为正无穷，原先分散在四处的 90 天兜底全部清掉：全文检索与 LIKE 兜底、bigram 腿、检索内核，以及 MCP schema 里的默认值——后者留着会向调用方谎报默认行为。显式传天数仍然可以收窄单次检索。",
+        "outcome": "可检索范围等于索引能展示的范围，两年前的记录也能被找到。",
+        "learned": "默认值写在 schema 里等于对外承诺，改行为时漏掉它比漏掉代码更危险，因为调用方会照着它推理。",
+        "concepts": [
+          "默认时间窗",
+          "无界检索",
+          "schema 默认值",
+          "显式收窄",
+          "工作集增长"
+        ]
+      },
+      "age_days": 532,
+      "insertion_index": 6
+    },
+    {
+      "id": "s07",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/fix-fts-limit-criteria.md",
+          "section": "§缺陷证据（文首引言）",
+          "supports": "同一条 SQL，LIMIT 50 字面量 0.93ms、LIMIT ? 绑定参数 1506.57ms，返回行数都是 50；计划从「FTS 驱动 + 按 rowid 取回」翻转成「扫 scope 内全部 Observation + 逐行探 FTS + 临时 B 树排序」"
+        },
+        {
+          "kind": "report",
+          "path": "benchmark/reports/phase3b-submission.md",
+          "section": "§4",
+          "supports": "该缺陷的原始测量出处，以及\"只把这一处作为必修项、其余 11 处先审计再决定\"的裁定"
+        }
+      ],
+      "prompt": "同一条检索 SQL，参数化之后慢了一千多倍，返回行数还一样，这怎么可能？",
+      "assistant_response": "是查询计划翻转了。把 LIMIT 写成字面量时优化器选\"全文索引驱动、按 rowid 回表\"，0.93ms；换成绑定参数后它不知道要取多少行，改成\"扫 scope 内全部记录、逐行探全文索引、再用临时 B 树排序\"，1506.57ms。返回的 50 行完全一样，所以这是纯代价缺陷，不是行为差异——修法目标是把代价从 O(语料) 恢复成 O(命中行)，且返回结果逐条不变。",
+      "events": [
+        {
+          "tool": "shell",
+          "input": {
+            "command": "sqlite3 bench.db 'EXPLAIN QUERY PLAN ...'"
+          },
+          "response": {
+            "exit_status": 0,
+            "stdout": "SCAN observations / USE TEMP B-TREE FOR ORDER BY"
+          }
+        },
+        {
+          "tool": "write",
+          "input": {
+            "path": "benchmark/reports/fix-fts-limit-criteria.md",
+            "command": "create"
+          },
+          "response": {
+            "success": true
+          }
+        }
+      ],
+      "annotation": {
+        "request": "查清检索主查询参数化后慢一千多倍的原因",
+        "completed": true,
+        "memory_type": "bugfix",
+        "key_files": [
+          "src/db/index.ts"
+        ],
+        "key_facts": [
+          "0.93ms",
+          "1506.57ms"
+        ],
+        "unfinished": [],
+        "title": "LIMIT 用绑定参数让查询计划翻转，同一条 SQL 慢一千多倍",
+        "summary": "同一条检索 SQL，行数上限写成字面量时是 0.93 毫秒，换成绑定参数后变成 1506.57 毫秒，返回的 50 行一模一样。原因是优化器在不知道取多少行的情况下放弃了「全文索引驱动、按主键回表」的计划，改成扫遍 scope 内全部记录、逐行探全文索引、再用临时 B 树排序。",
+        "outcome": "定为纯代价缺陷单开一轮修复，判定标准是行为逐条不变加延迟下降，而不是某个质量指标上升。",
+        "learned": "参数化通常无害，但它会抽掉优化器的行数信息；涉及行数上限的查询要把执行计划一起纳入回归。",
+        "concepts": [
+          "查询计划",
+          "绑定参数",
+          "临时 B 树",
+          "全文索引驱动",
+          "代价缺陷"
+        ]
+      },
+      "age_days": 57,
+      "insertion_index": 0
+    },
+    {
+      "id": "s08",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/codex-p6-ruling.md",
+          "section": "§6 护栏语义",
+          "supports": "semanticOnlyLimit=2 是纯语义来源的完整数量约束，但不是整页误召回护栏；FTS 与 hybrid 不经过它是既有设计事实，后续文档必须称其为「semantic-only 配额」"
+        },
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/codex-blind-audit-report.md",
+          "section": "§4.2",
+          "supports": "30 条负例中 28 条把配额填满，且返回项 100% 为 semantic，零 fts / hybrid——配额没有被穿透，是它本身管不到别的来源"
+        }
+      ],
+      "prompt": "每页最多 2 条的限制，是不是就等于\"一页最多 2 条误召回\"？",
+      "assistant_response": "不等于。它只约束纯语义来源那一类，关键词命中和两腿都命中的结果从来不受它限制，这是既有设计。盲审里 30 条负例有 28 条把这个配额填满，且返回项 100% 是纯语义来源、一条关键词命中都没有——说明配额没被穿透，是它本身管不到别的来源。所以它应当被称为\"semantic-only 配额\"，整页安全结论必须由跨来源的负例门槛给出。",
+      "events": [
+        {
+          "tool": "read",
+          "input": {
+            "path": "benchmark/reports/final-recall/codex-blind-audit-report.md"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        },
+        {
+          "tool": "write",
+          "input": {
+            "path": "README.md",
+            "command": "strReplace"
+          },
+          "response": {
+            "success": true
+          }
+        }
+      ],
+      "annotation": {
+        "request": "厘清每页 2 条的限制到底约束什么",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": [
+          "src/server/observation-search.ts",
+          "README.md"
+        ],
+        "key_facts": [
+          "28 条",
+          "semantic-only"
+        ],
+        "unfinished": [],
+        "title": "每页 2 条是 semantic-only 配额，不是整页误召回护栏",
+        "summary": "这个上限只约束纯语义来源的结果，关键词命中与两腿都命中的结果从不受它限制，这是既有设计而非缺陷。盲审的 30 条负例里有 28 条把配额填满，返回项百分之百是纯语义来源、零关键词命中，说明配额没有被穿透，而是它本身管不到别的来源。因此文档口径统一改称配额，整页安全结论必须由跨来源的负例门槛给出。",
+        "outcome": "术语与责任边界写进文档，避免把一个来源的配额当成整页的安全保证。",
+        "learned": "护栏的名字要说清它护的是哪一部分；名字含糊时，读者会自动把它当成全局保证。",
+        "concepts": [
+          "semantic-only 配额",
+          "护栏边界",
+          "来源标签",
+          "整页安全",
+          "术语口径"
+        ]
+      },
+      "age_days": 463,
+      "insertion_index": 20
+    },
+    {
+      "id": "c09",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "symbol": "RRF 融合的两行加权",
+          "supports": "score += ftsWeight / (rrfK + ftsRank) 与 score += semanticWeight / (rrfK + semRank)——进公式的是名次，不是相似度分数"
+        },
+        {
+          "kind": "report",
+          "path": "plan/V3/retrieval-safety-round-plan-2026-08-10.md",
+          "section": "§3 一条必须记住的机制事实：融合用名次，不用分数",
+          "supports": "全仓 semanticScore 只出现 3 次（建 map / 填 map / 贴到返回结果字段），一次都没进过排序；因此 0.67 分的第 1 名与 0.21 分的第 1 名对融合分的贡献完全相同"
+        }
+      ],
+      "prompt": "把语义最高分混进打分里，低相关的不就被压下去了吗？",
+      "assistant_response": "融合公式里没有分数这一项。两条腿各自贡献 权重/(rrfK + 名次)，相似度只用在两处：与地板线比较，以及排序好定出名次。所以真问题最像的那条 0.67 分排第 1，假问题最像的那条 0.21 分也排第 1，两者对融合分的贡献一模一样。要用上分数大小，只能靠绝对阈值，不能指望融合。",
+      "events": [
+        {
+          "tool": "shell",
+          "input": {
+            "command": "grep -rn semanticScore src/"
+          },
+          "response": {
+            "exit_status": 0,
+            "stdout": "3 处：建 map / 填 map / 返回字段"
+          }
+        }
+      ],
+      "annotation": {
+        "request": "确认融合打分到底用不用相似度分数的大小",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": [
+          "src/server/observation-search.ts"
+        ],
+        "key_facts": [
+          "RRF",
+          "rrfK"
+        ],
+        "unfinished": [],
+        "title": "融合只用名次不用分数，所以分数大小在排序里被完全丢弃",
+        "summary": "融合公式对两条腿各加一项 权重除以（常数加名次），进公式的是名次。相似度分数只用于与地板线比较和排序好定出名次，从未参与排序本身。后果是真问题里最像的那条与假问题里最像的那条，只要都排第一，对融合分的贡献就完全相同。",
+        "outcome": "\"取语义最高分混合打分就能滤掉低相关\"这个机制被确认不存在。",
+        "learned": "名次是有序但无标度的：它保留了谁更像，丢掉了像多少。想用后者就必须另设绝对门槛。",
+        "concepts": [
+          "融合公式",
+          "名次",
+          "分数标度",
+          "排序",
+          "地板线"
+        ]
+      },
+      "age_days": 346,
+      "insertion_index": 13
+    },
+    {
+      "id": "c10",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "line": 102,
+          "symbol": "DEFAULT_RETRIEVAL_POLICY.semanticCandidatePool",
+          "supports": "semanticCandidatePool = Number.POSITIVE_INFINITY，候选池是被搜索 scope 的全量"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "line": 111,
+          "symbol": "DEFAULT_RETRIEVAL_POLICY.semanticTopK",
+          "supports": "semanticTopK = 1000，只有前 1000 名保留名次"
+        }
+      ],
+      "prompt": "候选池和 Top-K 是一回事吗？文档里两个词混着用。",
+      "assistant_response": "不是一回事，代码里也是两个字段。池子是 Infinity，意味着 scope 内每条向量都会被打分，没有记录因为年龄或位置而对语义腿不可见；被限制的是保留——候选分块读入、即时打分，只有最好的 1000 条留下名次。把它们拆成两个名字之后，\"规模变大影响哪一边\"才说得清：影响的是保留，不是可见性。",
+      "events": [
+        {
+          "tool": "write",
+          "input": {
+            "path": "src/server/observation-search.ts",
+            "command": "strReplace"
+          },
+          "response": {
+            "success": true
+          }
+        }
+      ],
+      "annotation": {
+        "request": "把候选池边界与排名保留边界在策略里分成两个字段",
+        "completed": true,
+        "memory_type": "refactor",
+        "key_files": [
+          "src/server/observation-search.ts"
+        ],
+        "key_facts": [
+          "semanticTopK 1000"
+        ],
+        "unfinished": [],
+        "title": "候选池与排名保留拆成两个策略字段",
+        "summary": "原先两个概念混在一处表述，改成两个独立字段：池子取被搜索范围的全量，因此没有记录会因为年龄而对语义腿不可见；保留则截到最好的一千条，候选分块读入、即时打分。拆开之后可以分别回答\"看得见多少\"和\"记得住多少名\"。",
+        "outcome": "规模增长的影响能被归到正确的那一边——它动的是保留，不是可见性。",
+        "learned": "两个边界共用一个名字时，任何关于规模的讨论都会滑到另一个上；拆名字比写注释有效。",
+        "concepts": [
+          "候选池",
+          "Top-K 保留",
+          "策略字段",
+          "可见性",
+          "分块打分"
+        ]
+      },
+      "age_days": 325,
+      "insertion_index": 9
+    },
+    {
+      "id": "c11",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "line": 317,
+          "supports": "semanticFloor 必须是 [-1,1] 内的有限数，理由是余弦值域之外不可达"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "line": 324,
+          "supports": "semanticOnlyLimit 必须是非负整数或 Infinity"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "line": 358,
+          "supports": "semanticCandidatePool 必须是 ≥1 的整数或 Infinity；semanticTopK 同理"
+        }
+      ],
+      "prompt": "策略参数写错了会怎样？比如地板线填 2，或者配额填 -1。",
+      "assistant_response": "加了自检：地板线必须落在正负一之间的有限数，因为余弦到不了那之外，填 2 等于永久关掉语义腿却看不出原因；配额必须是非负整数或无上限；池子与保留必须是至少一的整数或无上限。每一条都返回具体错误串，说明填了什么、为什么不合法。",
+      "events": [
+        {
+          "tool": "write",
+          "input": {
+            "path": "src/server/observation-search.ts",
+            "command": "strReplace"
+          },
+          "response": {
+            "success": true
+          }
+        },
+        {
+          "tool": "shell",
+          "input": {
+            "command": "bun test"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "给检索策略加参数自检，避免非法值静默生效",
+        "completed": true,
+        "memory_type": "feature",
+        "key_files": [
+          "src/server/observation-search.ts"
+        ],
+        "key_facts": [
+          "semanticFloor",
+          "semanticOnlyLimit"
+        ],
+        "unfinished": [],
+        "title": "检索策略自检：地板线限值域，配额与池子限类型",
+        "summary": "地板线必须是正负一之间的有限数，因为余弦到不了那之外——填一个更大的值等于永久关掉语义腿却查不出原因；纯语义配额必须是非负整数或无上限；候选池与保留数必须是至少一的整数或无上限。每项不合法都返回带实际取值的错误串。",
+        "outcome": "非法策略在装配时报错，不再表现为\"功能好像没生效\"。",
+        "learned": "值域之外的参数不会报错，只会让功能安静地消失；这类参数的自检要连值域一起写进去。",
+        "concepts": [
+          "参数自检",
+          "值域",
+          "余弦",
+          "配额",
+          "静默失效"
+        ]
+      },
+      "age_days": 102,
+      "insertion_index": 23
+    },
+    {
+      "id": "c12",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "line": 120,
+          "symbol": "LEXICAL_ANCHOR_ROLLBACK_POLICY",
+          "supports": "回滚档的四个值：semanticFloor 0.2、semanticOnlyLimit Infinity、semanticCandidatePool 200、semanticTopK Infinity"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "line": 148,
+          "supports": "return semanticDiscoveryEnabled ? DEFAULT_RETRIEVAL_POLICY : LEXICAL_ANCHOR_ROLLBACK_POLICY——一个开关切换整组策略，而不是逐项覆盖"
+        }
+      ],
+      "prompt": "语义发现要是出问题，用户怎么退回去？",
+      "assistant_response": "配一个完整的回滚档，而不是让用户逐项调参：关掉开关就整组切到词面锚点档——地板线 0.2、纯语义无配额、候选池 200 条、保留不截断。这样回滚的是一个被测过的组合，不是四个互相牵扯的旋钮的任意搭配。",
+      "events": [
+        {
+          "tool": "write",
+          "input": {
+            "path": "src/server/observation-search.ts",
+            "command": "strReplace"
+          },
+          "response": {
+            "success": true
+          }
+        },
+        {
+          "tool": "write",
+          "input": {
+            "path": "README.md",
+            "command": "strReplace"
+          },
+          "response": {
+            "success": true
+          }
+        }
+      ],
+      "annotation": {
+        "request": "为语义发现提供一个可用的回滚路径",
+        "completed": true,
+        "memory_type": "change",
+        "key_files": [
+          "src/server/observation-search.ts",
+          "README.md"
+        ],
+        "key_facts": [
+          "0.2",
+          "200"
+        ],
+        "unfinished": [],
+        "title": "回滚档做成整组策略：地板线 0.2、无配额、池子 200、保留不截断",
+        "summary": "关掉语义发现开关时整组切换到词面锚点档，而不是逐项覆盖参数：地板线 0.2、纯语义结果不设配额、候选池 200 条、名次不截断。用户回滚到的是一个被测过的组合，而不是四个旋钮的任意搭配。",
+        "outcome": "回滚可来回切换且不需要重建数据，切换在新开的会话生效。",
+        "learned": "回滚要给一个整体档位。让用户自己拼参数，等于把\"没测过的组合\"当成退路。",
+        "concepts": [
+          "回滚档",
+          "整组策略",
+          "词面锚点",
+          "开关",
+          "被测过的组合"
+        ]
+      },
+      "age_days": 921,
+      "insertion_index": 16
+    },
+    {
+      "id": "c13",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/raw-degrade-investigation.md",
+          "section": "§1 结论先说",
+          "supports": "降级并不阻止 semantic-only 发现，它只拦住 ftsCount === 0 那一种；只要有 1 条 FTS 命中，raw-v1 的语义腿就会对整个 scope 打分，并用 2B 在 semantic-en-v1 空间扫出来的 0.197 判定"
+        },
+        {
+          "kind": "commit",
+          "sha": "b1df06f",
+          "supports": "该 commit 在 src/server/observation-search.ts 引入 semanticLegEligible = protocol === SEMANTIC_EN_PROTOCOL，把 raw 协议下的语义腿调用整段删除（该文件 148 增 39 删）。修复前的那条路径只能由这个 diff 佐证，当前代码里已经不存在"
+        }
+      ],
+      "prompt": "没有合法英文提问形式的时候，检索到底在干什么？我以为它已经降级成纯关键词了。",
+      "assistant_response": "当时并没有。降级标记只拦住关键词一条都没命中的情况；只要有一条命中，raw 空间的语义腿照样对整个范围打分，而且用的是为英文空间校准的那个地板线。也就是说那是第三种形态——既不是纯关键词，也不是被冻结过的旧档，是没人校准过的组合。修法是把这条路径整段删掉：协议不是英文空间时语义腿不再运行。",
+      "events": [
+        {
+          "tool": "read",
+          "input": {
+            "path": "src/server/observation-search.ts"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        },
+        {
+          "tool": "write",
+          "input": {
+            "path": "src/server/observation-search.ts",
+            "command": "strReplace"
+          },
+          "response": {
+            "success": true
+          }
+        },
+        {
+          "tool": "shell",
+          "input": {
+            "command": "bun test"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "查清缺少合法英文提问形式时检索实际走的路径",
+        "completed": true,
+        "memory_type": "bugfix",
+        "key_files": [
+          "src/server/observation-search.ts"
+        ],
+        "key_facts": [
+          "0.197",
+          "ftsCount"
+        ],
+        "unfinished": [],
+        "title": "降级路径曾是第三种未校准形态，已整段删除",
+        "summary": "降级标记只拦住关键词零命中的情况。只要有一条关键词命中，另一个向量空间的语义腿仍会对整个范围打分，而判定用的是为英文空间校准的地板线。这既不是纯关键词，也不是任何被冻结过的旧档，而是没被校准过的第三种组合。修法是把该路径整段删掉，协议不符时语义腿不再运行。",
+        "outcome": "缺英文提问形式的请求现在确实是纯关键词，不再有未校准的语义结果混进页面。",
+        "learned": "\"降级\"这个词容易被当成一个总开关；实际它只覆盖了一个具体条件，别的路径要逐条查。",
+        "concepts": [
+          "降级路径",
+          "未校准",
+          "跨空间阈值",
+          "纯关键词",
+          "路径删除"
+        ]
+      },
+      "age_days": 205,
+      "insertion_index": 14
+    },
+    {
+      "id": "c14",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/raw-degrade-investigation.md",
+          "section": "§0.30 的选取依据（第 38 行）",
+          "supports": "raw-v1 的正例区间 0.080–0.607 与噪声区间 ≤0.431 重叠，因此 0.30 落在重叠区内；该空间没有能把两者分开的阈值"
+        },
+        {
+          "kind": "code",
+          "path": "src/semantic-en.ts",
+          "line": 5,
+          "supports": "文件头登记同一形状：不相关的中文句对余弦 0.42…0.85，而标注真阳性跨 0.08…0.61"
+        }
+      ],
+      "prompt": "raw 空间给它配一个自己的地板线不行吗？",
+      "assistant_response": "配不出来。那个空间里标注命中的分数跨 0.080 到 0.607，噪声上界 0.431，两段重叠——任何阈值要么砍掉真答案，要么放进噪声。这跟中文句对的形状是同一个：不相关的句子能到 0.42 以上，而真阳性最低只有 0.08。所以处置不是调阈值，而是不给这个空间打分的机会。",
+      "events": [
+        {
+          "tool": "shell",
+          "input": {
+            "command": "bun run benchmark/probe-raw-degrade.ts"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "判断能否为 raw 空间单独校准一个地板线",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": [
+          "src/semantic-en.ts"
+        ],
+        "key_facts": [
+          "0.607",
+          "0.431"
+        ],
+        "unfinished": [],
+        "title": "raw 空间的正例与噪声区间重叠，配不出可辩护的地板线",
+        "summary": "该空间里标注命中的分数跨 0.080 到 0.607，噪声上界 0.431，两段重叠，任何阈值要么砍真答案要么放噪声。这与中文句对的形状一致：不相关句对能到 0.42 以上，而真阳性最低只有 0.08。因此处置不是继续调阈值，而是不让这个空间参与打分。",
+        "outcome": "\"给它配个自己的门槛\"这条路被读数否掉，改为协议不符时不打分。",
+        "learned": "两个分布重叠时，阈值这个工具本身就不适用；继续调只是在挑一个自己喜欢的错误比例。",
+        "concepts": [
+          "分布重叠",
+          "阈值不可用",
+          "噪声上界",
+          "真阳性下界",
+          "不打分"
+        ]
+      },
+      "age_days": 202,
+      "insertion_index": 37
+    },
+    {
+      "id": "c15",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/phase3a-r2-selection.md",
+          "section": "§结论：R2 未通过",
+          "supports": "参选 arm 10 个、可行 0 个；判据第 9 条规定没有 arm 可行时 bigramAux 继续保持关闭，不得用「恢复原状」充当阶段成功"
+        }
+      ],
+      "prompt": "中文双字切分那条腿再调一版试试？",
+      "assistant_response": "第二轮十个组合，可行零个。判据早写了这种情况怎么处理：那条辅助腿继续保持关闭，并且不得把\"恢复原状\"说成阶段成功——关掉它是回到起点，不是取得进展。所以这个方向登记为机制性收敛，不再开第三轮。",
+      "events": [
+        {
+          "tool": "shell",
+          "input": {
+            "command": "bun run benchmark/run-phase3a-r2-grid.ts"
+          },
+          "response": {
+            "exit_status": 0,
+            "stdout": "arms 10 / feasible 0"
+          }
+        },
+        {
+          "tool": "write",
+          "input": {
+            "path": "benchmark/reports/phase3a-r2-selection.md",
+            "command": "create"
+          },
+          "response": {
+            "success": true
+          }
+        }
+      ],
+      "annotation": {
+        "request": "第二轮评估中文双字切分辅助腿是否可用",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": [],
+        "key_facts": [
+          "10",
+          "0"
+        ],
+        "unfinished": [],
+        "title": "双字切分辅助腿第二轮十个组合全不可行，保持关闭",
+        "summary": "第二轮参选十个组合，可行零个。判据预写了这种情况的处置：辅助腿继续保持关闭，且不得把\"恢复原状\"描述成阶段成功。该方向据此登记为机制性收敛，不再开第三轮。",
+        "outcome": "辅助腿保持关闭，这个方向从待办清单里移除而不是继续排期。",
+        "learned": "把\"全不可行时怎么办\"写进判据，能避免事后把回到起点包装成进展。",
+        "concepts": [
+          "辅助腿",
+          "可行 arm",
+          "机制收敛",
+          "预写判据",
+          "保持关闭"
+        ]
+      },
+      "age_days": 730,
+      "insertion_index": 5
+    },
+    {
+      "id": "c17",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "plan/V3/retrieval-safety-round-plan-2026-08-10.md",
+          "section": "§2 D1",
+          "supports": "选出 floor=0.197 / cap=2 时语料是同一份 30-turn 集，单查询语义候选最多 11 条，49 条 empty 的平均返回 0.592"
+        },
+        {
+          "kind": "report",
+          "path": "benchmark/reports/phase2b/arm-f0.197-c2.json",
+          "section": "该 arm 的 summary（empty 集平均返回）",
+          "supports": "0.592 这个读数的原始出处"
+        }
+      ],
+      "prompt": "0.197 这个地板线当初是在多大的语料上定的？",
+      "assistant_response": "三十条 turn。当时单条查询的语义候选最多十一条，四十九条预期空的查询平均返回 0.592，看起来非常安全。问题是这个值是绝对数值、不带语料参照，搬到五万条上就失效了。",
+      "events": [
+        {
+          "tool": "read",
+          "input": {
+            "path": "benchmark/reports/phase2b/arm-f0.197-c2.json"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "查清当前地板线是在什么规模的语料上选出来的",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": [],
+        "key_facts": [
+          "0.592",
+          "11"
+        ],
+        "unfinished": [],
+        "title": "地板线是在三十条语料上选的，当时单查询候选最多十一条",
+        "summary": "选出这个地板线与配额时，语料只有三十条 turn，单条查询的语义候选最多十一条，四十九条预期空的查询平均返回 0.592，读数看起来非常安全。它是一个不带语料参照的绝对数值，因此规模变化后不再成立。",
+        "outcome": "把\"当初为什么看起来安全\"记录下来，作为后续解释规模漂移的起点。",
+        "learned": "一个阈值的可信度上限由它被校准时的语料规模决定；报读数时必须连规模一起报。",
+        "concepts": [
+          "地板线",
+          "校准规模",
+          "预期空",
+          "绝对阈值",
+          "语料参照"
+        ]
+      },
+      "age_days": 902,
+      "insertion_index": 12
+    },
+    {
+      "id": "c18",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "plan/V3/retrieval-safety-round-plan-2026-08-10.md",
+          "section": "§2 D1 的过线 population 表",
+          "supports": "正例 26 条：最小 7（0.01%）/ 中位 8,006（16.0%）/ 最大 24,372（48.7%）；负例 30 条：最小 0 / 中位 3,096（6.2%）/ 最大 22,679（45.3%）"
+        }
+      ],
+      "prompt": "地板线在五万条上到底筛掉了多少东西？",
+      "assistant_response": "几乎没筛。正例侧一次查询平均有 16% 的语料过线，最高 48.7%；负例侧平均 6.2%，最高 45.3%。也就是说页面之所以还算干净，靠的是排序和每页配额，不是这个门槛。绝对门槛不带语料参照，规模一变就失效——语料再涨十倍，同样的问题会回来。",
+      "events": [
+        {
+          "tool": "shell",
+          "input": {
+            "command": "bun run benchmark/analyze-relative-score-probe.ts"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "量化地板线在五万条语料上的实际筛除比例",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": [],
+        "key_facts": [
+          "16.0%",
+          "48.7%",
+          "6.2%"
+        ],
+        "unfinished": [],
+        "title": "地板线几乎没在筛东西：一次查询平均 16% 的语料过线",
+        "summary": "在五万条规模上，有答案的查询平均有百分之十六的语料过线，最高百分之四十八点七；没答案的查询平均百分之六点二，最高百分之四十五点三。页面之所以还算干净，靠的是排序与每页配额，不是这个门槛。",
+        "outcome": "把\"门槛在筛东西\"这个假设推翻，明确真正起作用的是排序与配额。",
+        "learned": "一个绝对相似度门槛的筛除率会随语料增长而崩塌；要读它有没有在工作，得看过线数量而不是最终页面。",
+        "concepts": [
+          "过线数量",
+          "筛除率",
+          "规模漂移",
+          "配额",
+          "排序"
+        ]
+      },
+      "age_days": 885,
+      "insertion_index": 38
+    },
+    {
+      "id": "c19",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "plan/V3/retrieval-safety-round-plan-2026-08-10.md",
+          "section": "§2 D1 的警示块",
+          "supports": "semanticIds 的长度（去重后约 200）不是过线数量，它是 Top-K 保留集；43/56 条 query 的物理行数正好顶在 semanticTopK=1000，除以 5 份副本就是 200。要读过线 population 必须用 aboveFloorCount 字段"
+        }
+      ],
+      "prompt": "报告里语义候选一直是 200 条左右，是不是过线的就这么多？",
+      "assistant_response": "不是。那是保留集的长度，不是过线数量——五十六条查询里有四十三条的物理行数正好顶在保留上限一千，除以五份副本刚好二百，所以那个\"稳定的 200\"是截断的产物。真正的过线数量要读专门记录它的字段，那里的中位数是几千。",
+      "events": [
+        {
+          "tool": "read",
+          "input": {
+            "path": "benchmark/reports/final-recall/codex-blind-audit-result.json"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "纠正把保留集长度当作过线数量的读法",
+        "completed": true,
+        "memory_type": "bugfix",
+        "key_files": [],
+        "key_facts": [
+          "200",
+          "43"
+        ],
+        "unfinished": [],
+        "title": "被纠正的读法：语义候选二百条是截断产物，不是过线数量",
+        "summary": "报告里稳定出现的二百条是保留集长度：五十六条查询里四十三条的物理行数正好顶在保留上限一千，除以五份副本就是二百。这个数字看起来像结论，其实是截断的副作用。过线数量有专门字段记录，中位数是几千。",
+        "outcome": "指标口径写进警示块，避免后续轮次重复这个误读。",
+        "learned": "一个指标在多条样本上取到同一个值时，先怀疑它撞上了某个上限，而不是发现了规律。",
+        "concepts": [
+          "保留集",
+          "过线数量",
+          "截断产物",
+          "指标口径",
+          "误读"
+        ]
+      },
+      "age_days": 229,
+      "insertion_index": 11
+    },
+    {
+      "id": "c20",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "plan/V3/retrieval-safety-round-plan-2026-08-10.md",
+          "section": "§2 D3 的 floor 对照表",
+          "supports": "floor 0.320 让完全异域负例 10/10 归零、平均返回 0.00，但最低正例得分 0.308，因此会丢掉 fra-r02 一条正例"
+        }
+      ],
+      "prompt": "把地板线提到 0.32，异域的假线索能不能清光？",
+      "assistant_response": "能，十条全部归零，平均返回降到零。但同一个值会砍掉得分最低的那条正例——它只有 0.308。所以这不是免费的：清空异域负例与保住全部正例，在这个语料上是互相冲突的两件事，必须显式取舍而不是当作双赢。",
+      "events": [
+        {
+          "tool": "shell",
+          "input": {
+            "command": "bun run benchmark/analyze-duplicate-supplement.ts"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "评估提高地板线能否清空完全异域的假线索",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": [],
+        "key_facts": [
+          "0.320",
+          "0.308"
+        ],
+        "unfinished": [],
+        "title": "地板线 0.32 能把异域负例清零，代价是丢掉最低分的那条正例",
+        "summary": "把地板线提到 0.32，完全异域的十条负例全部归零、平均返回降到零；但同一个值高于得分最低那条正例的 0.308，于是它会被一起砍掉。清空异域负例与保住全部正例在这份语料上互相冲突。",
+        "outcome": "该取舍被显式登记，不再被当成没有代价的收紧。",
+        "learned": "阈值收紧的代价常常集中在一两条最难的样本上；只看均值会以为它免费。",
+        "concepts": [
+          "异域负例",
+          "归零",
+          "最低分正例",
+          "取舍",
+          "阈值收紧"
+        ]
+      },
+      "age_days": 120,
+      "insertion_index": 34
+    },
+    {
+      "id": "c21",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "plan/V3/retrieval-safety-round-plan-2026-08-10.md",
+          "section": "§2 D3 的 floor 对照表（技术相近一列）",
+          "supports": "去重口径下技术相近负例的平均返回：floor 0.197 时 1.50、0.275 时 1.35、0.300 时 1.20、0.320 时 1.15——始终高于 1"
+        },
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/duplicate-supplement.md",
+          "section": "§3.2 按负例类型分层",
+          "supports": "无界臂 near-domain 去重后 1.5、foreign-domain 去重后 0.9——两类的可达性差一个量级"
+        }
+      ],
+      "prompt": "技术相近的那类负例，提高地板线能压到 1 以下吗？",
+      "assistant_response": "压不到。从 0.197 到 0.32，去重后的平均只从 1.50 降到 1.15，始终高于 1；而同一批 floor 下异域那类可以归零。两类的可达性差一个量级，说明用同一个\"平均不超过 1\"去要求它们，等于给技术相近这一类设了个实测不可达的点。",
+      "events": [
+        {
+          "tool": "read",
+          "input": {
+            "path": "benchmark/reports/final-recall/duplicate-supplement.md"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "确认技术相近的负例能否靠提高地板线压到门槛之下",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": [],
+        "key_facts": [
+          "1.50",
+          "1.15"
+        ],
+        "unfinished": [
+          "把误召回门按负例类型拆开，两类分别定判据"
+        ],
+        "title": "技术相近的负例压不下去，与异域那类差一个量级",
+        "summary": "地板线从 0.197 提到 0.32，技术相近负例去重后的平均只从 1.50 降到 1.15，始终高于一；同一批取值下完全异域那类可以归零。两类的可达性差一个量级，用同一个平均门槛要求它们，等于给前者设了一个实测不可达的目标。",
+        "outcome": "误召回门按负例类型拆开成为待办，两类分别定判据。",
+        "learned": "把可达性差一个量级的两类样本混在一个门槛下，门槛就同时失去了严格性和信息量。",
+        "concepts": [
+          "技术相近",
+          "完全异域",
+          "分层门槛",
+          "可达性",
+          "去重口径"
+        ]
+      },
+      "age_days": 742,
+      "insertion_index": 29
+    },
+    {
+      "id": "c22",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "plan/V3/retrieval-safety-round-plan-2026-08-10.md",
+          "section": "§2 D4 两套校准集的对照表",
+          "supports": "phase 2B 的 72 条零 FTS 正例 hit@5 在 floor 0.197/0.223/0.275 下分别是 50.0%/40.3%/26.4%；最终盲审 26 条旧记录在同样三档下丢失正例均为 0"
+        },
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/codex-blind-audit-report.md",
+          "section": "§3",
+          "supports": "盲审集正例得分全部 ≥0.308，因此低于 0.30 的门槛对它零代价"
+        }
+      ],
+      "prompt": "提高地板线到 0.275，代价大不大？",
+      "assistant_response": "取决于你拿哪套集合去问。一套上 hit@5 从 50% 掉到 26.4%，另一套上零代价。差别在于后者的正例得分全部在 0.308 以上，所以低于 0.30 的门槛对它免费。这意味着如果新校准集里没有低分正例，就会选出一个看起来免费、实际砍掉难查询的门槛，而且当时看不出来。",
+      "events": [
+        {
+          "tool": "read",
+          "input": {
+            "path": "benchmark/reports/phase2b-selection.json"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "对照两套校准集，判断提高地板线的真实代价",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": [],
+        "key_facts": [
+          "50.0%",
+          "26.4%",
+          "0.308"
+        ],
+        "unfinished": [
+          "新校准集必须含低分正例并分层报告"
+        ],
+        "title": "两套校准集对同一个地板线给出相反的代价答案",
+        "summary": "同一个地板线在一套集合上让命中率从五成掉到二成六，在另一套上零代价。原因是后者的正例得分全部在 0.308 以上，低于 0.30 的门槛对它免费。因此校准集里若没有低分正例，就会选出一个看起来免费、实际砍掉难查询的门槛。",
+        "outcome": "\"新校准集必须含低分正例并分层报告\"成为硬要求。",
+        "learned": "校准集的难度分布决定了它能不能看见代价；集合里没有难样本时，任何收紧都显得免费。",
+        "concepts": [
+          "校准集",
+          "低分正例",
+          "命中率",
+          "假免费",
+          "难度分布"
+        ]
+      },
+      "age_days": 881,
+      "insertion_index": 1
+    },
+    {
+      "id": "c23",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/codex-blind-audit-report.md",
+          "section": "§3",
+          "supports": "旧记录找回率 hit@5 从 0% 升到 80.769%，26 条里 21 条进入 Top-5，0 条退化"
+        }
+      ],
+      "prompt": "独立盲审对召回收益的结论是什么？",
+      "assistant_response": "旧记录的找回率从零升到 80.77%，二十六条里二十一条进入前五，零条退化。这一半是做完并被独立验证过的；卡住的只有误召回那一门。所以后续轮次要保住这个收益，回滚时间窗会把它撤掉。",
+      "events": [
+        {
+          "tool": "read",
+          "input": {
+            "path": "benchmark/reports/final-recall/codex-blind-audit-report.md"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "登记独立盲审确认的召回收益",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": [],
+        "key_facts": [
+          "80.769%",
+          "21/26"
+        ],
+        "unfinished": [],
+        "title": "独立盲审确认召回收益：找回率零到八成，零退化",
+        "summary": "旧记录的找回率从零升到百分之八十点七七，二十六条里二十一条进入前五，没有一条退化。召回这一半已完成并被独立验证，未通过的只有误召回那一门。后续任何补救方案都必须保住这个收益。",
+        "outcome": "收益侧结论独立成立，成为评估补救方案代价的基准。",
+        "learned": "把已确认的收益单独记一笔，后面讨论回滚时才有东西可以拿来比代价。",
+        "concepts": [
+          "召回收益",
+          "独立盲审",
+          "找回率",
+          "零退化",
+          "基准"
+        ]
+      },
+      "age_days": 175,
+      "insertion_index": 33
+    },
+    {
+      "id": "c24",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/duplicate-supplement.md",
+          "section": "§5 页面替换：两套口径",
+          "supports": "物理行口径新增 109 / 移除 105；按不同原文折叠后新增 55 / 移除 53"
+        }
+      ],
+      "prompt": "换成无界之后页面到底动了多少？",
+      "assistant_response": "物理行口径新增一百零九、移除一百零五；按不同原文折叠之后是五十五和五十三。两套口径几乎正好差一半，和装置里每条原文五份副本的结构一致。报页面替换必须两套一起给，只报一套会让读者以为改动幅度是另一个量级。",
+      "events": [
+        {
+          "tool": "shell",
+          "input": {
+            "command": "bun run benchmark/analyze-duplicate-supplement.ts"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "量化时间窗改动带来的页面替换幅度",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": [],
+        "key_facts": [
+          "109",
+          "105",
+          "55"
+        ],
+        "unfinished": [],
+        "title": "页面替换两套口径：物理行 109/105，折叠后 55/53",
+        "summary": "按页面物理行数算，新增一百零九条、移除一百零五条；按不同原文折叠后是五十五和五十三。两套差近一半，与装置里每条原文五份副本的结构一致。页面替换必须两套口径一起报。",
+        "outcome": "替换幅度的读数不再依赖读者猜测用的是哪套口径。",
+        "learned": "语料里存在重复时，任何\"条数\"类指标都有两个值；只报一个等于让读者自己选。",
+        "concepts": [
+          "页面替换",
+          "双口径",
+          "折叠",
+          "副本结构",
+          "指标歧义"
+        ]
+      },
+      "age_days": 18,
+      "insertion_index": 18
+    },
+    {
+      "id": "c25",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/duplicate-supplement.md",
+          "section": "§正例侧新测项的结论",
+          "supports": "5 条未找回的正例里 4 条整页被两个同源副本占满，但去重救不回任何一条：3 条的 gold 不在 Top-K 保留集，fra-r09 的 gold 名次 641、折叠后仍是 129，都进不了 2 条的页面；fra-r12 的两个位置被另外两条真实 gold 占住"
+        }
+      ],
+      "prompt": "那四条被副本占满页面的正例，去重之后是不是就能找回来了？",
+      "assistant_response": "一条都救不回来。三条的正确答案压根不在保留集里，名次必然在一千之外；另一条的名次是六百四十一，折叠之后一百二十九，仍然进不了只有两个位置的页面。剩下那条与副本无关，两个位置被另外两条真实答案占住，是正常竞争。所以副本结构只抬高了误召回读数，没有掩盖任何召回收益。",
+      "events": [
+        {
+          "tool": "shell",
+          "input": {
+            "command": "bun run benchmark/analyze-duplicate-supplement.ts"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "确认页面被副本占满是否掩盖了本该找回的正例",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": [],
+        "key_facts": [
+          "641",
+          "129"
+        ],
+        "unfinished": [],
+        "title": "副本占满页面没有掩盖召回收益，去重救不回任何一条正例",
+        "summary": "五条未找回的正例里四条整页被同源副本占满，但去重一条都救不回：三条的正确答案不在保留集内，名次必然在一千之外；一条名次六百四十一、折叠后一百二十九，仍进不了两个位置的页面；最后一条与副本无关，位置被另外两条真实答案占住。",
+        "outcome": "装置的副本结构只抬高误召回读数，收益结论不受影响。",
+        "learned": "怀疑装置有偏差时，要把偏差对两侧指标的影响分别算一遍——它可能只污染其中一侧。",
+        "concepts": [
+          "副本占位",
+          "保留集",
+          "名次",
+          "正常竞争",
+          "偏差归因"
+        ]
+      },
+      "age_days": 263,
+      "insertion_index": 39
+    },
+    {
+      "id": "c26",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/codex-p6-ruling.md",
+          "section": "§3 新安全轮次的变量",
+          "supports": "cap=1 能结构性保证零 FTS 页面至多返回 1 条 semantic-only，但不自动解决 FTS/hybrid 暴露面，因此不能只凭 cap 的算术上界宣称完整安全"
+        },
+        {
+          "kind": "report",
+          "path": "plan/V3/retrieval-safety-round-plan-2026-08-10.md",
+          "section": "§8 已知的退化解，必须预先声明",
+          "supports": "零 FTS 负例页面只由 semantic-only 构成，因此 cap=1 让「平均返回 ≤1」成为算术恒真；判据中预先写死 cap=1 为诊断臂，不得作为成功候选"
+        }
+      ],
+      "prompt": "把每页配额降到 1，误召回门不就自动过了吗？",
+      "assistant_response": "那是算术恒真，什么都证明不了。零关键词命中的负例页面完全由纯语义结果构成，把配额设成 1，\"平均返回不超过 1\"就必然成立，与检索质量无关。所以配额为 1 预先写死为诊断臂，和配额为 0 同等地位，不得作为成功候选。",
+      "events": [
+        {
+          "tool": "write",
+          "input": {
+            "path": "benchmark/reports/final-recall/codex-p6-ruling.md",
+            "command": "strReplace"
+          },
+          "response": {
+            "success": true
+          }
+        }
+      ],
+      "annotation": {
+        "request": "预先排除靠降配额让误召回门自动通过的退化解",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": [],
+        "key_facts": [
+          "cap=1"
+        ],
+        "unfinished": [],
+        "title": "配额降到 1 是算术恒真，预先写死为诊断臂",
+        "summary": "零关键词命中的负例页面完全由纯语义结果构成，因此把每页配额设成一之后，平均返回不超过一必然成立，与检索质量无关。该取值预先登记为诊断臂，与配额为零同等地位，不得作为成功候选；也不能只凭配额的算术上界宣称整页安全。",
+        "outcome": "退化解在跑第一个 arm 之前被排除，避免事后争论。",
+        "learned": "预写判据时要先找出让门槛恒真的那些取值，把它们标成诊断项，否则它们会以\"通过\"的形式出现。",
+        "concepts": [
+          "算术恒真",
+          "诊断臂",
+          "配额",
+          "退化解",
+          "预写判据"
+        ]
+      },
+      "age_days": 533,
+      "insertion_index": 26
+    },
+    {
+      "id": "c27",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/topk-submission.md",
+          "section": "§K 档位对照表（第 101 行 K=1000 一行）",
+          "supports": "K=1000：p95 158/183/193/216/286ms，p99 338/357/358/443/448ms，RSS +225…+324MB"
+        }
+      ],
+      "prompt": "保留一千名在最大那档还撑得住吗？延迟和内存都要看。",
+      "assistant_response": "撑得住。五档语料下 p95 是 158 到 286 毫秒，p99 最高 448 毫秒；搜索循环的常驻内存增量在 225 到 324 兆之间。两项都在预算内，所以保留数不是当前的瓶颈。",
+      "events": [
+        {
+          "tool": "shell",
+          "input": {
+            "command": "bun run benchmark/run-pool-perf-recheck.ts"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "复核保留一千名在最大语料档的延迟与内存",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": [],
+        "key_facts": [
+          "286ms",
+          "324MB"
+        ],
+        "unfinished": [],
+        "title": "保留一千名在最大语料档的 p95 是 158 到 286 毫秒",
+        "summary": "五档语料下，保留一千名的 p95 落在一百五十八到二百八十六毫秒，p99 最高四百四十八毫秒，搜索循环的常驻内存增量在二百二十五到三百二十四兆之间。两项都在预算内，保留数不是当前瓶颈。",
+        "outcome": "性能门通过，保留数的取值不需要为了延迟而下调。",
+        "learned": "报延迟要连档位一起报：单一个 p95 数字看不出它是在哪个语料规模上测的。",
+        "concepts": [
+          "延迟",
+          "常驻内存",
+          "语料档位",
+          "性能门",
+          "保留数"
+        ]
+      },
+      "age_days": 876,
+      "insertion_index": 2
+    },
+    {
+      "id": "c28",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/topk-submission.md",
+          "section": "§保留集与全量打分的对照（第 108–113 行）",
+          "supports": "K=200 在 50,000 档只保留 4,618 条过 floor 候选中的 163 条，有序 resultIds 与 full-scoring 参考差异 0；预登记先验是语义名次到几千位对 RRF 的贡献是 1/(60+n)"
+        }
+      ],
+      "prompt": "只留一小部分候选的名次，返回的页面会不会变？",
+      "assistant_response": "实测不会。最激进那档只保住四千六百一十八条过线候选里的一百六十三条，有序结果与全量打分逐条相同。机制上也说得通：名次到几千位时对融合分的贡献是一除以六十加名次，够不到十条的页面。变的是可观测性——保留集之外的记录没有被记录下来的语义名次。",
+      "events": [
+        {
+          "tool": "shell",
+          "input": {
+            "command": "bun run benchmark/run-codex-topk-audit.ts"
+          },
+          "response": {
+            "exit_status": 0,
+            "stdout": "diff 0"
+          }
+        }
+      ],
+      "annotation": {
+        "request": "验证截断保留集会不会改变返回页面",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": [],
+        "key_facts": [
+          "4,618",
+          "163"
+        ],
+        "unfinished": [],
+        "title": "只保住四千六百多条候选里的一百六十三条，返回页面逐条不变",
+        "summary": "最激进那档只保留四千六百一十八条过线候选中的一百六十三条，有序结果与全量打分逐条相同。机制上一致：名次到几千位时对融合分的贡献是一除以六十加名次，够不到十条的页面。真正被牺牲的是可观测性，保留集之外的记录没有语义名次可读。",
+        "outcome": "截断的代价被定位到可观测性，而不是页面内容。",
+        "learned": "证明一个优化\"不改变行为\"要给逐条差异，不是给聚合指标——聚合相同也可能内部换了顺序。",
+        "concepts": [
+          "截断",
+          "逐条差异",
+          "融合贡献",
+          "可观测性",
+          "全量打分"
+        ]
+      },
+      "age_days": 756,
+      "insertion_index": 21
+    },
+    {
+      "id": "c29",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/codex-blind-audit-freeze.json",
+          "section": "oldCorpus 字段（sourceRecords / copies / auditRecords / spreadDays）",
+          "supports": "10,000 条原文 × 5 副本 = 50,000 条审计记录，播种跨度 1,095 天"
+        },
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/duplicate-supplement.md",
+          "section": "§4 复印件命中分布",
+          "supports": "所有同源副本对的余弦分数逐位相同，这是副本复用向量的直接确认"
+        }
+      ],
+      "prompt": "五万条那个装置是怎么搭出来的？",
+      "assistant_response": "一万条原文复制五份，播种跨度一千零九十五天。副本复用同一份向量，所以同源副本对的相似度分数逐位相同——这不是巧合，而是构造方式的直接痕迹。这个结构让物理行数达标，但它同时意味着页面上可能出现同一条原文的多个副本。",
+      "events": [
+        {
+          "tool": "read",
+          "input": {
+            "path": "benchmark/reports/final-recall/codex-blind-audit-freeze.json"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "记录五万条规模装置的构造方式",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": [],
+        "key_facts": [
+          "10,000",
+          "1,095"
+        ],
+        "unfinished": [],
+        "title": "五万条装置是一万条原文复制五份，跨度一千零九十五天",
+        "summary": "装置由一万条原文复制五份构成，播种跨度一千零九十五天。副本复用同一份向量，所以同源副本对的相似度分数逐位相同，这是构造方式留下的直接痕迹。物理行数达标的同时，页面上可能出现同一条原文的多个副本。",
+        "outcome": "装置结构被显式记录，成为后续解释双口径读数的前提。",
+        "learned": "用复制放大语料规模时，要预先想清楚哪些指标会被副本结构改变，并在报告里并列两套口径。",
+        "concepts": [
+          "装置构造",
+          "副本",
+          "复用向量",
+          "播种跨度",
+          "双口径"
+        ]
+      },
+      "age_days": 762,
+      "insertion_index": 17
+    },
+    {
+      "id": "c30",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/dataset/pool-policy-filler-10k-meta.json",
+          "section": "meta 字段（seed / domains / rulesSameAs / lexicalViolations / uniqueTitles）",
+          "supports": "seed 3932160、15 个领域、78 独特 concept + 33 文件基名禁用表、lexicalViolations 0、uniqueTitles 10000"
+        }
+      ],
+      "prompt": "填充语料怎么保证不会意外命中那些校准 query 的关键词？",
+      "assistant_response": "靠一份禁用表加一次机械校验：七十八个独特概念、三十三个文件基名进禁用表，生成完之后逐条查词面违规，读数是零；一万条标题全不重复。种子写进元数据，所以这批语料可以逐字重放。",
+      "events": [
+        {
+          "tool": "shell",
+          "input": {
+            "command": "bun run benchmark/build-phase3b-fixture.ts"
+          },
+          "response": {
+            "exit_status": 0,
+            "stdout": "lexicalViolations 0"
+          }
+        }
+      ],
+      "annotation": {
+        "request": "保证填充语料不会与校准 query 产生词面命中",
+        "completed": true,
+        "memory_type": "feature",
+        "key_files": [],
+        "key_facts": [
+          "78",
+          "33"
+        ],
+        "unfinished": [],
+        "title": "填充语料用禁用表加机械校验，词面违规为零",
+        "summary": "七十八个独特概念与三十三个文件基名进禁用表，生成后逐条检查词面违规，读数为零；一万条标题互不重复。随机种子写进元数据，因此整批语料可以逐字重放。",
+        "outcome": "填充语料不会给校准 query 制造意外的关键词命中，实验可重放。",
+        "learned": "生成式装置的可信度来自两样东西：一个可复现的种子，以及一个能机械判定的违规定义。",
+        "concepts": [
+          "填充语料",
+          "禁用表",
+          "词面违规",
+          "种子",
+          "可重放"
+        ]
+      },
+      "age_days": 442,
+      "insertion_index": 15
+    },
+    {
+      "id": "c31",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/config.ts",
+          "line": 62,
+          "symbol": "context.maxOutputBytes",
+          "supports": "默认 8192 字节"
+        },
+        {
+          "kind": "report",
+          "path": "README.md",
+          "section": "§Configuration 的 context.maxOutputBytes 说明",
+          "supports": "该预算刻意低于 agentSpawn 的 10KB 上限"
+        }
+      ],
+      "prompt": "会话开始时注入的索引有多大？会不会超限？",
+      "assistant_response": "预算八千一百九十二字节，刻意压在注入接口一万字节上限之下，留出余量。注入的是一份目录而不是内容：置顶项、几条最近记录带简短结果、以及一份更长的近期索引，每行带一个近似读取代价。没有模型综述，也没有主题聚类。",
+      "events": [
+        {
+          "tool": "write",
+          "input": {
+            "path": "src/config.ts",
+            "command": "strReplace"
+          },
+          "response": {
+            "success": true
+          }
+        }
+      ],
+      "annotation": {
+        "request": "确定注入索引的字节预算",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": [
+          "src/config.ts"
+        ],
+        "key_facts": [
+          "8192"
+        ],
+        "unfinished": [],
+        "title": "注入索引预算八千一百九十二字节，压在接口上限之下",
+        "summary": "预算取八千一百九十二字节，刻意低于注入接口的一万字节上限以留余量。注入的是目录不是内容：置顶项、几条最近记录带简短结果、以及一份更长的近期索引，每行带近似读取代价，不做模型综述也不做主题聚类。",
+        "outcome": "注入内容不会触上限，读什么由 agent 按需决定。",
+        "learned": "预算要留在硬上限之下，不要贴着写；贴着写等于把上限当成目标值。",
+        "concepts": [
+          "注入预算",
+          "字节上限",
+          "索引目录",
+          "按需读取",
+          "留余量"
+        ]
+      },
+      "age_days": 506,
+      "insertion_index": 36
+    },
+    {
+      "id": "c32",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "src/server/mcp-server.ts",
+          "line": 167,
+          "symbol": "DETAIL_RESPONSE_BYTES",
+          "supports": "DETAIL_RESPONSE_BYTES = 32 * 1024，详情响应的字节上限"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/mcp-server.ts",
+          "line": 534,
+          "supports": "使用处：if (details.length > 0 && usedBytes + size > DETAIL_RESPONSE_BYTES) —— 上限是按累计字节裁掉后续条目，且至少保证返回第一条，而不是整体报错"
+        }
+      ],
+      "prompt": "按 id 取详情的时候，一次拉一堆会不会把回复撑爆？",
+      "assistant_response": "有上限，三十二千字节。它和注入索引那个预算是两件事：索引要压在注入接口的限制之下，详情响应受的是工具回复本身的约束。两个数字分开定，不共用一个常量。",
+      "events": [
+        {
+          "tool": "write",
+          "input": {
+            "path": "src/server/mcp-server.ts",
+            "command": "strReplace"
+          },
+          "response": {
+            "success": true
+          }
+        }
+      ],
+      "annotation": {
+        "request": "给按 id 取详情的响应加字节上限",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": [
+          "src/server/mcp-server.ts"
+        ],
+        "key_facts": [
+          "32"
+        ],
+        "unfinished": [],
+        "title": "详情响应上限三十二千字节，与注入索引预算分开定",
+        "summary": "按 id 取详情的响应设三十二千字节上限。它与会话开始时注入索引的预算是两件事：后者受注入接口限制，前者受工具回复本身的约束，两个数字分开定义，不共用常量。",
+        "outcome": "两个不同来源的限制各自可调，改一个不会意外影响另一个。",
+        "learned": "两个数值恰好相近不代表它们是同一个约束；合并成一个常量会让后来的人改错地方。",
+        "concepts": [
+          "详情响应",
+          "字节上限",
+          "常量分离",
+          "工具回复",
+          "注入预算"
+        ]
+      },
+      "age_days": 314,
+      "insertion_index": 8
+    },
+    {
+      "id": "c33",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "README.md",
+          "section": "§Semantic Discovery and Rollback 的最后一段",
+          "supports": "开关只改检索：不动库结构、不动存储向量、不动嵌入协议，因此可来回切换且无需重建、无数据丢失"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "line": 148,
+          "supports": "开关只在策略选择这一处生效，返回两组完整策略之一"
+        }
+      ],
+      "prompt": "切回旧档需要重建向量吗？会不会丢数据？",
+      "assistant_response": "不需要，也不会丢。这个开关只决定用哪一组检索策略，库结构、存储的向量、嵌入协议一个都不动，所以来回切换是安全的。唯一要注意的是生效时机：改完之后新开的会话才用新档，已经在跑的会话保持它启动时的那一档。",
+      "events": [
+        {
+          "tool": "write",
+          "input": {
+            "path": "README.md",
+            "command": "strReplace"
+          },
+          "response": {
+            "success": true
+          }
+        }
+      ],
+      "annotation": {
+        "request": "说明回滚开关的作用范围与生效时机",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": [
+          "src/server/observation-search.ts",
+          "README.md"
+        ],
+        "key_facts": [
+          "semanticDiscovery"
+        ],
+        "unfinished": [],
+        "title": "回滚开关只改检索，不动库结构与存储向量",
+        "summary": "开关只决定用哪一组检索策略，库结构、存储向量与嵌入协议都不变，因此可以来回切换且不需要重建、不会丢数据。生效时机是新开的会话；已经在运行的会话保持它启动时的那一档。",
+        "outcome": "回滚成为一个低风险动作，代价只是等下一个会话。",
+        "learned": "可回滚性要落到\"不动持久化状态\"上；只要改动触及存储格式，回滚就不再是切开关。",
+        "concepts": [
+          "回滚范围",
+          "持久化不变",
+          "生效时机",
+          "会话级",
+          "无需重建"
+        ]
+      },
+      "age_days": 781,
+      "insertion_index": 19
+    },
+    {
+      "id": "c34",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "README.md",
+          "section": "§Retrieval Metrics 的最后一段",
+          "supports": "/health 每次调用都从磁盘读当前档位，因此报告的是下一个会话会用的档位；已在运行的会话保持它启动时的档位"
+        }
+      ],
+      "prompt": "改完配置怎么确认生效了？不想去读代码。",
+      "assistant_response": "健康接口每次调用都从磁盘读当前档位，所以\"我的回滚生效了吗\"不用读代码就能回答。但要注意它报的是下一个会话会用的档位，不是当前正在跑的那个——已经启动的会话保持它启动时的设置。",
+      "events": [
+        {
+          "tool": "write",
+          "input": {
+            "path": "src/server/worker.ts",
+            "command": "strReplace"
+          },
+          "response": {
+            "success": true
+          }
+        }
+      ],
+      "annotation": {
+        "request": "让配置是否生效可以不读代码就确认",
+        "completed": true,
+        "memory_type": "feature",
+        "key_files": [
+          "src/server/worker.ts",
+          "README.md"
+        ],
+        "key_facts": [
+          "/health"
+        ],
+        "unfinished": [],
+        "title": "健康接口每次调用从磁盘读档位，报的是下一个会话的档位",
+        "summary": "健康接口每次被调用都从磁盘读当前档位，因此不必读代码就能确认配置是否生效。需要注意它报告的是下一个会话会使用的档位，而不是当前正在运行的那个——已启动的会话保持它启动时的设置。",
+        "outcome": "配置生效与否可自查，同时把\"何时生效\"这个易误解点写在同一处。",
+        "learned": "暴露一个配置读数时要一起说明它描述的是哪个时刻，否则用户会以为它描述当前进程。",
+        "concepts": [
+          "健康接口",
+          "档位读数",
+          "生效时机",
+          "自查",
+          "会话级设置"
+        ]
+      },
+      "age_days": 1016,
+      "insertion_index": 31
+    },
+    {
+      "id": "c35",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/codex-p6-ruling.md",
+          "section": "§5 两个附加装置的归属（最后一段）",
+          "supports": "在隔离证据出来前不修改 ORDER BY fts.rank, o.id ASC；同时停止把 id ASC 描述成完全「不携带排名意见」——在无界且 ID 与插入时间相关的语料里，它实际编码 oldest-first"
+        }
+      ],
+      "prompt": "关键词那条腿的次序键里加 id 只是为了稳定排序吧？",
+      "assistant_response": "不完全是。默认无界之后，id 与插入时间相关，所以按 id 升序等于隐含了\"旧的优先\"。它以前被描述成不携带排名意见的稳定项，这个说法现在不能再用了。处置是先不动它，把年龄与长度解耦的取证单独排一轮，出证据之前不改次序键。",
+      "events": [
+        {
+          "tool": "write",
+          "input": {
+            "path": "benchmark/reports/final-recall/codex-p6-ruling.md",
+            "command": "strReplace"
+          },
+          "response": {
+            "success": true
+          }
+        }
+      ],
+      "annotation": {
+        "request": "厘清关键词排序里 id 升序到底携带什么意见",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": [],
+        "key_facts": [
+          "id ASC"
+        ],
+        "unfinished": [
+          "单开一轮做年龄与长度解耦的取证，之后才决定是否改次序键"
+        ],
+        "title": "次序键里的 id 升序实际编码了旧的优先，不是中立的稳定项",
+        "summary": "默认无界之后，主键与插入时间相关，按主键升序等于隐含旧的优先。它此前被描述成不携带排名意见的稳定项，这个说法不再成立。处置是先不改次序键，把年龄与长度解耦的取证单独排一轮，证据出来之前不动它。",
+        "outcome": "术语被纠正，改动被推迟到有隔离证据之后。",
+        "learned": "\"稳定排序用的字段\"在字段与时间相关时就不再中立；判断一个 tie-break 中不中立，要看它和什么相关，而不是看它叫什么。",
+        "concepts": [
+          "次序键",
+          "tie-break",
+          "旧的优先",
+          "中立性",
+          "取证推迟"
+        ]
+      },
+      "age_days": 890,
+      "insertion_index": 22
+    },
+    {
+      "id": "c36",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/codex-p6-ruling.md",
+          "section": "§5 两个附加装置的归属",
+          "supports": "等 bm25、年龄/长度解耦 fixture 独立成 FTS 排序轮次，只比较技术全序键与显式 recency tie-break，不参与 floor/cap 选择；可与安全轮次并行取证，但必须单独报告和裁定"
+        },
+        {
+          "kind": "report",
+          "path": "plan/V3/retrieval-safety-round-plan-2026-08-10.md",
+          "section": "§4 本轮不做什么 第 5 条",
+          "supports": "不得同时动多个变量：P3 只动 floor 和 cap。排序取证若并入本轮就会同时动次序键与门槛两个变量"
+        }
+      ],
+      "prompt": "排序那件事能不能顺手在这一轮一起测了？",
+      "assistant_response": "不行，得单独一轮。它要比的是技术全序键与显式最近优先，与相似度门槛和配额的选择无关；混进来会让两个变量同时动，读数无法归因。可以并行取证，但必须单独报告、单独裁定。",
+      "events": [
+        {
+          "tool": "write",
+          "input": {
+            "path": "benchmark/reports/final-recall/codex-p6-ruling.md",
+            "command": "strReplace"
+          },
+          "response": {
+            "success": true
+          }
+        }
+      ],
+      "annotation": {
+        "request": "决定排序取证与安全轮次的归属关系",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": [],
+        "key_facts": [
+          "bm25"
+        ],
+        "unfinished": [],
+        "title": "排序取证独立成轮，可并行但必须单独裁定",
+        "summary": "年龄与长度解耦的排序取证独立成一轮，它比较的是技术全序键与显式最近优先，与相似度门槛和配额的选择无关。可以与安全轮次并行取证，但必须单独报告、单独裁定，不得混进同一轮。",
+        "outcome": "两轮的变量互不重叠，各自的读数可归因。",
+        "learned": "并行不等于合并。两件事可以同时做，但共用一份报告就等于同时动两个变量。",
+        "concepts": [
+          "轮次归属",
+          "变量隔离",
+          "全序键",
+          "最近优先",
+          "单独裁定"
+        ]
+      },
+      "age_days": 497,
+      "insertion_index": 24
+    },
+    {
+      "id": "c37",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/codex-p6-ruling.md",
+          "section": "§4 新校准集与确认集",
+          "supports": "当前最终盲审集已被消耗，不得用于选 floor/cap；策略冻结后该集整体重跑并标注为「已消耗回归确认集」，另建新的独立确认集作为最终发布证据"
+        },
+        {
+          "kind": "report",
+          "path": "plan/V3/retrieval-safety-round-plan-2026-08-10.md",
+          "section": "§4 第 1 条",
+          "supports": "它可以用于描述性测量（不选任何阈值），不可用于选择 floor / cap / τ"
+        }
+      ],
+      "prompt": "盲审那套 query 还能不能拿来调参？它挺好用的。",
+      "assistant_response": "不能。它已经作为验收集被消耗掉了，用它选门槛等于用考卷练习。它还能做描述性测量——只要不从中选任何阈值。策略冻结之后它会整体重跑一次，明确标注为已消耗的回归确认集，最终发布证据要另建一份独立确认集。",
+      "events": [
+        {
+          "tool": "read",
+          "input": {
+            "path": "benchmark/reports/final-recall/codex-blind-audit-input.json"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "界定已消耗验收集的后续用途",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": [],
+        "key_facts": [
+          "已消耗"
+        ],
+        "unfinished": [
+          "另建独立确认集作为最终发布证据"
+        ],
+        "title": "已消耗的验收集只能做描述性测量，不得用于选参",
+        "summary": "该集合已作为验收集被消耗，用它选门槛等于用考卷练习。它仍可用于描述性测量，前提是不从中选任何阈值。策略冻结之后它会整体重跑一次并明确标注为已消耗的回归确认集，最终发布证据需要另建一份独立确认集。",
+        "outcome": "选参与验收的边界被写死，避免同一份数据同时充当两种角色。",
+        "learned": "一份数据一旦用于验收就失去了选参资格；把它标注清楚比指望以后记得住更可靠。",
+        "concepts": [
+          "已消耗集",
+          "描述性测量",
+          "选参禁止",
+          "回归确认",
+          "独立确认集"
+        ]
+      },
+      "age_days": 1068,
+      "insertion_index": 4
+    },
+    {
+      "id": "c38",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/safety-round/p40-relative-score-probe.md",
+          "section": "§机制与推论",
+          "supports": "最极端的 fra-n17 绝对分数只有 0.391，但 μ_q=0.015、σ_q=0.056，得出 z=6.700，比 22 条真有答案的正例都高"
+        },
+        {
+          "kind": "report",
+          "path": "plan/V3/retrieval-safety-round-plan-2026-08-10.md",
+          "section": "§4 第 8 条与 §9.1 的推论",
+          "supports": "任何以「相对语料背景做归一化」为核心的准入规则都会踩同一个坑，包括分位数版本与 margin-over-median 版本；后续轮次不要换一种归一化再试一遍"
+        }
+      ],
+      "prompt": "标准化不行，换成分位数或者跟中位数的差值呢？",
+      "assistant_response": "同一个坑。这些写法共享一个前提——背景水平能代表这次查询的难度——而在\"问一件没做过的事\"上这个前提恰好是反的。最极端那条负例绝对分数只有 0.391，但背景均值 0.015、标准差 0.056，算出来的相对值比二十二条真有答案的正例都高。所以这个方向整体禁掉，不要换一种归一化再试。",
+      "events": [
+        {
+          "tool": "shell",
+          "input": {
+            "command": "bun run benchmark/analyze-relative-score-probe.ts"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "判断换一种归一化写法能否绕开相对准入的缺陷",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": [],
+        "key_facts": [
+          "6.700",
+          "0.391"
+        ],
+        "unfinished": [],
+        "title": "所有相对语料背景的归一化写法共享同一个错误前提，整体禁用",
+        "summary": "分位数版、与中位数的差值版都共享同一个前提：背景水平能代表这次查询的难度。而在问一件项目没做过的事时这个前提恰好是反的——最极端那条负例绝对分数只有 0.391，但背景均值 0.015、标准差 0.056，算出的相对值比二十二条真有答案的正例都高。",
+        "outcome": "该方向整体进禁止清单，后续轮次不再换写法重试。",
+        "learned": "一类方法共享同一个前提时，否掉前提就否掉整类；逐个试变体只是在重复同一个错误。",
+        "concepts": [
+          "相对归一化",
+          "共享前提",
+          "背景均值",
+          "禁止清单",
+          "整类否证"
+        ]
+      },
+      "age_days": 484,
+      "insertion_index": 35
+    },
+    {
+      "id": "c39",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "plan/V3/retrieval-safety-round-plan-2026-08-10.md",
+          "section": "§12 一个应在本轮之后单独立项的东西",
+          "supports": "检索现在没有任何结果去重；真实语料里同一件事跨多个 turn 被记录会存下多条近似 Observation。加结果去重既能提升页面可用性也能压低误召回读数，正因为同时影响这两件事，不得混进本轮"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "symbol": "结果组装段",
+          "supports": "返回结果的组装过程里没有任何按内容去重的步骤，只有来源标记与配额裁剪"
+        }
+      ],
+      "prompt": "真实语料里同一件事记了好几条，搜出来一页全是重复的，顺手加个去重？",
+      "assistant_response": "该加，但不能在这一轮加。它会同时改善页面可用性和压低误召回读数——正因为同时影响这两件事，混进来之后收益就无法归因：门槛过了到底是去重的功劳还是相似度门槛的功劳，说不清。所以本轮结束后单独立项、单独立门。",
+      "events": [
+        {
+          "tool": "read",
+          "input": {
+            "path": "src/server/observation-search.ts"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "决定结果去重要不要并入当前轮次",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": [
+          "src/server/observation-search.ts"
+        ],
+        "key_facts": [
+          "结果去重"
+        ],
+        "unfinished": [
+          "本轮结束后单独立项做结果去重，单独立门"
+        ],
+        "title": "结果去重延后单独立项，因为它同时影响可用性与误召回读数",
+        "summary": "检索目前没有任何按内容去重的步骤，只有来源标记与配额裁剪，而真实语料里同一件事跨多个 turn 会留下多条近似记录。加去重既能提升页面可用性，也能压低误召回读数——正因为同时影响这两件事，混进本轮会让门槛通过的原因无法归因。",
+        "outcome": "该改动排到本轮之后单独立项、单独立门。",
+        "learned": "一个同时改善两个指标的改动，在需要归因的轮次里是负担而不是红利。",
+        "concepts": [
+          "结果去重",
+          "归因",
+          "近似重复",
+          "轮次隔离",
+          "页面可用性"
+        ]
+      },
+      "age_days": 735,
+      "insertion_index": 10
+    },
+    {
+      "id": "c40",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "plan/V3/retrieval-safety-round-plan-2026-08-10.md",
+          "section": "§8 关于网格来源的处理",
+          "supports": "0.300 最初是从已消耗盲审集事后横扫得出的启发值；因此网格改为按规则等距铺开（0.197 起约 0.025 步长至 0.325），使没有任何一个值是被单独指出来的"
+        },
+        {
+          "kind": "report",
+          "path": "benchmark/reports/final-recall/codex-p6-ruling.md",
+          "section": "§3 新安全轮次的变量（第 36 行）",
+          "supports": "裁定给出的网格只有 semanticFloor in {0.197, 0.223, 0.275} 三个值，其中并不含 0.300——这佐证了 0.300 是后来从已消耗集横扫加进来的"
+        }
+      ],
+      "prompt": "候选网格里为什么要多跑几个值？只测那几个有希望的不就行了。",
+      "assistant_response": "因为其中一个值是从已消耗的验收集事后横扫出来的。它要是最终获选，就必须回答\"候选清单本身有没有被验收集塑造过\"，而答案是有。改成按规则等距铺开之后，没有任何一个值是被单独指出来的，多跑几个 arm 的成本远低于事后解释一个可疑候选。",
+      "events": [
+        {
+          "tool": "write",
+          "input": {
+            "path": "plan/V3/retrieval-safety-round-plan-2026-08-10.md",
+            "command": "strReplace"
+          },
+          "response": {
+            "success": true
+          }
+        }
+      ],
+      "annotation": {
+        "request": "处理候选网格里一个来自已消耗集的启发值",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": [],
+        "key_facts": [
+          "0.300",
+          "0.025"
+        ],
+        "unfinished": [],
+        "title": "候选网格改为等距铺开，避免某个值被单独指出来",
+        "summary": "网格里有一个值最初是从已消耗的验收集事后横扫得来的启发值。它若最终获选，就必须回答候选清单本身是否被验收集塑造过，而答案是肯定的。改成按固定步长等距铺开后，没有任何一个值处于被单独指出的位置。",
+        "outcome": "多跑几个 arm 的成本换掉了一个无法解释的候选来源。",
+        "learned": "选参的公正性不只看怎么选，还看候选清单怎么来的；一个被特别加进来的候选会污染整张表。",
+        "concepts": [
+          "候选网格",
+          "等距铺开",
+          "启发值",
+          "候选来源",
+          "选参公正性"
+        ]
+      },
+      "age_days": 718,
+      "insertion_index": 7
+    },
+    {
+      "id": "c41",
+      "scope": "primary",
+      "session": "safety-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "fact_source": [
+        {
+          "kind": "code",
+          "path": "benchmark/dataset.ts",
+          "symbol": "annotationSearchText",
+          "supports": "它不自己拼字符串，而是走 annotationToResult 再走生产的 buildObservationSearchText，因此 probe 嵌入的就是生产 embed job 会嵌入的那段文本"
+        },
+        {
+          "kind": "code",
+          "path": "src/embedding-space.ts",
+          "symbol": "buildObservationSearchText",
+          "supports": "两个协议共用同一个拼接器，raw 喂存储字段、英文空间喂派生值——这是让 A/B 成为纯文本对比的原因"
+        }
+      ],
+      "prompt": "benchmark 里嵌入的文本和生产真的一模一样吗？两边各写一份很容易漂。",
+      "assistant_response": "所以 benchmark 不自己拼。取文本的函数先走标注到结果的映射，再调生产那个拼接器，任何一端改了拼接规则两端一起变。两个协议也共用同一个拼接器，只是喂进去的字段来源不同——这正是让两档对比成为纯文本差异的原因。",
+      "events": [
+        {
+          "tool": "write",
+          "input": {
+            "path": "benchmark/dataset.ts",
+            "command": "strReplace"
+          },
+          "response": {
+            "success": true
+          }
+        },
+        {
+          "tool": "shell",
+          "input": {
+            "command": "bun test"
+          },
+          "response": {
+            "exit_status": 0
+          }
+        }
+      ],
+      "annotation": {
+        "request": "消除 benchmark 与生产在嵌入文本拼接上的第二个事实来源",
+        "completed": true,
+        "memory_type": "refactor",
+        "key_files": [
+          "benchmark/dataset.ts",
+          "src/embedding-space.ts"
+        ],
+        "key_facts": [
+          "buildObservationSearchText"
+        ],
+        "unfinished": [],
+        "title": "基准取文本改为复用生产拼接器，消除第二个事实来源",
+        "summary": "基准侧不再自己拼嵌入文本：先走标注到结果的映射，再调生产的拼接器，任何一端改了规则两端一起变。两个文本协议也共用同一个拼接器，区别只在喂进去的字段来源，这使两档对比成为纯文本差异而不是实现差异。",
+        "outcome": "基准嵌入的文本与生产逐字节一致，拼接规则漂移不再可能。",
+        "learned": "同一份规则在两处各写一份时，漂移只是时间问题，而且它会把差异报成被测对象的成绩。",
+        "concepts": [
+          "单一事实来源",
+          "拼接器复用",
+          "纯文本对比",
+          "规则漂移",
+          "基准保真"
+        ]
+      },
+      "age_days": 14,
+      "insertion_index": 32
+    }
+  ]
+}

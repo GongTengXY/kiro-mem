@@ -32,3 +32,25 @@ export function computeScopeKey(
   if (c) return `cwd:${c}`;
   return '__global__';
 }
+
+/**
+ * Detect the enclosing git repo root for a directory, or null.
+ *
+ * The SINGLE implementation, deliberately colocated with `computeScopeKey`:
+ * whatever this returns becomes the first component of the scope key, so the
+ * ingest path (which freezes `scope_key` at write time), the MCP authorization
+ * layer and the bootstrap injector must all derive it identically. Three
+ * independent copies meant any drift would silently write memories into one
+ * scope and read them from another — a workspace whose memory appears empty,
+ * with nothing logged.
+ */
+export function detectRepo(cwd: string): string | null {
+  if (!cwd) return null;
+  try {
+    const proc = Bun.spawnSync(['git', 'rev-parse', '--show-toplevel'], { cwd });
+    if (proc.exitCode === 0) return proc.stdout.toString().trim();
+  } catch {
+    // git missing / not a repo — caller falls back to cwd-based scope.
+  }
+  return null;
+}

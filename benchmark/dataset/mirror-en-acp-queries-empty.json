@@ -1,0 +1,27 @@
+{
+  "provenance": {
+    "source": "acp",
+    "agent": "kiro-mem-compressor",
+    "kiroCli": "kiro-cli (see report)",
+    "target": "queries",
+    "querySet": "empty",
+    "generatedAt": "2026-07-30T07:30:31.665Z",
+    "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+    "items": 5,
+    "failures": 0,
+    "retries": 3,
+    "wallTimeMs": 31144,
+    "itemLatencyMs": {
+      "p50": 28475,
+      "p95": 31142,
+      "max": 31142
+    }
+  },
+  "queries": {
+    "q24": "Excel export Chinese garbled encoding",
+    "q23": "iOS APNs push certificate renewal",
+    "q19": "virtual scrolling react-window frame rate optimization",
+    "q22": "payment callback signature verification reconciliation discrepancy",
+    "q21": "Kubernetes Ingress canary release configuration"
+  }
+}

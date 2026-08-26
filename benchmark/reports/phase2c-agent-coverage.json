@@ -1,0 +1,1302 @@
+{
+  "provenance": {
+    "generatedAt": "2026-08-03T03:12:53.444Z",
+    "commit": "b2e972f",
+    "dirty": true,
+    "kiroCli": "kiro-cli 2.15.1",
+    "bun": "1.2.20",
+    "packageVersion": "3.0.0",
+    "agent": "kiro-mem (install 模板，去掉 resources)",
+    "policy": "DEFAULT_RETRIEVAL_POLICY (discovery=on floor=0.197 cap=2)",
+    "worker": "子进程 bun run src/server/worker.ts（隔离 KIRO_MEMORY_DATA_DIR，端口 62071）",
+    "workerImportedInProbe": false,
+    "dataDir": "(临时目录，已删除)",
+    "seededObservations": 6,
+    "rounds": 3,
+    "promptsPerRound": 5
+  },
+  "prompts": [
+    "我们之前处理密钥切换顺序的那次改动，具体是怎么做的？",
+    "以前有没有遇到过下游变慢之后越查越慢、把队列打满的问题？",
+    "前端为什么会把\"没搜到\"当成接口坏了？当时怎么收口的？",
+    "有没有哪次改动是因为把用户信息写进了不该写的地方？",
+    "我们做过 Kubernetes 上的 Istio 灰度发布吗？"
+  ],
+  "fixtures": [
+    "凭据轮换脚本改成先写新密钥再切读端",
+    "任务队列的重试退避从固定 1 秒改成指数",
+    "搜索接口对空结果返回 200 而不是 404",
+    "构建缓存键漏了 lockfile 导致依赖升级不生效",
+    "日志里打印了完整请求体，含用户手机号",
+    "迁移脚本在大表上加索引把写入卡住了"
+  ],
+  "rounds": [
+    {
+      "round": 1,
+      "sessionId": "4bcad1fc-5bfb-493e-8853-cdfc324c2cc0",
+      "turns": [
+        {
+          "round": 1,
+          "prompt": "我们之前处理密钥切换顺序的那次改动，具体是怎么做的？",
+          "stopReason": "end_turn",
+          "toolCalls": [
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/get_observations",
+            "Running: @kiro-mem/get_observations"
+          ],
+          "searchToolCalls": 2,
+          "searchMetricRows": 1,
+          "semanticEnRows": 1,
+          "rejectedOrMissingRows": 0,
+          "rows": [
+            {
+              "id": 1,
+              "protocol": "semantic-en-v1",
+              "reject_reason": null,
+              "fts_count": 0,
+              "semantic_count": 1,
+              "comparable_vectors": 6,
+              "scope_vectors": 6,
+              "semantic_only": 1,
+              "discovery": 1,
+              "degraded": 0,
+              "latency_ms": 37
+            }
+          ]
+        },
+        {
+          "round": 1,
+          "prompt": "以前有没有遇到过下游变慢之后越查越慢、把队列打满的问题？",
+          "stopReason": "end_turn",
+          "toolCalls": [
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/get_observations",
+            "Running: @kiro-mem/get_observations"
+          ],
+          "searchToolCalls": 2,
+          "searchMetricRows": 1,
+          "semanticEnRows": 1,
+          "rejectedOrMissingRows": 0,
+          "rows": [
+            {
+              "id": 2,
+              "protocol": "semantic-en-v1",
+              "reject_reason": null,
+              "fts_count": 1,
+              "semantic_count": 2,
+              "comparable_vectors": 6,
+              "scope_vectors": 6,
+              "semantic_only": 1,
+              "discovery": 1,
+              "degraded": 0,
+              "latency_ms": 9
+            }
+          ]
+        },
+        {
+          "round": 1,
+          "prompt": "前端为什么会把\"没搜到\"当成接口坏了？当时怎么收口的？",
+          "stopReason": "end_turn",
+          "toolCalls": [
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/get_observations",
+            "Running: @kiro-mem/get_observations"
+          ],
+          "searchToolCalls": 2,
+          "searchMetricRows": 1,
+          "semanticEnRows": 1,
+          "rejectedOrMissingRows": 0,
+          "rows": [
+            {
+              "id": 3,
+              "protocol": "semantic-en-v1",
+              "reject_reason": null,
+              "fts_count": 1,
+              "semantic_count": 2,
+              "comparable_vectors": 6,
+              "scope_vectors": 6,
+              "semantic_only": 1,
+              "discovery": 1,
+              "degraded": 0,
+              "latency_ms": 4
+            }
+          ]
+        },
+        {
+          "round": 1,
+          "prompt": "有没有哪次改动是因为把用户信息写进了不该写的地方？",
+          "stopReason": "end_turn",
+          "toolCalls": [
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/get_observations",
+            "Running: @kiro-mem/get_observations"
+          ],
+          "searchToolCalls": 2,
+          "searchMetricRows": 1,
+          "semanticEnRows": 1,
+          "rejectedOrMissingRows": 0,
+          "rows": [
+            {
+              "id": 4,
+              "protocol": "semantic-en-v1",
+              "reject_reason": null,
+              "fts_count": 0,
+              "semantic_count": 1,
+              "comparable_vectors": 6,
+              "scope_vectors": 6,
+              "semantic_only": 1,
+              "discovery": 1,
+              "degraded": 0,
+              "latency_ms": 6
+            }
+          ]
+        },
+        {
+          "round": 1,
+          "prompt": "我们做过 Kubernetes 上的 Istio 灰度发布吗？",
+          "stopReason": "end_turn",
+          "toolCalls": [
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search"
+          ],
+          "searchToolCalls": 2,
+          "searchMetricRows": 1,
+          "semanticEnRows": 1,
+          "rejectedOrMissingRows": 0,
+          "rows": [
+            {
+              "id": 5,
+              "protocol": "semantic-en-v1",
+              "reject_reason": null,
+              "fts_count": 0,
+              "semantic_count": 0,
+              "comparable_vectors": 6,
+              "scope_vectors": 6,
+              "semantic_only": 0,
+              "discovery": 1,
+              "degraded": 0,
+              "latency_ms": 19
+            }
+          ]
+        }
+      ],
+      "promptsWithSearch": 5,
+      "prompts": 5,
+      "stderrTail": []
+    },
+    {
+      "round": 2,
+      "sessionId": "94940bf4-b72f-463f-9a7a-ec095f3ed53f",
+      "turns": [
+        {
+          "round": 2,
+          "prompt": "我们之前处理密钥切换顺序的那次改动，具体是怎么做的？",
+          "stopReason": "end_turn",
+          "toolCalls": [
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/get_observations",
+            "Running: @kiro-mem/get_observations"
+          ],
+          "searchToolCalls": 4,
+          "searchMetricRows": 2,
+          "semanticEnRows": 2,
+          "rejectedOrMissingRows": 0,
+          "rows": [
+            {
+              "id": 6,
+              "protocol": "semantic-en-v1",
+              "reject_reason": null,
+              "fts_count": 0,
+              "semantic_count": 1,
+              "comparable_vectors": 6,
+              "scope_vectors": 6,
+              "semantic_only": 1,
+              "discovery": 1,
+              "degraded": 0,
+              "latency_ms": 16
+            },
+            {
+              "id": 7,
+              "protocol": "semantic-en-v1",
+              "reject_reason": null,
+              "fts_count": 0,
+              "semantic_count": 1,
+              "comparable_vectors": 6,
+              "scope_vectors": 6,
+              "semantic_only": 1,
+              "discovery": 1,
+              "degraded": 0,
+              "latency_ms": 15
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "prompt": "以前有没有遇到过下游变慢之后越查越慢、把队列打满的问题？",
+          "stopReason": "end_turn",
+          "toolCalls": [
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/get_observations",
+            "Running: @kiro-mem/get_observations"
+          ],
+          "searchToolCalls": 4,
+          "searchMetricRows": 2,
+          "semanticEnRows": 2,
+          "rejectedOrMissingRows": 0,
+          "rows": [
+            {
+              "id": 8,
+              "protocol": "semantic-en-v1",
+              "reject_reason": null,
+              "fts_count": 1,
+              "semantic_count": 2,
+              "comparable_vectors": 6,
+              "scope_vectors": 6,
+              "semantic_only": 1,
+              "discovery": 1,
+              "degraded": 0,
+              "latency_ms": 14
+            },
+            {
+              "id": 9,
+              "protocol": "semantic-en-v1",
+              "reject_reason": null,
+              "fts_count": 0,
+              "semantic_count": 2,
+              "comparable_vectors": 6,
+              "scope_vectors": 6,
+              "semantic_only": 2,
+              "discovery": 1,
+              "degraded": 0,
+              "latency_ms": 14
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "prompt": "前端为什么会把\"没搜到\"当成接口坏了？当时怎么收口的？",
+          "stopReason": "end_turn",
+          "toolCalls": [
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/get_observations",
+            "Running: @kiro-mem/get_observations"
+          ],
+          "searchToolCalls": 4,
+          "searchMetricRows": 2,
+          "semanticEnRows": 2,
+          "rejectedOrMissingRows": 0,
+          "rows": [
+            {
+              "id": 10,
+              "protocol": "semantic-en-v1",
+              "reject_reason": null,
+              "fts_count": 1,
+              "semantic_count": 2,
+              "comparable_vectors": 6,
+              "scope_vectors": 6,
+              "semantic_only": 1,
+              "discovery": 1,
+              "degraded": 0,
+              "latency_ms": 10
+            },
+            {
+              "id": 11,
+              "protocol": "semantic-en-v1",
+              "reject_reason": null,
+              "fts_count": 1,
+              "semantic_count": 2,
+              "comparable_vectors": 6,
+              "scope_vectors": 6,
+              "semantic_only": 1,
+              "discovery": 1,
+              "degraded": 0,
+              "latency_ms": 12
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "prompt": "有没有哪次改动是因为把用户信息写进了不该写的地方？",
+          "stopReason": "end_turn",
+          "toolCalls": [
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/get_observations",
+            "Running: @kiro-mem/get_observations"
+          ],
+          "searchToolCalls": 2,
+          "searchMetricRows": 1,
+          "semanticEnRows": 1,
+          "rejectedOrMissingRows": 0,
+          "rows": [
+            {
+              "id": 12,
+              "protocol": "semantic-en-v1",
+              "reject_reason": null,
+              "fts_count": 0,
+              "semantic_count": 1,
+              "comparable_vectors": 6,
+              "scope_vectors": 6,
+              "semantic_only": 1,
+              "discovery": 1,
+              "degraded": 0,
+              "latency_ms": 31
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "prompt": "我们做过 Kubernetes 上的 Istio 灰度发布吗？",
+          "stopReason": "end_turn",
+          "toolCalls": [
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search"
+          ],
+          "searchToolCalls": 2,
+          "searchMetricRows": 1,
+          "semanticEnRows": 1,
+          "rejectedOrMissingRows": 0,
+          "rows": [
+            {
+              "id": 13,
+              "protocol": "semantic-en-v1",
+              "reject_reason": null,
+              "fts_count": 0,
+              "semantic_count": 0,
+              "comparable_vectors": 6,
+              "scope_vectors": 6,
+              "semantic_only": 0,
+              "discovery": 1,
+              "degraded": 0,
+              "latency_ms": 8
+            }
+          ]
+        }
+      ],
+      "promptsWithSearch": 5,
+      "prompts": 5,
+      "stderrTail": []
+    },
+    {
+      "round": 3,
+      "sessionId": "f482d53e-5f41-4456-8693-d32072d80195",
+      "turns": [
+        {
+          "round": 3,
+          "prompt": "我们之前处理密钥切换顺序的那次改动，具体是怎么做的？",
+          "stopReason": "end_turn",
+          "toolCalls": [
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/get_observations",
+            "Running: @kiro-mem/get_observations",
+            "Finding **/rotate-credentials.sh",
+            "Finding **/rotate-credentials.sh"
+          ],
+          "searchToolCalls": 2,
+          "searchMetricRows": 1,
+          "semanticEnRows": 1,
+          "rejectedOrMissingRows": 0,
+          "rows": [
+            {
+              "id": 14,
+              "protocol": "semantic-en-v1",
+              "reject_reason": null,
+              "fts_count": 0,
+              "semantic_count": 1,
+              "comparable_vectors": 6,
+              "scope_vectors": 6,
+              "semantic_only": 1,
+              "discovery": 1,
+              "degraded": 0,
+              "latency_ms": 23
+            }
+          ]
+        },
+        {
+          "round": 3,
+          "prompt": "以前有没有遇到过下游变慢之后越查越慢、把队列打满的问题？",
+          "stopReason": "end_turn",
+          "toolCalls": [
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/get_observations",
+            "Running: @kiro-mem/get_observations"
+          ],
+          "searchToolCalls": 2,
+          "searchMetricRows": 1,
+          "semanticEnRows": 1,
+          "rejectedOrMissingRows": 0,
+          "rows": [
+            {
+              "id": 15,
+              "protocol": "semantic-en-v1",
+              "reject_reason": null,
+              "fts_count": 1,
+              "semantic_count": 2,
+              "comparable_vectors": 6,
+              "scope_vectors": 6,
+              "semantic_only": 1,
+              "discovery": 1,
+              "degraded": 0,
+              "latency_ms": 11
+            }
+          ]
+        },
+        {
+          "round": 3,
+          "prompt": "前端为什么会把\"没搜到\"当成接口坏了？当时怎么收口的？",
+          "stopReason": "end_turn",
+          "toolCalls": [
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/get_observations",
+            "Running: @kiro-mem/get_observations"
+          ],
+          "searchToolCalls": 2,
+          "searchMetricRows": 1,
+          "semanticEnRows": 1,
+          "rejectedOrMissingRows": 0,
+          "rows": [
+            {
+              "id": 16,
+              "protocol": "semantic-en-v1",
+              "reject_reason": null,
+              "fts_count": 1,
+              "semantic_count": 2,
+              "comparable_vectors": 6,
+              "scope_vectors": 6,
+              "semantic_only": 1,
+              "discovery": 1,
+              "degraded": 0,
+              "latency_ms": 12
+            }
+          ]
+        },
+        {
+          "round": 3,
+          "prompt": "有没有哪次改动是因为把用户信息写进了不该写的地方？",
+          "stopReason": "end_turn",
+          "toolCalls": [
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/get_observations",
+            "Running: @kiro-mem/get_observations"
+          ],
+          "searchToolCalls": 2,
+          "searchMetricRows": 1,
+          "semanticEnRows": 1,
+          "rejectedOrMissingRows": 0,
+          "rows": [
+            {
+              "id": 17,
+              "protocol": "semantic-en-v1",
+              "reject_reason": null,
+              "fts_count": 0,
+              "semantic_count": 1,
+              "comparable_vectors": 6,
+              "scope_vectors": 6,
+              "semantic_only": 1,
+              "discovery": 1,
+              "degraded": 0,
+              "latency_ms": 13
+            }
+          ]
+        },
+        {
+          "round": 3,
+          "prompt": "我们做过 Kubernetes 上的 Istio 灰度发布吗？",
+          "stopReason": "end_turn",
+          "toolCalls": [
+            "Running: @kiro-mem/search",
+            "Running: @kiro-mem/search"
+          ],
+          "searchToolCalls": 2,
+          "searchMetricRows": 1,
+          "semanticEnRows": 1,
+          "rejectedOrMissingRows": 0,
+          "rows": [
+            {
+              "id": 18,
+              "protocol": "semantic-en-v1",
+              "reject_reason": null,
+              "fts_count": 0,
+              "semantic_count": 0,
+              "comparable_vectors": 6,
+              "scope_vectors": 6,
+              "semantic_only": 0,
+              "discovery": 1,
+              "degraded": 0,
+              "latency_ms": 9
+            }
+          ]
+        }
+      ],
+      "promptsWithSearch": 5,
+      "prompts": 5,
+      "stderrTail": []
+    }
+  ],
+  "turns": [
+    {
+      "round": 1,
+      "prompt": "我们之前处理密钥切换顺序的那次改动，具体是怎么做的？",
+      "stopReason": "end_turn",
+      "toolCalls": [
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/get_observations",
+        "Running: @kiro-mem/get_observations"
+      ],
+      "searchToolCalls": 2,
+      "searchMetricRows": 1,
+      "semanticEnRows": 1,
+      "rejectedOrMissingRows": 0,
+      "rows": [
+        {
+          "id": 1,
+          "protocol": "semantic-en-v1",
+          "reject_reason": null,
+          "fts_count": 0,
+          "semantic_count": 1,
+          "comparable_vectors": 6,
+          "scope_vectors": 6,
+          "semantic_only": 1,
+          "discovery": 1,
+          "degraded": 0,
+          "latency_ms": 37
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "prompt": "以前有没有遇到过下游变慢之后越查越慢、把队列打满的问题？",
+      "stopReason": "end_turn",
+      "toolCalls": [
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/get_observations",
+        "Running: @kiro-mem/get_observations"
+      ],
+      "searchToolCalls": 2,
+      "searchMetricRows": 1,
+      "semanticEnRows": 1,
+      "rejectedOrMissingRows": 0,
+      "rows": [
+        {
+          "id": 2,
+          "protocol": "semantic-en-v1",
+          "reject_reason": null,
+          "fts_count": 1,
+          "semantic_count": 2,
+          "comparable_vectors": 6,
+          "scope_vectors": 6,
+          "semantic_only": 1,
+          "discovery": 1,
+          "degraded": 0,
+          "latency_ms": 9
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "prompt": "前端为什么会把\"没搜到\"当成接口坏了？当时怎么收口的？",
+      "stopReason": "end_turn",
+      "toolCalls": [
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/get_observations",
+        "Running: @kiro-mem/get_observations"
+      ],
+      "searchToolCalls": 2,
+      "searchMetricRows": 1,
+      "semanticEnRows": 1,
+      "rejectedOrMissingRows": 0,
+      "rows": [
+        {
+          "id": 3,
+          "protocol": "semantic-en-v1",
+          "reject_reason": null,
+          "fts_count": 1,
+          "semantic_count": 2,
+          "comparable_vectors": 6,
+          "scope_vectors": 6,
+          "semantic_only": 1,
+          "discovery": 1,
+          "degraded": 0,
+          "latency_ms": 4
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "prompt": "有没有哪次改动是因为把用户信息写进了不该写的地方？",
+      "stopReason": "end_turn",
+      "toolCalls": [
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/get_observations",
+        "Running: @kiro-mem/get_observations"
+      ],
+      "searchToolCalls": 2,
+      "searchMetricRows": 1,
+      "semanticEnRows": 1,
+      "rejectedOrMissingRows": 0,
+      "rows": [
+        {
+          "id": 4,
+          "protocol": "semantic-en-v1",
+          "reject_reason": null,
+          "fts_count": 0,
+          "semantic_count": 1,
+          "comparable_vectors": 6,
+          "scope_vectors": 6,
+          "semantic_only": 1,
+          "discovery": 1,
+          "degraded": 0,
+          "latency_ms": 6
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "prompt": "我们做过 Kubernetes 上的 Istio 灰度发布吗？",
+      "stopReason": "end_turn",
+      "toolCalls": [
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search"
+      ],
+      "searchToolCalls": 2,
+      "searchMetricRows": 1,
+      "semanticEnRows": 1,
+      "rejectedOrMissingRows": 0,
+      "rows": [
+        {
+          "id": 5,
+          "protocol": "semantic-en-v1",
+          "reject_reason": null,
+          "fts_count": 0,
+          "semantic_count": 0,
+          "comparable_vectors": 6,
+          "scope_vectors": 6,
+          "semantic_only": 0,
+          "discovery": 1,
+          "degraded": 0,
+          "latency_ms": 19
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "prompt": "我们之前处理密钥切换顺序的那次改动，具体是怎么做的？",
+      "stopReason": "end_turn",
+      "toolCalls": [
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/get_observations",
+        "Running: @kiro-mem/get_observations"
+      ],
+      "searchToolCalls": 4,
+      "searchMetricRows": 2,
+      "semanticEnRows": 2,
+      "rejectedOrMissingRows": 0,
+      "rows": [
+        {
+          "id": 6,
+          "protocol": "semantic-en-v1",
+          "reject_reason": null,
+          "fts_count": 0,
+          "semantic_count": 1,
+          "comparable_vectors": 6,
+          "scope_vectors": 6,
+          "semantic_only": 1,
+          "discovery": 1,
+          "degraded": 0,
+          "latency_ms": 16
+        },
+        {
+          "id": 7,
+          "protocol": "semantic-en-v1",
+          "reject_reason": null,
+          "fts_count": 0,
+          "semantic_count": 1,
+          "comparable_vectors": 6,
+          "scope_vectors": 6,
+          "semantic_only": 1,
+          "discovery": 1,
+          "degraded": 0,
+          "latency_ms": 15
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "prompt": "以前有没有遇到过下游变慢之后越查越慢、把队列打满的问题？",
+      "stopReason": "end_turn",
+      "toolCalls": [
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/get_observations",
+        "Running: @kiro-mem/get_observations"
+      ],
+      "searchToolCalls": 4,
+      "searchMetricRows": 2,
+      "semanticEnRows": 2,
+      "rejectedOrMissingRows": 0,
+      "rows": [
+        {
+          "id": 8,
+          "protocol": "semantic-en-v1",
+          "reject_reason": null,
+          "fts_count": 1,
+          "semantic_count": 2,
+          "comparable_vectors": 6,
+          "scope_vectors": 6,
+          "semantic_only": 1,
+          "discovery": 1,
+          "degraded": 0,
+          "latency_ms": 14
+        },
+        {
+          "id": 9,
+          "protocol": "semantic-en-v1",
+          "reject_reason": null,
+          "fts_count": 0,
+          "semantic_count": 2,
+          "comparable_vectors": 6,
+          "scope_vectors": 6,
+          "semantic_only": 2,
+          "discovery": 1,
+          "degraded": 0,
+          "latency_ms": 14
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "prompt": "前端为什么会把\"没搜到\"当成接口坏了？当时怎么收口的？",
+      "stopReason": "end_turn",
+      "toolCalls": [
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/get_observations",
+        "Running: @kiro-mem/get_observations"
+      ],
+      "searchToolCalls": 4,
+      "searchMetricRows": 2,
+      "semanticEnRows": 2,
+      "rejectedOrMissingRows": 0,
+      "rows": [
+        {
+          "id": 10,
+          "protocol": "semantic-en-v1",
+          "reject_reason": null,
+          "fts_count": 1,
+          "semantic_count": 2,
+          "comparable_vectors": 6,
+          "scope_vectors": 6,
+          "semantic_only": 1,
+          "discovery": 1,
+          "degraded": 0,
+          "latency_ms": 10
+        },
+        {
+          "id": 11,
+          "protocol": "semantic-en-v1",
+          "reject_reason": null,
+          "fts_count": 1,
+          "semantic_count": 2,
+          "comparable_vectors": 6,
+          "scope_vectors": 6,
+          "semantic_only": 1,
+          "discovery": 1,
+          "degraded": 0,
+          "latency_ms": 12
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "prompt": "有没有哪次改动是因为把用户信息写进了不该写的地方？",
+      "stopReason": "end_turn",
+      "toolCalls": [
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/get_observations",
+        "Running: @kiro-mem/get_observations"
+      ],
+      "searchToolCalls": 2,
+      "searchMetricRows": 1,
+      "semanticEnRows": 1,
+      "rejectedOrMissingRows": 0,
+      "rows": [
+        {
+          "id": 12,
+          "protocol": "semantic-en-v1",
+          "reject_reason": null,
+          "fts_count": 0,
+          "semantic_count": 1,
+          "comparable_vectors": 6,
+          "scope_vectors": 6,
+          "semantic_only": 1,
+          "discovery": 1,
+          "degraded": 0,
+          "latency_ms": 31
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "prompt": "我们做过 Kubernetes 上的 Istio 灰度发布吗？",
+      "stopReason": "end_turn",
+      "toolCalls": [
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search"
+      ],
+      "searchToolCalls": 2,
+      "searchMetricRows": 1,
+      "semanticEnRows": 1,
+      "rejectedOrMissingRows": 0,
+      "rows": [
+        {
+          "id": 13,
+          "protocol": "semantic-en-v1",
+          "reject_reason": null,
+          "fts_count": 0,
+          "semantic_count": 0,
+          "comparable_vectors": 6,
+          "scope_vectors": 6,
+          "semantic_only": 0,
+          "discovery": 1,
+          "degraded": 0,
+          "latency_ms": 8
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "prompt": "我们之前处理密钥切换顺序的那次改动，具体是怎么做的？",
+      "stopReason": "end_turn",
+      "toolCalls": [
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/get_observations",
+        "Running: @kiro-mem/get_observations",
+        "Finding **/rotate-credentials.sh",
+        "Finding **/rotate-credentials.sh"
+      ],
+      "searchToolCalls": 2,
+      "searchMetricRows": 1,
+      "semanticEnRows": 1,
+      "rejectedOrMissingRows": 0,
+      "rows": [
+        {
+          "id": 14,
+          "protocol": "semantic-en-v1",
+          "reject_reason": null,
+          "fts_count": 0,
+          "semantic_count": 1,
+          "comparable_vectors": 6,
+          "scope_vectors": 6,
+          "semantic_only": 1,
+          "discovery": 1,
+          "degraded": 0,
+          "latency_ms": 23
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "prompt": "以前有没有遇到过下游变慢之后越查越慢、把队列打满的问题？",
+      "stopReason": "end_turn",
+      "toolCalls": [
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/get_observations",
+        "Running: @kiro-mem/get_observations"
+      ],
+      "searchToolCalls": 2,
+      "searchMetricRows": 1,
+      "semanticEnRows": 1,
+      "rejectedOrMissingRows": 0,
+      "rows": [
+        {
+          "id": 15,
+          "protocol": "semantic-en-v1",
+          "reject_reason": null,
+          "fts_count": 1,
+          "semantic_count": 2,
+          "comparable_vectors": 6,
+          "scope_vectors": 6,
+          "semantic_only": 1,
+          "discovery": 1,
+          "degraded": 0,
+          "latency_ms": 11
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "prompt": "前端为什么会把\"没搜到\"当成接口坏了？当时怎么收口的？",
+      "stopReason": "end_turn",
+      "toolCalls": [
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/get_observations",
+        "Running: @kiro-mem/get_observations"
+      ],
+      "searchToolCalls": 2,
+      "searchMetricRows": 1,
+      "semanticEnRows": 1,
+      "rejectedOrMissingRows": 0,
+      "rows": [
+        {
+          "id": 16,
+          "protocol": "semantic-en-v1",
+          "reject_reason": null,
+          "fts_count": 1,
+          "semantic_count": 2,
+          "comparable_vectors": 6,
+          "scope_vectors": 6,
+          "semantic_only": 1,
+          "discovery": 1,
+          "degraded": 0,
+          "latency_ms": 12
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "prompt": "有没有哪次改动是因为把用户信息写进了不该写的地方？",
+      "stopReason": "end_turn",
+      "toolCalls": [
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/get_observations",
+        "Running: @kiro-mem/get_observations"
+      ],
+      "searchToolCalls": 2,
+      "searchMetricRows": 1,
+      "semanticEnRows": 1,
+      "rejectedOrMissingRows": 0,
+      "rows": [
+        {
+          "id": 17,
+          "protocol": "semantic-en-v1",
+          "reject_reason": null,
+          "fts_count": 0,
+          "semantic_count": 1,
+          "comparable_vectors": 6,
+          "scope_vectors": 6,
+          "semantic_only": 1,
+          "discovery": 1,
+          "degraded": 0,
+          "latency_ms": 13
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "prompt": "我们做过 Kubernetes 上的 Istio 灰度发布吗？",
+      "stopReason": "end_turn",
+      "toolCalls": [
+        "Running: @kiro-mem/search",
+        "Running: @kiro-mem/search"
+      ],
+      "searchToolCalls": 2,
+      "searchMetricRows": 1,
+      "semanticEnRows": 1,
+      "rejectedOrMissingRows": 0,
+      "rows": [
+        {
+          "id": 18,
+          "protocol": "semantic-en-v1",
+          "reject_reason": null,
+          "fts_count": 0,
+          "semantic_count": 0,
+          "comparable_vectors": 6,
+          "scope_vectors": 6,
+          "semantic_only": 0,
+          "discovery": 1,
+          "degraded": 0,
+          "latency_ms": 9
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "rounds": 3,
+    "roundsWithSessionError": 0,
+    "roundsWithNoSearchAtAll": 0,
+    "promptsTotal": 15,
+    "promptsWithSearch": 15,
+    "promptSearchRate": 1,
+    "promptsWithoutSearch": 0,
+    "promptsWithoutSearchDetail": [],
+    "promptsToolCalledButNoRow": 0,
+    "searchesTotal": 18,
+    "searchesSemanticEn": 18,
+    "searchesRejectedOrMissing": 0,
+    "searchMetricRows": 18,
+    "failedTurns": 0,
+    "requests": 18,
+    "ftsOnly": 0,
+    "degradeRate": 0,
+    "latencyMsAvg": 15,
+    "latencyMsP50": 13,
+    "latencyMsP95": 37,
+    "protocolSemanticEn": 18,
+    "protocolRaw": 0,
+    "semanticEnRate": 1,
+    "semanticQueryIssues": {},
+    "discoveryEffective": 18,
+    "zeroFts": 11,
+    "zeroFtsRecalled": 8,
+    "semanticOnlyTotal": 16,
+    "semanticOnlyPerRequest": 0.889,
+    "semanticOnlyMax": 2,
+    "comparableVectorsAvg": 6,
+    "scopeVectorsAvg": 6,
+    "scopeVectorsMin": 6,
+    "scopeVectorsMeasured": 18,
+    "emptyScopeRequests": 0
+  },
+  "rows": [
+    {
+      "protocol": "semantic-en-v1",
+      "reject_reason": null,
+      "fts_count": 0,
+      "semantic_count": 1,
+      "comparable_vectors": 6,
+      "scope_vectors": 6,
+      "semantic_only": 1,
+      "discovery": 1,
+      "degraded": 0,
+      "latency_ms": 37
+    },
+    {
+      "protocol": "semantic-en-v1",
+      "reject_reason": null,
+      "fts_count": 1,
+      "semantic_count": 2,
+      "comparable_vectors": 6,
+      "scope_vectors": 6,
+      "semantic_only": 1,
+      "discovery": 1,
+      "degraded": 0,
+      "latency_ms": 9
+    },
+    {
+      "protocol": "semantic-en-v1",
+      "reject_reason": null,
+      "fts_count": 1,
+      "semantic_count": 2,
+      "comparable_vectors": 6,
+      "scope_vectors": 6,
+      "semantic_only": 1,
+      "discovery": 1,
+      "degraded": 0,
+      "latency_ms": 4
+    },
+    {
+      "protocol": "semantic-en-v1",
+      "reject_reason": null,
+      "fts_count": 0,
+      "semantic_count": 1,
+      "comparable_vectors": 6,
+      "scope_vectors": 6,
+      "semantic_only": 1,
+      "discovery": 1,
+      "degraded": 0,
+      "latency_ms": 6
+    },
+    {
+      "protocol": "semantic-en-v1",
+      "reject_reason": null,
+      "fts_count": 0,
+      "semantic_count": 0,
+      "comparable_vectors": 6,
+      "scope_vectors": 6,
+      "semantic_only": 0,
+      "discovery": 1,
+      "degraded": 0,
+      "latency_ms": 19
+    },
+    {
+      "protocol": "semantic-en-v1",
+      "reject_reason": null,
+      "fts_count": 0,
+      "semantic_count": 1,
+      "comparable_vectors": 6,
+      "scope_vectors": 6,
+      "semantic_only": 1,
+      "discovery": 1,
+      "degraded": 0,
+      "latency_ms": 16
+    },
+    {
+      "protocol": "semantic-en-v1",
+      "reject_reason": null,
+      "fts_count": 0,
+      "semantic_count": 1,
+      "comparable_vectors": 6,
+      "scope_vectors": 6,
+      "semantic_only": 1,
+      "discovery": 1,
+      "degraded": 0,
+      "latency_ms": 15
+    },
+    {
+      "protocol": "semantic-en-v1",
+      "reject_reason": null,
+      "fts_count": 1,
+      "semantic_count": 2,
+      "comparable_vectors": 6,
+      "scope_vectors": 6,
+      "semantic_only": 1,
+      "discovery": 1,
+      "degraded": 0,
+      "latency_ms": 14
+    },
+    {
+      "protocol": "semantic-en-v1",
+      "reject_reason": null,
+      "fts_count": 0,
+      "semantic_count": 2,
+      "comparable_vectors": 6,
+      "scope_vectors": 6,
+      "semantic_only": 2,
+      "discovery": 1,
+      "degraded": 0,
+      "latency_ms": 14
+    },
+    {
+      "protocol": "semantic-en-v1",
+      "reject_reason": null,
+      "fts_count": 1,
+      "semantic_count": 2,
+      "comparable_vectors": 6,
+      "scope_vectors": 6,
+      "semantic_only": 1,
+      "discovery": 1,
+      "degraded": 0,
+      "latency_ms": 10
+    },
+    {
+      "protocol": "semantic-en-v1",
+      "reject_reason": null,
+      "fts_count": 1,
+      "semantic_count": 2,
+      "comparable_vectors": 6,
+      "scope_vectors": 6,
+      "semantic_only": 1,
+      "discovery": 1,
+      "degraded": 0,
+      "latency_ms": 12
+    },
+    {
+      "protocol": "semantic-en-v1",
+      "reject_reason": null,
+      "fts_count": 0,
+      "semantic_count": 1,
+      "comparable_vectors": 6,
+      "scope_vectors": 6,
+      "semantic_only": 1,
+      "discovery": 1,
+      "degraded": 0,
+      "latency_ms": 31
+    },
+    {
+      "protocol": "semantic-en-v1",
+      "reject_reason": null,
+      "fts_count": 0,
+      "semantic_count": 0,
+      "comparable_vectors": 6,
+      "scope_vectors": 6,
+      "semantic_only": 0,
+      "discovery": 1,
+      "degraded": 0,
+      "latency_ms": 8
+    },
+    {
+      "protocol": "semantic-en-v1",
+      "reject_reason": null,
+      "fts_count": 0,
+      "semantic_count": 1,
+      "comparable_vectors": 6,
+      "scope_vectors": 6,
+      "semantic_only": 1,
+      "discovery": 1,
+      "degraded": 0,
+      "latency_ms": 23
+    },
+    {
+      "protocol": "semantic-en-v1",
+      "reject_reason": null,
+      "fts_count": 1,
+      "semantic_count": 2,
+      "comparable_vectors": 6,
+      "scope_vectors": 6,
+      "semantic_only": 1,
+      "discovery": 1,
+      "degraded": 0,
+      "latency_ms": 11
+    },
+    {
+      "protocol": "semantic-en-v1",
+      "reject_reason": null,
+      "fts_count": 1,
+      "semantic_count": 2,
+      "comparable_vectors": 6,
+      "scope_vectors": 6,
+      "semantic_only": 1,
+      "discovery": 1,
+      "degraded": 0,
+      "latency_ms": 12
+    },
+    {
+      "protocol": "semantic-en-v1",
+      "reject_reason": null,
+      "fts_count": 0,
+      "semantic_count": 1,
+      "comparable_vectors": 6,
+      "scope_vectors": 6,
+      "semantic_only": 1,
+      "discovery": 1,
+      "degraded": 0,
+      "latency_ms": 13
+    },
+    {
+      "protocol": "semantic-en-v1",
+      "reject_reason": null,
+      "fts_count": 0,
+      "semantic_count": 0,
+      "comparable_vectors": 6,
+      "scope_vectors": 6,
+      "semantic_only": 0,
+      "discovery": 1,
+      "degraded": 0,
+      "latency_ms": 9
+    }
+  ],
+  "agentStderrTail": []
+}

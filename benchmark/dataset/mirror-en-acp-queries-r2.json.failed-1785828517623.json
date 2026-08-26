@@ -1,0 +1,40 @@
+{
+  "provenance": {
+    "source": "acp",
+    "agent": "kiro-mem-compressor",
+    "kiroCli": "kiro-cli (see report)",
+    "target": "queries",
+    "querySet": "r2",
+    "generatedAt": "2026-08-04T07:28:37.623Z",
+    "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+    "items": 8,
+    "failures": 2,
+    "retries": 4,
+    "wallTimeMs": 24539,
+    "itemLatencyMs": {
+      "p50": 16537,
+      "p95": 24538,
+      "max": 24538
+    }
+  },
+  "queries": {
+    "w61": "Which key is used for anchoring",
+    "w62": "What are the ones that aren't finished yet?",
+    "w54": "What did we decide on naming that time?",
+    "w58": "narrowed down to a few places",
+    "w59": "What was verified for the privacy part?",
+    "w60": "What did I change in that fail-fast fix",
+    "w57": "where does the priority rank",
+    "w56": "Covered up to which step?"
+  },
+  "failuresDetail": [
+    {
+      "id": "w55",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "w53",
+      "reason": "JSON 解析失败"
+    }
+  ]
+}

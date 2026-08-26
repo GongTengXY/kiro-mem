@@ -1,0 +1,567 @@
+/*
+ * kiro-mem Viewer styles.
+ *
+ * A separate file rather than inline styles: an inline <style> block would force
+ * `style-src 'unsafe-inline'` into the CSP, and this Viewer renders untrusted
+ * recorded text.
+ *
+ * Long-token defence is a layout requirement here, not polish. Observation text
+ * can contain a 5,000-character "word" (a base64 blob, a minified line), so every
+ * container that shows recorded content wraps anywhere and scrolls rather than
+ * pushing the page sideways.
+ */
+
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --bg-alt: #f6f7f9;
+  --bg-sunken: #eceef1;
+  --fg: #1b1f24;
+  --fg-muted: #5b6570;
+  --border: #d7dbe0;
+  --accent: #2f6feb;
+  --danger: #c62828;
+  --warn: #9a6400;
+  --radius: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171a;
+    --bg-alt: #1b1f23;
+    --bg-sunken: #0f1214;
+    --fg: #e6edf3;
+    --fg-muted: #9aa7b2;
+    --border: #2d333b;
+    --accent: #4c8dff;
+    --danger: #ff6b6b;
+    --warn: #e3b341;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- untrusted text containment --- */
+.t, .block, .logmsg, .card-title, .tag, .mono.break {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.block { white-space: pre-wrap; }
+.raw {
+  margin: 6px 0 0;
+  padding: 10px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap;
+  overflow: auto;
+  max-height: 320px;
+  overflow-wrap: anywhere;
+}
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.muted { color: var(--fg-muted); }
+.warn-text { color: var(--warn); }
+
+/* --- top bar --- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex: 0 0 auto;
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+}
+.topbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+}
+.brand { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.brand-version { color: var(--fg-muted); font-weight: 400; font-size: 12px; }
+.searchbox input, .panel-actions input, input[type='number'] {
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 5px 8px;
+  font: inherit;
+  max-width: 260px;
+}
+.searchbox { display: flex; align-items: center; gap: 6px; flex: 1 1 220px; }
+.searchbox input { flex: 1; max-width: none; }
+.topbar-tools { display: flex; gap: 6px; flex-wrap: wrap; }
+.status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg-muted); }
+.status-queue { font-family: ui-monospace, monospace; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--fg-muted); }
+.dot-open { background: #2e9e4f; }
+.dot-connecting { background: var(--warn); }
+.dot-closed { background: var(--warn); }
+.dot-unauthorized { background: var(--danger); }
+.warnbar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  background: color-mix(in srgb, var(--warn) 18%, var(--bg));
+  color: var(--fg);
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+}
+
+/* --- scope picker ---
+ *
+ * Everything is sized here because the CSP is `style-src 'self'`: inline `style`
+ * attributes are dropped, so the popup is placed by CSS alone and a scope key —
+ * recorded, arbitrarily long data — is clamped by `text-overflow` instead of being
+ * allowed to widen the top bar.
+ */
+.scope-picker { position: relative; min-width: 0; }
+.scope-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 280px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+.scope-trigger:hover { border-color: var(--accent); }
+.scope-picker.is-open .scope-trigger { border-color: var(--accent); }
+.scope-trigger-icon { display: flex; flex: 0 0 auto; color: var(--fg-muted); }
+.scope-picker.is-open .scope-trigger-icon { color: var(--accent); }
+.scope-trigger-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.scope-trigger-count { flex: 0 0 auto; font-size: 12px; font-family: ui-monospace, monospace; color: var(--fg-muted); }
+.scope-chevron { flex: 0 0 auto; color: var(--fg-muted); transition: transform 120ms ease; }
+.scope-picker.is-open .scope-chevron { transform: rotate(180deg); }
+
+.scope-popup {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 30;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  min-width: 280px;
+  max-width: min(560px, 88vw);
+  max-height: min(360px, 60vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+}
+.scope-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.scope-option.is-active { background: var(--bg-alt); }
+.scope-option[aria-selected='true'] .scope-option-label { color: var(--accent); }
+.scope-option-icon { display: flex; flex: 0 0 auto; color: var(--fg-muted); }
+.scope-option[aria-selected='true'] .scope-option-icon { color: var(--accent); }
+.scope-option-main { flex: 1 1 auto; min-width: 0; }
+.scope-option-label,
+.scope-option-path {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scope-option-label { font-weight: 500; }
+.scope-option-path { font-size: 11px; font-family: ui-monospace, monospace; color: var(--fg-muted); }
+/* The all-workspaces row carries a sentence, not a path. */
+.scope-option-hint { font-family: inherit; }
+.scope-option-meta { flex: 0 0 auto; text-align: right; }
+.scope-option-count { display: block; font-size: 12px; font-family: ui-monospace, monospace; }
+.scope-option-note { display: block; font-size: 11px; color: var(--fg-muted); white-space: nowrap; }
+.scope-option-check { display: flex; flex: 0 0 auto; width: 14px; color: var(--accent); }
+
+/* --- buttons --- */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+.btn:hover { border-color: var(--accent); }
+.btn:disabled { opacity: 0.55; cursor: default; }
+.btn-ghost { background: transparent; }
+.btn-on { border-color: var(--accent); color: var(--accent); }
+.btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; font-weight: 600; }
+.btn-danger-ghost { color: var(--danger); border-color: var(--danger); background: transparent; }
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+.icon-btn:hover { border-color: var(--border); color: var(--fg); }
+.icon-btn-on { color: var(--accent); }
+.icon-btn-danger:hover { color: var(--danger); border-color: var(--danger); }
+.load-more { width: 100%; justify-content: center; margin-top: 4px; }
+
+/* --- layout ---
+ *
+ * The shell owns the viewport height; the Feed and the detail module own their own
+ * scroll. They are two separate scroll containers on purpose: reading a 4MB turn
+ * must not move the list, and paging the list must not move the detail.
+ * `overscroll-behavior: contain` is the other half of that promise — without it,
+ * reaching the end of one pane hands the wheel to whatever is behind it, which is
+ * exactly the coupling this layout is meant to remove.
+ *
+ * `grid-template-rows: minmax(0, 1fr)` is what actually bounds the panes: an
+ * auto-sized row would grow to the height of the tallest Observation and the
+ * children would never get a scrollbar of their own.
+ */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+.layout {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(320px, 460px) 1fr;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 16px;
+  padding: 12px;
+  overflow: hidden;
+}
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 8px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.feed-note {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: 12px; color: var(--fg-muted);
+}
+/* The drawer is a fixed-size region, not a flexible one.
+ *
+ * `flex-shrink: 1` here was a bug: shrinkage is weighted by flex base size, and
+ * `.layout`'s base size is the intrinsic height of the whole Feed, so a long list
+ * crushed the drawer to the height of its head and an empty panel looked like a
+ * rendering failure. So: never shrink, keep a min-height, and let `.panel-body`
+ * own the scroll — which is also what keeps the head (title + filter input) in
+ * place while a long log scrolls underneath.
+ */
+.drawer {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: min(260px, 40vh);
+  max-height: 55vh;
+  overflow: hidden;
+  padding: 12px 12px 0;
+}
+.drawer .panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.drawer .panel-head { flex: 0 0 auto; }
+.drawer .panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+/* Centre the message instead of stranding it against the head. */
+.drawer .panel-body > .empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 100%;
+}
+.drawer .panel-body > .empty p { margin: 0; }
+/* Column labels stay readable once the body scrolls. */
+.drawer .sections thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-alt);
+}
+
+/* Narrow screens keep the old single-column document scroll: two short panes
+ * stacked inside a viewport-height box would each scroll in a few centimetres. */
+@media (max-width: 900px) {
+  .app { height: auto; min-height: 100vh; overflow: visible; }
+  .layout { grid-template-columns: 1fr; grid-template-rows: none; overflow: visible; }
+  .feed { overflow: visible; }
+  .drawer { max-height: none; min-height: 0; overflow: visible; }
+  .drawer .panel-body { overflow: visible; }
+}
+
+/* --- cards --- */
+.card {
+  display: flex;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-alt);
+  min-width: 0;
+}
+.card-selected { border-color: var(--accent); }
+.card-main {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  padding: 10px;
+  cursor: pointer;
+}
+/* `gap` is a misclick guard: pin is reversible, delete is not. */
+.card-side { display: flex; flex-direction: column; gap: 12px; padding: 8px 8px 8px 0; }
+.card-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; }
+.card-id { font-family: ui-monospace, monospace; color: var(--fg-muted); }
+.card-time { color: var(--fg-muted); margin-left: auto; }
+.card-title { margin: 6px 0 2px; font-size: 14px; }
+.card-summary { margin: 0; color: var(--fg-muted); font-size: 13px; max-height: 3.2em; overflow: hidden; }
+.card-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; font-size: 11px; color: var(--fg-muted); }
+.card-scope { font-family: ui-monospace, monospace; }
+.card-count { white-space: nowrap; }
+
+.chip {
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  text-transform: lowercase;
+}
+.chip-warn { color: var(--warn); border-color: var(--warn); }
+.chip-muted { color: var(--fg-muted); }
+.chip-bugfix { color: #c2410c; border-color: #c2410c; }
+.chip-decision { color: var(--accent); border-color: var(--accent); }
+.chip-feature { color: #2e9e4f; border-color: #2e9e4f; }
+
+.taglist { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.tag {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-family: ui-monospace, monospace;
+  max-width: 100%;
+}
+.tag-more { color: var(--fg-muted); }
+
+/* --- panels / detail ---
+ *
+ * The detail pane is a framed module rather than free-floating content: it is a
+ * different surface from the list, so a border + its own background is what tells
+ * the eye where the list ends and the record begins. The frame clips, the head
+ * stays, only `.detail-body` scrolls — so Delete/Close cannot be scrolled out of
+ * reach by a long turn.
+ */
+.detail-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  overflow: hidden;
+}
+.detail { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.detail-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 12px;
+}
+.panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-alt);
+  margin-bottom: 12px;
+  min-width: 0;
+}
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-head h3 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--fg-muted); }
+.panel-body { padding: 10px; min-width: 0; }
+.detail-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+}
+.detail-head > div:first-child { display: flex; gap: 6px; align-items: center; }
+.detail-head-actions { display: flex; gap: 6px; }
+.detail-title { margin: 0 0 12px; font-size: 18px; overflow-wrap: anywhere; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 1200px) { .detail-grid { grid-template-columns: 1fr; } }
+.detail-empty { align-items: center; justify-content: center; padding: 24px 12px; }
+
+/* Must live AFTER `.detail-body` above: same specificity, so source order decides.
+ * On a single column the pane is as tall as its content and an inner scroll
+ * container would only clip it. */
+@media (max-width: 900px) {
+  .detail-body { overflow: visible; }
+}
+
+.field { margin-bottom: 10px; min-width: 0; }
+.field-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--fg-muted); margin-bottom: 2px; }
+.field-value { min-width: 0; }
+.evidence { margin: 0; padding-left: 18px; }
+.evidence li { overflow-wrap: anywhere; font-family: ui-monospace, monospace; font-size: 12px; }
+.byhook { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+
+.event { border-top: 1px solid var(--border); padding: 6px 0; }
+.event summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; cursor: pointer; font-size: 12px; }
+
+.budget-bar { height: 6px; background: var(--bg-sunken); border-radius: 999px; overflow: hidden; margin-bottom: 8px; }
+.budget-fill { height: 100%; background: var(--accent); }
+.budget-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.sections { width: 100%; border-collapse: collapse; font-size: 12px; margin: 8px 0; }
+.sections th, .sections td { text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--border); }
+.sections tr.dropped { color: var(--fg-muted); text-decoration: line-through; }
+
+.loglines { list-style: none; margin: 0; padding: 0; font-size: 12px; }
+.loglines li { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--border); min-width: 0; }
+.logmsg { flex: 1; font-family: ui-monospace, monospace; min-width: 0; }
+
+.empty { padding: 20px; text-align: center; color: var(--fg-muted); }
+.empty-hint { font-size: 12px; }
+.fatal { max-width: 560px; margin: 15vh auto; border: 1px solid var(--border); border-radius: var(--radius); }
+
+/* --- modal --- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 50;
+}
+.modal {
+  width: 100%;
+  max-width: 520px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  max-height: 90vh;
+  overflow: auto;
+}
+.modal-title { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 16px; color: var(--danger); }
+.modal-warning { color: var(--danger); font-weight: 600; margin: 12px 0 0; }
+.modal-warning-en { color: var(--fg-muted); font-size: 12px; margin: 4px 0 0; }
+.modal-error { color: var(--danger); font-size: 12px; margin-top: 10px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+/* --- toasts ---
+ *
+ * Above the modal layer so a message is never trapped behind a dialog; the
+ * container never intercepts clicks, only the pills do.
+ */
+.toasts {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(520px, 92vw);
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  animation: toast-in 140ms ease-out;
+}
+.toast-icon { display: flex; flex: 0 0 auto; color: #2e9e4f; }
+.toast-danger { border-color: var(--danger); }
+.toast-danger .toast-icon { color: var(--danger); }
+.toast-text { overflow-wrap: anywhere; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}

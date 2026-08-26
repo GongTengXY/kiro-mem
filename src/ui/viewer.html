@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>kiro-mem viewer</title>
+    <!--
+      Both assets are same-origin and served by the local Worker. There is no CDN
+      reference anywhere in this file on purpose: the Viewer must work with no
+      network beyond loopback, and the CSP is `default-src 'none'` with only
+      'self' allowed for scripts and styles.
+    -->
+    <link rel="stylesheet" href="/ui/styles.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>The kiro-mem Viewer needs JavaScript. Use `kiro-mem diagnose` for a terminal view instead.</noscript>
+    <script src="/ui/viewer.js"></script>
+  </body>
+</html>

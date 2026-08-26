@@ -1,0 +1,587 @@
+{
+  "generatedAt": "2026-08-06T13:02:48.046Z",
+  "provenance": {
+    "criteria": "benchmark/reports/phase3c-criteria.md §6.2 P6",
+    "criteriaSha256": "366ce756b0d6ebd0",
+    "harnessSha256": "27adafd92c2c2775",
+    "dbPath": "/tmp/3c-old-50k.db",
+    "days": "unbounded（生产默认，Phase 3C 之后）",
+    "policy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "semanticCandidatePool": null,
+      "bigramAux": false,
+      "bigramDfRatioCeiling": 1,
+      "bigramMinMatches": 1,
+      "bigramOnlyLimit": 2,
+      "bigramWeight": 1,
+      "bigramVote": "always",
+      "semanticTopK": 1000
+    },
+    "corpus": {
+      "total": 50000,
+      "oldest": "2023-08-07T12:49:48.690Z",
+      "newest": "2026-08-06T12:49:48.690Z",
+      "outside90": 45890,
+      "spanDays": 1095,
+      "outsideOld90dWindowPct": 91.8
+    }
+  },
+  "note": "语料是与全部 query 无关的合成 filler，因此任何返回都是误召回；返回条数即读数，无需标注。",
+  "results": [
+    {
+      "set": "expected-empty（既有 5 条）",
+      "queries": 5,
+      "withEnglishForm": 5,
+      "returnedMean": 5.2,
+      "returnedWorst": 10,
+      "semanticOnlyMean": 2,
+      "semanticOnlyMax": 2,
+      "perQuery": [
+        {
+          "id": "q19",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "q21",
+          "returned": 10,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "q22",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "q23",
+          "returned": 10,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "q24",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        }
+      ]
+    },
+    {
+      "set": "phase2 empty（49 条）",
+      "queries": 49,
+      "withEnglishForm": 49,
+      "returnedMean": 3.347,
+      "returnedWorst": 10,
+      "semanticOnlyMean": 1.224,
+      "semanticOnlyMax": 2,
+      "perQuery": [
+        {
+          "id": "y01",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y02",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "y04",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "y05",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "y06",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "y07",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "y09",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "y10",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "y12",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "y13",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y14",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y15",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y16",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "y17",
+          "returned": 10,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "y18",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y19",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y20",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y21",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y22",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y23",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y24",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "y25",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y26",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "y27",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y28",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y29",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y30",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y31",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y32",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "y33",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y34",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y35",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "y36",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y37",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y38",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "y39",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "y40",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "f01",
+          "returned": 10,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "f02",
+          "returned": 10,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "f03",
+          "returned": 10,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "f04",
+          "returned": 10,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "f05",
+          "returned": 10,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "f06",
+          "returned": 10,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "f07",
+          "returned": 10,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "f08",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "f09",
+          "returned": 10,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "f10",
+          "returned": 10,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "f11",
+          "returned": 10,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "f12",
+          "returned": 10,
+          "semanticOnly": 2,
+          "hasEn": true
+        }
+      ]
+    },
+    {
+      "set": "empty-ext（32 条 hard negative）",
+      "queries": 32,
+      "withEnglishForm": 32,
+      "returnedMean": 3.813,
+      "returnedWorst": 10,
+      "semanticOnlyMean": 1.313,
+      "semanticOnlyMax": 2,
+      "perQuery": [
+        {
+          "id": "n01",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n02",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "n03",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "n04",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "n05",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "n06",
+          "returned": 10,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n07",
+          "returned": 10,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "n08",
+          "returned": 10,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n09",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n10",
+          "returned": 10,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "n11",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n12",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n13",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "n14",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n15",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n16",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n17",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n18",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n19",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n20",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n21",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "n22",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n23",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n24",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n25",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n26",
+          "returned": 0,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "n27",
+          "returned": 10,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n28",
+          "returned": 2,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n29",
+          "returned": 10,
+          "semanticOnly": 0,
+          "hasEn": true
+        },
+        {
+          "id": "n30",
+          "returned": 10,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n31",
+          "returned": 10,
+          "semanticOnly": 2,
+          "hasEn": true
+        },
+        {
+          "id": "n32",
+          "returned": 10,
+          "semanticOnly": 0,
+          "hasEn": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "provenance": {
+    "source": "merged-acp-runs",
+    "target": "queries",
+    "querySet": "tuned",
+    "inputs": [
+      {
+        "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-queries.json",
+        "provenance": {
+          "source": "merged-acp-runs",
+          "target": "queries",
+          "querySet": "tuned",
+          "inputs": [
+            {
+              "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/mirror-en-acp-queries.json.failed-1785396008865.json",
+              "provenance": {
+                "source": "acp",
+                "agent": "kiro-mem-compressor",
+                "kiroCli": "kiro-cli (see report)",
+                "target": "queries",
+                "querySet": "tuned",
+                "generatedAt": "2026-07-30T07:20:08.864Z",
+                "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+                "items": 15,
+                "failures": 3,
+                "retries": 12,
+                "wallTimeMs": 90059,
+                "itemLatencyMs": {
+                  "p50": 26501,
+                  "p95": 90038,
+                  "max": 90038
+                }
+              }
+            },
+            {
+              "path": "/tmp/acp-tuned-retry.json",
+              "provenance": {
+                "source": "acp",
+                "agent": "kiro-mem-compressor",
+                "kiroCli": "kiro-cli (see report)",
+                "target": "queries",
+                "querySet": "tuned",
+                "generatedAt": "2026-07-30T07:21:07.824Z",
+                "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+                "items": 3,
+                "failures": 0,
+                "retries": 1,
+                "wallTimeMs": 22451,
+                "itemLatencyMs": {
+                  "p50": 20383,
+                  "p95": 22451,
+                  "max": 22451
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "path": "/tmp/acp-q16-retry.json",
+        "provenance": {
+          "source": "acp",
+          "agent": "kiro-mem-compressor",
+          "kiroCli": "kiro-cli (see report)",
+          "target": "queries",
+          "querySet": "tuned",
+          "generatedAt": "2026-07-30T07:25:06.923Z",
+          "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+          "items": 1,
+          "failures": 0,
+          "retries": 0,
+          "wallTimeMs": 28928,
+          "itemLatencyMs": {
+            "p50": 28927,
+            "p95": 28927,
+            "max": 28927
+          }
+        }
+      }
+    ]
+  },
+  "queries": {
+    "q05": "Where is the version number managed centrally?",
+    "q18": "What's left to do on the quality benchmark set",
+    "q06": "What's the max value I can pass for limit in MCP search?",
+    "q02": "why does search degrade to FTS-only",
+    "q14": "How big is the context injected into the session? Will it exceed the budget?",
+    "q10": "Will running the tests pollute my real data directory?",
+    "q04": "Would the logs contain the actual text of the user prompt?",
+    "q07": "Could ACP connection pool recycling failure cause a task to hang permanently?",
+    "q17": "Will cross-project mean I'll see memories from other repos?",
+    "q12": "Why is it still running the old code after reinstalling?",
+    "q09": "How does the local token authentication achieve a frictionless experience for the user?",
+    "q16": "What's the precision and how many dimensions does the local embedding model have?",
+    "q11": "After installing, the Worker won't start and it says a module is not found",
+    "q03": "Will hook timeout slow down Kiro startup?",
+    "q01": "How was the FTS special character query error fixed",
+    "q13": "How can I tell that the running Worker isn't the currently installed version?",
+    "q15": "What order are timeline's neighbors sorted in?",
+    "q08": "What kind of record ends up being written when compression keeps failing?"
+  }
+}

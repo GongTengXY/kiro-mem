@@ -1,0 +1,89 @@
+{
+  "criteria": "benchmark/reports/phase3c-criteria.md §6.2 P6",
+  "criteriaSha256": "366ce756b0d6ebd0",
+  "corpus": {
+    "total": 50000,
+    "oldest": "2023-08-07T12:49:48.690Z",
+    "newest": "2026-08-06T12:49:48.690Z",
+    "outside90": 45890,
+    "spanDays": 1095,
+    "outsideOld90dWindowPct": 91.8
+  },
+  "design": "同一个 50,000 条老语料库、同一批冻结 query、同一个生产策略；唯一自变量 = 时间窗",
+  "sets": [
+    {
+      "set": "expected-empty（既有 5 条）",
+      "queries": 5,
+      "days90": {
+        "returnedMean": 5.2,
+        "returnedWorst": 10,
+        "semanticOnlyMean": 1.2,
+        "semanticOnlyMax": 2
+      },
+      "unbounded": {
+        "returnedMean": 5.2,
+        "returnedWorst": 10,
+        "semanticOnlyMean": 2,
+        "semanticOnlyMax": 2
+      },
+      "deltaAttributableToWindow": {
+        "returnedMean": 0.0,
+        "returnedWorst": 0,
+        "semanticOnlyMean": 0.8,
+        "semanticOnlyMax": 0
+      },
+      "queriesWithChangedReturnCount": 0,
+      "queriesWithChangedSemanticOnly": 2
+    },
+    {
+      "set": "phase2 empty（49 条）",
+      "queries": 49,
+      "days90": {
+        "returnedMean": 3.327,
+        "returnedWorst": 10,
+        "semanticOnlyMean": 1.122,
+        "semanticOnlyMax": 2
+      },
+      "unbounded": {
+        "returnedMean": 3.347,
+        "returnedWorst": 10,
+        "semanticOnlyMean": 1.224,
+        "semanticOnlyMax": 2
+      },
+      "deltaAttributableToWindow": {
+        "returnedMean": 0.02,
+        "returnedWorst": 0,
+        "semanticOnlyMean": 0.102,
+        "semanticOnlyMax": 0
+      },
+      "queriesWithChangedReturnCount": 1,
+      "queriesWithChangedSemanticOnly": 3
+    },
+    {
+      "set": "empty-ext（32 条 hard negative）",
+      "queries": 32,
+      "days90": {
+        "returnedMean": 3.719,
+        "returnedWorst": 10,
+        "semanticOnlyMean": 1.156,
+        "semanticOnlyMax": 2
+      },
+      "unbounded": {
+        "returnedMean": 3.813,
+        "returnedWorst": 10,
+        "semanticOnlyMean": 1.313,
+        "semanticOnlyMax": 2
+      },
+      "deltaAttributableToWindow": {
+        "returnedMean": 0.094,
+        "returnedWorst": 0,
+        "semanticOnlyMean": 0.157,
+        "semanticOnlyMax": 0
+      },
+      "queriesWithChangedReturnCount": 2,
+      "queriesWithChangedSemanticOnly": 5
+    }
+  ],
+  "finding": "三个集的绝对返回数在两条臂上几乎相同，因此 ≤1/≤3 的越界来自这份合成语料本身，不是时间窗放宽造成的；时间窗的净贡献在 semantic-only 轴上，且 max 恒为 2（cap 不变量成立）。",
+  "criteriaDefect": "P6 的 ≤1/≤3 是 gold 语料（26-30 条真实 Observation）校准出来的阈值，我把它套在 50,000 条 filler 语料上，那份语料从未按该阈值校准过，两条臂都不满足。判据写法有缺陷，读数如实保留。"
+}

@@ -1,0 +1,487 @@
+{
+  "generatedAt": "2026-08-05T12:07:21.633Z",
+  "provenance": {
+    "commit": "13ad15c",
+    "bun": "1.2.20",
+    "platform": "darwin-arm64",
+    "criteria": "benchmark/reports/pool-policy-criteria.md §12（B2）",
+    "criteriaSha256": "3af22b49d73ddd5a",
+    "fillerSha256": "bbb3a6739cd4bed8",
+    "fillerMeta": {
+      "frozen": true,
+      "frozenAt": "2026-08-05T08:36:55.536Z",
+      "criteria": "benchmark/reports/pool-policy-criteria.md §12（B2）",
+      "purpose": "性能门补证：真实 cosine 分布 + 确定性回放到 50,000 候选",
+      "count": 10000,
+      "seed": 3932160,
+      "domains": 15,
+      "rulesSameAs": "phase3b-criteria.md §3.4（B1）：78 独特 concept + 33 文件基名禁用表",
+      "lexicalViolations": 0,
+      "uniqueTitles": 10000,
+      "builderScriptSha256": "255136fee2e6c32e",
+      "fillerSha256": "bbb3a6739cd4bed8"
+    },
+    "harnessSha256": "566d461c97e92d33",
+    "spaceKey": "all-MiniLM-L6-v2:q8:384:semantic-en-v1",
+    "embeddingModel": "all-MiniLM-L6-v2",
+    "dimensions": 384,
+    "queryIds": [
+      "q01",
+      "q02",
+      "q03",
+      "q04",
+      "q05",
+      "q06",
+      "q07",
+      "q08",
+      "q09",
+      "q10",
+      "q11",
+      "q12",
+      "q13",
+      "q14",
+      "q15",
+      "q16",
+      "q17",
+      "q18",
+      "q19",
+      "q20"
+    ],
+    "rounds": 31,
+    "semanticTopK": "1000",
+    "limit": 10,
+    "twoProcess": true,
+    "dbPath": "/tmp/pool-recheck-50k.db",
+    "basePolicy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "semanticCandidatePool": 20000,
+      "bigramAux": false,
+      "bigramDfRatioCeiling": 1,
+      "bigramMinMatches": 1,
+      "bigramOnlyLimit": 2,
+      "bigramWeight": 1,
+      "bigramVote": "always",
+      "semanticTopK": null
+    }
+  },
+  "gates": {
+    "P1": "p95 < 300ms",
+    "P2": "p99 < 500ms",
+    "P3": "循环内 RSS 增量 ≤ 512MB",
+    "P4": "检索进程绝对峰值 ≤ 1024MB",
+    "P5": "样本 ≥ 200",
+    "P6": "degrade = 0"
+  },
+  "results": [
+    {
+      "size": 50000,
+      "pool": "full",
+      "scopeVectors": 50000,
+      "samples": 600,
+      "latency": {
+        "p50": 132.93,
+        "p95": 216.25,
+        "p99": 358.25,
+        "max": 519.18
+      },
+      "firstRound": {
+        "p50": 142.27,
+        "p95": 247.38
+      },
+      "floorPass": {
+        "rateMean": 0.0924,
+        "rateP50": 0.05,
+        "rateP95": 0.28,
+        "rateMax": 0.2966,
+        "countMean": 4618,
+        "countP95": 13870,
+        "countMax": 14830,
+        "comparableMean": 50000
+      },
+      "rssLoop": {
+        "beforeMb": 128,
+        "peakMb": 427,
+        "deltaMb": 299
+      },
+      "rssProcessPeakMb": 427,
+      "rssPerRoundMb": [
+        426,
+        309,
+        345,
+        350,
+        367,
+        368,
+        337,
+        354,
+        333,
+        330,
+        361,
+        340,
+        368,
+        341,
+        349,
+        342,
+        340,
+        375,
+        331,
+        329,
+        346,
+        335,
+        324,
+        327,
+        328,
+        329,
+        326,
+        342,
+        328,
+        339,
+        340
+      ],
+      "degradedCount": 0,
+      "pages": [
+        {
+          "id": "q01",
+          "resultIds": [
+            8808,
+            3112,
+            5047,
+            18808,
+            8932,
+            6262,
+            13112,
+            23112,
+            33112,
+            43112
+          ],
+          "sources": [
+            "semantic",
+            "fts",
+            "hybrid",
+            "semantic",
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts"
+          ]
+        },
+        {
+          "id": "q02",
+          "resultIds": [
+            9385,
+            3112,
+            19385,
+            8932,
+            5047,
+            6262,
+            13112,
+            23112,
+            33112,
+            43112
+          ],
+          "sources": [
+            "semantic",
+            "fts",
+            "semantic",
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts"
+          ]
+        },
+        {
+          "id": "q03",
+          "resultIds": [
+            4534,
+            9154,
+            14534,
+            24534,
+            34534,
+            4024,
+            44534,
+            964,
+            2209,
+            10964
+          ],
+          "sources": [
+            "hybrid",
+            "hybrid",
+            "hybrid",
+            "hybrid",
+            "hybrid",
+            "hybrid",
+            "hybrid",
+            "hybrid",
+            "hybrid",
+            "hybrid"
+          ]
+        },
+        {
+          "id": "q04",
+          "resultIds": [],
+          "sources": []
+        },
+        {
+          "id": "q05",
+          "resultIds": [
+            5330,
+            15330
+          ],
+          "sources": [
+            "semantic",
+            "semantic"
+          ]
+        },
+        {
+          "id": "q06",
+          "resultIds": [
+            2579,
+            12579,
+            22579,
+            32579,
+            42579,
+            8639,
+            18639,
+            5909,
+            28639,
+            38639
+          ],
+          "sources": [
+            "hybrid",
+            "hybrid",
+            "hybrid",
+            "hybrid",
+            "hybrid",
+            "hybrid",
+            "hybrid",
+            "hybrid",
+            "hybrid",
+            "hybrid"
+          ]
+        },
+        {
+          "id": "q07",
+          "resultIds": [
+            702,
+            10702
+          ],
+          "sources": [
+            "semantic",
+            "semantic"
+          ]
+        },
+        {
+          "id": "q08",
+          "resultIds": [
+            4046,
+            14046
+          ],
+          "sources": [
+            "semantic",
+            "semantic"
+          ]
+        },
+        {
+          "id": "q09",
+          "resultIds": [
+            997,
+            9082,
+            5512,
+            7,
+            2587,
+            4612,
+            5437,
+            10997,
+            20997,
+            30997
+          ],
+          "sources": [
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts"
+          ]
+        },
+        {
+          "id": "q10",
+          "resultIds": [
+            9350,
+            19350
+          ],
+          "sources": [
+            "semantic",
+            "semantic"
+          ]
+        },
+        {
+          "id": "q11",
+          "resultIds": [
+            3792,
+            4926,
+            13792,
+            1071,
+            1971,
+            7191,
+            7221,
+            7296,
+            2946,
+            8751
+          ],
+          "sources": [
+            "semantic",
+            "fts",
+            "semantic",
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts"
+          ]
+        },
+        {
+          "id": "q12",
+          "resultIds": [
+            5065,
+            15065
+          ],
+          "sources": [
+            "semantic",
+            "semantic"
+          ]
+        },
+        {
+          "id": "q13",
+          "resultIds": [
+            7115,
+            4926,
+            17115,
+            1071,
+            1971,
+            7191,
+            7221,
+            7296,
+            2946,
+            8751
+          ],
+          "sources": [
+            "semantic",
+            "fts",
+            "semantic",
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts"
+          ]
+        },
+        {
+          "id": "q14",
+          "resultIds": [
+            3300,
+            13300
+          ],
+          "sources": [
+            "semantic",
+            "semantic"
+          ]
+        },
+        {
+          "id": "q15",
+          "resultIds": [
+            8815,
+            18815
+          ],
+          "sources": [
+            "semantic",
+            "semantic"
+          ]
+        },
+        {
+          "id": "q16",
+          "resultIds": [
+            6414,
+            16414
+          ],
+          "sources": [
+            "semantic",
+            "semantic"
+          ]
+        },
+        {
+          "id": "q17",
+          "resultIds": [],
+          "sources": []
+        },
+        {
+          "id": "q18",
+          "resultIds": [
+            3386,
+            13386
+          ],
+          "sources": [
+            "semantic",
+            "semantic"
+          ]
+        },
+        {
+          "id": "q19",
+          "resultIds": [
+            2857,
+            12857
+          ],
+          "sources": [
+            "semantic",
+            "semantic"
+          ]
+        },
+        {
+          "id": "q20",
+          "resultIds": [
+            8318,
+            997,
+            18318,
+            9082,
+            5512,
+            7,
+            2587,
+            4612,
+            5437,
+            10997
+          ],
+          "sources": [
+            "semantic",
+            "fts",
+            "semantic",
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts",
+            "fts"
+          ]
+        }
+      ]
+    }
+  ]
+}

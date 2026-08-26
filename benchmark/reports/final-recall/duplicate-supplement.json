@@ -1,0 +1,1731 @@
+{
+  "generatedAt": "2026-08-10T15:28:09.167Z",
+  "role": "描述性补充口径。不重判任何门；C1 正式读数与 P6 结论不变。",
+  "verdictUnchanged": {
+    "c1OfficialReading": 1.9,
+    "c1Basis": "physicalRows（页面物理行数）",
+    "c1Threshold": 1,
+    "c1Pass": false,
+    "p6": "不通过",
+    "phase3c": "不通过",
+    "note": "本报告新增 distinctContent 口径仅作并列参考，不构成对 C1 或 P6 的重新判定。"
+  },
+  "provenance": {
+    "plan": "plan/V3/retrieval-safety-round-plan-2026-08-10.md §6",
+    "source": "benchmark/reports/final-recall/codex-blind-audit-result.json",
+    "sourceSha256": "7232aacc31ad56fa",
+    "freeze": "benchmark/reports/final-recall/codex-blind-audit-freeze.json",
+    "freezeSha256": "98876cef775878e0",
+    "scriptSha256": "977e6b443a75fba1",
+    "rewrittenFiles": "none（本脚本只读，不修改任何既有产物或冻结文件）",
+    "dedupRule": "filler:N -> filler#(N mod 10000)；来源为冻结记录 oldCorpus（10000 条原文 × 5 份副本）",
+    "policy": {
+      "semanticDiscovery": true,
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "semanticCandidatePool": null,
+      "bigramAux": false,
+      "bigramDfRatioCeiling": 1,
+      "bigramMinMatches": 1,
+      "bigramOnlyLimit": 2,
+      "bigramWeight": 1,
+      "bigramVote": "always",
+      "semanticTopK": 1000
+    },
+    "limit": 10,
+    "pageCapacity": 2
+  },
+  "selfCheck": [
+    {
+      "arm": "days90",
+      "pass": true,
+      "expected": {
+        "returnedMean": 1.8,
+        "returnedWorst": 2,
+        "semanticOnlyMean": 1.8,
+        "semanticOnlyMax": 2
+      },
+      "got": {
+        "mean": 1.8,
+        "worst": 2
+      }
+    },
+    {
+      "arm": "unbounded",
+      "pass": true,
+      "expected": {
+        "returnedMean": 1.9,
+        "returnedWorst": 2,
+        "semanticOnlyMean": 1.9,
+        "semanticOnlyMax": 2
+      },
+      "got": {
+        "mean": 1.9,
+        "worst": 2
+      }
+    }
+  ],
+  "dualBasis": {
+    "relevance": {
+      "days90": {
+        "physicalRows": {
+          "mean": 1.962,
+          "worst": 2,
+          "perQuery": {
+            "fra-r01": 1,
+            "fra-r02": 2,
+            "fra-r03": 2,
+            "fra-r04": 2,
+            "fra-r05": 2,
+            "fra-r06": 2,
+            "fra-r07": 2,
+            "fra-r08": 2,
+            "fra-r09": 2,
+            "fra-r10": 2,
+            "fra-r11": 2,
+            "fra-r12": 2,
+            "fra-r13": 2,
+            "fra-r14": 2,
+            "fra-r15": 2,
+            "fra-r16": 2,
+            "fra-r17": 2,
+            "fra-r18": 2,
+            "fra-r19": 2,
+            "fra-r20": 2,
+            "fra-r21": 2,
+            "fra-r22": 2,
+            "fra-r23": 2,
+            "fra-r24": 2,
+            "fra-r25": 2,
+            "fra-r26": 2
+          }
+        },
+        "distinctContent": {
+          "mean": 1.962,
+          "worst": 2,
+          "perQuery": {
+            "fra-r01": 1,
+            "fra-r02": 2,
+            "fra-r03": 2,
+            "fra-r04": 2,
+            "fra-r05": 2,
+            "fra-r06": 2,
+            "fra-r07": 2,
+            "fra-r08": 2,
+            "fra-r09": 2,
+            "fra-r10": 2,
+            "fra-r11": 2,
+            "fra-r12": 2,
+            "fra-r13": 2,
+            "fra-r14": 2,
+            "fra-r15": 2,
+            "fra-r16": 2,
+            "fra-r17": 2,
+            "fra-r18": 2,
+            "fra-r19": 2,
+            "fra-r20": 2,
+            "fra-r21": 2,
+            "fra-r22": 2,
+            "fra-r23": 2,
+            "fra-r24": 2,
+            "fra-r25": 2,
+            "fra-r26": 2
+          }
+        }
+      },
+      "unbounded": {
+        "physicalRows": {
+          "mean": 2,
+          "worst": 2,
+          "perQuery": {
+            "fra-r01": 2,
+            "fra-r02": 2,
+            "fra-r03": 2,
+            "fra-r04": 2,
+            "fra-r05": 2,
+            "fra-r06": 2,
+            "fra-r07": 2,
+            "fra-r08": 2,
+            "fra-r09": 2,
+            "fra-r10": 2,
+            "fra-r11": 2,
+            "fra-r12": 2,
+            "fra-r13": 2,
+            "fra-r14": 2,
+            "fra-r15": 2,
+            "fra-r16": 2,
+            "fra-r17": 2,
+            "fra-r18": 2,
+            "fra-r19": 2,
+            "fra-r20": 2,
+            "fra-r21": 2,
+            "fra-r22": 2,
+            "fra-r23": 2,
+            "fra-r24": 2,
+            "fra-r25": 2,
+            "fra-r26": 2
+          }
+        },
+        "distinctContent": {
+          "mean": 1.846,
+          "worst": 2,
+          "perQuery": {
+            "fra-r01": 2,
+            "fra-r02": 2,
+            "fra-r03": 2,
+            "fra-r04": 2,
+            "fra-r05": 1,
+            "fra-r06": 2,
+            "fra-r07": 2,
+            "fra-r08": 2,
+            "fra-r09": 1,
+            "fra-r10": 2,
+            "fra-r11": 2,
+            "fra-r12": 2,
+            "fra-r13": 2,
+            "fra-r14": 2,
+            "fra-r15": 2,
+            "fra-r16": 2,
+            "fra-r17": 2,
+            "fra-r18": 1,
+            "fra-r19": 2,
+            "fra-r20": 2,
+            "fra-r21": 1,
+            "fra-r22": 2,
+            "fra-r23": 2,
+            "fra-r24": 2,
+            "fra-r25": 2,
+            "fra-r26": 2
+          }
+        }
+      }
+    },
+    "hardNegative": {
+      "days90": {
+        "physicalRows": {
+          "mean": 1.8,
+          "worst": 2,
+          "perQuery": {
+            "fra-n01": 2,
+            "fra-n02": 2,
+            "fra-n03": 2,
+            "fra-n04": 2,
+            "fra-n05": 2,
+            "fra-n06": 2,
+            "fra-n07": 2,
+            "fra-n08": 2,
+            "fra-n09": 2,
+            "fra-n10": 2,
+            "fra-n11": 0,
+            "fra-n12": 2,
+            "fra-n13": 2,
+            "fra-n14": 2,
+            "fra-n15": 2,
+            "fra-n16": 2,
+            "fra-n17": 0,
+            "fra-n18": 2,
+            "fra-n19": 2,
+            "fra-n20": 2,
+            "fra-n21": 2,
+            "fra-n22": 2,
+            "fra-n23": 2,
+            "fra-n24": 2,
+            "fra-n25": 2,
+            "fra-n26": 2,
+            "fra-n27": 2,
+            "fra-n28": 2,
+            "fra-n29": 0,
+            "fra-n30": 2
+          }
+        },
+        "distinctContent": {
+          "mean": 1.8,
+          "worst": 2,
+          "perQuery": {
+            "fra-n01": 2,
+            "fra-n02": 2,
+            "fra-n03": 2,
+            "fra-n04": 2,
+            "fra-n05": 2,
+            "fra-n06": 2,
+            "fra-n07": 2,
+            "fra-n08": 2,
+            "fra-n09": 2,
+            "fra-n10": 2,
+            "fra-n11": 0,
+            "fra-n12": 2,
+            "fra-n13": 2,
+            "fra-n14": 2,
+            "fra-n15": 2,
+            "fra-n16": 2,
+            "fra-n17": 0,
+            "fra-n18": 2,
+            "fra-n19": 2,
+            "fra-n20": 2,
+            "fra-n21": 2,
+            "fra-n22": 2,
+            "fra-n23": 2,
+            "fra-n24": 2,
+            "fra-n25": 2,
+            "fra-n26": 2,
+            "fra-n27": 2,
+            "fra-n28": 2,
+            "fra-n29": 0,
+            "fra-n30": 2
+          }
+        }
+      },
+      "unbounded": {
+        "physicalRows": {
+          "mean": 1.9,
+          "worst": 2,
+          "perQuery": {
+            "fra-n01": 2,
+            "fra-n02": 2,
+            "fra-n03": 2,
+            "fra-n04": 2,
+            "fra-n05": 2,
+            "fra-n06": 2,
+            "fra-n07": 2,
+            "fra-n08": 2,
+            "fra-n09": 2,
+            "fra-n10": 2,
+            "fra-n11": 1,
+            "fra-n12": 2,
+            "fra-n13": 2,
+            "fra-n14": 2,
+            "fra-n15": 2,
+            "fra-n16": 2,
+            "fra-n17": 2,
+            "fra-n18": 2,
+            "fra-n19": 2,
+            "fra-n20": 2,
+            "fra-n21": 2,
+            "fra-n22": 2,
+            "fra-n23": 2,
+            "fra-n24": 2,
+            "fra-n25": 2,
+            "fra-n26": 2,
+            "fra-n27": 2,
+            "fra-n28": 2,
+            "fra-n29": 0,
+            "fra-n30": 2
+          }
+        },
+        "distinctContent": {
+          "mean": 1.3,
+          "worst": 2,
+          "perQuery": {
+            "fra-n01": 2,
+            "fra-n02": 2,
+            "fra-n03": 1,
+            "fra-n04": 2,
+            "fra-n05": 1,
+            "fra-n06": 1,
+            "fra-n07": 1,
+            "fra-n08": 2,
+            "fra-n09": 1,
+            "fra-n10": 1,
+            "fra-n11": 1,
+            "fra-n12": 2,
+            "fra-n13": 2,
+            "fra-n14": 1,
+            "fra-n15": 2,
+            "fra-n16": 1,
+            "fra-n17": 2,
+            "fra-n18": 2,
+            "fra-n19": 2,
+            "fra-n20": 1,
+            "fra-n21": 1,
+            "fra-n22": 1,
+            "fra-n23": 1,
+            "fra-n24": 1,
+            "fra-n25": 1,
+            "fra-n26": 1,
+            "fra-n27": 1,
+            "fra-n28": 1,
+            "fra-n29": 0,
+            "fra-n30": 1
+          }
+        }
+      }
+    },
+    "nearDomain": {
+      "days90": {
+        "physicalRows": {
+          "mean": 1.8,
+          "worst": 2,
+          "perQuery": {
+            "fra-n01": 2,
+            "fra-n02": 2,
+            "fra-n03": 2,
+            "fra-n04": 2,
+            "fra-n05": 2,
+            "fra-n06": 2,
+            "fra-n07": 2,
+            "fra-n08": 2,
+            "fra-n09": 2,
+            "fra-n10": 2,
+            "fra-n11": 0,
+            "fra-n12": 2,
+            "fra-n13": 2,
+            "fra-n14": 2,
+            "fra-n15": 2,
+            "fra-n16": 2,
+            "fra-n17": 0,
+            "fra-n18": 2,
+            "fra-n19": 2,
+            "fra-n20": 2
+          }
+        },
+        "distinctContent": {
+          "mean": 1.8,
+          "worst": 2,
+          "perQuery": {
+            "fra-n01": 2,
+            "fra-n02": 2,
+            "fra-n03": 2,
+            "fra-n04": 2,
+            "fra-n05": 2,
+            "fra-n06": 2,
+            "fra-n07": 2,
+            "fra-n08": 2,
+            "fra-n09": 2,
+            "fra-n10": 2,
+            "fra-n11": 0,
+            "fra-n12": 2,
+            "fra-n13": 2,
+            "fra-n14": 2,
+            "fra-n15": 2,
+            "fra-n16": 2,
+            "fra-n17": 0,
+            "fra-n18": 2,
+            "fra-n19": 2,
+            "fra-n20": 2
+          }
+        }
+      },
+      "unbounded": {
+        "physicalRows": {
+          "mean": 1.95,
+          "worst": 2,
+          "perQuery": {
+            "fra-n01": 2,
+            "fra-n02": 2,
+            "fra-n03": 2,
+            "fra-n04": 2,
+            "fra-n05": 2,
+            "fra-n06": 2,
+            "fra-n07": 2,
+            "fra-n08": 2,
+            "fra-n09": 2,
+            "fra-n10": 2,
+            "fra-n11": 1,
+            "fra-n12": 2,
+            "fra-n13": 2,
+            "fra-n14": 2,
+            "fra-n15": 2,
+            "fra-n16": 2,
+            "fra-n17": 2,
+            "fra-n18": 2,
+            "fra-n19": 2,
+            "fra-n20": 2
+          }
+        },
+        "distinctContent": {
+          "mean": 1.5,
+          "worst": 2,
+          "perQuery": {
+            "fra-n01": 2,
+            "fra-n02": 2,
+            "fra-n03": 1,
+            "fra-n04": 2,
+            "fra-n05": 1,
+            "fra-n06": 1,
+            "fra-n07": 1,
+            "fra-n08": 2,
+            "fra-n09": 1,
+            "fra-n10": 1,
+            "fra-n11": 1,
+            "fra-n12": 2,
+            "fra-n13": 2,
+            "fra-n14": 1,
+            "fra-n15": 2,
+            "fra-n16": 1,
+            "fra-n17": 2,
+            "fra-n18": 2,
+            "fra-n19": 2,
+            "fra-n20": 1
+          }
+        }
+      }
+    },
+    "foreignDomain": {
+      "days90": {
+        "physicalRows": {
+          "mean": 1.8,
+          "worst": 2,
+          "perQuery": {
+            "fra-n21": 2,
+            "fra-n22": 2,
+            "fra-n23": 2,
+            "fra-n24": 2,
+            "fra-n25": 2,
+            "fra-n26": 2,
+            "fra-n27": 2,
+            "fra-n28": 2,
+            "fra-n29": 0,
+            "fra-n30": 2
+          }
+        },
+        "distinctContent": {
+          "mean": 1.8,
+          "worst": 2,
+          "perQuery": {
+            "fra-n21": 2,
+            "fra-n22": 2,
+            "fra-n23": 2,
+            "fra-n24": 2,
+            "fra-n25": 2,
+            "fra-n26": 2,
+            "fra-n27": 2,
+            "fra-n28": 2,
+            "fra-n29": 0,
+            "fra-n30": 2
+          }
+        }
+      },
+      "unbounded": {
+        "physicalRows": {
+          "mean": 1.8,
+          "worst": 2,
+          "perQuery": {
+            "fra-n21": 2,
+            "fra-n22": 2,
+            "fra-n23": 2,
+            "fra-n24": 2,
+            "fra-n25": 2,
+            "fra-n26": 2,
+            "fra-n27": 2,
+            "fra-n28": 2,
+            "fra-n29": 0,
+            "fra-n30": 2
+          }
+        },
+        "distinctContent": {
+          "mean": 0.9,
+          "worst": 1,
+          "perQuery": {
+            "fra-n21": 1,
+            "fra-n22": 1,
+            "fra-n23": 1,
+            "fra-n24": 1,
+            "fra-n25": 1,
+            "fra-n26": 1,
+            "fra-n27": 1,
+            "fra-n28": 1,
+            "fra-n29": 0,
+            "fra-n30": 1
+          }
+        }
+      }
+    }
+  },
+  "duplicateDistribution": {
+    "summary": {
+      "relevance": {
+        "days90": {
+          "queries": 26,
+          "queriesWithDup": 0,
+          "share": 0,
+          "redundantRows": 0,
+          "totalRows": 51,
+          "allScoresBitEqual": true
+        },
+        "unbounded": {
+          "queries": 26,
+          "queriesWithDup": 4,
+          "share": 0.154,
+          "redundantRows": 4,
+          "totalRows": 52,
+          "allScoresBitEqual": true
+        }
+      },
+      "hardNegative": {
+        "days90": {
+          "queries": 30,
+          "queriesWithDup": 0,
+          "share": 0,
+          "redundantRows": 0,
+          "totalRows": 54,
+          "allScoresBitEqual": true
+        },
+        "unbounded": {
+          "queries": 30,
+          "queriesWithDup": 18,
+          "share": 0.6,
+          "redundantRows": 18,
+          "totalRows": 57,
+          "allScoresBitEqual": true
+        }
+      },
+      "nearDomain": {
+        "days90": {
+          "queries": 20,
+          "queriesWithDup": 0,
+          "share": 0,
+          "redundantRows": 0,
+          "totalRows": 36,
+          "allScoresBitEqual": true
+        },
+        "unbounded": {
+          "queries": 20,
+          "queriesWithDup": 9,
+          "share": 0.45,
+          "redundantRows": 9,
+          "totalRows": 39,
+          "allScoresBitEqual": true
+        }
+      },
+      "foreignDomain": {
+        "days90": {
+          "queries": 10,
+          "queriesWithDup": 0,
+          "share": 0,
+          "redundantRows": 0,
+          "totalRows": 18,
+          "allScoresBitEqual": true
+        },
+        "unbounded": {
+          "queries": 10,
+          "queriesWithDup": 9,
+          "share": 0.9,
+          "redundantRows": 9,
+          "totalRows": 18,
+          "allScoresBitEqual": true
+        }
+      }
+    },
+    "perQuery": [
+      {
+        "id": "fra-r05",
+        "kind": "relevance",
+        "negativeType": null,
+        "arm": "unbounded",
+        "page": [
+          "filler:992",
+          "filler:10992"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#992",
+            "ids": [
+              "filler:992",
+              "filler:10992"
+            ],
+            "scores": [
+              0.3950727913389041,
+              0.3950727913389041
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-r09",
+        "kind": "relevance",
+        "negativeType": null,
+        "arm": "unbounded",
+        "page": [
+          "filler:2744",
+          "filler:12744"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#2744",
+            "ids": [
+              "filler:2744",
+              "filler:12744"
+            ],
+            "scores": [
+              0.3281183601316179,
+              0.3281183601316179
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-r18",
+        "kind": "relevance",
+        "negativeType": null,
+        "arm": "unbounded",
+        "page": [
+          "filler:7831",
+          "filler:17831"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#7831",
+            "ids": [
+              "filler:7831",
+              "filler:17831"
+            ],
+            "scores": [
+              0.3626651809305154,
+              0.3626651809305154
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-r21",
+        "kind": "relevance",
+        "negativeType": null,
+        "arm": "unbounded",
+        "page": [
+          "filler:9996",
+          "filler:19996"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#9996",
+            "ids": [
+              "filler:9996",
+              "filler:19996"
+            ],
+            "scores": [
+              0.4745863600850453,
+              0.4745863600850453
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-n03",
+        "kind": "hard-negative",
+        "negativeType": "near-domain",
+        "arm": "unbounded",
+        "page": [
+          "filler:1185",
+          "filler:11185"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#1185",
+            "ids": [
+              "filler:1185",
+              "filler:11185"
+            ],
+            "scores": [
+              0.4349808314172823,
+              0.4349808314172823
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-n05",
+        "kind": "hard-negative",
+        "negativeType": "near-domain",
+        "arm": "unbounded",
+        "page": [
+          "filler:8686",
+          "filler:18686"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#8686",
+            "ids": [
+              "filler:8686",
+              "filler:18686"
+            ],
+            "scores": [
+              0.36809709171881466,
+              0.36809709171881466
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-n06",
+        "kind": "hard-negative",
+        "negativeType": "near-domain",
+        "arm": "unbounded",
+        "page": [
+          "filler:8489",
+          "filler:18489"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#8489",
+            "ids": [
+              "filler:8489",
+              "filler:18489"
+            ],
+            "scores": [
+              0.3479882043611113,
+              0.3479882043611113
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-n07",
+        "kind": "hard-negative",
+        "negativeType": "near-domain",
+        "arm": "unbounded",
+        "page": [
+          "filler:3188",
+          "filler:13188"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#3188",
+            "ids": [
+              "filler:3188",
+              "filler:13188"
+            ],
+            "scores": [
+              0.27043542693051165,
+              0.27043542693051165
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-n09",
+        "kind": "hard-negative",
+        "negativeType": "near-domain",
+        "arm": "unbounded",
+        "page": [
+          "filler:8696",
+          "filler:18696"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#8696",
+            "ids": [
+              "filler:8696",
+              "filler:18696"
+            ],
+            "scores": [
+              0.36454474883186727,
+              0.36454474883186727
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-n10",
+        "kind": "hard-negative",
+        "negativeType": "near-domain",
+        "arm": "unbounded",
+        "page": [
+          "filler:5006",
+          "filler:15006"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#5006",
+            "ids": [
+              "filler:5006",
+              "filler:15006"
+            ],
+            "scores": [
+              0.4548538845858144,
+              0.4548538845858144
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-n14",
+        "kind": "hard-negative",
+        "negativeType": "near-domain",
+        "arm": "unbounded",
+        "page": [
+          "filler:5760",
+          "filler:15760"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#5760",
+            "ids": [
+              "filler:5760",
+              "filler:15760"
+            ],
+            "scores": [
+              0.37257747258523066,
+              0.37257747258523066
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-n16",
+        "kind": "hard-negative",
+        "negativeType": "near-domain",
+        "arm": "unbounded",
+        "page": [
+          "filler:9733",
+          "filler:19733"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#9733",
+            "ids": [
+              "filler:9733",
+              "filler:19733"
+            ],
+            "scores": [
+              0.3875171572772856,
+              0.3875171572772856
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-n20",
+        "kind": "hard-negative",
+        "negativeType": "near-domain",
+        "arm": "unbounded",
+        "page": [
+          "filler:10026",
+          "filler:20026"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#26",
+            "ids": [
+              "filler:10026",
+              "filler:20026"
+            ],
+            "scores": [
+              0.537149686238167,
+              0.537149686238167
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-n21",
+        "kind": "hard-negative",
+        "negativeType": "foreign-domain",
+        "arm": "unbounded",
+        "page": [
+          "filler:5193",
+          "filler:15193"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#5193",
+            "ids": [
+              "filler:5193",
+              "filler:15193"
+            ],
+            "scores": [
+              0.23584832843872555,
+              0.23584832843872555
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-n22",
+        "kind": "hard-negative",
+        "negativeType": "foreign-domain",
+        "arm": "unbounded",
+        "page": [
+          "filler:6882",
+          "filler:16882"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#6882",
+            "ids": [
+              "filler:6882",
+              "filler:16882"
+            ],
+            "scores": [
+              0.26276082872773565,
+              0.26276082872773565
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-n23",
+        "kind": "hard-negative",
+        "negativeType": "foreign-domain",
+        "arm": "unbounded",
+        "page": [
+          "filler:2605",
+          "filler:12605"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#2605",
+            "ids": [
+              "filler:2605",
+              "filler:12605"
+            ],
+            "scores": [
+              0.26433497298513875,
+              0.26433497298513875
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-n24",
+        "kind": "hard-negative",
+        "negativeType": "foreign-domain",
+        "arm": "unbounded",
+        "page": [
+          "filler:3853",
+          "filler:13853"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#3853",
+            "ids": [
+              "filler:3853",
+              "filler:13853"
+            ],
+            "scores": [
+              0.3181363720262433,
+              0.3181363720262433
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-n25",
+        "kind": "hard-negative",
+        "negativeType": "foreign-domain",
+        "arm": "unbounded",
+        "page": [
+          "filler:9662",
+          "filler:19662"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#9662",
+            "ids": [
+              "filler:9662",
+              "filler:19662"
+            ],
+            "scores": [
+              0.23699682981591919,
+              0.23699682981591919
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-n26",
+        "kind": "hard-negative",
+        "negativeType": "foreign-domain",
+        "arm": "unbounded",
+        "page": [
+          "filler:1435",
+          "filler:11435"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#1435",
+            "ids": [
+              "filler:1435",
+              "filler:11435"
+            ],
+            "scores": [
+              0.23272786750741842,
+              0.23272786750741842
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-n27",
+        "kind": "hard-negative",
+        "negativeType": "foreign-domain",
+        "arm": "unbounded",
+        "page": [
+          "filler:5315",
+          "filler:15315"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#5315",
+            "ids": [
+              "filler:5315",
+              "filler:15315"
+            ],
+            "scores": [
+              0.22020292823502613,
+              0.22020292823502613
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-n28",
+        "kind": "hard-negative",
+        "negativeType": "foreign-domain",
+        "arm": "unbounded",
+        "page": [
+          "filler:9865",
+          "filler:19865"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#9865",
+            "ids": [
+              "filler:9865",
+              "filler:19865"
+            ],
+            "scores": [
+              0.2801120862025839,
+              0.2801120862025839
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      },
+      {
+        "id": "fra-n30",
+        "kind": "hard-negative",
+        "negativeType": "foreign-domain",
+        "arm": "unbounded",
+        "page": [
+          "filler:7754",
+          "filler:17754"
+        ],
+        "physicalRows": 2,
+        "distinctContent": 1,
+        "redundantRows": 1,
+        "duplicateGroups": [
+          {
+            "contentKey": "filler#7754",
+            "ids": [
+              "filler:7754",
+              "filler:17754"
+            ],
+            "scores": [
+              0.30680123476603643,
+              0.30680123476603643
+            ],
+            "scoreBitEqual": true
+          }
+        ]
+      }
+    ]
+  },
+  "pageChurn": {
+    "physicalRows": {
+      "added": 109,
+      "removed": 105,
+      "moved": 0,
+      "pagesChanged": 55
+    },
+    "distinctContent": {
+      "added": 87,
+      "removed": 105,
+      "pagesChanged": 55
+    },
+    "officialAdded": 109,
+    "officialRemoved": 105
+  },
+  "relevanceDisplacement": {
+    "summary": {
+      "queries": 26,
+      "goldOnPage": 21,
+      "goldMissing": 5,
+      "missingWithFullDuplicatePage": 4,
+      "pageSlotsLostToRedundancy": 4,
+      "dedupCouldRecover": []
+    },
+    "perQuery": [
+      {
+        "id": "fra-r01",
+        "gold": [
+          "t01"
+        ],
+        "page": [
+          "t01",
+          "t21"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 1,
+        "goldEffectiveRank": 1,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 7,
+        "retainedSize": 7,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r02",
+        "gold": [
+          "t02"
+        ],
+        "page": [
+          "t21",
+          "t02"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 2,
+        "goldEffectiveRank": 2,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 14033,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r03",
+        "gold": [
+          "t03"
+        ],
+        "page": [
+          "t03",
+          "t19"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 1,
+        "goldEffectiveRank": 1,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 12117,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r04",
+        "gold": [
+          "t04"
+        ],
+        "page": [
+          "t04",
+          "t10"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 1,
+        "goldEffectiveRank": 1,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 3405,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r05",
+        "gold": [
+          "t05"
+        ],
+        "page": [
+          "filler:992",
+          "filler:10992"
+        ],
+        "pageAllOneSource": true,
+        "redundantRows": 1,
+        "goldOnPage": false,
+        "goldSemanticRank": null,
+        "goldEffectiveRank": null,
+        "goldInRetainedSet": false,
+        "aboveFloorCount": 24372,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r06",
+        "gold": [
+          "t06"
+        ],
+        "page": [
+          "t06",
+          "filler:4105"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 1,
+        "goldEffectiveRank": 1,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 2689,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r07",
+        "gold": [
+          "t07"
+        ],
+        "page": [
+          "t07",
+          "filler:4830"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 1,
+        "goldEffectiveRank": 1,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 18278,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r08",
+        "gold": [
+          "t08"
+        ],
+        "page": [
+          "t08",
+          "filler:3045"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 1,
+        "goldEffectiveRank": 1,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 12053,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r09",
+        "gold": [
+          "t09"
+        ],
+        "page": [
+          "filler:2744",
+          "filler:12744"
+        ],
+        "pageAllOneSource": true,
+        "redundantRows": 1,
+        "goldOnPage": false,
+        "goldSemanticRank": 641,
+        "goldEffectiveRank": 129,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 9538,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r10",
+        "gold": [
+          "t10"
+        ],
+        "page": [
+          "t10",
+          "filler:1157"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 1,
+        "goldEffectiveRank": 1,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 7338,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r11",
+        "gold": [
+          "t11"
+        ],
+        "page": [
+          "t11",
+          "t03"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 1,
+        "goldEffectiveRank": 1,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 2160,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r12",
+        "gold": [
+          "t12"
+        ],
+        "page": [
+          "t19",
+          "t15"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": false,
+        "goldSemanticRank": 3,
+        "goldEffectiveRank": 3,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 9762,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r13",
+        "gold": [
+          "t13"
+        ],
+        "page": [
+          "t13",
+          "t05"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 1,
+        "goldEffectiveRank": 1,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 20452,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r14",
+        "gold": [
+          "t14"
+        ],
+        "page": [
+          "t14",
+          "t16"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 1,
+        "goldEffectiveRank": 1,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 1734,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r15",
+        "gold": [
+          "t15"
+        ],
+        "page": [
+          "t15",
+          "filler:6301"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 1,
+        "goldEffectiveRank": 1,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 17774,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r16",
+        "gold": [
+          "t16"
+        ],
+        "page": [
+          "t17",
+          "t16"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 2,
+        "goldEffectiveRank": 2,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 4853,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r17",
+        "gold": [
+          "t17"
+        ],
+        "page": [
+          "t17",
+          "filler:4472"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 1,
+        "goldEffectiveRank": 1,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 1600,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r18",
+        "gold": [
+          "t18"
+        ],
+        "page": [
+          "filler:7831",
+          "filler:17831"
+        ],
+        "pageAllOneSource": true,
+        "redundantRows": 1,
+        "goldOnPage": false,
+        "goldSemanticRank": null,
+        "goldEffectiveRank": null,
+        "goldInRetainedSet": false,
+        "aboveFloorCount": 8540,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r19",
+        "gold": [
+          "t19"
+        ],
+        "page": [
+          "t19",
+          "filler:5966"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 1,
+        "goldEffectiveRank": 1,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 20168,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r20",
+        "gold": [
+          "t20"
+        ],
+        "page": [
+          "t20",
+          "filler:8841"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 1,
+        "goldEffectiveRank": 1,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 13935,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r21",
+        "gold": [
+          "t21"
+        ],
+        "page": [
+          "filler:9996",
+          "filler:19996"
+        ],
+        "pageAllOneSource": true,
+        "redundantRows": 1,
+        "goldOnPage": false,
+        "goldSemanticRank": null,
+        "goldEffectiveRank": null,
+        "goldInRetainedSet": false,
+        "aboveFloorCount": 7473,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r22",
+        "gold": [
+          "t22"
+        ],
+        "page": [
+          "t22",
+          "filler:9976"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 1,
+        "goldEffectiveRank": 1,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 1695,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r23",
+        "gold": [
+          "t23"
+        ],
+        "page": [
+          "t23",
+          "filler:2555"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 1,
+        "goldEffectiveRank": 1,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 1538,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r24",
+        "gold": [
+          "t24"
+        ],
+        "page": [
+          "t24",
+          "filler:5022"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 1,
+        "goldEffectiveRank": 1,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 164,
+        "retainedSize": 164,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r25",
+        "gold": [
+          "t25"
+        ],
+        "page": [
+          "t11",
+          "t25"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 2,
+        "goldEffectiveRank": 2,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 5253,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      },
+      {
+        "id": "fra-r26",
+        "gold": [
+          "t26"
+        ],
+        "page": [
+          "t26",
+          "t17"
+        ],
+        "pageAllOneSource": false,
+        "redundantRows": 0,
+        "goldOnPage": true,
+        "goldSemanticRank": 1,
+        "goldEffectiveRank": 1,
+        "goldInRetainedSet": true,
+        "aboveFloorCount": 10583,
+        "retainedSize": 1000,
+        "dedupCouldRecover": false
+      }
+    ]
+  }
+}

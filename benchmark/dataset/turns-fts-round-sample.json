@@ -1,0 +1,346 @@
+{
+  "meta": {
+    "step": "F1 数据段样本：8 条记录，供 sample gate 审口径。**不是冻结集**，过审后才批量生成剩余记录。",
+    "criteria": "benchmark/reports/fts-round/f1-criteria.md",
+    "criteriaRevision": "r3",
+    "formal_name": "基于真实产物重建的 gold fixture",
+    "not_real_capture": "不得称其为真实捕获的对话、真实会话记录或生产数据（沿用 P2 判据 §8.1）。",
+    "reconstructed_fields": "prompt / assistant_response / events 只满足 fixture 结构，刻意保持简短，不参与 Observation、向量与 FTS，也不用于 ACP 质量评估。",
+    "source_priority": "按操作者裁定：P3 / 门形状裁定 / F0 / Q6 优先；本轮自身事实只在独立事实不足时补充，逐条标 self_referential: true 并单独报告，不得作为主要证据来源。",
+    "self_referential_count": 0,
+    "self_referential_note": "本样本 8 条全部取自 P3 / 裁定 / F0 / Q6，均已归档且独立于本轮判据，因此无一条需要标记。",
+    "never_gold_basis": "8 条事实全部产生于 2026-08-10 之后（P2 冻结点之后），因此不可能出现在 P2 的 40 条或旧 26 条里。批量阶段必须用脚本对 turns.json 与 turns-safety-round.json 逐条核对 title / key_facts 无重叠。"
+  },
+  "records": [
+    {
+      "id": "n01",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/safety-round/p3-completion.md",
+          "section": "§4.1「floor 在语义腿上非常有效，在 FTS 腿上完全无效」的来源对照块",
+          "supports": "floor 0.197 时 sr-a01 页面 10 行 = fts 5 / hybrid 3 / semantic 2；floor 0.325 时 10 行全为 fts。语义贡献被清零，页面照样满"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "line": 48,
+          "symbol": "semanticFloor",
+          "supports": "floor 只作用于语义候选的准入，词面腿不读这个字段"
+        }
+      ],
+      "prompt": "把相似度地板线一路抬到 0.325，那些不相关的返回是不是就压住了？",
+      "assistant_response": "没有。同一条 hard-negative 在 floor 0.197 上返回 10 行（词面 5 / 混合 3 / 语义 2），抬到 0.325 之后还是 10 行，只是全部变成词面命中。floor 只管语义候选能不能进来，词面腿一个字都不看它，所以抬 floor 的净效果是把语义腿关掉，页面由词面命中原样填满。",
+      "events": [
+        {
+          "tool": "shell",
+          "input": { "command": "bun run benchmark/run-safety-round-grid.ts --arm=f0.325-c2" },
+          "response": { "exit_status": 0, "stdout": "sr-a01 rows=10 sources={fts:10}" }
+        }
+      ],
+      "annotation": {
+        "request": "确认抬高余弦地板线能不能压住词面造成的误召回",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["src/server/observation-search.ts", "src/db/index.ts"],
+        "key_facts": ["0.197", "0.325", "10"],
+        "unfinished": [],
+        "title": "抬高余弦地板线只是关掉语义腿，页面被词面命中原样填满",
+        "summary": "同一条 hard-negative 在地板线 0.197 上返回十行，构成是词面五行、混合三行、语义两行；把地板线抬到 0.325 之后仍然是十行，但全部变成纯词面命中。地板线只约束语义候选的准入，词面腿不读它，所以抬高它的唯一效果是让语义那一路不再贡献，空出的位置立刻由词面命中补满。",
+        "outcome": "确认地板线不是误召回的控制点，词面准入必须单独立一轮来管。",
+        "learned": "一个只作用于单条通路的阈值，在多路融合里看起来像整体收紧，实际只是把份额让给了另一条通路。",
+        "concepts": ["余弦地板线", "词面准入", "误召回", "多路融合", "满页现象"]
+      }
+    },
+    {
+      "id": "n02",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/safety-round/p3-completion.md",
+          "section": "§4.2 与开头结论第 2 条",
+          "supports": "最高分假线索达到 0.604，最高分真答案 0.602，假线索反超；因此不存在能同时归零异域负例又保住全部 primary_gold 可达性的单一绝对余弦门槛"
+        }
+      ],
+      "prompt": "有没有一个相似度数值，能把真答案留下、把假线索挡掉？",
+      "assistant_response": "在这个集合上没有。把 131 条 query 的分数摊开看：得分最高的假线索是 0.604，而得分最高的真答案是 0.602——假线索比真答案还高。任何设在 0.602 以上的门槛会先砍掉真答案，设在 0.604 以下又留着那条假线索。所以问题不在于门槛调多少，而在于这个空间里两侧本身是重叠的。",
+      "events": [
+        {
+          "tool": "shell",
+          "input": { "command": "bun run benchmark/run-safety-round-grid.ts --report=score-overlap" },
+          "response": { "exit_status": 0, "stdout": "max false 0.604 / max true 0.602" }
+        }
+      ],
+      "annotation": {
+        "request": "找一个能分开真答案与假线索的绝对相似度门槛",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["src/server/observation-search.ts"],
+        "key_facts": ["0.604", "0.602", "61"],
+        "unfinished": ["两侧重叠是否可以靠额外证据维度分开，尚未验证"],
+        "title": "得分最高的假线索反超真答案，绝对相似度门槛不存在可通过取值",
+        "summary": "在同一批查询上，假线索能达到的最高相似度是 0.604，真答案能达到的最高只有 0.602。两个数字的顺序意味着任何单一绝对门槛都要在两种损失之间选一个：设高了先砍真答案，设低了留着假线索。真答案仍可能被词面那一路找回，所以这不等于答案丢失，但它确实否掉了继续在这个数值上找解的方向。",
+        "outcome": "绝对门槛方向被读数关闭，后续只能换证据维度，不能换阈值。",
+        "learned": "当两侧分布重叠时，调阈值只是在两类错误之间移动损失，不会减少损失总量。",
+        "concepts": ["分布重叠", "绝对门槛", "假线索", "可达性", "证据维度"]
+      }
+    },
+    {
+      "id": "n03",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/gate-shape-ruling.md",
+          "section": "§1、§2 的逐项裁定表（Q1 = b / Q2 = b）与 §5",
+          "supports": "误召回不再以「任何假线索出现即失败」为主门；改为位移为主、容量为辅；容量按整页跨来源逐条判定且不用平均值；原有四道门不得原样冻结"
+        }
+      ],
+      "prompt": "误召回门是不是应该继续要求一条假线索都不许出现？",
+      "assistant_response": "改了。主门换成位移口径：不相关结果排在真答案前面的次数必须为零。容量作为辅门保留，但改成逐条判定——每条无答案查询的整页去重结果不得超过两条，而且不看平均值。之前那套「出现即失败」的门在有真答案的场景里没有区分度，同时又在无答案场景里被平均值掩盖，所以整套作废重写。",
+      "events": [
+        {
+          "tool": "read",
+          "input": { "path": "benchmark/reports/gate-shape-ruling.md" },
+          "response": { "exit_status": 0, "stdout": "Q1=b Q2=b, 七项必须修改" }
+        }
+      ],
+      "annotation": {
+        "request": "裁定误召回门的形状：出现即失败，还是位移为主",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["benchmark/run-safety-round-grid.ts"],
+        "key_facts": ["2"],
+        "unfinished": [],
+        "title": "误召回门改为位移为主、容量为辅，旧四道门整套作废",
+        "summary": "裁定把主门从「任何假线索出现即失败」换成位移口径：不相关结果排在真答案之前的次数必须为零。容量作为辅门保留，改成逐条判定，每条无答案查询整页去重后不得超过两条，并且明确取消平均值口径。旧的四道门不得原样沿用，因为其中一道在结构上不可通过，另一道用平均值掩盖了逐条越界。",
+        "outcome": "门集重写完成，位移成为主门，容量降为辅门并改逐条判定。",
+        "learned": "一道在结构上不可能通过的门不会让系统更安全，它只会让所有轮次都停在同一处而看不出真实差别。",
+        "concepts": ["位移主门", "容量辅门", "逐条判定", "平均值口径", "门集重写"]
+      }
+    },
+    {
+      "id": "n04",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/gate-shape-ruling.md",
+          "section": "§3.1「G1 有一个可被利用的退化解」",
+          "supports": "真答案不在页面时位移计数记零，因此把结果连同真答案一起压掉反而让位移门通过；裁定要求保留分层不回退线作为同等地位的资格过滤器"
+        },
+        {
+          "kind": "code",
+          "path": "benchmark/run-safety-round-grid.ts",
+          "line": 408,
+          "supports": "实现里真答案位置为负时直接记零，这就是退化解的来源"
+        }
+      ],
+      "prompt": "位移次数归零是不是就说明这套参数安全了？",
+      "assistant_response": "不一定，因为位移是这么算的：先找真答案在页面里的位置，再数排在它前面的不相关结果。如果真答案根本没进页面，这个计数就是零。于是把页面整体压空——连真答案一起压掉——反而能让位移门通过。所以位移门不能单独用，必须配一条分层不回退线当资格过滤器，先保证真答案还在页面上。",
+      "events": [
+        {
+          "tool": "read",
+          "input": { "path": "benchmark/run-safety-round-grid.ts", "lines": "408-411" },
+          "response": { "exit_status": 0, "stdout": "pIdx < 0 ? 0 : ..." }
+        }
+      ],
+      "annotation": {
+        "request": "核实位移门能否单独作为安全判据",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["benchmark/run-safety-round-grid.ts"],
+        "key_facts": ["0"],
+        "unfinished": [],
+        "title": "位移门存在清空页面即通过的退化解，必须由分层不回退线拦住",
+        "summary": "位移计数的定义是「排在真答案之前的不相关结果数」，而真答案不在页面时该计数记零。这让一个把页面整体压空的参数反而通过位移门。裁定因此要求分层不回退线与位移门同等地位，作为资格过滤器先保证真答案仍在页面，而不是把它写成附注。",
+        "outcome": "位移门与分层不回退线绑定成对，单独使用位移门的方案被否。",
+        "learned": "任何以「相对某个正确结果的位置」为分母的指标，都要先检查那个正确结果缺席时会发生什么。",
+        "concepts": ["退化解", "资格过滤器", "分层不回退", "指标缺席分支", "门的绑定"]
+      }
+    },
+    {
+      "id": "n05",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/fts-round/f0-anchor-mechanism.md",
+          "section": "§1「中文 query 的词面竞争池只有 66 行，不是 50,066」",
+          "supports": "装置物理行 50,066，含中文的行只有 66；填充语料 10,000 条含中文字符的为 0；因此文档频率、排名饱和度与截断三类读数都不是生产规模读数"
+        }
+      ],
+      "prompt": "之前那套装置量出来的词面数字，能直接拿来定新参数吗？",
+      "assistant_response": "不能。那套装置一共 50,066 行，但含中文的只有 66 行——一万条填充语料里含中文字符的是零条，它当初是为向量那一路造的。于是中文提问的词面竞争池只有 66 条，文档频率、排名饱和度、候选截断这三类读数全都不是真实规模下的读数。要动词面准入，必须先补一份中文语料。",
+      "events": [
+        {
+          "tool": "shell",
+          "input": { "command": "bun run benchmark/analyze-fts-anchor-mechanism.ts" },
+          "response": { "exit_status": 0, "stdout": "rows=50066 zh=66 filler_zh=0/10000" }
+        }
+      ],
+      "annotation": {
+        "request": "判断既有误召回装置能否支撑词面参数选择",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["benchmark/dataset/pool-policy-filler-10k.json"],
+        "key_facts": ["66", "50066", "0/10000"],
+        "unfinished": ["中文语料尚未建立，词面参数在此之前不可选"],
+        "title": "误召回装置的填充语料一个中文字都没有，中文词面竞争池只有 66 行",
+        "summary": "装置一共五万零六十六行，但含中文的记录只有六十六条，因为一万条填充语料全是英文——它是为向量那一路造的，从来不是为词面那一路造的。结果是中文提问在词面上几乎没有竞争者，文档频率、排名饱和度和候选截断三类读数都不能外推到真实工作区。",
+        "outcome": "词面参数选择被前置条件挡住：先补中文语料，再谈取值。",
+        "learned": "为一条通路造的装置不会自动适用于另一条通路，混用会让读数看起来正常而结论完全不成立。",
+        "concepts": ["填充语料", "竞争池", "文档频率", "读数外推", "装置前提"]
+      }
+    },
+    {
+      "id": "n06",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/fts-round/f0-anchor-mechanism.md",
+          "section": "§2「中文 query 在 FTS 腿里没有『词』这个概念」与 §4.3",
+          "supports": "整句单元永远匹配不到任何文档，正例 145 行全部靠三字滑窗命中；只承认整句单元时正例真答案行归零 0/22"
+        },
+        {
+          "kind": "code",
+          "path": "src/db/index.ts",
+          "line": 279,
+          "symbol": "extractFtsSearchUnits",
+          "supports": "第一趟推整段与整个连续串，第二趟才用三字滑窗切长串"
+        }
+      ],
+      "prompt": "中文提问在词面检索里是按词匹配的吗？",
+      "assistant_response": "不是，它没有词这个概念。切分的第一趟推的是整段和整个连续串——对一句没有空格的中文问句来说，那就是整句，永远匹配不到任何文档。真正命中的全是第二趟的三字滑窗，而滑窗是跨词边界的，切出来的很多根本不是词。正例那一侧一百四十五行返回全部靠滑窗命中；如果只承认第一趟的单元，真答案行会直接归零。",
+      "events": [
+        {
+          "tool": "shell",
+          "input": { "command": "bun run benchmark/analyze-fts-anchor-mechanism.ts --units" },
+          "response": { "exit_status": 0, "stdout": "pass1 hits 0/145, pass1-only gold 0/22" }
+        }
+      ],
+      "annotation": {
+        "request": "查清中文提问在词面腿里到底靠什么命中",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["src/db/index.ts"],
+        "key_facts": ["145", "0/22", "3"],
+        "unfinished": [],
+        "title": "中文提问在词面腿里没有词的概念，命中全部来自跨词边界的三字滑窗",
+        "summary": "切分分两趟：第一趟推整段与整个连续串，第二趟用三字滑窗切长串。中文问句没有空格，所以第一趟推出来的是整句，匹配不到任何文档；正例侧一百四十五行返回全部由第二趟的滑窗造成。滑窗跨词边界，切出的碎片一半不是词。据此还测了「只承认第一趟单元」这条规则，真答案行归零，方向当场否掉。",
+        "outcome": "确认滑窗是唯一有效命中来源，按单元来源做判别的方案被否。",
+        "learned": "没有分词的语言在子串索引上只能靠滑窗，而滑窗天然产生非词碎片——噪声必须在下游控制，不能靠期待碎片是词。",
+        "concepts": ["三字滑窗", "跨词边界", "整句单元", "单元来源判别", "子串索引"]
+      }
+    },
+    {
+      "id": "n07",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/agent-behavior/q6-criteria.md",
+          "section": "§2.2 的臂表与 R3",
+          "supports": "原本设计的中性值臂改成 index，但该值不在生产取值域内，代理可能因遇到未知值走异常处理路径，因此该臂从确认性实验里删除，只保留原样与删除字段两臂"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/observation-search.ts",
+          "line": 94,
+          "supports": "来源标记的取值域由检索内核赋值，共四种，不含实验想用的那个中性值"
+        }
+      ],
+      "prompt": "对照实验里加一个中性的来源标记，是不是比直接删字段更干净？",
+      "assistant_response": "不干净。那个中性值不在生产的取值域里，代理遇到没见过的取值可能走异常处理路径，于是这一臂测到的是「遇到未知值怎么办」，不是「有没有标记有没有区别」。所以中性臂从确认性实验里删掉，只留两臂：标记原样保留，和把该字段整个删掉。删字段与字段天然缺失在协议层面完全同形，这才是干净的对照。",
+      "events": [
+        {
+          "tool": "read",
+          "input": { "path": "src/server/mcp-server.ts", "lines": "133-146" },
+          "response": { "exit_status": 0, "stdout": "match_source 条件展开" }
+        }
+      ],
+      "annotation": {
+        "request": "决定来源标记对照实验保留几个臂",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["src/server/mcp-server.ts", "src/server/observation-search.ts"],
+        "key_facts": ["2"],
+        "unfinished": [],
+        "title": "标记对照实验删掉中性值臂，未知取值会让代理走异常路径",
+        "summary": "原计划用三臂：标记原样、换成中性值、删掉字段。中性值那一臂被删除，因为它不在生产取值域内，代理遇到未知取值可能进入异常处理，于是这一臂测的是对未知值的反应而不是标记本身的作用。最终只保留两臂，其中删字段与字段天然缺失在协议层面同形，构成干净对照。",
+        "outcome": "实验从三臂收到两臂，中性值方案被否。",
+        "learned": "对照臂必须落在被测系统的合法取值域内，否则它测到的是异常处理而不是你想要的那个变量。",
+        "concepts": ["对照臂", "取值域", "异常路径", "协议同形", "确认性实验"]
+      }
+    },
+    {
+      "id": "n08",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/agent-behavior/q6-criteria.md",
+          "section": "§5.2「H1 的分辨力上限」与 §5.3 的形态分类",
+          "supports": "六个实验单位下配对符号翻转穷举 2^6 = 64 种，最小可达显著性 0.0156；若有 k 个单位差值为零，枚举空间塌缩为 2^(6−k)，k ≥ 2 时最小可达 0.0625 已超过 0.05，因此在结构上不可通过"
+        }
+      ],
+      "prompt": "六组样本做配对检验，最多能做到多显著？",
+      "assistant_response": "六个实验单位、配对符号翻转穷举，一共 64 种模式，所以最小可达的显著性是 1/64，约 0.0156，勉强够 0.05 的线。但如果有 k 组的差值恰好为零，有效枚举空间会塌缩到 2 的 (6−k) 次方：k 等于 2 时最小可达值变成 0.0625，已经越过 0.05。也就是说两组零差值就让这道门在结构上不可能通过，与被测对象的实际行为无关。这条必须在跑之前写下来，否则跑完会被当成「差一点」。",
+      "events": [
+        {
+          "tool": "shell",
+          "input": { "command": "bun run benchmark/q6/power-check.ts --units=6" },
+          "response": { "exit_status": 0, "stdout": "min p 0.0156; k=2 -> 0.0625" }
+        }
+      ],
+      "annotation": {
+        "request": "算清六组样本的配对检验分辨力上限",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["benchmark/reports/agent-behavior/q6-criteria.md"],
+        "key_facts": ["0.0156", "0.0625", "0.05", "64"],
+        "unfinished": [],
+        "title": "六组样本的配对检验有分辨力上限，两组零差值就不可能显著",
+        "summary": "六个实验单位做配对符号翻转，穷举六十四种模式，最小可达显著性约 0.0156，刚好在 0.05 之内。但零差值的单位翻转后仍是零，有效枚举空间随之塌缩：出现两组零差值时最小可达值变成 0.0625，已经越线。因此这道门在那种形态下与实际行为无关地不可通过，必须提前登记，避免事后被解读成差一点。",
+        "outcome": "分辨力上限提前写入判据，并为该形态预留了单独的登记口径。",
+        "learned": "样本量决定了一道显著性门最好情况下能到哪，先算这个上限比跑完再解释便宜得多。",
+        "concepts": ["分辨力上限", "配对置换", "枚举塌缩", "零差值", "预登记"]
+      }
+    }
+  ]
+}

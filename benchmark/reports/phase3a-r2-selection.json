@@ -1,0 +1,268 @@
+{
+  "generatedAt": "2026-08-04T08:17:13.183Z",
+  "baseline": {
+    "metrics": {
+      "fusionHitAt5": 0.8387096774193549,
+      "fusionMrr": 0.8216845878136201,
+      "fusionRPrecision": 0.8064516129032258,
+      "fusionS3S4HitAt5": 0.6538461538461539,
+      "emptyExtReturned": 1.875,
+      "emptyExtWorst": 10,
+      "phase2HitAt5": 0.5,
+      "phase2Mrr": 0.4583333333333333,
+      "tunedHitAt5": 1,
+      "tunedMrr": 0.9444444444444444,
+      "tunedRPrecision": 0.8888888888888888,
+      "expectedEmptyReturned": 1,
+      "expectedEmptyWorst": 2,
+      "semanticOnlyMax": 2,
+      "bigramOnlyMax": 0,
+      "bigramOnlyTotal": 0,
+      "bigramOnlyDroppedTotal": 0,
+      "bigramVotesSuppressedTotal": 0,
+      "bigramProbedQueries": 0,
+      "bigramCandidateQueries": 0,
+      "leakTotal": 0,
+      "degrades": 0,
+      "latencyP95": 12.892583000000286
+    },
+    "strata": {
+      "S1": {
+        "n": 23,
+        "hitAt5": 1,
+        "mrr": 0.9782608695652174,
+        "rPrecision": 0.9565217391304348
+      },
+      "S2": {
+        "n": 11,
+        "hitAt5": 1,
+        "mrr": 1,
+        "rPrecision": 1
+      },
+      "S3": {
+        "n": 19,
+        "hitAt5": 0.8421052631578947,
+        "mrr": 0.8070175438596491,
+        "rPrecision": 0.7894736842105263
+      },
+      "S4": {
+        "n": 7,
+        "hitAt5": 0.14285714285714285,
+        "mrr": 0.14285714285714285,
+        "rPrecision": 0.14285714285714285
+      },
+      "S5": {
+        "n": 2,
+        "hitAt5": 0.5,
+        "mrr": 0.5555555555555556,
+        "rPrecision": 0.5
+      }
+    },
+    "emptyLayers": {
+      "N1": {
+        "n": 8,
+        "mean": 0.5,
+        "worst": 2
+      },
+      "N2": {
+        "n": 8,
+        "mean": 3,
+        "worst": 10
+      },
+      "N3": {
+        "n": 10,
+        "mean": 1.8,
+        "worst": 3
+      },
+      "N4": {
+        "n": 6,
+        "mean": 2.3333333333333335,
+        "worst": 5
+      }
+    }
+  },
+  "verdicts": [
+    {
+      "arm": "exp1-disc",
+      "feasible": false,
+      "reasons": [
+        "empty-ext 均值 2.84 > 基线 1.88",
+        "N1 均值 0.63 > 基线 0.50",
+        "N2 均值 4.13 > 基线 3.00",
+        "N3 均值 3.80 > 基线 1.80",
+        "N3 最坏 5 > 基线 3",
+        "N4 均值 2.50 > 基线 2.33",
+        "既有 expected-empty 均值 1.40 > 1.00",
+        "既有 expected-empty 最坏 3 > 2"
+      ]
+    },
+    {
+      "arm": "disc-df012-cap1",
+      "feasible": false,
+      "reasons": [
+        "empty-ext 均值 2.38 > 基线 1.88",
+        "N1 均值 0.63 > 基线 0.50",
+        "N2 均值 3.63 > 基线 3.00",
+        "N3 均值 2.70 > 基线 1.80",
+        "N3 最坏 4 > 基线 3",
+        "N4 均值 2.50 > 基线 2.33",
+        "既有 expected-empty 均值 1.40 > 1.00",
+        "既有 expected-empty 最坏 3 > 2"
+      ]
+    },
+    {
+      "arm": "disc-df012-cap2",
+      "feasible": false,
+      "reasons": [
+        "empty-ext 均值 2.63 > 基线 1.88",
+        "N1 均值 0.63 > 基线 0.50",
+        "N2 均值 4.00 > 基线 3.00",
+        "N3 均值 3.20 > 基线 1.80",
+        "N3 最坏 4 > 基线 3",
+        "N4 均值 2.50 > 基线 2.33",
+        "既有 expected-empty 均值 1.40 > 1.00",
+        "既有 expected-empty 最坏 3 > 2"
+      ]
+    },
+    {
+      "arm": "disc-df012-cap3",
+      "feasible": false,
+      "reasons": [
+        "empty-ext 均值 2.81 > 基线 1.88",
+        "N1 均值 0.63 > 基线 0.50",
+        "N2 均值 4.25 > 基线 3.00",
+        "N3 均值 3.60 > 基线 1.80",
+        "N3 最坏 5 > 基线 3",
+        "N4 均值 2.50 > 基线 2.33",
+        "既有 expected-empty 均值 1.40 > 1.00",
+        "既有 expected-empty 最坏 3 > 2"
+      ]
+    },
+    {
+      "arm": "disc-df1-cap1",
+      "feasible": false,
+      "reasons": [
+        "empty-ext 均值 2.41 > 基线 1.88",
+        "N1 均值 0.63 > 基线 0.50",
+        "N2 均值 3.63 > 基线 3.00",
+        "N3 均值 2.80 > 基线 1.80",
+        "N3 最坏 4 > 基线 3",
+        "N4 均值 2.50 > 基线 2.33",
+        "既有 expected-empty 均值 1.40 > 1.00",
+        "既有 expected-empty 最坏 3 > 2"
+      ]
+    },
+    {
+      "arm": "disc-df1-cap2",
+      "feasible": false,
+      "reasons": [
+        "empty-ext 均值 2.84 > 基线 1.88",
+        "N1 均值 0.63 > 基线 0.50",
+        "N2 均值 4.13 > 基线 3.00",
+        "N3 均值 3.80 > 基线 1.80",
+        "N3 最坏 5 > 基线 3",
+        "N4 均值 2.50 > 基线 2.33",
+        "既有 expected-empty 均值 1.40 > 1.00",
+        "既有 expected-empty 最坏 3 > 2"
+      ]
+    },
+    {
+      "arm": "disc-df1-cap3",
+      "feasible": false,
+      "reasons": [
+        "empty-ext 均值 3.19 > 基线 1.88",
+        "N1 均值 0.63 > 基线 0.50",
+        "N2 均值 4.50 > 基线 3.00",
+        "N3 均值 4.60 > 基线 1.80",
+        "N3 最坏 6 > 基线 3",
+        "N4 均值 2.50 > 基线 2.33",
+        "既有 expected-empty 均值 1.40 > 1.00",
+        "既有 expected-empty 最坏 3 > 2"
+      ]
+    },
+    {
+      "arm": "always-w025",
+      "feasible": false,
+      "reasons": [
+        "empty-ext 均值 3.59 > 基线 1.88",
+        "N1 均值 0.63 > 基线 0.50",
+        "N2 均值 4.50 > 基线 3.00",
+        "N3 均值 5.90 > 基线 1.80",
+        "N3 最坏 10 > 基线 3",
+        "N4 均值 2.50 > 基线 2.33",
+        "既有 expected-empty 均值 1.80 > 1.00",
+        "既有 expected-empty 最坏 5 > 2"
+      ]
+    },
+    {
+      "arm": "always-w05",
+      "feasible": false,
+      "reasons": [
+        "empty-ext 均值 3.59 > 基线 1.88",
+        "N1 均值 0.63 > 基线 0.50",
+        "N2 均值 4.50 > 基线 3.00",
+        "N3 均值 5.90 > 基线 1.80",
+        "N3 最坏 10 > 基线 3",
+        "N4 均值 2.50 > 基线 2.33",
+        "既有 expected-empty 均值 1.80 > 1.00",
+        "既有 expected-empty 最坏 5 > 2"
+      ]
+    },
+    {
+      "arm": "always-w075",
+      "feasible": false,
+      "reasons": [
+        "empty-ext 均值 3.59 > 基线 1.88",
+        "N1 均值 0.63 > 基线 0.50",
+        "N2 均值 4.50 > 基线 3.00",
+        "N3 均值 5.90 > 基线 1.80",
+        "N3 最坏 10 > 基线 3",
+        "N4 均值 2.50 > 基线 2.33",
+        "既有 expected-empty 均值 1.80 > 1.00",
+        "既有 expected-empty 最坏 5 > 2"
+      ]
+    },
+    {
+      "arm": "diag-3a-best",
+      "feasible": false,
+      "reasons": [
+        "empty-ext 均值 3.59 > 基线 1.88",
+        "N1 均值 0.63 > 基线 0.50",
+        "N2 均值 4.50 > 基线 3.00",
+        "N3 均值 5.90 > 基线 1.80",
+        "N3 最坏 10 > 基线 3",
+        "N4 均值 2.50 > 基线 2.33",
+        "既有 expected-empty 均值 1.80 > 1.00",
+        "既有 expected-empty 最坏 5 > 2"
+      ]
+    },
+    {
+      "arm": "diag-min2",
+      "feasible": false,
+      "reasons": [
+        "empty-ext 均值 2.25 > 基线 1.88",
+        "N2 均值 3.25 > 基线 3.00",
+        "N3 均值 2.80 > 基线 1.80",
+        "N3 最坏 6 > 基线 3",
+        "tuned R-prec 83.3% < 88.9%"
+      ]
+    }
+  ],
+  "eligible": [
+    "exp1-disc",
+    "disc-df012-cap1",
+    "disc-df012-cap2",
+    "disc-df012-cap3",
+    "disc-df1-cap1",
+    "disc-df1-cap2",
+    "disc-df1-cap3",
+    "always-w025",
+    "always-w05",
+    "always-w075"
+  ],
+  "feasible": [],
+  "trace": [
+    "可行 arm 数为 0 → §7 第 9 条：R2 未通过"
+  ],
+  "winner": null
+}

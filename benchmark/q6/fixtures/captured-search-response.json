@@ -1,0 +1,43 @@
+{
+  "purpose": "Q6 S1 预检的固定捕获样本（判据 §8.1）。真实 mcp-server 产出，未经任何改写。",
+  "capturedAt": "2026-08-13T03:14:04.863Z",
+  "provenance": {
+    "mcpServer": "src/server/mcp-server.ts",
+    "packageVersion": "3.0.0",
+    "seededObservations": 3,
+    "note": "本样本仅用于验证 wire 级投影；不是 §3 的实验 fixture，不参与任何 H 门。"
+  },
+  "targetObservationId": 1,
+  "samples": [
+    {
+      "label": "semantic-only",
+      "rpcId": 2,
+      "queryZh": "总结那一步出问题的时候还能查到吗",
+      "querySemanticEn": "can it still be found after the summarizing step goes wrong",
+      "cardIds": [
+        1
+      ],
+      "cardSources": [
+        "semantic"
+      ],
+      "rawLine": "{\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"results\\\": [\\n    {\\n      \\\"id\\\": 1,\\n      \\\"title\\\": \\\"压缩失败时降级为 fallback 观察\\\",\\n      \\\"type\\\": \\\"change\\\",\\n      \\\"date\\\": \\\"2026-08-13\\\",\\n      \\\"turn_id\\\": 1,\\n      \\\"turn_seq\\\": 1,\\n      \\\"files\\\": [\\n        \\\"src/jobs/artifacts.ts\\\"\\n      ],\\n      \\\"is_pinned\\\": false,\\n      \\\"match_source\\\": \\\"semantic\\\",\\n      \\\"semantic_score\\\": 0.33,\\n      \\\"has_next_steps\\\": false,\\n      \\\"confidence\\\": 0\\n    }\\n  ],\\n  \\\"total\\\": 1,\\n  \\\"hint\\\": \\\"用 get_observations 获取完整详情；用 timeline 查看前后工作\\\"\\n}\"}]},\"jsonrpc\":\"2.0\",\"id\":2}",
+      "rawLineSha256": "2847d8d804705cb3cdc2cb00ec9a43cb36357d0cacfc4da33f1da5eab8f08521"
+    },
+    {
+      "label": "mixed-source",
+      "rpcId": 3,
+      "queryZh": "注入索引的字节预算是多少",
+      "querySemanticEn": "can it still be found after the summarizing step goes wrong",
+      "cardIds": [
+        1,
+        3
+      ],
+      "cardSources": [
+        "semantic",
+        "fts"
+      ],
+      "rawLine": "{\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"results\\\": [\\n    {\\n      \\\"id\\\": 1,\\n      \\\"title\\\": \\\"压缩失败时降级为 fallback 观察\\\",\\n      \\\"type\\\": \\\"change\\\",\\n      \\\"date\\\": \\\"2026-08-13\\\",\\n      \\\"turn_id\\\": 1,\\n      \\\"turn_seq\\\": 1,\\n      \\\"files\\\": [\\n        \\\"src/jobs/artifacts.ts\\\"\\n      ],\\n      \\\"is_pinned\\\": false,\\n      \\\"match_source\\\": \\\"semantic\\\",\\n      \\\"semantic_score\\\": 0.33,\\n      \\\"has_next_steps\\\": false,\\n      \\\"confidence\\\": 0\\n    },\\n    {\\n      \\\"id\\\": 3,\\n      \\\"title\\\": \\\"注入索引的字节预算下调\\\",\\n      \\\"type\\\": \\\"change\\\",\\n      \\\"date\\\": \\\"2026-08-13\\\",\\n      \\\"turn_id\\\": 3,\\n      \\\"turn_seq\\\": 3,\\n      \\\"files\\\": [\\n        \\\"src/bootstrap-context.ts\\\"\\n      ],\\n      \\\"is_pinned\\\": false,\\n      \\\"match_source\\\": \\\"fts\\\",\\n      \\\"has_next_steps\\\": false,\\n      \\\"confidence\\\": 0\\n    }\\n  ],\\n  \\\"total\\\": 2,\\n  \\\"hint\\\": \\\"用 get_observations 获取完整详情；用 timeline 查看前后工作\\\"\\n}\"}]},\"jsonrpc\":\"2.0\",\"id\":3}",
+      "rawLineSha256": "feab1cbbe63837cff3f5d2e2cba18cff732b4e5ff00078e50f7481dee3df7dca"
+    }
+  ]
+}

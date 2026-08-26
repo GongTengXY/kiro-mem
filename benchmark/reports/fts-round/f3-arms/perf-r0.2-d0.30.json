@@ -1,0 +1,1121 @@
+{
+  "purpose": "F3 性能读数（判据 r3 §5.6、§7 S9）。判定在 collect-fts-round-f3.ts（§6.6）。",
+  "round": "fts-safety-round-2026-08-12-r2",
+  "phase": "F3-perf",
+  "arm": "r0.2-d0.30",
+  "policy": {
+    "windowCoverageRatio": 0.2,
+    "unitDfRatioCeiling": 0.3
+  },
+  "generatedAt": "2026-08-14T07:05:59.458Z",
+  "freeze": {
+    "path": "benchmark/reports/fts-round/f2-freeze-r3.json",
+    "verify": "判据 1/1 + 输入 19/19",
+    "selectedK": 200
+  },
+  "fixture": {
+    "dbPath": "/var/folders/m8/2nqfmnqd7mnfdz5q5vc33lmc0000gn/T//fts-round-f2-r2.db",
+    "rows": 60066
+  },
+  "pageLimit": 10,
+  "repeats": 5,
+  "method": "每条 query 重复 5 次取该 query 的 min，再在 120 条 query 间取分位；真实 embedder，每次重复前 df 缓存清空（判据 §5.6）。",
+  "latency": {
+    "p50": 151.61,
+    "p95": 194.78,
+    "p99": 206.05,
+    "max": 209.5
+  },
+  "segments": {
+    "dfPassP95": 2.37,
+    "ftsLegRestP95": 57.24,
+    "fusionAndSemanticP95": 161.47
+  },
+  "boundaries": {
+    "segmentGranularity": "判据 §5.6 写「候选生成 / 候选内归因」两段，本报告合并为 ftsLegRest：拆开需要在 fts-round-admission.ts 内部埋点，而它是 f2-freeze-r3.json 的冻结输入，改它会让冻结失效。性能门（§6.6）只用完整 search p95 判定，合并不影响判定。",
+    "segmentsAreSeparateCalls": "分段耗时来自对同一策略的**额外**调用，不是端到端那次调用的内部埋点；因此 dfPass + ftsLegRest + fusionAndSemantic 只是量级归因，不构成端到端时间的精确分解。"
+  },
+  "wallMs": 124771,
+  "rows": [
+    {
+      "id": "fr-r01",
+      "cohort": "new-relevance",
+      "totalMs": 151.61,
+      "dfPassMs": 0.85,
+      "ftsLegRestMs": 0.91,
+      "fusionAndSemanticMs": 149.85,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r02",
+      "cohort": "new-relevance",
+      "totalMs": 147.67,
+      "dfPassMs": 0.71,
+      "ftsLegRestMs": 0.68,
+      "fusionAndSemanticMs": 146.28,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r03",
+      "cohort": "new-relevance",
+      "totalMs": 157.92,
+      "dfPassMs": 1.71,
+      "ftsLegRestMs": 7.6,
+      "fusionAndSemanticMs": 148.61,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r04",
+      "cohort": "new-relevance",
+      "totalMs": 160.49,
+      "dfPassMs": 2.37,
+      "ftsLegRestMs": 7.9,
+      "fusionAndSemanticMs": 150.22,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a01",
+      "cohort": "lexical-anchor",
+      "totalMs": 141.59,
+      "dfPassMs": 1.07,
+      "ftsLegRestMs": 1.52,
+      "fusionAndSemanticMs": 139,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a02",
+      "cohort": "lexical-anchor",
+      "totalMs": 146.24,
+      "dfPassMs": 1.07,
+      "ftsLegRestMs": 4.69,
+      "fusionAndSemanticMs": 140.48,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a03",
+      "cohort": "lexical-anchor",
+      "totalMs": 149.03,
+      "dfPassMs": 0.88,
+      "ftsLegRestMs": 0.98,
+      "fusionAndSemanticMs": 147.17,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p01",
+      "cohort": "protection",
+      "totalMs": 209.5,
+      "dfPassMs": 0,
+      "ftsLegRestMs": 57.95,
+      "fusionAndSemanticMs": 151.55,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p02",
+      "cohort": "protection",
+      "totalMs": 142.4,
+      "dfPassMs": 0.38,
+      "ftsLegRestMs": 0.21,
+      "fusionAndSemanticMs": 141.81,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p03",
+      "cohort": "protection",
+      "totalMs": 156.58,
+      "dfPassMs": 1.06,
+      "ftsLegRestMs": 1.02,
+      "fusionAndSemanticMs": 154.5,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p04",
+      "cohort": "protection",
+      "totalMs": 146.55,
+      "dfPassMs": 0.17,
+      "ftsLegRestMs": 0.08,
+      "fusionAndSemanticMs": 146.3,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p05",
+      "cohort": "protection",
+      "totalMs": 147.2,
+      "dfPassMs": 0.58,
+      "ftsLegRestMs": 0.82,
+      "fusionAndSemanticMs": 145.8,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r05",
+      "cohort": "new-relevance",
+      "totalMs": 177.7,
+      "dfPassMs": 1.83,
+      "ftsLegRestMs": 7.11,
+      "fusionAndSemanticMs": 168.76,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r06",
+      "cohort": "new-relevance",
+      "totalMs": 149.72,
+      "dfPassMs": 0.94,
+      "ftsLegRestMs": 5.11,
+      "fusionAndSemanticMs": 143.67,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r07",
+      "cohort": "new-relevance",
+      "totalMs": 154.26,
+      "dfPassMs": 0.85,
+      "ftsLegRestMs": 1.08,
+      "fusionAndSemanticMs": 152.33,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r08",
+      "cohort": "new-relevance",
+      "totalMs": 155.43,
+      "dfPassMs": 1.53,
+      "ftsLegRestMs": 5.73,
+      "fusionAndSemanticMs": 148.17,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r09",
+      "cohort": "new-relevance",
+      "totalMs": 148.42,
+      "dfPassMs": 1.01,
+      "ftsLegRestMs": 1.43,
+      "fusionAndSemanticMs": 145.98,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r10",
+      "cohort": "new-relevance",
+      "totalMs": 155.48,
+      "dfPassMs": 1.91,
+      "ftsLegRestMs": 6.71,
+      "fusionAndSemanticMs": 146.86,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r11",
+      "cohort": "new-relevance",
+      "totalMs": 158.71,
+      "dfPassMs": 1.54,
+      "ftsLegRestMs": 5.68,
+      "fusionAndSemanticMs": 151.49,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r12",
+      "cohort": "new-relevance",
+      "totalMs": 150.94,
+      "dfPassMs": 1.85,
+      "ftsLegRestMs": 6.65,
+      "fusionAndSemanticMs": 142.44,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r13",
+      "cohort": "new-relevance",
+      "totalMs": 151.7,
+      "dfPassMs": 1.41,
+      "ftsLegRestMs": 6.04,
+      "fusionAndSemanticMs": 144.25,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r14",
+      "cohort": "new-relevance",
+      "totalMs": 139.77,
+      "dfPassMs": 0.63,
+      "ftsLegRestMs": 0.13,
+      "fusionAndSemanticMs": 139.01,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r15",
+      "cohort": "new-relevance",
+      "totalMs": 148.96,
+      "dfPassMs": 0.8,
+      "ftsLegRestMs": 1.04,
+      "fusionAndSemanticMs": 147.12,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r16",
+      "cohort": "new-relevance",
+      "totalMs": 145.06,
+      "dfPassMs": 0.9,
+      "ftsLegRestMs": 1.09,
+      "fusionAndSemanticMs": 143.07,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r17",
+      "cohort": "new-relevance",
+      "totalMs": 150.58,
+      "dfPassMs": 0.73,
+      "ftsLegRestMs": 0.91,
+      "fusionAndSemanticMs": 148.94,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r18",
+      "cohort": "new-relevance",
+      "totalMs": 144.5,
+      "dfPassMs": 0.84,
+      "ftsLegRestMs": 1.09,
+      "fusionAndSemanticMs": 142.57,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r19",
+      "cohort": "new-relevance",
+      "totalMs": 147.78,
+      "dfPassMs": 1.57,
+      "ftsLegRestMs": 4.99,
+      "fusionAndSemanticMs": 141.22,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r20",
+      "cohort": "new-relevance",
+      "totalMs": 159.03,
+      "dfPassMs": 1.69,
+      "ftsLegRestMs": 6.74,
+      "fusionAndSemanticMs": 150.6,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r21",
+      "cohort": "new-relevance",
+      "totalMs": 176.2,
+      "dfPassMs": 0.87,
+      "ftsLegRestMs": 1.05,
+      "fusionAndSemanticMs": 174.28,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r22",
+      "cohort": "new-relevance",
+      "totalMs": 156.7,
+      "dfPassMs": 0.77,
+      "ftsLegRestMs": 0.93,
+      "fusionAndSemanticMs": 155,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r23",
+      "cohort": "new-relevance",
+      "totalMs": 153.2,
+      "dfPassMs": 1.83,
+      "ftsLegRestMs": 5.6,
+      "fusionAndSemanticMs": 145.77,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r24",
+      "cohort": "new-relevance",
+      "totalMs": 153.12,
+      "dfPassMs": 1.23,
+      "ftsLegRestMs": 5.91,
+      "fusionAndSemanticMs": 145.98,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r25",
+      "cohort": "new-relevance",
+      "totalMs": 145.12,
+      "dfPassMs": 0.59,
+      "ftsLegRestMs": 0.13,
+      "fusionAndSemanticMs": 144.4,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r26",
+      "cohort": "new-relevance",
+      "totalMs": 156.12,
+      "dfPassMs": 0.92,
+      "ftsLegRestMs": 0.89,
+      "fusionAndSemanticMs": 154.31,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r27",
+      "cohort": "new-relevance",
+      "totalMs": 149.53,
+      "dfPassMs": 0.89,
+      "ftsLegRestMs": 0.32,
+      "fusionAndSemanticMs": 148.32,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r28",
+      "cohort": "new-relevance",
+      "totalMs": 163.51,
+      "dfPassMs": 0.78,
+      "ftsLegRestMs": 0.73,
+      "fusionAndSemanticMs": 162,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r29",
+      "cohort": "new-relevance",
+      "totalMs": 159.48,
+      "dfPassMs": 1.19,
+      "ftsLegRestMs": 6.36,
+      "fusionAndSemanticMs": 151.93,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r30",
+      "cohort": "new-relevance",
+      "totalMs": 157.25,
+      "dfPassMs": 0.89,
+      "ftsLegRestMs": 1.4,
+      "fusionAndSemanticMs": 154.96,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r31",
+      "cohort": "new-relevance",
+      "totalMs": 145.01,
+      "dfPassMs": 0.66,
+      "ftsLegRestMs": 0.12,
+      "fusionAndSemanticMs": 144.23,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r32",
+      "cohort": "new-relevance",
+      "totalMs": 158.4,
+      "dfPassMs": 0.68,
+      "ftsLegRestMs": 0.78,
+      "fusionAndSemanticMs": 156.94,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r33",
+      "cohort": "new-relevance",
+      "totalMs": 173.44,
+      "dfPassMs": 3.17,
+      "ftsLegRestMs": 18.84,
+      "fusionAndSemanticMs": 151.43,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r34",
+      "cohort": "new-relevance",
+      "totalMs": 151.78,
+      "dfPassMs": 1.44,
+      "ftsLegRestMs": 4.83,
+      "fusionAndSemanticMs": 145.51,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r35",
+      "cohort": "new-relevance",
+      "totalMs": 169.22,
+      "dfPassMs": 1.83,
+      "ftsLegRestMs": 6.89,
+      "fusionAndSemanticMs": 160.5,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r36",
+      "cohort": "new-relevance",
+      "totalMs": 148.58,
+      "dfPassMs": 0.76,
+      "ftsLegRestMs": 0.97,
+      "fusionAndSemanticMs": 146.85,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r37",
+      "cohort": "new-relevance",
+      "totalMs": 142.36,
+      "dfPassMs": 1.01,
+      "ftsLegRestMs": 1.46,
+      "fusionAndSemanticMs": 139.89,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r38",
+      "cohort": "new-relevance",
+      "totalMs": 151.16,
+      "dfPassMs": 1.77,
+      "ftsLegRestMs": 5.59,
+      "fusionAndSemanticMs": 143.8,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r39",
+      "cohort": "new-relevance",
+      "totalMs": 147.19,
+      "dfPassMs": 1.66,
+      "ftsLegRestMs": 5.75,
+      "fusionAndSemanticMs": 139.78,
+      "repeats": 5
+    },
+    {
+      "id": "fr-r40",
+      "cohort": "new-relevance",
+      "totalMs": 158.85,
+      "dfPassMs": 1.66,
+      "ftsLegRestMs": 5.91,
+      "fusionAndSemanticMs": 151.28,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a04",
+      "cohort": "lexical-anchor",
+      "totalMs": 149.48,
+      "dfPassMs": 0.82,
+      "ftsLegRestMs": 0.86,
+      "fusionAndSemanticMs": 147.8,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a05",
+      "cohort": "lexical-anchor",
+      "totalMs": 143.51,
+      "dfPassMs": 0.69,
+      "ftsLegRestMs": 0.91,
+      "fusionAndSemanticMs": 141.91,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a06",
+      "cohort": "lexical-anchor",
+      "totalMs": 144.32,
+      "dfPassMs": 1.04,
+      "ftsLegRestMs": 1.57,
+      "fusionAndSemanticMs": 141.71,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a07",
+      "cohort": "lexical-anchor",
+      "totalMs": 163.93,
+      "dfPassMs": 1.04,
+      "ftsLegRestMs": 1.42,
+      "fusionAndSemanticMs": 161.47,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a08",
+      "cohort": "lexical-anchor",
+      "totalMs": 161.4,
+      "dfPassMs": 3.06,
+      "ftsLegRestMs": 9.32,
+      "fusionAndSemanticMs": 149.02,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a09",
+      "cohort": "lexical-anchor",
+      "totalMs": 143.88,
+      "dfPassMs": 0.82,
+      "ftsLegRestMs": 1.01,
+      "fusionAndSemanticMs": 142.05,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a10",
+      "cohort": "lexical-anchor",
+      "totalMs": 152.23,
+      "dfPassMs": 1.21,
+      "ftsLegRestMs": 4.84,
+      "fusionAndSemanticMs": 146.18,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a11",
+      "cohort": "lexical-anchor",
+      "totalMs": 158.17,
+      "dfPassMs": 1.13,
+      "ftsLegRestMs": 4.42,
+      "fusionAndSemanticMs": 152.62,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a12",
+      "cohort": "lexical-anchor",
+      "totalMs": 142.56,
+      "dfPassMs": 1.18,
+      "ftsLegRestMs": 2.02,
+      "fusionAndSemanticMs": 139.36,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a13",
+      "cohort": "lexical-anchor",
+      "totalMs": 158.12,
+      "dfPassMs": 1.2,
+      "ftsLegRestMs": 5.66,
+      "fusionAndSemanticMs": 151.26,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a14",
+      "cohort": "lexical-anchor",
+      "totalMs": 141.63,
+      "dfPassMs": 0.61,
+      "ftsLegRestMs": 0.8,
+      "fusionAndSemanticMs": 140.22,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a15",
+      "cohort": "lexical-anchor",
+      "totalMs": 162.57,
+      "dfPassMs": 2.98,
+      "ftsLegRestMs": 9.54,
+      "fusionAndSemanticMs": 150.05,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a16",
+      "cohort": "lexical-anchor",
+      "totalMs": 161.06,
+      "dfPassMs": 3.47,
+      "ftsLegRestMs": 8.82,
+      "fusionAndSemanticMs": 148.77,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a17",
+      "cohort": "lexical-anchor",
+      "totalMs": 165.35,
+      "dfPassMs": 0.87,
+      "ftsLegRestMs": 0.9,
+      "fusionAndSemanticMs": 163.58,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a18",
+      "cohort": "lexical-anchor",
+      "totalMs": 158.34,
+      "dfPassMs": 1.49,
+      "ftsLegRestMs": 4.84,
+      "fusionAndSemanticMs": 152.01,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a19",
+      "cohort": "lexical-anchor",
+      "totalMs": 154.52,
+      "dfPassMs": 1.17,
+      "ftsLegRestMs": 1.57,
+      "fusionAndSemanticMs": 151.78,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a20",
+      "cohort": "lexical-anchor",
+      "totalMs": 156.22,
+      "dfPassMs": 1.55,
+      "ftsLegRestMs": 2.37,
+      "fusionAndSemanticMs": 152.3,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a21",
+      "cohort": "lexical-anchor",
+      "totalMs": 148.7,
+      "dfPassMs": 0.93,
+      "ftsLegRestMs": 1.52,
+      "fusionAndSemanticMs": 146.25,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a22",
+      "cohort": "lexical-anchor",
+      "totalMs": 154.86,
+      "dfPassMs": 1.81,
+      "ftsLegRestMs": 8.53,
+      "fusionAndSemanticMs": 144.52,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a23",
+      "cohort": "lexical-anchor",
+      "totalMs": 151.24,
+      "dfPassMs": 1.31,
+      "ftsLegRestMs": 2.09,
+      "fusionAndSemanticMs": 147.84,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a24",
+      "cohort": "lexical-anchor",
+      "totalMs": 158.4,
+      "dfPassMs": 1.06,
+      "ftsLegRestMs": 1.44,
+      "fusionAndSemanticMs": 155.9,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a25",
+      "cohort": "lexical-anchor",
+      "totalMs": 159.99,
+      "dfPassMs": 2.68,
+      "ftsLegRestMs": 9.53,
+      "fusionAndSemanticMs": 147.78,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a26",
+      "cohort": "lexical-anchor",
+      "totalMs": 166.41,
+      "dfPassMs": 1.81,
+      "ftsLegRestMs": 7.46,
+      "fusionAndSemanticMs": 157.14,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a27",
+      "cohort": "lexical-anchor",
+      "totalMs": 171.27,
+      "dfPassMs": 3.68,
+      "ftsLegRestMs": 12.27,
+      "fusionAndSemanticMs": 155.32,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a28",
+      "cohort": "lexical-anchor",
+      "totalMs": 155.06,
+      "dfPassMs": 1.18,
+      "ftsLegRestMs": 1.82,
+      "fusionAndSemanticMs": 152.06,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a29",
+      "cohort": "lexical-anchor",
+      "totalMs": 153.48,
+      "dfPassMs": 1.11,
+      "ftsLegRestMs": 4.56,
+      "fusionAndSemanticMs": 147.81,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a30",
+      "cohort": "lexical-anchor",
+      "totalMs": 154.06,
+      "dfPassMs": 0.73,
+      "ftsLegRestMs": 0.67,
+      "fusionAndSemanticMs": 152.66,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a31",
+      "cohort": "lexical-anchor",
+      "totalMs": 141.88,
+      "dfPassMs": 0.68,
+      "ftsLegRestMs": 0.73,
+      "fusionAndSemanticMs": 140.47,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a32",
+      "cohort": "lexical-anchor",
+      "totalMs": 145.35,
+      "dfPassMs": 0.71,
+      "ftsLegRestMs": 0.84,
+      "fusionAndSemanticMs": 143.8,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a33",
+      "cohort": "lexical-anchor",
+      "totalMs": 144.59,
+      "dfPassMs": 0.9,
+      "ftsLegRestMs": 1.12,
+      "fusionAndSemanticMs": 142.57,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a34",
+      "cohort": "lexical-anchor",
+      "totalMs": 149.3,
+      "dfPassMs": 0.67,
+      "ftsLegRestMs": 0.79,
+      "fusionAndSemanticMs": 147.84,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a35",
+      "cohort": "lexical-anchor",
+      "totalMs": 149.83,
+      "dfPassMs": 1.04,
+      "ftsLegRestMs": 1.56,
+      "fusionAndSemanticMs": 147.23,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a36",
+      "cohort": "lexical-anchor",
+      "totalMs": 145.34,
+      "dfPassMs": 0.56,
+      "ftsLegRestMs": 0.68,
+      "fusionAndSemanticMs": 144.1,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a37",
+      "cohort": "lexical-anchor",
+      "totalMs": 148.6,
+      "dfPassMs": 0.97,
+      "ftsLegRestMs": 1.21,
+      "fusionAndSemanticMs": 146.42,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a38",
+      "cohort": "lexical-anchor",
+      "totalMs": 148.57,
+      "dfPassMs": 1.28,
+      "ftsLegRestMs": 1.92,
+      "fusionAndSemanticMs": 145.37,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a39",
+      "cohort": "lexical-anchor",
+      "totalMs": 145.83,
+      "dfPassMs": 1.06,
+      "ftsLegRestMs": 1.51,
+      "fusionAndSemanticMs": 143.26,
+      "repeats": 5
+    },
+    {
+      "id": "fr-a40",
+      "cohort": "lexical-anchor",
+      "totalMs": 159.11,
+      "dfPassMs": 1.54,
+      "ftsLegRestMs": 2.26,
+      "fusionAndSemanticMs": 155.31,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p06",
+      "cohort": "protection",
+      "totalMs": 206.05,
+      "dfPassMs": 0,
+      "ftsLegRestMs": 57.79,
+      "fusionAndSemanticMs": 148.26,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p07",
+      "cohort": "protection",
+      "totalMs": 199.57,
+      "dfPassMs": 0,
+      "ftsLegRestMs": 57.73,
+      "fusionAndSemanticMs": 141.84,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p08",
+      "cohort": "protection",
+      "totalMs": 149.67,
+      "dfPassMs": 0,
+      "ftsLegRestMs": 7.18,
+      "fusionAndSemanticMs": 142.49,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p09",
+      "cohort": "protection",
+      "totalMs": 196.23,
+      "dfPassMs": 0,
+      "ftsLegRestMs": 57.51,
+      "fusionAndSemanticMs": 138.72,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p10",
+      "cohort": "protection",
+      "totalMs": 205.56,
+      "dfPassMs": 0,
+      "ftsLegRestMs": 57.24,
+      "fusionAndSemanticMs": 148.32,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p11",
+      "cohort": "protection",
+      "totalMs": 201.88,
+      "dfPassMs": 0,
+      "ftsLegRestMs": 57.6,
+      "fusionAndSemanticMs": 144.28,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p12",
+      "cohort": "protection",
+      "totalMs": 194.78,
+      "dfPassMs": 0,
+      "ftsLegRestMs": 57.52,
+      "fusionAndSemanticMs": 137.26,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p13",
+      "cohort": "protection",
+      "totalMs": 158.4,
+      "dfPassMs": 0.73,
+      "ftsLegRestMs": 0.59,
+      "fusionAndSemanticMs": 157.08,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p14",
+      "cohort": "protection",
+      "totalMs": 144.89,
+      "dfPassMs": 0.7,
+      "ftsLegRestMs": 0.46,
+      "fusionAndSemanticMs": 143.73,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p15",
+      "cohort": "protection",
+      "totalMs": 154.79,
+      "dfPassMs": 0.92,
+      "ftsLegRestMs": 0.81,
+      "fusionAndSemanticMs": 153.06,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p16",
+      "cohort": "protection",
+      "totalMs": 139.76,
+      "dfPassMs": 0.78,
+      "ftsLegRestMs": 0.52,
+      "fusionAndSemanticMs": 138.46,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p17",
+      "cohort": "protection",
+      "totalMs": 147.36,
+      "dfPassMs": 0.31,
+      "ftsLegRestMs": 0.19,
+      "fusionAndSemanticMs": 146.86,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p18",
+      "cohort": "protection",
+      "totalMs": 140.74,
+      "dfPassMs": 0.45,
+      "ftsLegRestMs": 0.27,
+      "fusionAndSemanticMs": 140.02,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p19",
+      "cohort": "protection",
+      "totalMs": 148.33,
+      "dfPassMs": 0.45,
+      "ftsLegRestMs": 0.24,
+      "fusionAndSemanticMs": 147.64,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p20",
+      "cohort": "protection",
+      "totalMs": 152.59,
+      "dfPassMs": 1,
+      "ftsLegRestMs": 0.95,
+      "fusionAndSemanticMs": 150.64,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p21",
+      "cohort": "protection",
+      "totalMs": 142.71,
+      "dfPassMs": 0.51,
+      "ftsLegRestMs": 0.34,
+      "fusionAndSemanticMs": 141.86,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p22",
+      "cohort": "protection",
+      "totalMs": 146.62,
+      "dfPassMs": 0.85,
+      "ftsLegRestMs": 0.54,
+      "fusionAndSemanticMs": 145.23,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p23",
+      "cohort": "protection",
+      "totalMs": 146.47,
+      "dfPassMs": 1.49,
+      "ftsLegRestMs": 1.36,
+      "fusionAndSemanticMs": 143.62,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p24",
+      "cohort": "protection",
+      "totalMs": 150.29,
+      "dfPassMs": 1,
+      "ftsLegRestMs": 0.94,
+      "fusionAndSemanticMs": 148.35,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p25",
+      "cohort": "protection",
+      "totalMs": 145.67,
+      "dfPassMs": 1.3,
+      "ftsLegRestMs": 1.29,
+      "fusionAndSemanticMs": 143.08,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p26",
+      "cohort": "protection",
+      "totalMs": 149.31,
+      "dfPassMs": 0.78,
+      "ftsLegRestMs": 0.7,
+      "fusionAndSemanticMs": 147.83,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p27",
+      "cohort": "protection",
+      "totalMs": 142.58,
+      "dfPassMs": 0.17,
+      "ftsLegRestMs": 0.09,
+      "fusionAndSemanticMs": 142.32,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p28",
+      "cohort": "protection",
+      "totalMs": 151.12,
+      "dfPassMs": 0.22,
+      "ftsLegRestMs": 0.11,
+      "fusionAndSemanticMs": 150.79,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p29",
+      "cohort": "protection",
+      "totalMs": 145.78,
+      "dfPassMs": 0.17,
+      "ftsLegRestMs": 0.09,
+      "fusionAndSemanticMs": 145.52,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p30",
+      "cohort": "protection",
+      "totalMs": 146.42,
+      "dfPassMs": 0.17,
+      "ftsLegRestMs": 0.08,
+      "fusionAndSemanticMs": 146.17,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p31",
+      "cohort": "protection",
+      "totalMs": 140.47,
+      "dfPassMs": 0.2,
+      "ftsLegRestMs": 0.08,
+      "fusionAndSemanticMs": 140.19,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p32",
+      "cohort": "protection",
+      "totalMs": 153.49,
+      "dfPassMs": 0.2,
+      "ftsLegRestMs": 0.08,
+      "fusionAndSemanticMs": 153.21,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p33",
+      "cohort": "protection",
+      "totalMs": 142.9,
+      "dfPassMs": 0.17,
+      "ftsLegRestMs": 0.06,
+      "fusionAndSemanticMs": 142.67,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p34",
+      "cohort": "protection",
+      "totalMs": 157.85,
+      "dfPassMs": 0.67,
+      "ftsLegRestMs": 0.79,
+      "fusionAndSemanticMs": 156.39,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p35",
+      "cohort": "protection",
+      "totalMs": 152.94,
+      "dfPassMs": 0.55,
+      "ftsLegRestMs": 0.62,
+      "fusionAndSemanticMs": 151.77,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p36",
+      "cohort": "protection",
+      "totalMs": 148.93,
+      "dfPassMs": 0.52,
+      "ftsLegRestMs": 0.6,
+      "fusionAndSemanticMs": 147.81,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p37",
+      "cohort": "protection",
+      "totalMs": 154.27,
+      "dfPassMs": 1.5,
+      "ftsLegRestMs": 5.8,
+      "fusionAndSemanticMs": 146.97,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p38",
+      "cohort": "protection",
+      "totalMs": 156.3,
+      "dfPassMs": 0.81,
+      "ftsLegRestMs": 0.9,
+      "fusionAndSemanticMs": 154.59,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p39",
+      "cohort": "protection",
+      "totalMs": 170.45,
+      "dfPassMs": 1.7,
+      "ftsLegRestMs": 5.81,
+      "fusionAndSemanticMs": 162.94,
+      "repeats": 5
+    },
+    {
+      "id": "fr-p40",
+      "cohort": "protection",
+      "totalMs": 172.75,
+      "dfPassMs": 1.23,
+      "ftsLegRestMs": 6.15,
+      "fusionAndSemanticMs": 165.37,
+      "repeats": 5
+    }
+  ]
+}

@@ -21,6 +21,7 @@ import type {
   TextContentBlock,
 } from './types';
 import { logError } from '../logger';
+import { PACKAGE_VERSION } from '../version';
 
 export interface PromptResult {
   text: string;
@@ -102,13 +103,18 @@ export class ACPRuntime {
     return this.contamination != null;
   }
 
+  /** PID of the underlying `kiro-cli acp` process, for RSS attribution only. */
+  get pid(): number | null {
+    return this.client.pid;
+  }
+
   /** Start process and initialize ACP protocol. */
   async start(): Promise<InitializeResult> {
     this.client.start();
     const result = await this.client.request('initialize', {
       protocolVersion: 1,
       clientCapabilities: {},
-      clientInfo: { name: 'kiro-mem', version: '2.2.0' },
+      clientInfo: { name: 'kiro-mem', version: PACKAGE_VERSION },
     }, 15000) as InitializeResult;
     this.initialized = true;
     return result;

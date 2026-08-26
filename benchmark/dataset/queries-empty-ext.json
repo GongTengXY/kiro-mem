@@ -1,0 +1,450 @@
+[
+  {
+    "id": "n01",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "阳台种的番茄叶子发黄怎么办",
+    "expect": [],
+    "note": "与软件工程无关，26 条 primary Observation 无任何园艺内容",
+    "precheck": {
+      "layer": "N1",
+      "ftsCount": 0,
+      "bigramCount": 0,
+      "bigramUnits": 12
+    }
+  },
+  {
+    "id": "n02",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "拿铁和卡布奇诺的区别是什么",
+    "expect": [],
+    "note": "与软件工程无关",
+    "precheck": {
+      "layer": "N1",
+      "ftsCount": 0,
+      "bigramCount": 0,
+      "bigramUnits": 12
+    }
+  },
+  {
+    "id": "n03",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "猫总在半夜跑酷有什么办法",
+    "expect": [],
+    "note": "与软件工程无关",
+    "precheck": {
+      "layer": "N1",
+      "ftsCount": 0,
+      "bigramCount": 0,
+      "bigramUnits": 11
+    }
+  },
+  {
+    "id": "n04",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "学吉他先练和弦还是先练音阶",
+    "expect": [],
+    "note": "与软件工程无关",
+    "precheck": {
+      "layer": "N1",
+      "ftsCount": 0,
+      "bigramCount": 1,
+      "bigramUnits": 11
+    }
+  },
+  {
+    "id": "n05",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "腌笃鲜要放多少咸肉",
+    "expect": [],
+    "note": "与软件工程无关",
+    "precheck": {
+      "layer": "N1",
+      "ftsCount": 0,
+      "bigramCount": 0,
+      "bigramUnits": 8
+    }
+  },
+  {
+    "id": "n06",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "how long should sourdough proof before baking",
+    "expect": [],
+    "note": "与软件工程无关，纯英文，用于确认 bigram 腿不触发",
+    "precheck": {
+      "layer": "N1",
+      "ftsCount": 1,
+      "bigramCount": 0,
+      "bigramUnits": 0
+    }
+  },
+  {
+    "id": "n07",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "best way to break in stiff leather boots",
+    "expect": [],
+    "note": "与软件工程无关，纯英文",
+    "precheck": {
+      "layer": "N1",
+      "ftsCount": 2,
+      "bigramCount": 0,
+      "bigramUnits": 0
+    }
+  },
+  {
+    "id": "n08",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "why does my basil keep wilting indoors",
+    "expect": [],
+    "note": "与软件工程无关，纯英文",
+    "precheck": {
+      "layer": "N1",
+      "ftsCount": 0,
+      "bigramCount": 0,
+      "bigramUnits": 0
+    }
+  },
+  {
+    "id": "n09",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "跨机器同步记忆用的是哪套协议",
+    "expect": [],
+    "note": "README「Local only — No built-in cross-machine sync」；无对应 Observation",
+    "precheck": {
+      "layer": "N2",
+      "ftsCount": 0,
+      "bigramCount": 5,
+      "bigramUnits": 13
+    }
+  },
+  {
+    "id": "n10",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "Web 查看器的前端是用什么框架写的",
+    "expect": [],
+    "note": "README「No Web Viewer UI yet」；无对应 Observation",
+    "precheck": {
+      "layer": "N2",
+      "ftsCount": 0,
+      "bigramCount": 1,
+      "bigramUnits": 13
+    }
+  },
+  {
+    "id": "n11",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "按时间保留的清理策略是怎么配的",
+    "expect": [],
+    "note": "README「no retention policy in 3.x」；无对应 Observation",
+    "precheck": {
+      "layer": "N2",
+      "ftsCount": 0,
+      "bigramCount": 8,
+      "bigramUnits": 14
+    }
+  },
+  {
+    "id": "n12",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "单条 Observation 要怎么删掉",
+    "expect": [],
+    "note": "README「No fine-grained deletion」；无对应 Observation",
+    "precheck": {
+      "layer": "N2",
+      "ftsCount": 10,
+      "bigramCount": 0,
+      "bigramUnits": 5
+    }
+  },
+  {
+    "id": "n13",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "导出成 JSON 的命令是什么",
+    "expect": [],
+    "note": "README「there is no export」；无对应 Observation",
+    "precheck": {
+      "layer": "N2",
+      "ftsCount": 2,
+      "bigramCount": 0,
+      "bigramUnits": 7
+    }
+  },
+  {
+    "id": "n14",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "向量数据库最后选的是哪一个",
+    "expect": [],
+    "note": "方案 §13.2 ANN/向量数据库为暂缓项；无对应 Observation",
+    "precheck": {
+      "layer": "N2",
+      "ftsCount": 3,
+      "bigramCount": 8,
+      "bigramUnits": 12
+    }
+  },
+  {
+    "id": "n15",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "cross-encoder 重排是怎么接进来的",
+    "expect": [],
+    "note": "方案 §13.3 cross-encoder 为暂缓项；无对应 Observation",
+    "precheck": {
+      "layer": "N2",
+      "ftsCount": 0,
+      "bigramCount": 0,
+      "bigramUnits": 8
+    }
+  },
+  {
+    "id": "n16",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "字段级多向量是怎么存的",
+    "expect": [],
+    "note": "方案 §13.1 字段级多向量为暂缓项；无对应 Observation",
+    "precheck": {
+      "layer": "N2",
+      "ftsCount": 0,
+      "bigramCount": 2,
+      "bigramUnits": 10
+    }
+  },
+  {
+    "id": "n17",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "配置项的默认值写在哪个配置文件里",
+    "expect": [],
+    "note": "含高 DF 词「配置」。会命中多条含「配置」的记录，但没有一条 Observation 的 request 是「整理配置项默认值」",
+    "precheck": {
+      "layer": "N3",
+      "ftsCount": 0,
+      "bigramCount": 5,
+      "bigramUnits": 14
+    }
+  },
+  {
+    "id": "n18",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "发布流程里的灰度发布怎么控制",
+    "expect": [],
+    "note": "含「发布」。t05 提到发布但指版本号收敛，无灰度发布相关 Observation",
+    "precheck": {
+      "layer": "N3",
+      "ftsCount": 0,
+      "bigramCount": 4,
+      "bigramUnits": 12
+    }
+  },
+  {
+    "id": "n19",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "异常处理的统一入口放在哪一层",
+    "expect": [],
+    "note": "含「处理」。t01 标题含「处理」但指 FTS5 字面量处理，与异常处理入口无关",
+    "precheck": {
+      "layer": "N3",
+      "ftsCount": 0,
+      "bigramCount": 4,
+      "bigramUnits": 13
+    }
+  },
+  {
+    "id": "n20",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "服务端和客户端的服务发现怎么做",
+    "expect": [],
+    "note": "含「服务」。无服务发现相关 Observation",
+    "precheck": {
+      "layer": "N3",
+      "ftsCount": 0,
+      "bigramCount": 2,
+      "bigramUnits": 13
+    }
+  },
+  {
+    "id": "n21",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "数据迁移的数据校验怎么写",
+    "expect": [],
+    "note": "含高 DF 词「数据」（DF=8）。无数据迁移校验相关 Observation",
+    "precheck": {
+      "layer": "N3",
+      "ftsCount": 0,
+      "bigramCount": 10,
+      "bigramUnits": 10
+    }
+  },
+  {
+    "id": "n22",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "测试环境的测试数据是从哪来的",
+    "expect": [],
+    "note": "含最高 DF 词「测试」（DF=14）。t12 是测试目录隔离，与测试环境/测试数据来源无关",
+    "precheck": {
+      "layer": "N3",
+      "ftsCount": 1,
+      "bigramCount": 19,
+      "bigramUnits": 12
+    }
+  },
+  {
+    "id": "n23",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "安装包的安装路径能不能改",
+    "expect": [],
+    "note": "含「安装」（DF=8）。多条安装相关 Observation，但没有一条讨论安装路径可配置性",
+    "precheck": {
+      "layer": "N3",
+      "ftsCount": 0,
+      "bigramCount": 17,
+      "bigramUnits": 10
+    }
+  },
+  {
+    "id": "n24",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "失败重试的失败原因怎么分类",
+    "expect": [],
+    "note": "含「失败」（DF=7）。t08 是 fallback，t03 是静默失败，均非失败原因分类",
+    "precheck": {
+      "layer": "N3",
+      "ftsCount": 0,
+      "bigramCount": 8,
+      "bigramUnits": 11
+    }
+  },
+  {
+    "id": "n25",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "模型训练的模型版本怎么管理",
+    "expect": [],
+    "note": "含「模型」（DF=4）。本项目只用预训练模型（t23），从未训练模型",
+    "precheck": {
+      "layer": "N3",
+      "ftsCount": 0,
+      "bigramCount": 9,
+      "bigramUnits": 11
+    }
+  },
+  {
+    "id": "n26",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "启动参数和启动顺序在哪里定义",
+    "expect": [],
+    "note": "含「启动」（DF=4）。t13 是 Worker 启动失败排查，非启动参数定义",
+    "precheck": {
+      "layer": "N3",
+      "ftsCount": 0,
+      "bigramCount": 8,
+      "bigramUnits": 12
+    }
+  },
+  {
+    "id": "n27",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "Redis Cluster 的槽位迁移怎么做",
+    "expect": [],
+    "note": "混合脚本，bigram 触发。无 Redis 相关 Observation",
+    "precheck": {
+      "layer": "N4",
+      "ftsCount": 0,
+      "bigramCount": 0,
+      "bigramUnits": 7
+    }
+  },
+  {
+    "id": "n28",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "gRPC 的双向流怎么处理背压",
+    "expect": [],
+    "note": "混合脚本，bigram 触发（含「处理」）。无 gRPC 相关 Observation",
+    "precheck": {
+      "layer": "N4",
+      "ftsCount": 0,
+      "bigramCount": 1,
+      "bigramUnits": 9
+    }
+  },
+  {
+    "id": "n29",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "how do I rotate the signing key monthly",
+    "expect": [],
+    "note": "纯英文，bigram 不触发。无密钥轮换相关 Observation",
+    "precheck": {
+      "layer": "N4",
+      "ftsCount": 2,
+      "bigramCount": 0,
+      "bigramUnits": 0
+    }
+  },
+  {
+    "id": "n30",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "what is the p99 of the write path under load",
+    "expect": [],
+    "note": "纯英文，bigram 不触发。无写路径压测相关 Observation",
+    "precheck": {
+      "layer": "N4",
+      "ftsCount": 3,
+      "bigramCount": 0,
+      "bigramUnits": 0
+    }
+  },
+  {
+    "id": "n31",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "Terraform 的 state 锁要怎么解开",
+    "expect": [],
+    "note": "混合脚本，bigram 触发。无 IaC 相关 Observation",
+    "precheck": {
+      "layer": "N4",
+      "ftsCount": 0,
+      "bigramCount": 0,
+      "bigramUnits": 5
+    }
+  },
+  {
+    "id": "n32",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "configure sharding for the metrics store",
+    "expect": [],
+    "note": "纯英文，bigram 不触发。无分片相关 Observation",
+    "precheck": {
+      "layer": "N4",
+      "ftsCount": 2,
+      "bigramCount": 0,
+      "bigramUnits": 0
+    }
+  }
+]

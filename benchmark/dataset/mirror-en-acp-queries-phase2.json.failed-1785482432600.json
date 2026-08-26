@@ -1,0 +1,194 @@
+{
+  "provenance": {
+    "source": "acp",
+    "agent": "kiro-mem-compressor",
+    "kiroCli": "kiro-cli (see report)",
+    "target": "queries",
+    "querySet": "phase2",
+    "generatedAt": "2026-07-31T07:20:32.588Z",
+    "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+    "items": 74,
+    "failures": 24,
+    "retries": 66,
+    "wallTimeMs": 81438,
+    "itemLatencyMs": {
+      "p50": 48409,
+      "p95": 62520,
+      "max": 81425
+    }
+  },
+  "queries": {
+    "z01": "The program crashes when I type a weird symbol into the search box",
+    "z08": "How do I converge the same number scattered across several places into one place?",
+    "z04": "how did that step get interrupted for being too slow",
+    "z06": "who's responsible for bringing that thing back up after it dies in the background",
+    "z45": "Why does the stuff that gets stuffed in end up a lot less when I open it somewhere else",
+    "z03": "what capability is left when the scoring step fails",
+    "z42": "Why can't we just let it claim on its own that it installed correctly",
+    "z47": "Why can't the auto-increment ID be used as the ordering for sequence?",
+    "z16": "After I installed it, it just won't come online, saying something's missing",
+    "z20": "Has this entire chain actually been run through completely once?",
+    "z40": "Why does a hand-written checklist inevitably miss things sooner or later?",
+    "z24": "How do the results from the two paths finally get merged into one?",
+    "z51": "Do I need to translate the instructions meant for machines too?",
+    "z02": "Why does whatever the user casually types get interpreted as a command",
+    "z18": "How can I tell the one that's running isn't the same as the one that's installed?",
+    "z25": "Could stuff from other projects leak into this one?",
+    "z10": "If a sub-process dies, will all the queued jobs behind it get stuck?",
+    "z52": "should we make it clear in the type whether this thing is missing or not",
+    "z33": "What do I do if something goes wrong and I need to leave a clue but I'm not allowed to leave the original words?",
+    "z29": "When does the thing for measuring good vs. bad have to be figured out",
+    "z05": "...",
+    "z41": "When can the 'do nothing if it's already running' pattern hurt you?",
+    "z09": "will passing in a negative number end up pulling out the entire table",
+    "y40": "How should authorization work for sharing between teams?",
+    "y25": "the strategy for automatically cleaning up old data over time",
+    "z37": "What ended up being the final thing that stuck after repeated failed attempts?",
+    "z43": "How can I tell if it's in a half-installed state?",
+    "y15": "Kafka consumer group rebalancing too frequently",
+    "z31": "Why does the slow leg need its own deadline",
+    "z34": "...",
+    "y21": "Which layer is a good fit for the reranking model?",
+    "y34": "How should I arrange retries after the upstream rate limit kicks in?",
+    "z56": "How were those recent candidates picked?",
+    "z38": "Why can't acceptance testing touch my own real stuff",
+    "y17": "How can I improve GPU batch inference throughput",
+    "y19": "How do I control gray release to 10% traffic?",
+    "y24": "When can we see the web UI",
+    "z57": "How big is that little thing, does it come bundled with the package?",
+    "y33": "How do I compare the effects of the two versions during the gray release period",
+    "z39": "Where are the credentials stored, can other people see them?",
+    "z26": "What's the precision and width of that little guy running locally?",
+    "y10": "How do I choose the string tension for a badminton racket?",
+    "y32": "How should the plugin mechanism be designed to be easily extensible?",
+    "y38": "What's the time distribution like at a scale of 50,000 records?",
+    "y28": "How do I adapt for small mobile screens?",
+    "z11": "When you can't get a result, leave it empty rather than making something up",
+    "z28": "How many spots are left unfinished on the static checks?",
+    "z54": "Is looking at just the unit layer enough to tell whether things are good?",
+    "z30": "Should the text the user typed be treated literally or interpreted as an instruction?",
+    "y18": "Slimming down multi-stage Docker image builds",
+    "y30": "How is billing and quota calculated?",
+    "z58": "What happens if the hook can't connect on the other end?",
+    "y22": "How much does memory grow after the nearest-neighbor index is built?",
+    "z23": "What order are those consecutive ones arranged in?",
+    "y09": "Which month is good for going to Iceland to see the northern lights",
+    "z35": "Why does marking an entry that doesn't exist at all still say it succeeded?",
+    "y31": "should we add transport encryption or not",
+    "y06": "How do you water succulents in winter?",
+    "y16": "OAuth third-party login integration process",
+    "z46": "How long does it take to come back on its own after being killed?",
+    "z53": "What scope should the threshold be tied to so it doesn't keep getting pushed back?",
+    "y39": "How do I check history on my phone?",
+    "z55": "When I opened it somewhere else, there wasn't a single one",
+    "y27": "What do I need to change to switch to a different cloud's managed service?",
+    "z49": "Why does the attribution get fixed as soon as it's written down?",
+    "z27": "How do I change the instructions shown to the model into different wording?",
+    "z44": "Does directly invoking those hooks equal a real person actually chatting?",
+    "z22": "Did you try each of the various broken scenarios one by one?",
+    "y26": "How do I export to a different format?",
+    "y35": "How to store multiple representations at the field level",
+    "y14": "How do I prevent Redis cache penetration?",
+    "y36": "how do I add two-character word segmentation to this",
+    "z15": "will running this mess up my own copy of the thing",
+    "z13": "Since we're wiping it and starting over anyway, is there still a need to add a suffix to the name?"
+  },
+  "failuresDetail": [
+    {
+      "id": "y11",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "z07",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "z32",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "y05",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "y37",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "y13",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "y07",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "y03",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "y23",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "z21",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "z48",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "y08",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "z17",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "z36",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "y29",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "y01",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "y12",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "y04",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "z19",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "z50",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "y02",
+      "reason": "JSON 解析失败"
+    },
+    {
+      "id": "y20",
+      "reason": "ACP request timeout: session/prompt (30000ms)"
+    },
+    {
+      "id": "z12",
+      "reason": "ACP request timeout: session/prompt (30000ms)"
+    },
+    {
+      "id": "z14",
+      "reason": "ACP request timeout: session/prompt (30000ms)"
+    }
+  ]
+}

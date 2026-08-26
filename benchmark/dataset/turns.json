@@ -1,0 +1,750 @@
+[
+  {
+    "id": "t01",
+    "scope": "primary",
+    "session": "s1",
+    "prompt": "MCP search 传 foo:bar 直接抛 SQLite 错误，a-b 和未闭合引号也一样。特殊字符查询全崩，修一下 FTS。",
+    "assistant_response": "把用户输入整体包成一个 FTS5 字符串字面量，内嵌双引号按 FTS5 规则翻倍转义，空 query 直接返回空数组不再做全库扫描。foo:bar、a-b、未闭合引号、AND、C++ 五种输入都不再抛异常，bun test 131 pass 0 fail。",
+    "events": [
+      { "tool": "read", "input": { "path": "src/db/index.ts" }, "response": { "exit_status": 0 } },
+      { "tool": "write", "input": { "path": "src/db/index.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "write", "input": { "path": "tests/db/retrieval.test.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "bun test" }, "response": { "exit_status": 0, "stdout": "131 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "修复 FTS5 把用户查询当查询语法解析导致特殊字符报错的问题",
+      "completed": true,
+      "memory_type": "bugfix",
+      "key_files": ["src/db/index.ts", "tests/db/retrieval.test.ts"],
+      "key_facts": ["FTS5", "131 pass"],
+      "unfinished": [],
+      "title": "FTS5 查询按字面量处理，修复特殊字符报错",
+      "summary": "searchObservationsFts 之前把用户输入直接交给 FTS5 MATCH，导致 foo:bar、a-b、未闭合引号等普通文本被解析为查询语法而抛错。改为整体包成 FTS5 字符串字面量并翻倍转义内嵌双引号，空 query 直接返回空。",
+      "outcome": "五种特殊字符查询均不再抛异常，bun test 131 pass 0 fail。",
+      "learned": "FTS5 的 MATCH 参数必须视为查询表达式，用户原文要先字面量化；双引号翻倍是 FTS5 的字符串转义方式。",
+      "concepts": ["FTS5", "全文搜索", "特殊字符转义", "search", "SQLite"]
+    }
+  },
+  {
+    "id": "t02",
+    "scope": "primary",
+    "session": "s1",
+    "prompt": "search 在 embedding 冷启动时会一直卡住不返回，embed_observation job 挂住也会永久占用并发槽。都加上超时。",
+    "assistant_response": "加了 withEmbeddingTimeout：query embedding 默认 1200ms 超时，超时或推理失败统一降级 FTS-only 并触发 onDegrade 计入 search_24h 降级率；embed_observation job 用独立的 10s 超时，超时后走 job 重试而不是永久 leased。注入永不 resolve 的 embedder 后 search 按时返回 FTS 结果，match_source 为 fts。bun test 131 pass 0 fail。",
+    "events": [
+      { "tool": "write", "input": { "path": "src/embedding.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "write", "input": { "path": "src/server/observation-search.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "write", "input": { "path": "src/server/worker.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "bun test" }, "response": { "exit_status": 0, "stdout": "131 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "给 query embedding 和 embed_observation job 加超时并降级到 FTS-only",
+      "completed": true,
+      "memory_type": "feature",
+      "key_files": ["src/embedding.ts", "src/server/observation-search.ts", "src/server/worker.ts"],
+      "key_facts": ["1200ms", "FTS-only", "10s"],
+      "unfinished": [],
+      "title": "Embedding 超时与 FTS-only 降级",
+      "summary": "query embedding 加 1200ms 默认超时，超时/加载失败/推理失败统一降级为 FTS-only 并通过 onDegrade 计入 search_24h 降级率。embed_observation job 使用独立 10s 超时，避免挂起的 embedding 永久占用 JobRunner 并发槽。",
+      "outcome": "注入永不 resolve 的 embedder 后 search 按时返回 FTS 结果且 match_source=fts，降级被记录一次；bun test 131 pass 0 fail。",
+      "learned": "本地模型冷启动是不可控延迟源，交互路径上的 embedding 必须有独立 deadline，且降级必须可观测。",
+      "concepts": ["embedding", "超时降级", "FTS-only", "冷启动", "可观测性"]
+    }
+  },
+  {
+    "id": "t03",
+    "scope": "primary",
+    "session": "s1",
+    "prompt": "AgentSpawn hook 里居然会 launchctl load 重启 Worker，最坏路径 7 秒超过 hook 5 秒预算，删掉。",
+    "assistant_response": "删掉了 context hook 里的 launchctl / systemctl 调用和 Bun.sleep，HTTP 超时压到 700ms。Worker 不可达时静默退出 0、stdout 为空，不再影响 Agent 启动。保活完全交回 launchd/systemd。",
+    "events": [
+      { "tool": "write", "input": { "path": "src/hooks/context.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "write", "input": { "path": "tests/hooks/context.test.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "bun test tests/hooks" }, "response": { "exit_status": 0, "stdout": "6 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "移除 AgentSpawn hook 中重启 Worker 的逻辑，保证 hook 快速静默失败",
+      "completed": true,
+      "memory_type": "bugfix",
+      "key_files": ["src/hooks/context.ts", "tests/hooks/context.test.ts"],
+      "key_facts": ["700ms", "launchctl"],
+      "unfinished": [],
+      "title": "AgentSpawn hook 不再重启 Worker",
+      "summary": "hook 内的 launchctl load / systemctl start 和 1 秒 sleep 被删除，HTTP 超时降到 700ms。Worker 不可达时 hook 静默退出 0 且不输出上下文，进程保活只由 launchd/systemd 负责。",
+      "outcome": "Worker 不可达时 hook 在 1 秒内结束、stdout 为空、退出码 0；tests/hooks 6 pass 0 fail。",
+      "learned": "Hook 是交互路径上的同步阻塞点，任何进程管理动作都不该放进 hook；总预算必须小于 Agent 配置的 hook 超时。",
+      "concepts": ["hook", "AgentSpawn", "launchd", "故障策略", "静默失败"]
+    }
+  },
+  {
+    "id": "t04",
+    "scope": "primary",
+    "session": "s1",
+    "prompt": "ACP 解析失败时日志把模型原始输出前 500 字符打出来了，里面可能有用户请求和 Observation 正文。清掉。",
+    "assistant_response": "parse 失败和 repair 耗尽的日志改成只记录 error_type、repair_attempts、output_bytes，不再落任何原始输出。用唯一 secret marker 触发失败路径后，Worker 日志和 stderr 中都搜不到 marker，同时仍能区分 parse failure / repair exhausted / timeout / contamination 四种情况。",
+    "events": [
+      { "tool": "write", "input": { "path": "src/acp/compressor.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "write", "input": { "path": "tests/acp/log-privacy.test.ts", "command": "create" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "bun test tests/acp" }, "response": { "exit_status": 0, "stdout": "12 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "清理 ACP 错误日志中的用户与 Observation 正文",
+      "completed": true,
+      "memory_type": "bugfix",
+      "key_files": ["src/acp/compressor.ts", "tests/acp/log-privacy.test.ts"],
+      "key_facts": ["output_bytes", "secret marker"],
+      "unfinished": [],
+      "title": "ACP 错误日志脱敏，只留错误类型与字节数",
+      "summary": "解析失败与 repair 耗尽的日志不再记录模型原始输出，只保留 error_type、repair_attempts、output_bytes 等非敏感字段。新增 log-privacy 回归测试用 secret marker 校验日志与 stderr 均无泄漏。",
+      "outcome": "secret marker 在 Worker 日志与 stderr 中均 0 次命中，四类失败仍可区分；tests/acp 12 pass 0 fail。",
+      "learned": "模型原始输出等价于用户正文，不能进日志；可观测性靠错误类型和字节数而不是内容。",
+      "concepts": ["日志脱敏", "隐私", "ACP", "可观测性", "privacy"]
+    }
+  },
+  {
+    "id": "t05",
+    "scope": "primary",
+    "session": "s1",
+    "prompt": "版本号乱了：package.json 是 2.2.0，ACP clientInfo 硬编码 2.2.0，setup.ts 头注释还写 V2.2.0。统一到 3.0.0 并且只留一个来源。",
+    "assistant_response": "新增 src/version.ts 导出 PACKAGE_VERSION，从 package.json 读取，ACP clientInfo、MCP serverInfo、Worker /health 和 diagnose 全部改用它。package.json 升到 3.0.0，仓库运行时代码里已经搜不到 2.2.0。npm pack --dry-run 产出 kiro-mem-3.0.0.tgz。",
+    "events": [
+      { "tool": "write", "input": { "path": "src/version.ts", "command": "create" }, "response": { "success": true } },
+      { "tool": "write", "input": { "path": "src/acp/runtime.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "write", "input": { "path": "package.json", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "grep -rn 2.2.0 src scripts" }, "response": { "exit_status": 1, "stdout": "" } },
+      { "tool": "shell", "input": { "command": "npm pack --dry-run" }, "response": { "exit_status": 0, "stdout": "kiro-mem-3.0.0.tgz" } }
+    ],
+    "annotation": {
+      "request": "统一版本号到 3.0.0 并消除硬编码",
+      "completed": true,
+      "memory_type": "refactor",
+      "key_files": ["src/version.ts", "src/acp/runtime.ts", "package.json"],
+      "key_facts": ["3.0.0", "PACKAGE_VERSION"],
+      "unfinished": [],
+      "title": "版本号收敛到单一来源 3.0.0",
+      "summary": "新增 src/version.ts 的 PACKAGE_VERSION 从 package.json 读取，ACP clientInfo、MCP serverInfo、Worker /health、diagnose 统一引用。package.json 升到 3.0.0。",
+      "outcome": "grep 2.2.0 在 src 与 scripts 下 0 命中，npm pack --dry-run 产出 kiro-mem-3.0.0.tgz。",
+      "learned": "协议层版本号必须有单一来源，硬编码会在发布时产生看不见的漂移。",
+      "concepts": ["版本管理", "发布", "PACKAGE_VERSION", "npm pack"]
+    }
+  },
+  {
+    "id": "t06",
+    "scope": "primary",
+    "session": "s1",
+    "prompt": "MCP 的 search.limit 和 timeline.before 只有 number 类型没有上下限，负数 LIMIT 在 SQLite 里是无界读取。补边界校验，pin 不存在的记录也不能假成功。",
+    "assistant_response": "search.limit 限 1-50，search.days 限 1-3650，timeline.before/after 限 0-20，get_observations.ids 最多 20 个且拒绝空数组和非法 ID。校验同时放在 MCP schema 和 handler 两层。pin 不存在的 Observation 现在返回明确错误。",
+    "events": [
+      { "tool": "write", "input": { "path": "src/server/mcp-server.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "write", "input": { "path": "tests/integration/mcp-server.test.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "bun test tests/integration/mcp-server.test.ts" }, "response": { "exit_status": 0, "stdout": "14 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "给 MCP 工具参数补边界校验并修复 pin 假成功",
+      "completed": true,
+      "memory_type": "bugfix",
+      "key_files": ["src/server/mcp-server.ts", "tests/integration/mcp-server.test.ts"],
+      "key_facts": ["1-50", "3650", "0-20"],
+      "unfinished": [],
+      "title": "MCP 参数边界校验与 pin 错误返回",
+      "summary": "search.limit 1-50、search.days 1-3650、timeline.before/after 0-20、get_observations.ids 最多 20 个，schema 与 handler 双重校验。pin 不存在的 Observation 返回明确错误而不是假成功。",
+      "outcome": "负数、NaN、超大值不再形成无界查询；mcp-server 测试 14 pass 0 fail。",
+      "learned": "SQLite 的负数 LIMIT 等价于无界，MCP 入参不能只靠类型声明。",
+      "concepts": ["MCP", "参数校验", "边界值", "pin", "SQLite LIMIT"]
+    }
+  },
+  {
+    "id": "t07",
+    "scope": "primary",
+    "session": "s1",
+    "prompt": "ACPPool 的 recycleSlot 如果新 runtime 启动失败，死 slot 还留在数组里 alive=false，并发满了之后 acquire 会永久挂在等待队列。修。",
+    "assistant_response": "recycle 失败时把死 slot 从 pool 移除并拒绝已有等待者，后续任务可以重新建 slot。用 concurrency=1 的测试验证：recycle 时新 runtime 启动失败，下一次任务明确失败而不是超时挂起。",
+    "events": [
+      { "tool": "write", "input": { "path": "src/acp/pool.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "write", "input": { "path": "tests/acp/pool.test.ts", "command": "create" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "bun test tests/acp/pool.test.ts" }, "response": { "exit_status": 0, "stdout": "1 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "修复 ACPPool recycle 失败后死 slot 阻塞等待队列的问题",
+      "completed": true,
+      "memory_type": "bugfix",
+      "key_files": ["src/acp/pool.ts", "tests/acp/pool.test.ts"],
+      "key_facts": ["concurrency=1", "recycle"],
+      "unfinished": [],
+      "title": "ACPPool recycle 失败移除死 slot",
+      "summary": "recycleSlot 启动新 runtime 失败时，死 slot 会被从 slots 移除并拒绝等待者，避免并发已满时 acquire 永久悬挂。",
+      "outcome": "concurrency=1 场景下 recycle 失败后下一次任务明确失败并可重建 slot，不再超时挂起；pool 测试 1 pass 0 fail。",
+      "learned": "资源池的回收路径必须假设重建会失败，否则失败会退化成死锁。",
+      "concepts": ["ACPPool", "资源池", "死锁", "recycle", "并发"]
+    }
+  },
+  {
+    "id": "t08",
+    "scope": "primary",
+    "session": "s2",
+    "prompt": "补一个 ACP 一直失败到最后一次尝试的集成测试，要确认最终写的是 fallback Observation 而不是虚构完成状态。",
+    "assistant_response": "新增集成测试：compressor 每次抛基础设施错误，JobRunner 按 max_attempts 重试，最后一次尝试写入 quality=fallback 的 Observation，outcome 为 null 不虚构完成状态，evidence 只含确定性证据，job 终态是 succeeded 而不是 dead 或永久 leased，Truth Layer 数据完整。",
+    "events": [
+      { "tool": "write", "input": { "path": "tests/integration/synthesis.test.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "bun test tests/integration/synthesis.test.ts" }, "response": { "exit_status": 0, "stdout": "9 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "补齐 ACP 最终失败降级为 fallback Observation 的集成测试",
+      "completed": true,
+      "memory_type": "feature",
+      "key_files": ["tests/integration/synthesis.test.ts"],
+      "key_facts": ["quality=fallback", "9 pass"],
+      "unfinished": [],
+      "title": "ACP 最终失败写 fallback Observation 的集成测试",
+      "summary": "覆盖 compressor 持续抛基础设施错误的路径：重试耗尽后写入 quality=fallback 的 Observation，outcome 为空、只带确定性证据，job 终态 succeeded，Truth Layer 不受影响。",
+      "outcome": "synthesis 集成测试 9 pass 0 fail，确认 fallback 不虚构 outcome。",
+      "learned": "压缩失败的正确降级是可信的空结论，而不是猜测出的完成状态。",
+      "concepts": ["fallback", "quality", "job 重试", "集成测试", "ACP 失败"]
+    }
+  },
+  {
+    "id": "t09",
+    "scope": "primary",
+    "session": "s2",
+    "prompt": "加一个 purge 到 clean install 的闭环测试，绝对不能碰开发者真实 HOME。",
+    "assistant_response": "测试用临时 HOME 和 KIRO_HOME，先造旧 ~/.kiro-mem 标记文件和旧 Agent 配置，跑 uninstall --purge 确认数据目录/Agent 配置/服务文件都被删掉，再跑 install 确认只创建 V3 schema、hooks、Worker、MCP 和隔离 ACP runtime。安装器接受可注入的数据目录和 KIRO_HOME，不操作真实系统服务。",
+    "events": [
+      { "tool": "write", "input": { "path": "tests/integration/setup.test.ts", "command": "create" }, "response": { "success": true } },
+      { "tool": "write", "input": { "path": "scripts/setup.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "bun test tests/integration/setup.test.ts" }, "response": { "exit_status": 0, "stdout": "5 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "增加 purge 到 clean install 的自动化闭环测试且不污染真实 HOME",
+      "completed": true,
+      "memory_type": "feature",
+      "key_files": ["tests/integration/setup.test.ts", "scripts/setup.ts"],
+      "key_facts": ["KIRO_HOME", "uninstall --purge"],
+      "unfinished": [],
+      "title": "purge → clean install 闭环测试",
+      "summary": "在隔离的临时 HOME/KIRO_HOME 中验证 uninstall --purge 清空数据目录、Agent 配置与服务文件，随后 install 只创建 V3 表与运行时布局。安装器改为接受可注入路径，测试不触碰真实系统服务。",
+      "outcome": "setup 集成测试 5 pass 0 fail，确认无 V2 表残留。",
+      "learned": "安装器要可测，必须把数据目录、KIRO_HOME 和服务控制器做成可注入依赖。",
+      "concepts": ["安装器", "purge", "clean install", "测试隔离", "KIRO_HOME"]
+    }
+  },
+  {
+    "id": "t10",
+    "scope": "primary",
+    "session": "s2",
+    "prompt": "技术设计里 job 叫 summarize_turn_v3，代码和 README 用的是 summarize_turn。定一个。",
+    "assistant_response": "既然发布前强制 purge、数据库全新创建，_v3 后缀没有兼容价值。决定保留代码里更简洁的 summarize_turn 和 embed_observation，改技术设计对齐实现，避免无意义的运行时改名。",
+    "events": [
+      { "tool": "write", "input": { "path": "plan/V3/technical-design.md", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "grep -rn summarize_turn_v3 src scripts" }, "response": { "exit_status": 1, "stdout": "" } }
+    ],
+    "annotation": {
+      "request": "决定 job 命名是否带 _v3 后缀",
+      "completed": true,
+      "memory_type": "decision",
+      "key_files": ["plan/V3/technical-design.md"],
+      "key_facts": ["summarize_turn", "embed_observation"],
+      "unfinished": [],
+      "title": "job 命名保留 summarize_turn / embed_observation",
+      "summary": "在强制 purge、数据库全新创建的前提下 _v3 后缀无兼容价值，决定保留实现中的简洁命名并把技术设计改成与实现一致。",
+      "outcome": "技术设计已同步，grep summarize_turn_v3 在 src 与 scripts 下 0 命中。",
+      "learned": "破坏性升级下，版本后缀命名只会增加噪声；应让文档对齐实现而不是反过来改代码。",
+      "concepts": ["命名决策", "job", "技术设计", "破坏性升级"]
+    }
+  },
+  {
+    "id": "t11",
+    "scope": "primary",
+    "session": "s2",
+    "prompt": "本地 token 认证要么删掉要么做成用户无感。定下来并补齐。",
+    "assistant_response": "决定保留 token 并做到无感。安装器生成 64 位十六进制（256-bit）token 并强制 0600 权限，修复安装保留原值，Hook 自动读取。Worker 改为每请求解析 token 因此轮换后不用重启；.token 缺失或为空时重建而不是退回无鉴权；每次 401 计入 auth_unauthorized 指标并按原因限频写日志。diagnose 会检查 token 权限并用磁盘 token 实探一次只读鉴权路由。",
+    "events": [
+      { "tool": "write", "input": { "path": "src/auth-token.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "write", "input": { "path": "src/server/worker.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "write", "input": { "path": "tests/integration/auth.test.ts", "command": "create" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "bun test" }, "response": { "exit_status": 0, "stdout": "138 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "决定本地 token 认证去留并做到用户无感",
+      "completed": true,
+      "memory_type": "decision",
+      "key_files": ["src/auth-token.ts", "src/server/worker.ts", "tests/integration/auth.test.ts"],
+      "key_facts": ["0600", "138 pass", "401"],
+      "unfinished": [],
+      "title": "保留本地 token 认证并做到用户无感",
+      "summary": "安装器生成 256-bit token 并设 0600，Hook 自动读取。Worker 每请求解析 token 支持热轮换，token 缺失时重建而非 fail-open，401 计入 auth_unauthorized 指标，diagnose 用磁盘 token 实探鉴权路由。",
+      "outcome": "auth 与 diagnose 回归测试落地，bun test 138 pass 0 fail。",
+      "learned": "本地回环也要有凭据，但凭据缺失时必须拒绝而不是退回无鉴权；否则安全假设是假的。",
+      "concepts": ["token 认证", "0600", "fail-open", "401", "无感"]
+    }
+  },
+  {
+    "id": "t12",
+    "scope": "primary",
+    "session": "s2",
+    "prompt": "bun test 会往我真实的 ~/.kiro-mem/logs 里追加日志，隔离掉。",
+    "assistant_response": "加了 bunfig.toml 的 preload 指向 tests/support/preload.ts，在测试进程启动时把 KIRO_MEMORY_DATA_DIR 指到 mkdtemp 临时目录并在退出时删除。需要断言真实 HOME 布局的子进程测试自行从 env 里摘掉这个变量。",
+    "events": [
+      { "tool": "write", "input": { "path": "bunfig.toml", "command": "create" }, "response": { "success": true } },
+      { "tool": "write", "input": { "path": "tests/support/preload.ts", "command": "create" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "bun test" }, "response": { "exit_status": 0, "stdout": "138 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "让测试不再写入开发者真实数据目录",
+      "completed": true,
+      "memory_type": "bugfix",
+      "key_files": ["bunfig.toml", "tests/support/preload.ts"],
+      "key_facts": ["KIRO_MEMORY_DATA_DIR", "preload"],
+      "unfinished": [],
+      "title": "测试数据目录隔离到临时目录",
+      "summary": "bunfig.toml 的 preload 在测试进程启动时把 KIRO_MEMORY_DATA_DIR 指向临时目录并在退出时清理，logError 因此不再写真实 ~/.kiro-mem/logs。",
+      "outcome": "bun test 138 pass 0 fail，真实数据目录不再被测试写入。",
+      "learned": "任何会回退到真实 HOME 的路径解析都要在测试预加载阶段改写，而不是靠每个测试自觉。",
+      "concepts": ["测试隔离", "KIRO_MEMORY_DATA_DIR", "bunfig", "preload", "日志"]
+    }
+  },
+  {
+    "id": "t13",
+    "scope": "primary",
+    "session": "s2",
+    "prompt": "装完之后 Worker 起不来，报模块找不到。查一下安装器复制清单。",
+    "assistant_response": "安装器的源码复制清单漏了 src/auth-token.ts，worker.ts 相对导入它所以装出来的 Worker 直接起不来。补进清单，并加了一个安装产物相对导入完整性的回归测试，扫描已安装文件的相对 import 是否都能解析，防止后续再漏文件。",
+    "events": [
+      { "tool": "read", "input": { "path": "scripts/setup.ts" }, "response": { "exit_status": 0 } },
+      { "tool": "write", "input": { "path": "scripts/setup.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "write", "input": { "path": "tests/integration/setup.test.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "bun test tests/integration/setup.test.ts" }, "response": { "exit_status": 0, "stdout": "7 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "排查安装后 Worker 因模块缺失无法启动",
+      "completed": true,
+      "memory_type": "bugfix",
+      "key_files": ["scripts/setup.ts", "tests/integration/setup.test.ts"],
+      "key_facts": ["src/auth-token.ts", "7 pass"],
+      "unfinished": [],
+      "title": "安装器复制清单漏 src/auth-token.ts 导致 Worker 起不来",
+      "summary": "worker.ts 相对导入 src/auth-token.ts，但安装器复制清单未包含该文件，导致安装后的 Worker 因模块缺失启动失败。补入清单并新增相对导入完整性回归测试。",
+      "outcome": "setup 集成测试 7 pass 0 fail，安装产物的相对导入全部可解析。",
+      "learned": "手工维护的文件复制清单必然会漏；应该用导入图扫描把完整性变成可测试断言。",
+      "concepts": ["安装器", "复制清单", "相对导入", "回归测试", "Worker 启动"]
+    }
+  },
+  {
+    "id": "t14",
+    "scope": "primary",
+    "session": "s3",
+    "prompt": "我重新跑了 install 修复安装，输出全是成功，但行为还是旧的。为什么？",
+    "assistant_response": "install 第 13 步复用了 start()，而 start() 在 Worker 已运行时直接返回，所以第 7 步刚覆盖完 src/** 之后跑的还是旧进程，输出却全是成功。改成 restart()：已运行则先停再起，全新安装不打误导性的『已停止』。",
+    "events": [
+      { "tool": "read", "input": { "path": "scripts/service.ts" }, "response": { "exit_status": 0 } },
+      { "tool": "write", "input": { "path": "scripts/service.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "write", "input": { "path": "scripts/setup.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "bun test tests/integration/setup.test.ts" }, "response": { "exit_status": 0, "stdout": "8 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "排查修复安装后仍运行旧代码的问题",
+      "completed": true,
+      "memory_type": "bugfix",
+      "key_files": ["scripts/service.ts", "scripts/setup.ts"],
+      "key_facts": ["restart()", "start()"],
+      "unfinished": [],
+      "title": "install 改用 restart() 修复覆盖源码后仍跑旧进程",
+      "summary": "install 第 13 步原先调用 start()，而 start() 在 Worker 已运行时直接返回，导致源码被覆盖后仍在跑旧进程且输出全是成功。改用 restart()，已运行则先停再起。",
+      "outcome": "setup 集成测试 8 pass 0 fail，修复安装现在确实加载新代码。",
+      "learned": "幂等的 start 语义在『修复安装』场景是错的；覆盖运行时源码后必须强制重启。",
+      "concepts": ["install", "restart", "launchd", "修复安装", "幂等陷阱"]
+    }
+  },
+  {
+    "id": "t15",
+    "scope": "primary",
+    "session": "s3",
+    "prompt": "有没有办法让 diagnose 直接告诉我运行中的 Worker 不是当前安装的版本？",
+    "assistant_response": "diagnose 增加版本一致性检查：比较 /health.version 和 <dataDir>/package.json 的版本，不一致时提示重启 Worker。这样能兜住所有『运行中进程不是当前安装版本』的情形，而不只是修复安装这一种。",
+    "events": [
+      { "tool": "write", "input": { "path": "scripts/setup.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "write", "input": { "path": "tests/integration/diagnose.test.ts", "command": "create" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "bun test tests/integration/diagnose.test.ts" }, "response": { "exit_status": 0, "stdout": "6 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "让 diagnose 能发现运行中的 Worker 与安装版本不一致",
+      "completed": true,
+      "memory_type": "feature",
+      "key_files": ["scripts/setup.ts", "tests/integration/diagnose.test.ts"],
+      "key_facts": ["/health.version", "package.json"],
+      "unfinished": [],
+      "title": "diagnose 增加版本漂移检查",
+      "summary": "diagnose 比较 Worker /health.version 与 <dataDir>/package.json 的版本，不一致时提示重启，覆盖运行中进程不是当前安装版本的一般情形。",
+      "outcome": "diagnose 集成测试 6 pass 0 fail，含三种 token 状态与版本漂移提示。",
+      "learned": "版本漂移要用运行时上报值和磁盘安装值对比来发现，不能靠安装流程自证。",
+      "concepts": ["diagnose", "版本漂移", "health", "可观测性"]
+    }
+  },
+  {
+    "id": "t16",
+    "scope": "primary",
+    "session": "s3",
+    "prompt": "在我这台 mac 上真跑一遍 uninstall --purge 到 install 到 diagnose，确认干净安装没问题。",
+    "assistant_response": "在 macOS + Bun 1.2.20 + kiro-cli 2.13.0 上跑完了。diagnose 全绿：Kiro CLI、ACP command、kiro-runtime 完整、embedding 模型、ACP smoke 通路、launchd 已托管。/health.version 是 3.0.0，MCP serverInfo 是 kiro-mem 3.0.0。新库只有 V3 表，topics 和 memories 都不存在。.token 是 64 位十六进制、权限 0600。安装第 12 步的依赖下载因为本机网络慢被人工绕过，依赖是从同版本 node_modules 复制的，所以这一步还没真验过，需要在干净网络环境里单独跑一次。",
+    "events": [
+      { "tool": "shell", "input": { "command": "kiro-mem uninstall --purge" }, "response": { "exit_status": 0, "stdout": "removed ~/.kiro-mem" } },
+      { "tool": "shell", "input": { "command": "kiro-mem install" }, "response": { "exit_status": 0, "stdout": "installed" } },
+      { "tool": "shell", "input": { "command": "kiro-mem diagnose" }, "response": { "exit_status": 0, "stdout": "all checks ok" } },
+      { "tool": "shell", "input": { "command": "curl -s http://127.0.0.1:37778/health" }, "response": { "exit_status": 0, "stdout": "{\"version\":\"3.0.0\"}" } },
+      { "tool": "shell", "input": { "command": "sqlite3 ~/.kiro-mem/kiro-mem.db .tables" }, "response": { "exit_status": 0, "stdout": "observations observations_fts observation_embeddings turns turn_events turn_artifacts session_refs jobs metric_events" } }
+    ],
+    "annotation": {
+      "request": "在真实机器上完成干净安装验收",
+      "completed": true,
+      "memory_type": "discovery",
+      "key_files": [],
+      "key_facts": ["3.0.0", "0600", "kiro-cli 2.13.0"],
+      "unfinished": ["安装第 12 步的依赖下载在本机被人工绕过，需要在干净网络环境实测一次"],
+      "title": "真实环境干净安装验收通过",
+      "summary": "macOS + Bun 1.2.20 + kiro-cli 2.13.0 上完成 uninstall --purge → install → diagnose，全部检查通过。/health.version 与 MCP serverInfo 均为 3.0.0，新库只含 V3 表，.token 为 64 位十六进制且权限 0600。",
+      "outcome": "diagnose 全绿、版本一致、无 V2 表残留；但安装第 12 步的依赖下载被人工绕过，未在干净网络环境验证。",
+      "learned": "干净安装验收要同时核对运行时上报版本、数据库表清单和凭据权限三处，缺一处就可能漏掉半装状态。",
+      "concepts": ["干净安装", "验收", "diagnose", "launchd", "V3 表"]
+    }
+  },
+  {
+    "id": "t17",
+    "scope": "primary",
+    "session": "s3",
+    "prompt": "跑一遍端到端：prompt 到工具事件到 stop，看看 Observation 和 embedding 对不对。",
+    "assistant_response": "通过已安装的 hooks 驱动了一轮完整 turn。结果是 1 个 closed turn、4 条 turn_events、1 条 quality=normal 的 Observation，memory_type 是 feature，outcome 严格引用了工具证据 138 pass 0 fail 而没有虚构完成状态。embed_observation 生成了 384 维向量，coverage 是 1.0。要注意这轮是我直接调用已安装的 hooks，真实交互式会话（/agent kiro-mem）下的 hook 触发还没验证，那部分得你在交互式会话里自己跑一次。",
+    "events": [
+      { "tool": "shell", "input": { "command": "bun ~/.kiro-mem/src/hooks/prompt-save.ts" }, "response": { "exit_status": 0, "stdout": "" } },
+      { "tool": "shell", "input": { "command": "bun ~/.kiro-mem/src/hooks/observation.ts" }, "response": { "exit_status": 0, "stdout": "" } },
+      { "tool": "shell", "input": { "command": "bun ~/.kiro-mem/src/hooks/stop.ts" }, "response": { "exit_status": 0, "stdout": "" } },
+      { "tool": "shell", "input": { "command": "curl -s http://127.0.0.1:37778/health" }, "response": { "exit_status": 0, "stdout": "{\"observations\":{\"total\":1,\"normal\":1},\"embeddings\":{\"ready\":1,\"coverage\":1}}" } }
+    ],
+    "annotation": {
+      "request": "验证 prompt→工具事件→stop→Observation→embedding 的端到端链路",
+      "completed": true,
+      "memory_type": "discovery",
+      "key_files": [],
+      "key_facts": ["384", "coverage 1.0", "quality=normal"],
+      "unfinished": ["真实交互式 Kiro 会话（/agent kiro-mem）下的 hook 触发仍未验证"],
+      "title": "端到端一轮 turn 验收：Observation 与 embedding 正确",
+      "summary": "用已安装的 hooks 驱动一轮 turn，得到 1 个 closed turn、4 条 turn_events、1 条 quality=normal Observation，outcome 严格引用工具证据，embed_observation 生成 384 维向量且 coverage 1.0。",
+      "outcome": "链路完整且 outcome 未虚构；但本轮是直接调用已安装 hooks，真实交互式会话下的触发尚未覆盖。",
+      "learned": "直接调用已安装 hooks 可以等价验证 Worker 侧与数据侧行为，但不能替代 Kiro 真实会话的 hook 触发验证。",
+      "concepts": ["端到端", "turn_events", "embedding", "coverage", "验收"]
+    }
+  },
+  {
+    "id": "t18",
+    "scope": "primary",
+    "session": "s3",
+    "prompt": "注入的上下文有多大？会不会顶到 agentSpawn 的 10KB 限制？",
+    "assistant_response": "实测 GET /context/bootstrap 返回 487 字节，预算是 8192 字节，离 agentSpawn 的 10KB 限制很远。换到另一个 workspace 只有 227 字节，只剩 usage note，一条 Observation 都没有，说明 scope 硬过滤生效。",
+    "events": [
+      { "tool": "shell", "input": { "command": "curl -s 'http://127.0.0.1:37778/context/bootstrap?cwd=/repos/kiro-mem' | wc -c" }, "response": { "exit_status": 0, "stdout": "487" } },
+      { "tool": "shell", "input": { "command": "curl -s 'http://127.0.0.1:37778/context/bootstrap?cwd=/tmp/other' | wc -c" }, "response": { "exit_status": 0, "stdout": "227" } }
+    ],
+    "annotation": {
+      "request": "确认注入上下文的字节体积与 scope 过滤",
+      "completed": true,
+      "memory_type": "discovery",
+      "key_files": [],
+      "key_facts": ["487", "8192", "227"],
+      "unfinished": [],
+      "title": "bootstrap 索引 487 字节，跨 workspace 只剩 227 字节",
+      "summary": "GET /context/bootstrap 在当前 workspace 返回 487 字节，远低于 8192 预算与 agentSpawn 10KB 限制；换 workspace 后仅 227 字节的 usage note，不含任何 Observation。",
+      "outcome": "字节预算与 scope 硬过滤均按预期生效。",
+      "learned": "紧凑索引的实际体积远小于预算，说明预算不是当前瓶颈；scope 过滤可以用跨 workspace 字节数直接观测。",
+      "concepts": ["bootstrap", "字节预算", "agentSpawn", "scope 过滤", "上下文注入"]
+    }
+  },
+  {
+    "id": "t19",
+    "scope": "primary",
+    "session": "s3",
+    "prompt": "把故障路径也验一遍：特殊字符查询、kill -9 Worker、Worker 停掉时的 hook 行为、private 标记泄漏。",
+    "assistant_response": "五种特殊字符 query 全部正常返回无 FTS 协议异常。kill -9 之后 launchd 在 2 秒内拉起新进程且 health 恢复。Worker 停止时四个 hook 都在 734ms 内退出 0 且 stdout 为空。private 标记在整库 dump 和全部日志中都是 0 次命中，turns.prompt_text 里是 REDACTED。401 计数在生产环境正确累加。",
+    "events": [
+      { "tool": "shell", "input": { "command": "kill -9 $(pgrep -f kiro-mem/src/server/worker.ts)" }, "response": { "exit_status": 0, "stdout": "" } },
+      { "tool": "shell", "input": { "command": "sleep 3; curl -s http://127.0.0.1:37778/health" }, "response": { "exit_status": 0, "stdout": "{\"ok\":true}" } },
+      { "tool": "shell", "input": { "command": "grep -rc private ~/.kiro-mem/logs" }, "response": { "exit_status": 1, "stdout": "0" } }
+    ],
+    "annotation": {
+      "request": "验收特殊字符查询、进程保活、hook 静默失败与隐私脱敏",
+      "completed": true,
+      "memory_type": "discovery",
+      "key_files": [],
+      "key_facts": ["734ms", "2 秒", "REDACTED"],
+      "unfinished": [],
+      "title": "故障路径验收：保活、静默失败与零隐私泄漏",
+      "summary": "五种特殊字符 query 无 FTS 异常；kill -9 后 launchd 2 秒内拉起新进程；Worker 停止时四个 hook 均在 734ms 内退出 0 且 stdout 为空；private 标记在整库与日志中 0 次命中，prompt_text 为 REDACTED。",
+      "outcome": "全部故障路径按设计降级，无数据泄漏、无阻塞。",
+      "learned": "隐私验收要同时扫数据库 dump 和日志两处；hook 的静默失败必须用实际耗时而不是代码审查来确认。",
+      "concepts": ["故障路径", "launchd 保活", "静默失败", "隐私脱敏", "REDACTED"]
+    }
+  },
+  {
+    "id": "t20",
+    "scope": "primary",
+    "session": "s3",
+    "prompt": "timeline 为什么要按 source turn 排而不是 observation id？",
+    "assistant_response": "因为压缩是异步的，重试和并发会让 Observation 的自增 ID 顺序和真实工作顺序不一致。timeline 用 (turn_stopped_at, turn_seq, id) 作为排序键锚定源 turn，这样即使 Observation 乱序写入，邻居也反映真实时间线。mode=scope 看同 workspace 的连续工作，mode=session 只看同一次会话。",
+    "events": [
+      { "tool": "read", "input": { "path": "src/db/index.ts" }, "response": { "exit_status": 0 } },
+      { "tool": "write", "input": { "path": "tests/db/retrieval.test.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "bun test tests/db/retrieval.test.ts" }, "response": { "exit_status": 0, "stdout": "8 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "解释并验证 timeline 的排序锚点",
+      "completed": true,
+      "memory_type": "decision",
+      "key_files": ["src/db/index.ts", "tests/db/retrieval.test.ts"],
+      "key_facts": ["turn_stopped_at", "turn_seq", "mode=session"],
+      "unfinished": [],
+      "title": "timeline 锚定 source turn 而非 Observation ID",
+      "summary": "异步压缩的重试与并发会让 Observation 自增 ID 偏离真实工作顺序，因此 timeline 以 (turn_stopped_at, turn_seq, id) 排序锚定源 turn，并提供 scope 与 session 两种邻居模式。",
+      "outcome": "retrieval 测试 8 pass 0 fail，乱序写入的 Observation 仍按真实 turn 顺序返回。",
+      "learned": "投影层的自增 ID 不是时间顺序的可靠代理，时间线要用事实层的时间戳。",
+      "concepts": ["timeline", "source turn", "排序", "异步压缩", "mode=scope"]
+    }
+  },
+  {
+    "id": "t21",
+    "scope": "primary",
+    "session": "s3",
+    "prompt": "hybrid search 的分数是怎么融的？纯语义命中会不会带进一堆噪声？",
+    "assistant_response": "用 RRF 融合，常数 K 是 60，FTS 取前 50 候选、同 scope 近期取前 200 候选。纯语义候选低于 0.2 的余弦相似度直接丢掉当噪声。同分时先比较较新的 turn_stopped_at 再比较较小的 ID，保证排序稳定。RRF 是候选融合名次，不能当绝对相关性分数用。",
+    "events": [
+      { "tool": "read", "input": { "path": "src/server/observation-search.ts" }, "response": { "exit_status": 0 } },
+      { "tool": "shell", "input": { "command": "bun test tests/integration/search.test.ts" }, "response": { "exit_status": 0, "stdout": "7 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "说明 hybrid search 的融合方式与噪声过滤",
+      "completed": true,
+      "memory_type": "discovery",
+      "key_files": ["src/server/observation-search.ts"],
+      "key_facts": ["RRF", "0.2", "60"],
+      "unfinished": [],
+      "title": "RRF 融合与 0.2 语义地板线",
+      "summary": "检索内核用 RRF（K=60）融合 FTS 前 50 与同 scope 近期 200 条语义候选，纯语义候选低于 0.2 余弦相似度被丢弃，同分按较新 turn_stopped_at 再按较小 ID 稳定排序。",
+      "outcome": "search 集成测试 7 pass 0 fail，融合与地板线按预期工作。",
+      "learned": "RRF 输出是名次融合值而不是相关性绝对分，纯语义候选必须有地板线否则会灌入噪声。",
+      "concepts": ["RRF", "hybrid search", "语义地板线", "余弦相似度", "排序稳定性"]
+    }
+  },
+  {
+    "id": "t22",
+    "scope": "primary",
+    "session": "s3",
+    "prompt": "确认一下跨 workspace 绝对不会看到别的项目的记忆。",
+    "assistant_response": "scope_key 由 computeScopeKey(repo, cwd) 在写入时冻结，检索时作为硬过滤条件。git、非 git、相对路径和 symlink 四种情况算出的 scope_key 一致。跨 workspace search 召回是 0，bootstrap 注入也是 0 条。只有显式传 all_scopes 才能跨 scope 浏览。",
+    "events": [
+      { "tool": "read", "input": { "path": "src/db/scope.ts" }, "response": { "exit_status": 0 } },
+      { "tool": "shell", "input": { "command": "bun test tests/db/wp1-isolation.test.ts" }, "response": { "exit_status": 0, "stdout": "11 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "确认跨 workspace 的记忆隔离",
+      "completed": true,
+      "memory_type": "discovery",
+      "key_files": ["src/db/scope.ts"],
+      "key_facts": ["scope_key", "computeScopeKey", "all_scopes"],
+      "unfinished": [],
+      "title": "scope_key 硬隔离：跨 workspace 召回为 0",
+      "summary": "scope_key 在写入时由 computeScopeKey(repo, cwd) 冻结并作为检索硬过滤条件，git/非 git/相对路径/symlink 四种情况结果一致。跨 workspace search 与 bootstrap 注入均为 0，只有显式 all_scopes 才跨 scope。",
+      "outcome": "隔离测试 11 pass 0 fail，跨 workspace 自动召回为 0。",
+      "learned": "scope 必须在写入时冻结，读取时再算会因为 cwd 变化产生漂移和泄漏。",
+      "concepts": ["scope_key", "workspace 隔离", "computeScopeKey", "all_scopes", "泄漏"]
+    }
+  },
+  {
+    "id": "t23",
+    "scope": "primary",
+    "session": "s3",
+    "prompt": "本地 embedding 模型用什么精度？23MB 是怎么来的？",
+    "assistant_response": "all-MiniLM-L6-v2，dtype 从 fp32 切到 q8，输出还是 384 维。q8 量化把模型体积压到约 23MB 一起打进 npm 包，安装时复制到 ~/.kiro-mem/models，因此不需要联网下载模型。local_files_only 强制只读本地文件。",
+    "events": [
+      { "tool": "read", "input": { "path": "src/embedding.ts" }, "response": { "exit_status": 0 } },
+      { "tool": "shell", "input": { "command": "du -sh models/all-MiniLM-L6-v2" }, "response": { "exit_status": 0, "stdout": "23M" } }
+    ],
+    "annotation": {
+      "request": "说明本地 embedding 模型的精度与体积来源",
+      "completed": true,
+      "memory_type": "decision",
+      "key_files": ["src/embedding.ts"],
+      "key_facts": ["q8", "384", "23M"],
+      "unfinished": [],
+      "title": "embedding 模型采用 q8 量化，384 维",
+      "summary": "all-MiniLM-L6-v2 的 dtype 从 fp32 切到 q8，维度仍为 384，体积约 23MB 随 npm 包分发并在安装时复制到数据目录，local_files_only 保证不联网。",
+      "outcome": "模型目录实测 23M，安装无需下载模型。",
+      "learned": "量化到 q8 能把随包分发变得可行，而随包分发消除了安装期的网络依赖。",
+      "concepts": ["embedding", "q8 量化", "all-MiniLM-L6-v2", "384 维", "离线安装"]
+    }
+  },
+  {
+    "id": "t24",
+    "scope": "primary",
+    "session": "s3",
+    "prompt": "MCP 工具描述和注入的上下文要支持中英文。",
+    "assistant_response": "i18n 覆盖到 MCP 工具描述、context builder 的 usage note 和 CLI 输出，语言取 config.language，支持 zh 和 en。运行时压缩 prompt 也按语言选对应的 compressor-prompt 文件。",
+    "events": [
+      { "tool": "write", "input": { "path": "src/i18n.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "write", "input": { "path": "src/server/mcp-server.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "bun test" }, "response": { "exit_status": 0, "stdout": "138 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "为 MCP 工具描述与注入上下文加中英文支持",
+      "completed": true,
+      "memory_type": "feature",
+      "key_files": ["src/i18n.ts", "src/server/mcp-server.ts"],
+      "key_facts": ["zh", "en", "config.language"],
+      "unfinished": [],
+      "title": "MCP 描述与上下文注入支持 zh/en",
+      "summary": "i18n 覆盖 MCP 工具描述、context builder 的 usage note 与 CLI 输出，语言由 config.language 决定；压缩 prompt 也按语言选择对应文件。",
+      "outcome": "bun test 138 pass 0 fail。",
+      "learned": "面向 Agent 的工具描述也要本地化，否则中文会话里模型的工具选择会受措辞影响。",
+      "concepts": ["i18n", "zh", "en", "MCP 工具描述", "本地化"]
+    }
+  },
+  {
+    "id": "t25",
+    "scope": "primary",
+    "session": "s3",
+    "prompt": "跑一下 typecheck，看看有没有类型错误。",
+    "assistant_response": "typecheck 报了 3 个错误，都在 worker.ts 的 auth 中间件里：token 可能为 null 时直接传给了要求 string 的函数。我还没改，先把错误贴给你确认预期行为——缺失 token 是应该拒绝还是重建。",
+    "events": [
+      { "tool": "shell", "input": { "command": "bun run typecheck" }, "response": { "exit_status": 2, "stdout": "", "stderr": "src/server/worker.ts(341,18): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.\nsrc/server/worker.ts(352,9): error TS2345\nsrc/server/worker.ts(358,22): error TS18047\nFound 3 errors." } }
+    ],
+    "annotation": {
+      "request": "跑 typecheck 检查类型错误",
+      "completed": false,
+      "memory_type": "discovery",
+      "key_files": ["src/server/worker.ts"],
+      "key_facts": ["3 errors", "TS2345"],
+      "unfinished": ["修复 worker.ts auth 中间件的 3 个类型错误", "确认 token 缺失时是拒绝还是重建"],
+      "forbidden_claims": ["typecheck 通过", "0 errors", "全部通过", "已修复"],
+      "title": "typecheck 报 3 个类型错误，尚未修复",
+      "summary": "bun run typecheck 退出码 2，报 3 个错误，集中在 worker.ts 的 auth 中间件：string | null 的 token 被传给要求 string 的参数。尚未修改代码。",
+      "outcome": "未完成：错误已定位但未修复，需要先确认 token 缺失时的预期行为。",
+      "learned": "auth 中间件的 token 类型必须显式表达『可能缺失』，否则会把策略问题伪装成类型问题。",
+      "concepts": ["typecheck", "TS2345", "auth 中间件", "类型错误", "未完成"]
+    }
+  },
+  {
+    "id": "t26",
+    "scope": "primary",
+    "session": "s3",
+    "prompt": "P2 的质量基准集现在要不要做？团队内测还是对外发布？",
+    "assistant_response": "团队内测不该被它阻塞，但对外稳定发布前必须做完，因为单元测试只能证明代码契约，证明不了摘要质量和检索精度。现在还没有数据集也没有评估脚本，所以只是定了这个结论，实际工作没开始。",
+    "events": [
+      { "tool": "read", "input": { "path": "plan/V3/release-readiness-review.md" }, "response": { "exit_status": 0 } }
+    ],
+    "annotation": {
+      "request": "决定质量基准集的优先级与阻塞范围",
+      "completed": false,
+      "memory_type": "decision",
+      "key_files": ["plan/V3/release-readiness-review.md"],
+      "key_facts": ["P2", "对外发布"],
+      "unfinished": ["建立 20 至 30 个标注 turn 的基准集", "写 10 至 20 个标注 query", "实现可重复的评估脚本并产出报告"],
+      "forbidden_claims": ["基准集已建立", "评估脚本已完成", "已产出报告"],
+      "title": "质量基准集：内测不阻塞，对外发布前必须完成",
+      "summary": "确认质量基准集不阻塞团队内测但阻塞对外稳定发布，理由是单元测试只覆盖代码契约，不覆盖摘要质量与检索精度。本轮只做了优先级决策。",
+      "outcome": "未完成：仅确定优先级，数据集与评估脚本都还不存在。",
+      "learned": "质量门槛要和发布范围绑定，而不是和开发阶段绑定；否则会被无限推迟。",
+      "concepts": ["质量基准集", "P2", "发布门槛", "评估", "未完成"]
+    }
+  },
+  {
+    "id": "x01",
+    "scope": "other",
+    "session": "sx1",
+    "prompt": "dashboard 的搜索框输入特殊字符会白屏，查一下。",
+    "assistant_response": "SearchBar 把用户输入直接拼进正则做高亮，未闭合括号会抛 SyntaxError 并炸掉整个列表。改成先转义正则元字符再构造，另外补了 ErrorBoundary。vitest 42 pass 0 fail。",
+    "events": [
+      { "tool": "write", "input": { "path": "src/components/SearchBar.tsx", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "npx vitest run" }, "response": { "exit_status": 0, "stdout": "42 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "修复 dashboard 搜索框特殊字符白屏",
+      "completed": true,
+      "memory_type": "bugfix",
+      "key_files": ["src/components/SearchBar.tsx"],
+      "key_facts": ["SyntaxError", "42 pass"],
+      "unfinished": [],
+      "title": "搜索框正则未转义导致白屏",
+      "summary": "SearchBar 把用户输入直接拼进高亮正则，未闭合括号抛 SyntaxError 炸掉列表。改为先转义正则元字符并补 ErrorBoundary。",
+      "outcome": "vitest 42 pass 0 fail，特殊字符不再白屏。",
+      "learned": "用户输入进正则前必须转义元字符，和进 SQL 前要参数化是同一类问题。",
+      "concepts": ["React", "正则转义", "SearchBar", "ErrorBoundary", "白屏"]
+    }
+  },
+  {
+    "id": "x02",
+    "scope": "other",
+    "session": "sx1",
+    "prompt": "登录 token 过期后前端没刷新，直接 401 跳登录页，体验很差。",
+    "assistant_response": "在 axios 拦截器里加了 401 重试：命中 401 先用 refresh token 换新 access token 再重放原请求，并用单例 Promise 防止并发刷新打出多次请求。刷新失败才跳登录页。",
+    "events": [
+      { "tool": "write", "input": { "path": "src/api/client.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "npx vitest run src/api" }, "response": { "exit_status": 0, "stdout": "15 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "修复 token 过期后直接跳登录页的体验问题",
+      "completed": true,
+      "memory_type": "feature",
+      "key_files": ["src/api/client.ts"],
+      "key_facts": ["401", "refresh token"],
+      "unfinished": [],
+      "title": "axios 拦截器加 401 静默刷新与请求重放",
+      "summary": "401 时先用 refresh token 换新 access token 再重放原请求，单例 Promise 抑制并发刷新，刷新失败才跳登录页。",
+      "outcome": "api 层测试 15 pass 0 fail。",
+      "learned": "静默刷新必须做并发去重，否则一次批量请求会触发多次刷新并互相失效。",
+      "concepts": ["axios", "401", "token 刷新", "并发去重", "拦截器"]
+    }
+  },
+  {
+    "id": "x03",
+    "scope": "other",
+    "session": "sx1",
+    "prompt": "首屏 bundle 1.8MB 太大了，压一下。",
+    "assistant_response": "路由级 code splitting 加上把 echarts 换成按需引入，首屏 bundle 从 1.8MB 降到 620KB。还没处理 moment 的 locale 全量打包，那块还有大约 180KB 可以省。",
+    "events": [
+      { "tool": "write", "input": { "path": "vite.config.ts", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "npx vite build" }, "response": { "exit_status": 0, "stdout": "dist/assets/index.js 620.14 kB" } }
+    ],
+    "annotation": {
+      "request": "优化首屏 bundle 体积",
+      "completed": true,
+      "memory_type": "refactor",
+      "key_files": ["vite.config.ts"],
+      "key_facts": ["620", "1.8MB"],
+      "unfinished": ["moment locale 全量打包还有约 180KB 可省"],
+      "title": "首屏 bundle 从 1.8MB 降到 620KB",
+      "summary": "路由级 code splitting 配合 echarts 按需引入，首屏 bundle 降到 620KB。moment 的 locale 仍是全量打包。",
+      "outcome": "vite build 产出 620.14 kB；moment locale 优化未做。",
+      "learned": "图表库和 locale 是前端体积的两个典型大头，按需引入的收益远大于压缩配置调优。",
+      "concepts": ["bundle 体积", "code splitting", "echarts", "vite", "首屏"]
+    }
+  },
+  {
+    "id": "x04",
+    "scope": "other",
+    "session": "sx1",
+    "prompt": "列表页 1000 行以上滚动卡顿。",
+    "assistant_response": "换成 react-window 虚拟滚动，只渲染可视区域行。1 万行下滚动帧率从 22fps 回到 58fps。行高不固定的那几列改成了估算高度加动态测量。",
+    "events": [
+      { "tool": "write", "input": { "path": "src/components/DataTable.tsx", "command": "strReplace" }, "response": { "success": true } },
+      { "tool": "shell", "input": { "command": "npx vitest run src/components" }, "response": { "exit_status": 0, "stdout": "28 pass, 0 fail" } }
+    ],
+    "annotation": {
+      "request": "解决大列表滚动卡顿",
+      "completed": true,
+      "memory_type": "refactor",
+      "key_files": ["src/components/DataTable.tsx"],
+      "key_facts": ["react-window", "58fps"],
+      "unfinished": [],
+      "title": "列表改虚拟滚动，1 万行 58fps",
+      "summary": "用 react-window 只渲染可视区域行，1 万行滚动帧率从 22fps 提升到 58fps，不固定行高改为估算加动态测量。",
+      "outcome": "components 测试 28 pass 0 fail。",
+      "learned": "长列表性能瓶颈在 DOM 节点数而不是数据量，虚拟滚动是唯一有量级收益的手段。",
+      "concepts": ["虚拟滚动", "react-window", "性能", "DataTable", "帧率"]
+    }
+  }
+]

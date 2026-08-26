@@ -1,0 +1,40 @@
+{
+  "criteria": "benchmark/reports/raw-degrade-criteria.md",
+  "criteriaSha256": "fde489c146c7210e",
+  "gate": "N 组（合法 semantic-en-v1 路径行为中立）",
+  "baselines": {
+    "gold": "benchmark/reports/phase3c-identity.json（3C 收口后）",
+    "recall2000": "benchmark/reports/phase3c-recall.json"
+  },
+  "candidates": {
+    "gold": "benchmark/reports/raw-degrade-identity.json",
+    "recall2000": "benchmark/reports/raw-degrade-recall.json"
+  },
+  "gold": {
+    "queries": 239,
+    "comparedFields": 41,
+    "orderedResultIdsDiff": 0,
+    "perQueryFieldDiffs": "none",
+    "gateOkDiffs": [],
+    "allGatesOk": [
+      true,
+      true
+    ],
+    "metricDiffs": [
+      "latencyP50",
+      "latencyP95"
+    ]
+  },
+  "recall2000": {
+    "queries": 276,
+    "comparedFields": 16,
+    "perQueryFieldDiffs": "none"
+  },
+  "excludedFromIdentity": [
+    "latencyMs",
+    "latencyP50",
+    "latencyP95",
+    "latency 类 gate 的 value（ok 状态须一致）"
+  ],
+  "verdict": "PASS"
+}

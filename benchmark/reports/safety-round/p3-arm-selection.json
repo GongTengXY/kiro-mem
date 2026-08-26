@@ -1,0 +1,242 @@
+{
+  "generatedAt": "2026-08-12T02:10:55.021Z",
+  "role": "确定性选择。规则在判据 §7 冻结于第一个 arm 之前；本脚本只执行它，不裁定本轮通过与否。",
+  "criteria": {
+    "path": "benchmark/reports/safety-round/p3-grid-criteria.md",
+    "sha256": "349ce1aefb85f90e4f42a038f9e75db0581937e410746ec9d93b4293adae47af"
+  },
+  "results": {
+    "path": "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/reports/safety-round/p3-grid-results.json",
+    "sha256": "b9e3fdd69789b6c95c58f728d58d98b979cd35c23ef9c1c2e6ae44bb95e14664"
+  },
+  "baseline": {
+    "arm": "f0.197-c2",
+    "note": "基线 arm 就是当前生产策略值（floor 0.197 / cap 2）",
+    "gates": {
+      "F1": false,
+      "N1": false,
+      "N2": false,
+      "N3": false
+    },
+    "primaryHitAt5": 0.672,
+    "primaryMrr": 0.539,
+    "lowScoreBands": {
+      "<0.200": {
+        "n": 6,
+        "primaryHitAt5": 0.167,
+        "primaryMrr": 0.111
+      },
+      "0.200-0.310": {
+        "n": 9,
+        "primaryHitAt5": 0.556,
+        "primaryMrr": 0.426
+      },
+      "0.310-0.400": {
+        "n": 18,
+        "primaryHitAt5": 0.5,
+        "primaryMrr": 0.321
+      },
+      ">=0.400": {
+        "n": 28,
+        "primaryHitAt5": 0.929,
+        "primaryMrr": 0.808
+      }
+    }
+  },
+  "step1": {
+    "rule": "candidates = { arm : cap >= 2 }（判据 §7 第 1 步；r3 §4.5 的 cap ≤ 1 诊断臂排除）",
+    "candidates": [
+      "f0.197-c2",
+      "f0.223-c2",
+      "f0.25-c2",
+      "f0.275-c2",
+      "f0.3-c2",
+      "f0.325-c2"
+    ],
+    "excluded": [
+      {
+        "arm": "f0.197-c1",
+        "reason": "cap ≤ 1 是诊断臂，算术恒真"
+      },
+      {
+        "arm": "f0.223-c1",
+        "reason": "cap ≤ 1 是诊断臂，算术恒真"
+      },
+      {
+        "arm": "f0.25-c1",
+        "reason": "cap ≤ 1 是诊断臂，算术恒真"
+      },
+      {
+        "arm": "f0.275-c1",
+        "reason": "cap ≤ 1 是诊断臂，算术恒真"
+      },
+      {
+        "arm": "f0.3-c1",
+        "reason": "cap ≤ 1 是诊断臂，算术恒真"
+      },
+      {
+        "arm": "f0.325-c1",
+        "reason": "cap ≤ 1 是诊断臂，算术恒真"
+      }
+    ]
+  },
+  "step2": {
+    "rule": "feasible = { arm ∈ candidates : F1 ∧ N1 ∧ N2 ∧ N3 全部通过 }",
+    "perArm": [
+      {
+        "arm": "f0.197-c2",
+        "gates": {
+          "F1": false,
+          "N1": false,
+          "N2": false,
+          "N3": false
+        },
+        "pass": false
+      },
+      {
+        "arm": "f0.223-c2",
+        "gates": {
+          "F1": false,
+          "N1": false,
+          "N2": false,
+          "N3": false
+        },
+        "pass": false
+      },
+      {
+        "arm": "f0.25-c2",
+        "gates": {
+          "F1": false,
+          "N1": false,
+          "N2": false,
+          "N3": false
+        },
+        "pass": false
+      },
+      {
+        "arm": "f0.275-c2",
+        "gates": {
+          "F1": false,
+          "N1": false,
+          "N2": false,
+          "N3": false
+        },
+        "pass": false
+      },
+      {
+        "arm": "f0.3-c2",
+        "gates": {
+          "F1": false,
+          "N1": false,
+          "N2": false,
+          "N3": false
+        },
+        "pass": false
+      },
+      {
+        "arm": "f0.325-c2",
+        "gates": {
+          "F1": false,
+          "N1": false,
+          "N2": false,
+          "N3": false
+        },
+        "pass": false
+      }
+    ],
+    "feasible": []
+  },
+  "step3": {
+    "rule": "eligible = { arm ∈ feasible : 四档 primary hit@5 均 >= 基线 f0.197-c2 同档值 }",
+    "rationale": "写成过滤器而不是排序键：D4 的坑是「看起来免费、实际砍掉难查询」，排序键会允许用容易档的收益换难档的损失。",
+    "perArm": [],
+    "eligible": []
+  },
+  "step4": {
+    "rule": "4 eligible 为空 → 输出「本轮没有安全 arm」，结束，不得放宽任何门",
+    "eligibleCount": 0
+  },
+  "step5": {
+    "rule": "5 否则字典序取最大：① primary hit@5 ② primary MRR ③ floor 最大 ④ arm id 字典序最小",
+    "ranking": []
+  },
+  "verdict": {
+    "outcome": "no-safe-arm",
+    "statement": "本轮没有安全 arm。按上游方案 §4 禁止清单第 9 条如实报告，不得为产出候选而下调 F1 / N2、不得删掉低分正例那一层、不得把 cap ≤ 1 提升为候选。",
+    "firstEmptyStep": "step2（安全过滤）"
+  },
+  "diagnostics": [
+    {
+      "floor": 0.197,
+      "primaryHitAt5": {
+        "cap1": 0.607,
+        "cap2": 0.672,
+        "delta": 0.065
+      },
+      "nearDomainDistinctContent": {
+        "cap1": 2.667,
+        "cap2": 3.222
+      }
+    },
+    {
+      "floor": 0.223,
+      "primaryHitAt5": {
+        "cap1": 0.607,
+        "cap2": 0.672,
+        "delta": 0.065
+      },
+      "nearDomainDistinctContent": {
+        "cap1": 2.622,
+        "cap2": 3.133
+      }
+    },
+    {
+      "floor": 0.25,
+      "primaryHitAt5": {
+        "cap1": 0.607,
+        "cap2": 0.672,
+        "delta": 0.065
+      },
+      "nearDomainDistinctContent": {
+        "cap1": 2.622,
+        "cap2": 3.111
+      }
+    },
+    {
+      "floor": 0.275,
+      "primaryHitAt5": {
+        "cap1": 0.607,
+        "cap2": 0.672,
+        "delta": 0.065
+      },
+      "nearDomainDistinctContent": {
+        "cap1": 2.533,
+        "cap2": 2.889
+      }
+    },
+    {
+      "floor": 0.3,
+      "primaryHitAt5": {
+        "cap1": 0.607,
+        "cap2": 0.672,
+        "delta": 0.065
+      },
+      "nearDomainDistinctContent": {
+        "cap1": 2.4,
+        "cap2": 2.644
+      }
+    },
+    {
+      "floor": 0.325,
+      "primaryHitAt5": {
+        "cap1": 0.607,
+        "cap2": 0.639,
+        "delta": 0.032
+      },
+      "nearDomainDistinctContent": {
+        "cap1": 2.267,
+        "cap2": 2.489
+      }
+    }
+  ]
+}

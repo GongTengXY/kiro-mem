@@ -1,0 +1,408 @@
+{
+  "frozen": true,
+  "frozenAt": "2026-08-14T04:24:34.280Z",
+  "round": "fts-safety-round-2026-08-12-r2",
+  "phase": "F1",
+  "criteria": {
+    "name": "criteria",
+    "path": "benchmark/reports/fts-round/f1-criteria-r4.md",
+    "sha256": "6f2aece66a01ad0b863fc0e7c4234914b6e216bc5eb9eff2858fd349b727a069",
+    "bytes": 8540
+  },
+  "inputs": [
+    {
+      "name": "criteriaBaselineR3",
+      "path": "benchmark/reports/fts-round/f1-criteria.md",
+      "sha256": "18be34b1e15285874074a10252c2d3a7f6d51227851090de6803ce2b8219e7aa",
+      "bytes": 47644
+    },
+    {
+      "name": "precheckR2",
+      "path": "benchmark/reports/fts-round/f1-precheck-r2.json",
+      "sha256": "f49e62faf9ae7e3035f641f2653e76994ee2b95fa5853e20471d0603fde936b5",
+      "bytes": 28314
+    },
+    {
+      "name": "strataR2",
+      "path": "benchmark/reports/fts-round/f2-strata-r2.json",
+      "sha256": "a3830847e19ce206b7fed39966ea25b5f5bd0e78f8282499a3817ba24d97e589",
+      "bytes": 23190
+    },
+    {
+      "name": "interceptEvidence",
+      "path": "benchmark/reports/fts-round/f2-fixture.json",
+      "sha256": "f55a3b317519e40c338745d1fdfffb27ddc89171fe5304bcbf4f7bdbba4d7f63",
+      "bytes": 20350
+    },
+    {
+      "name": "sampleGate",
+      "path": "benchmark/reports/fts-round/f1-sample.md",
+      "sha256": "f6e27c464da0aa05d79055114c1e4c278a5973fd09ee26fc47148acc6c628a07",
+      "bytes": 6613
+    },
+    {
+      "name": "implProbe",
+      "path": "benchmark/reports/fts-round/f1-impl-probe.md",
+      "sha256": "e73e74ff22000fdabc4180e0702ce72489c10aade473b56114729545a85bbe25",
+      "bytes": 9246
+    },
+    {
+      "name": "implProbeData",
+      "path": "benchmark/reports/fts-round/f1-impl-probe.json",
+      "sha256": "763dcb54ec4a1b5251fcb26c5af14442acb18cc6e9603724cc969c3b15f156c1",
+      "bytes": 321448
+    },
+    {
+      "name": "records",
+      "path": "benchmark/dataset/turns-fts-round.json",
+      "sha256": "5346b8b9b05f25071b9785bfda5ce29c9e84d4683ef2c09005e9dcc77e549c32",
+      "bytes": 112612
+    },
+    {
+      "name": "queriesR2",
+      "path": "benchmark/dataset/queries-fts-round-r2.json",
+      "sha256": "9a3fab0bbb8148b6cae817f8a4f4b2ddc1534cd2891767b5058edb7bb99c0be5",
+      "bytes": 96745
+    },
+    {
+      "name": "queriesR1Superseded",
+      "path": "benchmark/dataset/queries-fts-round.json",
+      "sha256": "2b1625b2afe62313b611a983179762dcc166d1ec7368af4b562e129869f70312",
+      "bytes": 82410
+    },
+    {
+      "name": "queriesR2PatchScript",
+      "path": "benchmark/build-fts-round-queries-r2.ts",
+      "sha256": "7a9816fc6c0e3fb58977a5ad2ead1de61ee6928f6762d1e7d3cdd107e797b12f",
+      "bytes": 17290
+    },
+    {
+      "name": "recordsMirrorEn",
+      "path": "benchmark/dataset/mirror-en-acp-records-fts-round.json",
+      "sha256": "e35568d36f8784cbadcf52f44aebfe3b5c00b562d0e1ccd788db0b8d6ef7a568",
+      "bytes": 46935
+    },
+    {
+      "name": "queriesMirrorEnR2",
+      "path": "benchmark/dataset/mirror-en-acp-queries-fts-round-r2.json",
+      "sha256": "5a7f76539e812e3df3b0054e37dc1fd45188a737dedb7b71d89f82ffdcb3f2a4",
+      "bytes": 16390
+    },
+    {
+      "name": "corpusZh",
+      "path": "benchmark/dataset/fts-round-filler-zh-10k.json",
+      "sha256": "f8661c7a49bc04ac84f9e838386dd5fa793589f4aa90fdc9588a09c08c525838",
+      "bytes": 15924605
+    },
+    {
+      "name": "corpusZhMeta",
+      "path": "benchmark/dataset/fts-round-filler-zh-10k-meta.json",
+      "sha256": "cf6f331d5db77713c7b382238dc5efded44249541482158f4e617c818438a0e4",
+      "bytes": 2399
+    },
+    {
+      "name": "corpusZhBuilder",
+      "path": "benchmark/build-fts-round-filler-zh.ts",
+      "sha256": "b9636ce390a40ae2d363e2c71727481833dc0951869dc178728706f9cc5eff91",
+      "bytes": 39987
+    },
+    {
+      "name": "corpusEn",
+      "path": "benchmark/dataset/pool-policy-filler-10k.json",
+      "sha256": "bbb3a6739cd4bed8cff349525d9cc41006caab3beb66789e8711410ad90d3d41",
+      "bytes": 9032760
+    },
+    {
+      "name": "oldGold",
+      "path": "benchmark/dataset/turns.json",
+      "sha256": "aa8f9beda2a4f90320455ff2756815d5b6271977044d5820a76df489bdb533e0",
+      "bytes": 55127
+    },
+    {
+      "name": "validator",
+      "path": "benchmark/validate-fts-round-dataset.ts",
+      "sha256": "cf81527bce6151f344391b1eb5053ecbc831388e97ea8f36e167bde3d777c48b",
+      "bytes": 12438
+    },
+    {
+      "name": "precheckTool",
+      "path": "benchmark/precheck-fts-round-data.ts",
+      "sha256": "ff6247a123243f628608a1f4141e4418aa07a71a0ae270e141b46b651d1c39a1",
+      "bytes": 18738
+    },
+    {
+      "name": "freezeUtil",
+      "path": "benchmark/freeze-util.ts",
+      "sha256": "89542a873b8c3318c5e28c2ed341dbdf18af55112111cb95174e72bac2cf4ca5",
+      "bytes": 9803
+    }
+  ],
+  "itemCountLabel": "1 + 21",
+  "itemCount": 22,
+  "note": "作废重开的新冻结。原 f1-freeze.json 及其 14 项输入、f2-fixture.json、f2-strata.json 全部逐字节保留为历史与拦截证据。记录、记录英文镜像、中文语料按原 SHA 复用；改动严格限定在 query 侧（38 条）。K 仍不在本记录内，由 F2 按 r3 §2.2.1 的阶梯选定并单独冻结为 f2-freeze-r2.json。",
+  "payload": {
+    "supersedes": {
+      "freeze": "benchmark/reports/fts-round/f1-freeze.json",
+      "round": "fts-safety-round-2026-08-12",
+      "supersededFrozenAt": "2026-08-14T02:56:32.823Z",
+      "reason": "F2 的 S4 拦下 9 条零命中词面负例；随后新增的冻结前资格门又查出 26 条锚点不可达与 12 条保护线空门。证据：f2-fixture.json 与 f1-precheck-r2.json。",
+      "untouched": "原记录及其 14 项输入逐字节保留，未被覆盖（freeze-util 拒绝覆盖）。"
+    },
+    "grid": {
+      "windowCoverageRatio": [
+        0,
+        0.1,
+        0.2,
+        0.3
+      ],
+      "unitDfRatioCeiling": [
+        1,
+        0.3,
+        0.1,
+        0.03
+      ],
+      "arms": 16,
+      "armIdFormat": "r<r>-d<d>",
+      "baselineArm": "r0-d1.00",
+      "provenance": "r 由 0 起 0.10 等距铺开；d 由 1.00 关闭臂起约 √10 等比铺开。均不引用 F0 / F1 探针的任何数字（判据 §2.4）。"
+    },
+    "kLadder": {
+      "ladder": [
+        200,
+        1000,
+        5000,
+        "EXACT"
+      ],
+      "rule": "取最小的 K，使 16 个 (r,d) 设置 × 120 条 query 与 EXACT 的候选差集逐 query 为 0（判据 §2.2.1）",
+      "selectedIn": "F2（单独冻结为 f2-freeze.json）",
+      "gate": "S7a 前置门：不通过不得跑网格"
+    },
+    "frozenPolicyFields": {
+      "semanticFloor": 0.197,
+      "semanticOnlyLimit": 2,
+      "semanticDiscovery": true,
+      "rrfK": 60,
+      "ftsWeight": 1,
+      "semanticWeight": 1,
+      "tieBreak": "semantic-rank",
+      "semanticCandidatePool": "Infinity",
+      "semanticTopK": 1000,
+      "bigramAux": false,
+      "defaultSearchDays": "Infinity",
+      "ftsMinUnitLen": 3,
+      "ftsCjkWindow": 3,
+      "ftsMaxUnits": 32,
+      "ftsOrderBy": "fts.rank, o.id ASC",
+      "internalCandidateLimit": 50
+    },
+    "gates": {
+      "G1": "全体 80 条正例：非 acceptable 结果排在任一 primary_gold 之前的次数 = 0（判据 §6.1）",
+      "G2": "40 条词面负例：整页跨来源 distinctContent ≤ 2，逐条判定不取平均（§6.2）",
+      "G3": "120 条全体：match_source 机械重算一致 + semantic-only ≤ 2（§6.3）",
+      "G4": "80 条正例四档分层 primary hit@5 / MRR 逐档不得低于基线（§6.4）",
+      "protection": "五类各 8 条，逐类不得回退（§6.5）",
+      "perf": "完整 search p95 < 300ms；基线已超预算时改为 arm.p95 ≤ baseline.p95 并单独登记缺陷（§6.6）",
+      "S7": "K 的语义资格门，逐 query 候选差集 = 0（§2.2.1、§7 S7a/S7b）"
+    },
+    "preFreezeQualificationGates": {
+      "Q1": "40 条词面负例实测 ftsCount ≥ 1（逐条）",
+      "Q2": "锚点索引可达：存在单元 u，df(u) ≥ 1 且 u 与锚点有重叠（r4 §16.1.1 的实现更正）",
+      "Q3": "40 条保护线 primary_gold 在对应词面分支可达（short-query 走 LIKE，其余走 FTS）",
+      "Q4": "基线非空门：逐 query 冻结 primaryLexicalReachable 与命中位次",
+      "result": [
+        {
+          "gate": "Q1 负例词面命中 ≥1",
+          "total": 40,
+          "fail": 0,
+          "pass": true,
+          "failedIds": []
+        },
+        {
+          "gate": "Q2 锚点索引可达",
+          "total": 40,
+          "fail": 0,
+          "pass": true,
+          "failedIds": []
+        },
+        {
+          "gate": "Q3 保护线 gold 词面可达",
+          "total": 40,
+          "fail": 0,
+          "pass": true,
+          "failedIds": []
+        },
+        {
+          "gate": "Q4 基线非空门",
+          "total": 40,
+          "fail": 0,
+          "pass": true,
+          "failedIds": []
+        }
+      ],
+      "tool": "benchmark/precheck-fts-round-data.ts（完整 60,066 行纯文本投影，无向量无 ACP）",
+      "f2Consistency": "判据 r4 §16.2：F2 在完整装置上重跑同一批判定，与预检不一致则整轮作废。"
+    },
+    "selection": "前置 P0（S7a）+ P1（S1–S4）→ 结构排除基线 → G1∧G2∧G3 → G4 ∧ 保护线 ∧ 性能门 → 字典序 (hit@5, MRR, 准入更强, arm id)（§8）",
+    "fixture": {
+      "newGold": 40,
+      "oldGold": 26,
+      "fillerEn": 50000,
+      "fillerEnSourceRows": 10000,
+      "fillerZh": 10000,
+      "totalPhysicalRows": 60066,
+      "spreadDays": 1095,
+      "oldGoldAgeDays": 400
+    },
+    "dataset": {
+      "queries": 120,
+      "relevance": 40,
+      "lexicalNegatives": {
+        "false-premise": 15,
+        "same-word-other-thing": 15,
+        "stale-state-confusion": 10
+      },
+      "protectionPerClass": 8,
+      "selfReferentialRecords": 0,
+      "sourcePriority": "P3 / 门形状裁定 / F0 / Q6；本轮自身事实未被动用",
+      "queriesPatched": 38,
+      "queriesPatchedIds": [
+        "fr-a01",
+        "fr-p02",
+        "fr-a06",
+        "fr-a07",
+        "fr-a08",
+        "fr-a11",
+        "fr-a12",
+        "fr-a13",
+        "fr-a15",
+        "fr-a16",
+        "fr-a19",
+        "fr-a20",
+        "fr-a21",
+        "fr-a22",
+        "fr-a23",
+        "fr-a24",
+        "fr-a26",
+        "fr-a27",
+        "fr-a28",
+        "fr-a29",
+        "fr-a32",
+        "fr-a33",
+        "fr-a35",
+        "fr-a37",
+        "fr-a38",
+        "fr-a39",
+        "fr-a40",
+        "fr-p13",
+        "fr-p14",
+        "fr-p15",
+        "fr-p17",
+        "fr-p18",
+        "fr-p19",
+        "fr-p28",
+        "fr-p29",
+        "fr-p30",
+        "fr-p33",
+        "fr-p34"
+      ],
+      "recordsUnchanged": true
+    },
+    "mirror": {
+      "queriesViaAcp": 96,
+      "queriesIdentity": 24,
+      "recordsViaAcp": 40,
+      "guardrailRejects": 0,
+      "retranslated": 27,
+      "reusedFromR1": 69,
+      "staleCheck": "变更条目的镜像与 r1 逐条不同（27/27），未变更条目逐字节复用（69/69）"
+    },
+    "corpusZh": {
+      "seed": 15802406,
+      "count": 10000,
+      "domains": 10,
+      "functionWords": [
+        {
+          "word": "能不能",
+          "target": 1000,
+          "actual": 1000,
+          "share": 0.1,
+          "actualShare": 0.1
+        },
+        {
+          "word": "有没有",
+          "target": 1000,
+          "actual": 1000,
+          "share": 0.1,
+          "actualShare": 0.1
+        },
+        {
+          "word": "是不是",
+          "target": 800,
+          "actual": 800,
+          "share": 0.08,
+          "actualShare": 0.08
+        },
+        {
+          "word": "为什么",
+          "target": 800,
+          "actual": 800,
+          "share": 0.08,
+          "actualShare": 0.08
+        },
+        {
+          "word": "的时候",
+          "target": 2500,
+          "actual": 2500,
+          "share": 0.25,
+          "actualShare": 0.25
+        },
+        {
+          "word": "的模型",
+          "target": 500,
+          "actual": 500,
+          "share": 0.05,
+          "actualShare": 0.05
+        },
+        {
+          "word": "会不会",
+          "target": 600,
+          "actual": 600,
+          "share": 0.06,
+          "actualShare": 0.06
+        },
+        {
+          "word": "什么时候",
+          "target": 500,
+          "actual": 500,
+          "share": 0.05,
+          "actualShare": 0.05
+        }
+      ],
+      "lexicalViolations": 0,
+      "reusedFromR1": true
+    },
+    "strata": {
+      "union": {
+        "<0.200": 20,
+        "0.200-0.310": 19,
+        "0.310-0.400": 14,
+        ">=0.400": 27
+      },
+      "relevance": {
+        "<0.200": 3,
+        "0.200-0.310": 9,
+        "0.310-0.400": 10,
+        ">=0.400": 18
+      },
+      "protection": {
+        "<0.200": 17,
+        "0.200-0.310": 10,
+        "0.310-0.400": 4,
+        ">=0.400": 9
+      },
+      "measuredPreFreeze": true,
+      "supersededReading": "原 f2-strata.json 的 24/15/13/28 随 query 改动失效，不得带入新轮（裁定第 1 项）"
+    }
+  },
+  "generatedBy": "benchmark/freeze-util.ts"
+}

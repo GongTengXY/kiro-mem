@@ -1,0 +1,23 @@
+{
+  "provenance": {
+    "source": "acp",
+    "agent": "kiro-mem-compressor",
+    "kiroCli": "kiro-cli (see report)",
+    "target": "queries",
+    "querySet": "leakage",
+    "generatedAt": "2026-07-30T12:50:58.209Z",
+    "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+    "items": 1,
+    "failures": 0,
+    "retries": 0,
+    "wallTimeMs": 8921,
+    "itemLatencyMs": {
+      "p50": 8920,
+      "p95": 8920,
+      "max": 8920
+    }
+  },
+  "queries": {
+    "q20": "401 token refresh replay request"
+  }
+}

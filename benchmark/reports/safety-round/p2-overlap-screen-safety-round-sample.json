@@ -1,0 +1,75 @@
+{
+  "step": "P2 重叠筛查 · safety-round-sample",
+  "criteria": {
+    "path": "benchmark/reports/safety-round/p2-calibration-criteria.md",
+    "sha256": "dd61359bd938011eebe17eab6262cbc421fa818af2667b7e1a25fe597a0035a1",
+    "section": "§5"
+  },
+  "reviewBand": 0.45,
+  "autoDeleteEnabled": false,
+  "inputs": [
+    {
+      "path": "benchmark/dataset/turns-safety-round-sample.json",
+      "sha256": "fd36c1fd5b78c5e820e85c12c91dcc32652cbcd43ed436bb61bc55493a4ecbbc"
+    },
+    {
+      "path": "benchmark/dataset/mirror-en-acp-records-safety-round-sample.json",
+      "sha256": "36bf3a4f135d35956d9fe4796eb787879f0b83d748a6cd373e7c09a62993aada"
+    }
+  ],
+  "counts": {
+    "newRecords": 8,
+    "oldGold": 26,
+    "pairs": 208
+  },
+  "factSourceCheck": {
+    "passed": true,
+    "checked": 8
+  },
+  "layer1HardDuplicate": {
+    "count": 0,
+    "entries": []
+  },
+  "layer2ReviewBand": {
+    "distribution": {
+      "min": -0.073,
+      "p50": 0.174,
+      "p95": 0.354,
+      "max": 0.476
+    },
+    "count": 2,
+    "entries": [
+      {
+        "newId": "s06",
+        "oldId": "t06",
+        "cosine": 0.476,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "newId": "s03",
+        "oldId": "t26",
+        "cosine": 0.465,
+        "verdict": "PENDING-HUMAN"
+      }
+    ]
+  },
+  "withinNewSet": {
+    "pairs": 28,
+    "max": 0.466,
+    "count": 2,
+    "entries": [
+      {
+        "a": "s03",
+        "b": "s08",
+        "cosine": 0.466,
+        "verdict": "PENDING-HUMAN"
+      },
+      {
+        "a": "s01",
+        "b": "s05",
+        "cosine": 0.459,
+        "verdict": "PENDING-HUMAN"
+      }
+    ]
+  }
+}

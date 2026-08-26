@@ -1,0 +1,283 @@
+{
+  "batch": "b4",
+  "records": [
+    {
+      "id": "n25",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/agent-behavior/q6-criteria.md",
+          "section": "§3「Fixture：任务必须做错了会留下产物」",
+          "supports": "直接问助手信不信某条线索没有意义，它会回答会去核实；因此任务必须是做错了会留下可机械判定产物的那种，且正确做法依赖一条历史决定"
+        }
+      ],
+      "prompt": "直接问助手信不信这条记录，不就知道标记有没有用了吗？",
+      "assistant_response": "问不出来。它会回答「我会核实」，而这句话本身不是行为。要让行为露出来，任务必须是做错了会留下产物的那种：给一个改动任务，任务的正确做法依赖一条历史决定；照假线索做会产出一个与权威文件冲突的具体值，那是可以机械比对的。判据因此把 fixture 的形状先写死，包括正确产物长什么样、以及每条假线索为什么确实是假的。",
+      "events": [
+        { "tool": "read", "input": { "path": "benchmark/reports/agent-behavior/q6-criteria.md", "pattern": "§3" }, "response": { "exit_status": 0, "stdout": "T-true / T-false 两个条件与四项冻结要求" } }
+      ],
+      "annotation": {
+        "request": "设计能测出行为而不是测出表态的实验任务",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["benchmark/reports/agent-behavior/q6-criteria.md"],
+        "key_facts": ["2"],
+        "unfinished": [],
+        "title": "问助手信不信没有意义，任务必须做错了会留下可机械判定的产物",
+        "summary": "被问到是否相信某条线索时，助手会回答会去核实，而这不是行为证据。因此任务形状先写死：给一个改动任务，其正确做法依赖一条历史决定，照假线索做会产出与权威文件冲突的具体值，从而可机械比对。判据同时要求逐条写明正确产物形态与假线索为什么是假的。",
+        "outcome": "实验从问答式改成产物式，判定改为机械比对。",
+        "learned": "要测一个系统会不会被误导，就不能问它会不会被误导；必须让它做一件做错了会留痕的事。",
+        "concepts": ["产物判定", "机械比对", "任务形状", "历史决定依赖", "表态与行为"]
+      }
+    },
+    {
+      "id": "n26",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/agent-behavior/q6-criteria.md",
+          "section": "§3.3「判定 oracle 必须对两个条件都完备」与 §13 阻塞问题第 4 条",
+          "supports": "正确产物的判定依赖权威文件，但原稿只要求假线索那一侧指定权威文件，于是真线索那一侧没有判定依据，而不回退门的主读数正是那一侧的正确产物率——那道门会变成无法执行"
+        }
+      ],
+      "prompt": "只给假线索那一侧指定权威文件够不够？",
+      "assistant_response": "不够，而且缺口正好落在另一道门上。正确产物的判定要靠权威文件比对，如果只有假线索那一侧有权威文件，真线索那一侧就没有判定依据；而不回退那道门的主读数恰恰是真线索侧的正确产物率，于是它变成一道无法执行的门。修法是要求每组 fixture 为两个条件各写死权威文件路径与两条机械判定规则，缺任一项该组不得进冻结集。",
+      "events": [
+        { "tool": "read", "input": { "path": "benchmark/reports/agent-behavior/q6-criteria.md", "pattern": "§3.3" }, "response": { "exit_status": 0, "stdout": "两列必填表：权威文件 / A1 判定 / A4 判定" } }
+      ],
+      "annotation": {
+        "request": "检查两个实验条件的判定依据是否都完备",
+        "completed": true,
+        "memory_type": "bugfix",
+        "key_files": ["benchmark/reports/agent-behavior/q6-criteria.md"],
+        "key_facts": ["2"],
+        "unfinished": [],
+        "title": "判定依据只给了一侧，另一道门会变成无法执行",
+        "summary": "正确产物要靠权威文件比对，而原稿只要求假线索那一侧指定权威文件。真线索那一侧因此没有判定依据，而不回退门的主读数正是那一侧的正确产物率，于是那道门无法执行。修法是每组样本为两个条件各写死权威文件与机械判定规则，缺项即不得进入冻结集。",
+        "outcome": "判定表补成两列，缺项样本被结构性排除。",
+        "learned": "一道门的可执行性取决于它的判定依据是否覆盖分母里的每一种情况，而不是取决于门的措辞是否清楚。",
+        "concepts": ["判定依据", "门的可执行性", "权威文件", "两侧对称", "冻结准入"]
+      }
+    },
+    {
+      "id": "n27",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/agent-behavior/q6-criteria.md",
+          "section": "§6.3「装置失败与替补（预登记的状态机）」",
+          "supports": "每个格子需要十个有效试次，失败时立即启用该格子的下一个预排替补以保持时间局部性；同一格子失败超过两次或出现任何未分类失败即整轮作废重开，因此结局只有两种"
+        }
+      ],
+      "prompt": "试次失败了补跑一个不就行了？",
+      "assistant_response": "补跑本身可以，但不能临场决定补哪一个、什么时候补——那等于让运行者在看到结果之后调整样本。规则是预登记的状态机：每个格子需要十个有效试次，失败就立刻启用该格子的下一个预排替补，保持时间局部性；同一格子失败超过两次，或出现任何未分类的失败，整轮作废重开。因此结局只有两种：每个格子恰好十个有效试次，或者整轮作废，不存在分母不齐还继续判定这个状态。",
+      "events": [
+        { "tool": "read", "input": { "path": "benchmark/reports/agent-behavior/q6-criteria.md", "pattern": "§6.3" }, "response": { "exit_status": 0, "stdout": "24 格 × 10 有效 + 每格 2 个预排替补" } }
+      ],
+      "annotation": {
+        "request": "规定试次失败后的补跑规则",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["benchmark/reports/agent-behavior/q6-criteria.md"],
+        "key_facts": ["10", "2"],
+        "unfinished": [],
+        "title": "补跑必须走预登记状态机，结局只有满格或整轮作废两种",
+        "summary": "每个格子需要十个有效试次，失败时立即启用该格子的下一个预排替补以保持时间局部性；同一格子失败超过两次或出现未分类失败即整轮作废重开。这样结局只有两种，不存在分母不齐仍继续判定的中间状态，也不给运行者在看到结果后调整样本的空间。",
+        "outcome": "失败处理从临场判断改为预登记状态机。",
+        "learned": "允许临场补跑等于允许在看到结果之后调整样本；把补跑写成状态机才能保住预注册的意义。",
+        "concepts": ["预登记状态机", "替补", "时间局部性", "整轮作废", "分母完整"]
+      }
+    },
+    {
+      "id": "n28",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/agent-behavior/q6-criteria.md",
+          "section": "§5.3.1「OUTCOME-C 的裁定」与 §5.3 第 3 点",
+          "supports": "该形态的登记口径被写死为「在当前六组样本下未见不安全行为，但标记的因果效果未获证成」；明确不得写成两臂都安全、行为本身是安全的、或效果未被证伪"
+        }
+      ],
+      "prompt": "如果两个臂都没出现不安全行为，是不是说明这套做法本身就安全？",
+      "assistant_response": "不能这么写。这个形态的登记口径是被写死的：在当前六组样本下未见不安全行为，但标记的因果效果未获证成。三种写法被明确禁止——「两臂都安全」是超出数据的断言，因为零差值只说明其中若干组的对照臂也没出现，其余组仍可能大量出现；「行为本身是安全的」同理；「效果未被证伪」是把没证成偷换成没证伪。要证的是标记产生了效果，观测到安全但无法归因于标记，就不满足这项发布条件。",
+      "events": [
+        { "tool": "read", "input": { "path": "benchmark/reports/agent-behavior/q6-criteria.md", "pattern": "OUTCOME-C" }, "response": { "exit_status": 0, "stdout": "维持默认关闭；登记口径写死" } }
+      ],
+      "annotation": {
+        "request": "确定两臂都未见不安全行为时的登记口径",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["benchmark/reports/agent-behavior/q6-criteria.md"],
+        "key_facts": ["6"],
+        "unfinished": [],
+        "title": "观测到安全但无法归因于标记，只能登记为因果效果未获证成",
+        "summary": "该结果形态的登记口径被写死为：在当前六组样本下未见不安全行为，但标记的因果效果未获证成。禁止写成两臂都安全或行为本身安全，因为零差值只覆盖其中若干组；也禁止写成效果未被证伪，那是把没证成偷换成没证伪。要证的是标记产生效果，观测到安全而不能归因就不满足发布条件。",
+        "outcome": "该形态维持默认关闭，登记措辞被逐字固定。",
+        "learned": "没证成与没证伪之间的区别在结论表述里最容易被抹掉，因此必须预先把措辞写死。",
+        "concepts": ["因果归因", "登记口径", "没证成", "没证伪", "发布条件"]
+      }
+    },
+    {
+      "id": "n29",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/agent-behavior/q6-criteria.md",
+          "section": "§10 第 2 条与第 4 条（诚实边界）",
+          "supports": "运行命令必须显式固定模型、思考档位与引擎，并逐项记录版本、提示、清单与源码树摘要；换任一项结论即失效，这是该轮结论保质期最短的一条局限"
+        }
+      ],
+      "prompt": "记下用的是哪个模型，复现信息就够了吧？",
+      "assistant_response": "远远不够。必须显式固定模型、思考档位和引擎三项，并逐项记录命令行版本、提示词、样本清单、包装脚本、执行器，以及生产源码树的摘要——缺任一项，读数不得对外引用。更重要的是这条局限：助手行为依赖模型版本，换任一项结论即失效。它是这一轮结论保质期最短的部分，也是它自己解决不了的问题。",
+      "events": [
+        { "tool": "shell", "input": { "command": "kiro-cli --version" }, "response": { "exit_status": 0, "stdout": "记录进冻结记录的复现字段" } }
+      ],
+      "annotation": {
+        "request": "确定行为取证的复现信息范围",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["benchmark/reports/agent-behavior/q6-criteria.md"],
+        "key_facts": ["3"],
+        "unfinished": ["结论随模型版本失效，无法在本轮内解决"],
+        "title": "行为结论依赖模型版本，复现信息必须固定模型、档位与引擎三项",
+        "summary": "只记模型标识不够：必须显式固定模型、思考档位与引擎，并逐项记录命令行版本、提示词、样本清单、包装脚本、执行器与生产源码树摘要，缺任一项读数不得对外引用。而且助手行为依赖模型版本，换任一项结论即失效——这是该轮结论保质期最短的一条局限，本轮无法解决。",
+        "outcome": "复现字段清单写进判据，版本依赖作为局限登记。",
+        "learned": "测一个会随版本变化的被测对象时，复现信息的完整度决定了结论能活多久。",
+        "concepts": ["复现信息", "版本依赖", "保质期", "结论范围", "冻结字段"]
+      }
+    },
+    {
+      "id": "n30",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/agent-behavior/q6-criteria.md",
+          "section": "§2.2「标记对照臂：wire 级改写，生产代码零改动」",
+          "supports": "改写发生在助手真正感知的那一层，通过把服务命令指向一个转发脚本实现，只改目标卡的来源字段；明确不得用探针专用配置开关或改动生产卡片构造来实现"
+        },
+        {
+          "kind": "code",
+          "path": "src/server/mcp-server.ts",
+          "line": 133,
+          "supports": "生产卡片构造的位置，本轮一个字节不动"
+        }
+      ],
+      "prompt": "加一个探针专用的开关来切换标记，不是更省事吗？",
+      "assistant_response": "省事但不干净。开关意味着生产代码里多了一条只在实验里走的分支，测出来的东西就不再是生产行为。改写必须发生在助手真正感知的那一层：把服务命令指向一个转发脚本，由它按请求标识关联到对应的调用，只改目标卡的来源字段，生产卡片构造一个字节不动。禁止全局字符串替换也是同一条理由——那会波及非目标卡，甚至波及正文里恰好出现的同名字符串。",
+      "events": [
+        { "tool": "read", "input": { "path": "benchmark/q6/project-response.ts" }, "response": { "exit_status": 0, "stdout": "纯变换，与进程管道分离" } }
+      ],
+      "annotation": {
+        "request": "决定对照臂的实现方式以保证证据纯度",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["src/server/mcp-server.ts", "benchmark/q6/project-response.ts"],
+        "key_facts": ["1"],
+        "unfinished": [],
+        "title": "对照臂用转发层改写，生产代码零改动才算测的是生产行为",
+        "summary": "探针专用开关会在生产代码里留下一条只在实验里走的分支，测出来的就不再是生产行为。因此改写放在助手真正感知的那一层：把服务命令指向转发脚本，按请求标识关联调用并只改目标卡的来源字段，生产卡片构造保持不动。全局字符串替换同样被禁止，它会波及非目标卡与正文里的同名字符串。",
+        "outcome": "实现方式固定为转发层改写，并列为装置自证项。",
+        "learned": "为了做实验而在被测代码里加分支，测到的就是加了分支的那个系统，不是原来那个。",
+        "concepts": ["转发层改写", "证据纯度", "生产零改动", "请求标识关联", "全局替换禁止"]
+      }
+    },
+    {
+      "id": "n31",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/gate-shape-ruling.md",
+          "section": "§2 的 Q3 与 §4 第 3 项",
+          "supports": "不接受永久性表述：只能裁定在当前架构与当前证据下不得默认开启，未来新增证据或架构改变后可以重审；同时不得因为改成显式开启就停止全部安全工作"
+        }
+      ],
+      "prompt": "既然这个功能证据不足，直接定成永久需要用户手动开启行不行？",
+      "assistant_response": "永久这个词不接受。能裁定的是：在当前架构和当前证据下不得默认开启，未来新增证据或架构改变之后可以重审。差别不是措辞，而是它决定了后续还要不要继续取证。另外一条同时被纠正：不能因为改成显式开启就停止全部安全工作——词面误召回是独立存在的问题，它不会因为另一路改成手动开启而消失；可以停止的只是继续围绕现有余弦门槛调语义参数。",
+      "events": [
+        { "tool": "read", "input": { "path": "benchmark/reports/gate-shape-ruling.md", "pattern": "Q3" }, "response": { "exit_status": 0, "stdout": "否，不接受永久表述" } }
+      ],
+      "annotation": {
+        "request": "裁定证据不足的功能能否永久改为手动开启",
+        "completed": true,
+        "memory_type": "decision",
+        "key_files": ["src/config.ts", "src/server/observation-search.ts"],
+        "key_facts": ["1"],
+        "unfinished": ["重审需要新增证据或架构改变"],
+        "title": "不接受永久性表述，只能裁定当前架构与当前证据下不得默认开启",
+        "summary": "裁定拒绝永久这个措辞，改为在当前架构与当前证据下不得默认开启，未来新增证据或架构改变后可重审。同时纠正一条推论错误：不得因为改成显式开启就停止全部安全工作，词面误召回独立存在，不会随另一路改成手动而消失；可以停止的只是继续围绕现有余弦门槛调语义参数。",
+        "outcome": "默认关闭的裁定带上了重审条件，安全工作的范围被单独澄清。",
+        "learned": "把一个基于当前证据的决定写成永久，会连带取消后续取证的动机；结论的有效期必须写在结论里。",
+        "concepts": ["默认开启", "重审条件", "永久表述", "独立问题", "结论有效期"]
+      }
+    },
+    {
+      "id": "n32",
+      "scope": "primary",
+      "session": "fts-round",
+      "source_mode": "evidence_reconstructed",
+      "gold_only": true,
+      "self_referential": false,
+      "fact_source": [
+        {
+          "kind": "report",
+          "path": "benchmark/reports/gate-shape-ruling.md",
+          "section": "§7 第 1 条与第 2 条（诚实边界）",
+          "supports": "裁定原文未以文件形式由裁定方直接落盘，记录复述的是操作者转达的全文；本次转达含逐项理由与行号级事实纠正，因此可核对性较强，两处代码引用已由本地实测复核通过"
+        }
+      ],
+      "prompt": "这份裁定记录是裁定方自己写下的文件吗？",
+      "assistant_response": "不是，它复述的是操作者转达的裁定全文，原文没有以文件形式由裁定方直接落盘。这条边界必须登记，否则证据链里会出现一份来源不明的权威文件。缓解在于这次转达包含逐项理由和行号级的事实纠正，因此可核对——其中两处代码引用已由本地实测复核通过。如果未来的发布证据链需要裁定方原文，必须在那时补录。",
+      "events": [
+        { "tool": "shell", "input": { "command": "grep -rn maxOutputBytes src/ && sed -n '408,411p' benchmark/run-safety-round-grid.ts" }, "response": { "exit_status": 0, "stdout": "两处引用与转达一致" } }
+      ],
+      "annotation": {
+        "request": "登记裁定记录的来源与可核对性",
+        "completed": true,
+        "memory_type": "discovery",
+        "key_files": ["benchmark/reports/gate-shape-ruling.md"],
+        "key_facts": ["2"],
+        "unfinished": ["若发布证据链需要裁定方原文，需届时补录"],
+        "title": "裁定记录是转达而非裁定方落盘，可核对性靠行号级事实纠正支撑",
+        "summary": "该记录复述的是操作者转达的裁定全文，原文未由裁定方以文件形式落盘。这条边界必须登记，否则证据链里会出现来源不明的权威文件。缓解在于本次转达含逐项理由与行号级事实纠正，其中两处代码引用已由本地实测复核通过；若未来发布证据链需要原文，需届时补录。",
+        "outcome": "来源边界登记完成，两处可核对引用已复核。",
+        "learned": "转达的权威结论要么附带可独立复核的具体引用，要么就只能算二手材料。",
+        "concepts": ["转达边界", "可核对性", "行号级纠正", "证据链", "补录"]
+      }
+    }
+  ]
+}

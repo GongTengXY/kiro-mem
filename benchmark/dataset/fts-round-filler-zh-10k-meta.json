@@ -1,0 +1,93 @@
+{
+  "purpose": "FTS 安全策略轮次 F1 的中文词面 filler 语料（判据 §3.1 / §3.1.1）。",
+  "frozen": false,
+  "frozenNote": "冻结由 benchmark/freeze-util.ts 在 F1 一次性完成；本 meta 不写时间戳。",
+  "criteria": "benchmark/reports/fts-round/f1-criteria.md",
+  "count": 10000,
+  "seed": 15802406,
+  "domains": 10,
+  "domainKeys": [
+    "irrigation",
+    "hospital-shift",
+    "metro-dispatch",
+    "cold-chain",
+    "parcel-sorting",
+    "pv-plant",
+    "library",
+    "aquaculture",
+    "parking",
+    "catering"
+  ],
+  "functionWords": [
+    {
+      "word": "能不能",
+      "target": 1000,
+      "actual": 1000,
+      "share": 0.1,
+      "actualShare": 0.1
+    },
+    {
+      "word": "有没有",
+      "target": 1000,
+      "actual": 1000,
+      "share": 0.1,
+      "actualShare": 0.1
+    },
+    {
+      "word": "是不是",
+      "target": 800,
+      "actual": 800,
+      "share": 0.08,
+      "actualShare": 0.08
+    },
+    {
+      "word": "为什么",
+      "target": 800,
+      "actual": 800,
+      "share": 0.08,
+      "actualShare": 0.08
+    },
+    {
+      "word": "的时候",
+      "target": 2500,
+      "actual": 2500,
+      "share": 0.25,
+      "actualShare": 0.25
+    },
+    {
+      "word": "的模型",
+      "target": 500,
+      "actual": 500,
+      "share": 0.05,
+      "actualShare": 0.05
+    },
+    {
+      "word": "会不会",
+      "target": 600,
+      "actual": 600,
+      "share": 0.06,
+      "actualShare": 0.06
+    },
+    {
+      "word": "什么时候",
+      "target": 500,
+      "actual": 500,
+      "share": 0.05,
+      "actualShare": 0.05
+    }
+  ],
+  "functionWordNote": "目标占比由判据 §3.1.1 预登记；注入方式是「恰好 N 条」，因此实测必须等于目标。S3 在装置上核对 df/N。",
+  "bannedTable": {
+    "sources": [
+      "/Users/lixinjie/LXJSpace/kiro-memory/benchmark/dataset/turns.json"
+    ],
+    "concepts": 92,
+    "fileBasenames": 33,
+    "note": "gold 目前只有旧 26 条可见；40 条新记录撰写后必须用 --gold=<新记录> 重跑本检查，并在 F2 的 S3 再核一次。"
+  },
+  "lexicalViolations": 0,
+  "uniqueTitles": 10000,
+  "builderSha256": "b9636ce390a40ae2",
+  "corpusSha256": "f8661c7a49bc04ac",
+  "mirrorNote": "英文面由同一套模板生成，不调 ACP（判据 §3.1「向量」行）；因此它比真实 ACP 译文更规整，见判据 §12 第 4 条。"
+}

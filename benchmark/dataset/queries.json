@@ -1,0 +1,435 @@
+[
+  {
+    "id": "q01",
+    "kind": "relevance",
+    "origin": "tuned",
+    "scope": "primary",
+    "query": "FTS 特殊字符查询报错是怎么修的",
+    "expect": [
+      "t01"
+    ],
+    "note": "P0 3.1 的直接复查"
+  },
+  {
+    "id": "q02",
+    "kind": "relevance",
+    "origin": "tuned",
+    "scope": "primary",
+    "query": "search 为什么会降级成只用 FTS",
+    "expect": [
+      "t02"
+    ],
+    "note": "降级原因应指向 embedding 超时那一轮"
+  },
+  {
+    "id": "q03",
+    "kind": "relevance",
+    "origin": "tuned",
+    "scope": "primary",
+    "query": "hook 超时会不会拖慢 Kiro 启动",
+    "expect": [
+      "t03",
+      "t19"
+    ],
+    "note": "AgentSpawn 故障策略与 hook 实测耗时都算直接有帮助"
+  },
+  {
+    "id": "q04",
+    "kind": "relevance",
+    "origin": "tuned",
+    "scope": "primary",
+    "query": "日志里会不会有用户 prompt 正文",
+    "expect": [
+      "t04",
+      "t19"
+    ],
+    "note": "日志脱敏改动与隐私验收"
+  },
+  {
+    "id": "q05",
+    "kind": "relevance",
+    "origin": "tuned",
+    "scope": "primary",
+    "query": "版本号是在哪里统一管理的",
+    "expect": [
+      "t05"
+    ]
+  },
+  {
+    "id": "q06",
+    "kind": "relevance",
+    "origin": "tuned",
+    "scope": "primary",
+    "query": "MCP search 的 limit 最大能传多少",
+    "expect": [
+      "t06"
+    ]
+  },
+  {
+    "id": "q07",
+    "kind": "relevance",
+    "origin": "tuned",
+    "scope": "primary",
+    "query": "ACP 连接池回收失败会不会导致任务永久挂住",
+    "expect": [
+      "t07"
+    ]
+  },
+  {
+    "id": "q08",
+    "kind": "relevance",
+    "origin": "tuned",
+    "scope": "primary",
+    "query": "压缩一直失败最后会写成什么样的记录",
+    "expect": [
+      "t08"
+    ]
+  },
+  {
+    "id": "q09",
+    "kind": "relevance",
+    "origin": "tuned",
+    "scope": "primary",
+    "query": "本地 token 认证是怎么做到用户无感的",
+    "expect": [
+      "t11"
+    ]
+  },
+  {
+    "id": "q10",
+    "kind": "relevance",
+    "origin": "tuned",
+    "scope": "primary",
+    "query": "跑测试会不会污染我真实的数据目录",
+    "expect": [
+      "t12"
+    ]
+  },
+  {
+    "id": "q11",
+    "kind": "relevance",
+    "origin": "tuned",
+    "scope": "primary",
+    "query": "安装完 Worker 起不来说模块找不到",
+    "expect": [
+      "t13"
+    ]
+  },
+  {
+    "id": "q12",
+    "kind": "relevance",
+    "origin": "tuned",
+    "scope": "primary",
+    "query": "重新安装之后为什么还在跑旧代码",
+    "expect": [
+      "t14"
+    ]
+  },
+  {
+    "id": "q13",
+    "kind": "relevance",
+    "origin": "tuned",
+    "scope": "primary",
+    "query": "怎么发现运行中的 Worker 不是当前安装的版本",
+    "expect": [
+      "t15"
+    ]
+  },
+  {
+    "id": "q14",
+    "kind": "relevance",
+    "origin": "tuned",
+    "scope": "primary",
+    "query": "注入到会话里的上下文有多大 会不会超预算",
+    "expect": [
+      "t18"
+    ]
+  },
+  {
+    "id": "q15",
+    "kind": "relevance",
+    "origin": "tuned",
+    "scope": "primary",
+    "query": "timeline 的邻居是按什么顺序排的",
+    "expect": [
+      "t20"
+    ]
+  },
+  {
+    "id": "q16",
+    "kind": "relevance",
+    "origin": "tuned",
+    "scope": "primary",
+    "query": "本地 embedding 模型是什么精度 多少维",
+    "expect": [
+      "t23"
+    ]
+  },
+  {
+    "id": "q17",
+    "kind": "relevance",
+    "origin": "tuned",
+    "scope": "primary",
+    "query": "跨项目会不会看到别的仓库的记忆",
+    "expect": [
+      "t22"
+    ]
+  },
+  {
+    "id": "q18",
+    "kind": "relevance",
+    "origin": "tuned",
+    "scope": "primary",
+    "query": "质量基准集还剩什么没做",
+    "expect": [
+      "t26"
+    ],
+    "note": "考察未完成项能否被检索到"
+  },
+  {
+    "id": "q19",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "虚拟滚动 react-window 帧率优化",
+    "expect": [],
+    "note": "词汇只存在于另一个 workspace，主 scope 既无相关记忆也无词汇重叠，理想返回空"
+  },
+  {
+    "id": "q20",
+    "kind": "leakage",
+    "scope": "primary",
+    "query": "401 token 刷新重放请求",
+    "expect": [],
+    "note": "只检验硬隔离，不计入 expected-empty：401 出现在 t11/t19，token 出现在 5 条 primary turn，返回本 scope 命中是正确行为"
+  },
+  {
+    "id": "q21",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "Kubernetes Ingress 灰度发布配置",
+    "expect": [],
+    "note": "容器编排领域在两个 scope 都不存在"
+  },
+  {
+    "id": "q22",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "支付回调 验签 对账差异",
+    "expect": [],
+    "note": "支付域词汇在两个 scope 都不存在"
+  },
+  {
+    "id": "q23",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "iOS APNs 推送证书 续期",
+    "expect": [],
+    "note": "移动端推送领域在两个 scope 都不存在"
+  },
+  {
+    "id": "q24",
+    "kind": "empty",
+    "scope": "primary",
+    "query": "Excel 导出 中文乱码 编码",
+    "expect": [],
+    "note": "报表导出领域在两个 scope 都不存在"
+  },
+  {
+    "id": "q25",
+    "kind": "relevance",
+    "origin": "heldout",
+    "scope": "primary",
+    "query": "purge 之后重装会不会残留旧表",
+    "expect": [
+      "t09"
+    ],
+    "note": "覆盖 t09：此前无 query"
+  },
+  {
+    "id": "q26",
+    "kind": "relevance",
+    "origin": "heldout",
+    "scope": "primary",
+    "query": "job 的类型名后来有没有改过",
+    "expect": [
+      "t10"
+    ],
+    "note": "覆盖 t10：此前无 query"
+  },
+  {
+    "id": "q27",
+    "kind": "relevance",
+    "origin": "heldout",
+    "scope": "primary",
+    "query": "干净机器上装完做过验收吗",
+    "expect": [
+      "t16"
+    ],
+    "note": "覆盖 t16：此前无 query"
+  },
+  {
+    "id": "q28",
+    "kind": "relevance",
+    "origin": "heldout",
+    "scope": "primary",
+    "query": "有没有真的跑通一整轮记忆生成",
+    "expect": [
+      "t17"
+    ],
+    "note": "覆盖 t17：此前无 query"
+  },
+  {
+    "id": "q29",
+    "kind": "relevance",
+    "origin": "heldout",
+    "scope": "primary",
+    "query": "两路检索结果是用什么算法合并的",
+    "expect": [
+      "t21"
+    ],
+    "note": "覆盖 t21：此前无 query"
+  },
+  {
+    "id": "q30",
+    "kind": "relevance",
+    "origin": "heldout",
+    "scope": "primary",
+    "query": "中文界面和中文提示是怎么支持的",
+    "expect": [
+      "t24"
+    ],
+    "note": "覆盖 t24：此前无 query"
+  },
+  {
+    "id": "q31",
+    "kind": "relevance",
+    "origin": "heldout",
+    "scope": "primary",
+    "query": "还有哪些类型错误没有修完",
+    "expect": [
+      "t25"
+    ],
+    "note": "覆盖 t25：此前无 query"
+  },
+  {
+    "id": "q32",
+    "kind": "relevance",
+    "origin": "heldout",
+    "scope": "primary",
+    "query": "搜索词里带引号或括号会不会崩",
+    "expect": [
+      "t01"
+    ],
+    "note": "t01 的换一种说法"
+  },
+  {
+    "id": "q33",
+    "kind": "relevance",
+    "origin": "heldout",
+    "scope": "primary",
+    "query": "向量算不出来的时候搜索还能不能用",
+    "expect": [
+      "t02"
+    ],
+    "note": "t02 的换一种说法"
+  },
+  {
+    "id": "q34",
+    "kind": "relevance",
+    "origin": "heldout",
+    "scope": "primary",
+    "query": "报错日志会不会把模型原始输出写进去",
+    "expect": [
+      "t04"
+    ],
+    "note": "t04 的换一种说法"
+  },
+  {
+    "id": "q35",
+    "kind": "relevance",
+    "origin": "heldout",
+    "scope": "primary",
+    "query": "改一次版本号要动几个文件",
+    "expect": [
+      "t05"
+    ],
+    "note": "t05 的换一种说法"
+  },
+  {
+    "id": "q36",
+    "kind": "relevance",
+    "origin": "heldout",
+    "scope": "primary",
+    "query": "连接池里有个子进程死了会怎么处理",
+    "expect": [
+      "t07"
+    ],
+    "note": "t07 的换一种说法"
+  },
+  {
+    "id": "q37",
+    "kind": "relevance",
+    "origin": "heldout",
+    "scope": "primary",
+    "query": "模型输出解析不了会不会把这一轮丢掉",
+    "expect": [
+      "t08"
+    ],
+    "note": "t08 的换一种说法"
+  },
+  {
+    "id": "q38",
+    "kind": "relevance",
+    "origin": "heldout",
+    "scope": "primary",
+    "query": "单元测试用的数据库文件放在哪里",
+    "expect": [
+      "t12"
+    ],
+    "note": "t12 的换一种说法"
+  },
+  {
+    "id": "q39",
+    "kind": "relevance",
+    "origin": "heldout",
+    "scope": "primary",
+    "query": "安装时少拷了一个文件会有什么现象",
+    "expect": [
+      "t13"
+    ],
+    "note": "t13 的换一种说法"
+  },
+  {
+    "id": "q40",
+    "kind": "relevance",
+    "origin": "heldout",
+    "scope": "primary",
+    "query": "会话开头塞进去的索引占多少字节",
+    "expect": [
+      "t18"
+    ],
+    "note": "t18 的换一种说法"
+  },
+  {
+    "id": "q41",
+    "kind": "relevance",
+    "origin": "heldout",
+    "scope": "primary",
+    "query": "两个不同仓库的记忆是怎么分开的",
+    "expect": [
+      "t22"
+    ],
+    "note": "t22 的换一种说法"
+  },
+  {
+    "id": "q42",
+    "kind": "relevance",
+    "origin": "heldout",
+    "scope": "primary",
+    "query": "向量是多少维 用了什么量化",
+    "expect": [
+      "t23"
+    ],
+    "note": "t23 的换一种说法"
+  }
+]

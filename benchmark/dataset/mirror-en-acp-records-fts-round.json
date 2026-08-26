@@ -1,0 +1,542 @@
+{
+  "provenance": {
+    "source": "acp",
+    "agent": "kiro-mem-compressor",
+    "kiroCli": "kiro-cli (see report)",
+    "target": "records",
+    "recordSet": "fts-round",
+    "generatedAt": "2026-08-14T02:55:25.925Z",
+    "independence": "records 与 queries 由两次独立运行产出，prompt 互不含对侧文本",
+    "items": 40,
+    "failures": 0,
+    "retries": 0,
+    "wallTimeMs": 28862,
+    "itemLatencyMs": {
+      "p50": 16750,
+      "p95": 19425,
+      "max": 28856
+    }
+  },
+  "records": {
+    "n13": {
+      "title": "The assertion that zero-lexical-hits holds relative to the corpus, must be reconfirmed after changing the rig",
+      "summary": "The zero-hit-on-empty-return negatives were only confirmed against one padded corpus in the prior phase, while the formal rig has five copies, and a corpus change would cause hits to appear. The retest result on the formal rig was forty entries all zero, and thirty anchors all hit with the range falling between 1 and 50.The scope in which this kind of assertion holds is bound to the corpus, and cannot be carried over across rigs.",
+      "outcome": "The rig self-verification was completed, and the hit preconditions on both sides were reconfirmed at the formal scale.",
+      "learned": "Any assertion of the form \"this query finds nothing at all\" is an assertion about the corpus, and must be retested whenever the corpus changes.",
+      "concepts": [
+        "zero hits",
+        "corpus relativity",
+        "rig self-verification",
+        "copy scale",
+        "assertion retest"
+      ]
+    },
+    "n10": {
+      "title": "Across the entire floor-line grid, the return count for the lexical-anchor side only drops from 4.955 to 4.227",
+      "summary": "The deduplicated average return count on the lexical-anchor side, across the entire process of raising the floor line from 0.197 to 0.325, only drops from 4.955 to 4.227, remaining far above the threshold throughout. This nearly flat curve shows that this variable has no control power over this side, not that it needs a larger value.",
+      "outcome": "Confirmed that this variable has no negotiable range on this side; the grid direction is rejected.",
+      "learned": "A nearly flat trade-off curve carries more information than a steep but non-passing curve: it shows you are turning the wrong knob.",
+      "concepts": [
+        "trade-off curve",
+        "deduplicated return count",
+        "control power",
+        "grid scan",
+        "ineffective variable"
+      ]
+    },
+    "n18": {
+      "title": "Coverage requirement has a real trade-off curve, two units cut 90% false recall while trading away one-third of true answers",
+      "summary": "When requiring at least two units to hit, anchor page rows drop from 109 to 12, and positive true-answer rows drop from 22 to 14; when requiring three, anchors drop to one row while positives are left with only six rows. This is completely different from the shape of the similarity threshold — there, no curve exists, the two sides' distributions overlap, but here there is a negotiable range. The curve itself is limited by the corpus, and is only used to judge whether a direction is worth entering the grid, not to fix a value.",
+      "outcome": "Coverage becomes the only direction entering the grid, the value is left to be decided on the new apparatus.",
+      "learned": "The probe's role is to filter direction, not to produce a threshold; taking the probe's best point directly as a parameter is selecting a parameter on already-consumed data.",
+      "concepts": [
+        "trade-off curve",
+        "minimum hit units",
+        "direction filtering",
+        "apparatus limitation",
+        "threshold source"
+      ]
+    },
+    "n22": {
+      "title": "Trials not exposed to the cue must not count as safe; exposure must be empirically confirmed before entering the readout",
+      "summary": "The three cases of retrieval not invoked, target card not entering the page, and card not delivered all collapse under the original coding into no-action, which lowers the proportion of acting-on-it, equivalent to trading apparatus failure for gate passage. Therefore an exposure gate is added: each trial must empirically confirm that retrieval was invoked and the target card was in fact delivered; those that fail to satisfy this do not enter any confirmatory readout, and instead follow the pre-registered fallback procedure.",
+      "outcome": "The exposure gate is written into the criteria, and the wrapper layer is required to keep frame-by-frame logs as mechanical evidence.",
+      "learned": "If apparatus failure gets mixed into the denominator of a safety metric, the metric will look best exactly when the system has been least tested.",
+      "concepts": [
+        "exposure gate",
+        "apparatus failure",
+        "denominator contamination",
+        "fallback procedure",
+        "mechanical evidence"
+      ]
+    },
+    "n03": {
+      "title": "False-recall gate changed to displacement-primary with capacity as secondary, old four-gate set fully retired",
+      "summary": "Ruling changes the primary gate from \"failure on any false lead appearing\" to a displacement criterion: the number of times an irrelevant result outranks the true answer must be zero. Capacity is kept as a secondary gate, changed to per-item judgment, capped at no more than two per no-answer query after full-page deduplication, and the average criterion is explicitly abolished. The old four-gate set must not be carried over as-is, because one of them is structurally unpassable, and another used averages to mask per-item overruns.",
+      "outcome": "Gate set rewrite complete, displacement is now the primary gate, capacity is demoted to a secondary gate with per-item judgment.",
+      "learned": "A gate that is structurally impossible to pass does not make the system safer, it only stops every round at the same place without revealing the real difference.",
+      "concepts": [
+        "displacement primary gate",
+        "capacity secondary gate",
+        "per-item judgment",
+        "average criterion",
+        "gate set rewrite"
+      ]
+    },
+    "n11": {
+      "title": "Narrowing the coverage scope of the same capacity gate can make it pass, which shows the coverage scope itself is criterion-determined",
+      "summary": "The deduped return for the zero-lexical-hit tier dropped from 1.565 to 0.826, which has entered the threshold at the highest floor line; but the whole gate covers both tiers combined, and the other tier remains above 4, so overall it does not pass. Success or failure is entirely determined by how the coverage scope is drawn, and coverage scope belongs to the criterion, not to the data.",
+      "outcome": "Recorded the dependency between this gate's passing condition and the coverage scope, to prevent later passing by narrowing the scope.",
+      "learned": "When reporting the result of a gate, the coverage scope must be reported at the same time, otherwise the same data can support opposite conclusions.",
+      "concepts": [
+        "coverage scope",
+        "capacity gate",
+        "tiered comparison",
+        "criterion-determined",
+        "passing condition"
+      ]
+    },
+    "n37": {
+      "title": "Ranking evidence and admission evidence must be pursued separately and attributed separately, and must not substitute for each other",
+      "summary": "The proposal itself predicts that the capacity gate will still fail on the lexical side, so stopping admission evidence leaves no track addressing that failure, which makes the path self-contradictory. The ruling requires the two tracks to proceed separately and be attributed separately: one addresses relative position among candidates, the other addresses which records are eligible to become candidates. Merging them into one round would make any improvement impossible to attribute.",
+      "outcome": "The two tracks were each opened as separate initiatives, with the attribution boundary written into the ruling.",
+      "learned": "When two variables are placed into the same round, the reading can only prove that their combination works, never which one works.",
+      "concepts": [
+        "track separation",
+        "attribution",
+        "admission",
+        "ranking",
+        "self-contradictory path"
+      ]
+    },
+    "n04": {
+      "title": "The displacement gate has a degenerate solution where emptying the page still passes, and it must be blocked by the tiered non-regression line",
+      "summary": "Displacement count is defined as \"the number of irrelevant results ranked before the true answer\", and this count is zero when the true answer is not on the page. This lets a parameter that empties the page entirely pass the displacement gate instead. The ruling therefore requires the tiered non-regression line to stand on equal footing with the displacement gate, acting as a qualifying filter that first ensures the true answer is still on the page, rather than being written as a footnote.",
+      "outcome": "The displacement gate is bound as a pair with the tiered non-regression line; the proposal to use the displacement gate alone was rejected.",
+      "learned": "Any metric whose denominator is \"the position relative to some correct result\" must first be checked for what happens when that correct result is absent.",
+      "concepts": [
+        "degenerate solution",
+        "qualifying filter",
+        "tiered non-regression",
+        "metric absence branch",
+        "gate binding"
+      ]
+    },
+    "n25": {
+      "title": "Asking the assistant whether it believes a lead is meaningless; the task must be designed so that doing it wrong leaves a mechanically judgeable artifact",
+      "summary": "When asked whether it believes a certain lead, the assistant will answer that it will verify, and this is not behavioral evidence. Therefore the task shape must be fixed in advance: given a modification task whose correct approach depends on a historical decision, following the false lead will produce a concrete value that conflicts with the authoritative file, allowing mechanical comparison. The judgment criteria must also state item by item what the correct artifact form looks like and why the false lead is false.",
+      "outcome": "The experiment changed from Q&A-style to artifact-style, and judgment changed to mechanical comparison.",
+      "learned": "To test whether a system can be misled, you cannot ask it whether it can be misled; you must have it do something that leaves a trace if done wrong.",
+      "concepts": [
+        "artifact judgment",
+        "mechanical comparison",
+        "task shape",
+        "historical decision dependency",
+        "stated position vs. behavior"
+      ]
+    },
+    "n39": {
+      "title": "Self-verification cannot require byte-identical responses from both arms, switched to a projection precheck on an already-captured response",
+      "summary": "Different sessions generate different retrieval parameters, so the actual responses of the two arms should not be byte-identical in the first place; executing as originally written would only make this self-verification fail forever or force it to be loosened. Switched to a deterministic precheck run before any trial: take the same already-captured response and project it separately onto the two rewrite paths, parse and compare, asserting that only the field of the target card is removed, while other fields, other cards, and the frame structure remain unchanged.",
+      "outcome": "This self-verification item went from unexecutable to a deterministic precheck that all passed.",
+      "learned": "A self-verification item that always fails will be loosened by the runner, which is equivalent to having no self-verification; an unexecutable check must be rewritten rather than having its standard lowered.",
+      "concepts": [
+        "device self-verification",
+        "unexecutable check",
+        "projection precheck",
+        "compare after parsing",
+        "standard loosening"
+      ]
+    },
+    "n15": {
+      "title": "The byte budget of the injected index does not constrain the returned page of retrieval, the cost should be rephrased as context and attention",
+      "summary": "That eight-thousand-byte budget only applies to the index injected at session start, and the returned page of the retrieval tool does not reference it; verified in the source code that this constant has only one usage site, located in the injection builder. Therefore, saying that false recall exhausts the budget is a factual error; the correct statement is that a wrong result additionally occupies the assistant's context and attention.",
+      "outcome": "The factual error in the argument was corrected, and the cost was rephrased using a defensible statement.",
+      "learned": "Before citing a budget, check its usage site first; a budget's name may sound like it applies globally, but in practice it often only applies to one path.",
+      "concepts": [
+        "byte budget",
+        "injected index",
+        "returned page",
+        "factual correction",
+        "usage site verification"
+      ]
+    },
+    "n29": {
+      "title": "Behavioral conclusions depend on model version, reproduction info must fix model, tier, and engine",
+      "summary": "Recording only the model identifier is not enough: model, thinking tier, and engine must be explicitly fixed, and CLI version, prompt, sample list, wrapper script, executor, and production source tree summary must be recorded item by item, and no reading may be cited externally if any item is missing. Moreover, assistant behavior depends on model version, and the conclusion becomes invalid if any item changes — this is the shortest-shelf-life limitation of this round's conclusion, and it cannot be resolved this round.",
+      "outcome": "The reproduction field checklist is written into the criteria, and version dependency is logged as a limitation.",
+      "learned": "When testing a subject under test that changes with version, the completeness of reproduction info determines how long the conclusion can remain valid.",
+      "concepts": [
+        "reproduction info",
+        "version dependency",
+        "shelf life",
+        "conclusion scope",
+        "frozen fields"
+      ]
+    },
+    "n38": {
+      "title": "Behavioral forensics does not block gate-set freeze, but constitutes a release condition before default-on",
+      "summary": "The ruling separates two things: the gate set can freeze first, with subsequent rounds proceeding as usual; while default-on for this feature is not authorized until behavioral forensics is complete. This way the two lines can proceed in parallel, at the cost of needing to keep the dependency direction clear — freeze does not equal release.",
+      "outcome": "Dependency direction registration complete, freeze and release decoupled.",
+      "learned": "Writing the blocking relationship clearly saves more time than lining up the work in a single sequence, but only on the premise that freeze is not misread as release.",
+      "concepts": [
+        "blocking relationship",
+        "release condition",
+        "parallel progress",
+        "freeze and release",
+        "scope of authorization"
+      ]
+    },
+    "n23": {
+      "title": "Zero observations only give an upper bound; a wrong denominator shrinks the risk upper bound to a quarter",
+      "summary": "This gate only counts the sixty valid trials of one cell; the one-sided confidence upper bound for sixty zero observations is about 4.87%, meaning one in twenty is still within the range the data allows. The original draft wrote the denominator as all two hundred forty trials, shrinking the upper bound to about 1.24%, which is equivalent to counting the sample size of four cells as belonging to one cell.",
+      "outcome": "The denominator was corrected, and the upper bound was written into the criterion together with its scope of applicability.",
+      "learned": "Zero observations is not zero risk; reporting it must also report the upper bound, and the upper bound depends only on that cell's own sample size.",
+      "concepts": [
+        "confidence upper bound",
+        "zero observations",
+        "denominator convention",
+        "sample size attribution",
+        "risk statement"
+      ]
+    },
+    "n20": {
+      "title": "The unit classification in diagnostics is a recomputed copy of the production implementation, and it silently breaks whenever production changes",
+      "summary": "The production splitting function returns a flat list, from which it is impossible to see which pass a unit came from, so the diagnostic script recomputed a classification following the production implementation. The cost is coupling: once the production implementation changes, this classification will not error out, it will only give attribution inconsistent with production. This has been written into the honesty boundary, rather than treated as an equivalent implementation.",
+      "outcome": "The coupling relationship has been registered; future changes to the production splitting must be synchronized.",
+      "learned": "Rewriting a copy of observed logic for the sake of observation introduces a failure path that does not error out, and this must be explicitly registered rather than assumed to always be correct.",
+      "concepts": [
+        "recomputed copy",
+        "silent failure",
+        "observation coupling",
+        "honesty boundary",
+        "attribution consistency"
+      ]
+    },
+    "n07": {
+      "title": "Dropped the neutral-value arm from the tagging control experiment because out-of-domain values route the agent into an exception path",
+      "summary": "The original plan used three arms: leave the tag as-is, replace it with a neutral value, delete the field. The neutral-value arm was removed because it is not within the production value domain — when the agent encounters an unknown value it may enter exception handling, so that arm was measuring the response to an unknown value rather than the effect of the tag itself. In the end only two arms were kept, where deleting the field and the field being naturally absent are isomorphic at the protocol level, forming a clean control.",
+      "outcome": "The experiment went from three arms to two arms; the neutral-value approach was rejected.",
+      "learned": "A control arm must fall within the legal value domain of the system under test, otherwise what it measures is exception handling rather than the variable you actually want.",
+      "concepts": [
+        "control arm",
+        "value domain",
+        "exception path",
+        "protocol isomorphism",
+        "confirmatory experiment"
+      ]
+    },
+    "n24": {
+      "title": "Batching by arm lets time drift confound with arm, execution order must be doubly randomized and interleaved",
+      "summary": "Long-running trials encounter service-side changes over time, and running one arm to completion before running the other lets this drift completely confound with arm, unable to be separated afterward. Therefore freeze the complete execution list before running the first trial: block by triplets, randomize the order of the two arms within each block, randomize the arrangement between blocks, execute interleaved one by one, and prohibit batching by arm or by sample.",
+      "outcome": "The execution list is frozen together with the random seed, and order legality is listed as a self-verification item.",
+      "learned": "The confounding variable most easily overlooked in controlled experiments is time itself; interleaved execution is the lowest-cost means of separating it out.",
+      "concepts": [
+        "time drift",
+        "confounding variable",
+        "block randomization",
+        "interleaved execution",
+        "execution list"
+      ]
+    },
+    "n26": {
+      "title": "The adjudication basis was given for only one side, and the other gate becomes unenforceable",
+      "summary": "The correct output relies on comparison against an authoritative file, but the original draft only required the false-lead side to specify an authoritative file. The true-lead side therefore has no adjudication basis, and the primary reading of the no-rollback gate is precisely the correct-output rate of that side, so that gate cannot be enforced. The fix is for each sample group to hard-specify an authoritative file and a mechanical adjudication rule for both conditions; a missing item disqualifies entry into the frozen set.",
+      "outcome": "The adjudication table was completed with two columns; samples with missing items were structurally excluded.",
+      "learned": "The enforceability of a gate depends on whether its adjudication basis covers every case in the denominator, not on whether the gate's wording is clear.",
+      "concepts": [
+        "adjudication basis",
+        "gate enforceability",
+        "authoritative file",
+        "two-side symmetry",
+        "frozen-set admission"
+      ]
+    },
+    "n35": {
+      "title": "Per-item zero-return gate fails on 24 of 25, both metrics stay above two",
+      "summary": "The gate requiring per-item zero return for foreign-domain negatives had 24 of 25 non-zero, with only one true zero return; the raw row-count mean was 2.720, and the deduplicated mean was 2.000. Queries of this kind still pull back an average of two distinct records. The magnitude of failure shows the direction itself has no passable threshold, and the later ruling changed per-item zero-return into a capacity ceiling on this basis.",
+      "outcome": "The gate was ruled infeasible as a direction, and changed to a capacity metric.",
+      "learned": "The magnitude of failure carries more information than pass/fail alone: falling short by a little versus falling short by an order of magnitude call for completely different next steps.",
+      "concepts": [
+        "per-item zero-return",
+        "failure magnitude",
+        "two metrics",
+        "capacity ceiling",
+        "direction infeasible"
+      ]
+    },
+    "n17": {
+      "title": "Ninety percent of returns are caused by only one lexical unit, while each query on average splits into eighteen point five",
+      "summary": "Among one hundred nine rows returned on the anchor side, ninety-seven rows hit only one unit, while the query on average splits into eighteen point five units. The units are combined with OR and there is no coverage requirement, so hitting one out of eighteen is enough to become a candidate and proceed all the way into fusion. On the positive side, each row hits an average of one point four one units, and on the negative side one point one two, the gap between the two sides is very small, and this is currently the only quantifiable discriminative signal.",
+      "outcome": "The causal chain of false recall is completed: single-fragment hit plus no coverage requirement.",
+      "learned": "Connecting multiple weak signals with OR is equivalent to lowering the threshold to the weakest one among them.",
+      "concepts": [
+        "single-fragment hit",
+        "coverage",
+        "OR connection",
+        "candidate admission",
+        "discriminative signal"
+      ]
+    },
+    "n40": {
+      "title": "Author and judge being the same person remains unresolved, mitigated by relying only on mechanical comparison for the primary criterion",
+      "summary": "The author, sample author, and behavior judge are the same person, and this round did not improve this. The mitigation is that the primary criterion relies only on mechanical comparison: artifact comparison uses exact field matching or regex, tool calls use record-based mechanical verification; coding that depends on a human reading response text is explicitly excluded from the primary criterion. The main conclusion therefore does not depend on subjective judgment, but the fact that it is the same person is still logged in the honesty boundary.",
+      "outcome": "Subjectivity is isolated outside the primary criterion, and the limitation is honestly logged.",
+      "learned": "A bias that cannot be eliminated should either be isolated to a position where it does not affect the main conclusion, or be honestly logged; both are better than claiming it does not exist.",
+      "concepts": [
+        "subjectivity",
+        "mechanical comparison",
+        "primary criterion isolation",
+        "honesty boundary",
+        "unresolved limitation"
+      ]
+    },
+    "n05": {
+      "title": "The false-recall device's filler corpus has zero Chinese characters, the Chinese lexical competition pool has only 66 rows",
+      "summary": "The device has fifty thousand and sixty-six rows in total, but records containing Chinese are only sixty-six, because the ten thousand rows of filler corpus are entirely English — it was built for the vector leg, never for the lexical leg. The result is that Chinese queries have almost no competitors on the lexical side, and the three kinds of readings — document frequency, rank saturation, and candidate truncation — cannot be extrapolated to the real workspace.",
+      "outcome": "Lexical parameter selection is blocked by a precondition: fill in the Chinese corpus first, then discuss the values.",
+      "learned": "A device built for one channel does not automatically apply to another channel; mixing them makes the readings look normal while the conclusion is entirely invalid.",
+      "concepts": [
+        "filler corpus",
+        "competition pool",
+        "document frequency",
+        "reading extrapolation",
+        "device precondition"
+      ]
+    },
+    "n36": {
+      "title": "Filler corpus contributes only thirteen lines, and entirely via Latin and digit unit hits",
+      "summary": "Of the one hundred nine lines returned for the anchor negative, only thirteen lines came from the filler corpus, and these thirteen lines relied on Latin or digit units cut from mixed-typesetting segments; the Chinese three-character window did not touch a single filler line, and the positive side had zero lines from filler. Therefore that batch of returns was almost entirely mutual interference among the sixty-six real records, not something caused by the fifty-thousand-record corpus.",
+      "outcome": "The conclusion that the apparatus is not applicable to word-surface work gained its most direct evidence.",
+      "learned": "Looking at where a batch of returns comes from tells you more about whether the apparatus is testing what you think it is testing than looking at how many lines it has.",
+      "concepts": [
+        "return source",
+        "filler contribution",
+        "Latin unit",
+        "mutual interference",
+        "apparatus applicability"
+      ]
+    },
+    "n09": {
+      "title": "The same gate produces opposite outcomes on two layers, with failures concentrated on the layer with lexical hits",
+      "summary": "Splitting the judgment by negative-example layer: all twenty-three zero-lexical-hit queries passed, all twenty-two queries with a lexical anchor failed. That batch of queries is defined by hitting the lexical index, so the page necessarily contains a lexical source, meaning this gate structurally cannot govern them. A stratified report is the only way to see this; an aggregate number would only give a vague failure rate.",
+      "outcome": "Responsibility is clearly attributed to lexical admission; semantic parameters are no longer being tuned.",
+      "learned": "Aggregating into a single failure rate averages away two layers' completely different conclusions; the value of a stratified report lies in making attribution possible.",
+      "concepts": [
+        "stratified report",
+        "source gate",
+        "lexical hit",
+        "attribution",
+        "structural failure"
+      ]
+    },
+    "n06": {
+      "title": "Chinese query has no word-level lexical leg concept, all hits come from cross-word-boundary trigram sliding windows",
+      "summary": "Splitting happens in two passes: the first pass emits the whole segment and the entire contiguous string, the second pass uses a trigram sliding window to cut the long string. Chinese question sentences have no spaces, so what the first pass emits is the whole sentence, which matches no document; on the positive side, all 145 returned rows are caused by the second pass's sliding window. The sliding window crosses word boundaries, and half of the fragments it cuts are not words. Based on this, the rule of 'only accepting first-pass units' was also tested, the true-answer rows dropped to zero, and the direction was rejected on the spot.",
+      "outcome": "Confirmed the sliding window is the only effective source of hits, the scheme of discriminating by unit source was rejected.",
+      "learned": "A language without word segmentation can only rely on sliding windows for substring indexing, and sliding windows naturally produce non-word fragments — the noise must be controlled downstream, not by expecting the fragments to be words.",
+      "concepts": [
+        "trigram sliding window",
+        "cross-word boundary",
+        "whole-sentence unit",
+        "unit source discrimination",
+        "substring index"
+      ]
+    },
+    "n28": {
+      "title": "Observed safe but not attributable to the flag, can only be registered as causal effect not established",
+      "summary": "The registration wording for this outcome pattern is hard-coded as: under the current six sample groups, no unsafe behavior was observed, but the flag's causal effect is not established. It is forbidden to write it as both arms are safe or the behavior itself is safe, because the zero-difference only covers some of the groups; it is also forbidden to write it as the effect not being falsified, which substitutes not-established with not-falsified. What must be established is that the flag produces the effect; observing safety without being able to attribute it does not satisfy the release condition.",
+      "outcome": "This pattern remains off by default, and the registration wording is fixed verbatim.",
+      "learned": "The distinction between not-established and not-falsified is most easily erased in the conclusion wording, so the wording must be hard-coded in advance.",
+      "concepts": [
+        "causal attribution",
+        "registration wording",
+        "not established",
+        "not falsified",
+        "release condition"
+      ]
+    },
+    "n33": {
+      "title": "Apparatus self-proof needs four numbers read together: vectors complete, no leakage, no degradation, zero guardrail rejections",
+      "summary": "Scope vector count equal to physical row count shows every row got a vector built; zero cross-scope leakage shows isolation is intact; zero degradation count shows no query ran with the semantic leg disabled; single protocol shows no vector from another space got mixed in. Add zero English-query guardrail rejections, otherwise those queries degrade into pure lexical matching, mixing an unrelated failure cause into the reading.",
+      "outcome": "Structural self-proof passed, the reading has an explainable premise.",
+      "learned": "The credibility of an experiment depends first on the apparatus's self-proof, and the self-proof must cover every path that could silently swap the meaning of the reading.",
+      "concepts": [
+        "structural self-proof",
+        "vectors complete",
+        "scope isolation",
+        "degradation",
+        "guardrail rejection"
+      ]
+    },
+    "n32": {
+      "title": "The ruling record is a relay, not a file landed by the ruling party; verifiability rests on line-number-level factual corrections",
+      "summary": "What this record restates is the full text of the ruling relayed by the operator; the original text was not landed as a file by the ruling party itself. This boundary must be registered, otherwise the evidence chain will contain an authoritative document of unknown origin. The mitigation is that this relay contains itemized reasoning and line-number-level factual corrections, of which two code references have passed local verification review; if a future released evidence chain needs the original text, it will need to be supplemented at that time.",
+      "outcome": "Source boundary registration completed, two verifiable references reviewed.",
+      "learned": "A relayed authoritative conclusion either comes with independently reviewable specific references, or it can only count as secondhand material.",
+      "concepts": [
+        "relay boundary",
+        "verifiability",
+        "line-number-level correction",
+        "evidence chain",
+        "supplement"
+      ]
+    },
+    "n02": {
+      "title": "Top-scoring false lead outscores the true answer; no cosine threshold separates the two sides",
+      "summary": "On the same batch of queries, the highest similarity a false lead can reach is 0.604, while the highest a true answer can reach is only 0.602. The order of the two numbers means any single absolute threshold has to pick between two losses: set it too high and you cut the true answer first, set it too low and the false lead stays. The true answer can still be recovered by the lexical leg, so this is not the same as losing the answer, but it does rule out continuing to look for a solution at this threshold value.",
+      "outcome": "The absolute threshold direction is closed off by the readings; going forward the only option is to change the evidence dimension, not the threshold.",
+      "learned": "When the two distributions overlap, adjusting the threshold only shifts the loss between the two types of errors, it does not reduce the total amount of loss.",
+      "concepts": [
+        "distribution overlap",
+        "absolute threshold",
+        "false lead",
+        "reachability",
+        "evidence dimension"
+      ]
+    },
+    "n19": {
+      "title": "Document frequency cap cannot show an effect on a corpus with no Chinese competition; the readings neither support nor refute it",
+      "summary": "The frequency cap was swept from one in a thousand to one in ten, the anchor page lines stayed between eighty-five and one hundred nine throughout, and not a single positive true answer was lost. The reason is that the fixture contains only sixty-six records with Chinese, and the median frequency of hit units is only one in ten thousand, leaving no high-frequency units available for filtering. Therefore the correct reading of this table is non-extrapolable, not that the rule is ineffective.",
+      "outcome": "This direction is kept as a candidate; no conclusion is drawn before retesting.",
+      "learned": "When a variable has no room to vary within the fixture, a flat curve measured from it shows that the fixture is unsuitable, not that the variable is ineffective.",
+      "concepts": [
+        "document frequency cap",
+        "function word fragment",
+        "competition pool",
+        "non-extrapolable",
+        "candidate retained"
+      ]
+    },
+    "n08": {
+      "title": "Paired test on six samples has a ceiling on resolving power, and with two zero differences significance is impossible",
+      "summary": "For six experimental units doing paired sign-flip, exhaustively enumerating sixty-four patterns, the smallest achievable significance is about 0.0156, just within 0.05. But a zero difference unit remains zero after flipping, so the effective enumeration space collapses accordingly: when two zero differences occur, the smallest achievable value becomes 0.0625, already over the line. Therefore this gate is unpassable in that configuration regardless of actual behavior, and this must be registered in advance, to avoid being interpreted after the fact as just barely missing.",
+      "outcome": "The resolving-power ceiling was written into the criteria in advance, and a separate registration standard was reserved for that configuration.",
+      "learned": "Sample size determines the best case a significance gate can reach, and calculating this ceiling first is much cheaper than explaining it after running to completion.",
+      "concepts": [
+        "resolving power ceiling",
+        "paired permutation",
+        "enumeration collapse",
+        "zero difference",
+        "pre-registration"
+      ]
+    },
+    "n30": {
+      "title": "Rewriting via forwarding layer for the control arm, zero production code changes is the only way to test production behavior",
+      "summary": "A probe-specific switch would leave a branch in the production code that only runs in the experiment, and what gets tested is no longer production behavior. Therefore the rewrite is placed at the layer the assistant actually perceives: point the serving command at the forwarding script, correlate calls by request identifier and only modify the source field of the target card, leaving production card construction untouched. Global string replacement is likewise forbidden, as it would affect non-target cards and same-named strings in the body text.",
+      "outcome": "The implementation is fixed as forwarding-layer rewriting, and listed as a self-evidencing item of the apparatus.",
+      "learned": "Adding a branch to the code under test for the sake of running an experiment means what gets tested is the system with the branch added, not the original one.",
+      "concepts": [
+        "Forwarding-layer rewriting",
+        "Evidence purity",
+        "Zero production changes",
+        "Request identifier correlation",
+        "Global replacement forbidden"
+      ]
+    },
+    "n31": {
+      "title": "Do not accept permanent phrasing, only rule that under the current architecture and current evidence it must not be enabled by default",
+      "summary": "Ruled to reject the wording of permanent, changing it to must not be enabled by default under the current architecture and current evidence, subject to re-review once new evidence or architectural changes emerge in the future. Also corrected an inference error: switching to explicit opt-in must not be used as grounds to stop all safety work, lexical false-recall exists independently and will not disappear just because the other path switches to manual; what can be stopped is only the continued tuning of semantic parameters around the existing cosine threshold.",
+      "outcome": "The default-off ruling now carries a re-review condition, and the scope of safety work has been separately clarified.",
+      "learned": "Writing a decision based on current evidence as permanent will incidentally cancel the motivation for subsequent evidence-gathering; the validity period of a conclusion must be written into the conclusion itself.",
+      "concepts": [
+        "enabled by default",
+        "re-review condition",
+        "permanent phrasing",
+        "independent issue",
+        "validity period of a conclusion"
+      ]
+    },
+    "n21": {
+      "title": "Trials must be completely isolated from each other; the hook writes the current turn's session back into the corpus, causing measured contamination",
+      "summary": "The hook collects the current turn's session itself into a temporary database and compresses it into a record, so when multiple turns share the same data directory, a later turn can search and find records produced by the previous turn's conversation. This is fatal in behavioral forensics: a false lead discussed in a previous turn becomes a new record entering the next turn's corpus. The rule was changed to require each trial to create a new workspace, data directory, and process from the same frozen snapshot, and to run only one prompt.",
+      "outcome": "The isolation requirement was written into the criteria and listed as an apparatus self-verification item.",
+      "learned": "When the system under test records its own operational process, the experimental apparatus must be rebuilt each time, otherwise the experiment will treat its own traces as input.",
+      "concepts": [
+        "trial isolation",
+        "self-collection contamination",
+        "frozen snapshot",
+        "apparatus self-verification",
+        "temporary data directory"
+      ]
+    },
+    "n12": {
+      "title": "Freeze self-verification's count label under-reports by one, real total is one criterion plus fifteen inputs",
+      "summary": "The script first validates the criterion file separately, then loops to validate the remaining fifteen inputs, but the printed count only covers the latter, so sixteen items were written as fifteen. The validation itself was complete, the defect is only in the label; but under-reporting by one would make a reviewer think something was not frozen. The fix is deferred to the next round, to avoid making changes on top of an already-produced reading.",
+      "outcome": "Defect logged; the count label's generation method changed from hand-written to tool-produced.",
+      "learned": "A self-verifying count label must be generated by code from the validated set; as long as hand-writing is allowed, it will diverge from the actual item count.",
+      "concepts": [
+        "self-verifying label",
+        "count defect",
+        "freeze validation",
+        "hand-written number",
+        "label-reading separation"
+      ]
+    },
+    "n34": {
+      "title": "Rebuilt vector is bit-identical to the frozen value; the tiering is a reproduction, not a recomputation",
+      "summary": "The vector rebuilt in this run is bit-identical to the frozen one, with an absolute cosine difference of zero, so the four-tier grading is a reproduction of the frozen value rather than a newly computed result. If the vector had drifted, the tiering would become an artifact of this run, and the reference for that line could no longer be treated as fixed and would vary with each run.",
+      "outcome": "The stability of the tiering reference has been confirmed.",
+      "learned": "Any tiering treated as a reference must first be proven to be a reproduction in this run, not a recomputation.",
+      "concepts": [
+        "vector reproduction",
+        "bit-identical",
+        "tiering reference",
+        "drift",
+        "reference stability"
+      ]
+    },
+    "n14": {
+      "title": "The ceiling value was not contaminated by this round's data, but it is not independent evidence either, and must not be raised based on the same data",
+      "summary": "This ceiling comes from an earlier pre-registration selection, so it temporally precedes this round, and there is no issue of it being reverse-selected by this round's readings; it can continue to be used as is. But it also does not constitute independent safety evidence; the ruling therefore does not authorize raising it using the same data, otherwise it would be using one batch of readings to both select the value and self-validate it.",
+      "outcome": "The ceiling continues to use the original value, and the path to raising it has been explicitly closed.",
+      "learned": "The legitimacy of a parameter's source and independent evidence for the parameter are two different things; the former only guarantees there was no reverse-selection, it does not guarantee the value itself is supported.",
+      "concepts": [
+        "pre-registration selection",
+        "contamination",
+        "independent evidence",
+        "parameter carryover",
+        "no authorization to raise"
+      ]
+    },
+    "n27": {
+      "title": "Backfill runs must go through a pre-registered state machine; the only outcomes are a full slot or the whole round being voided",
+      "summary": "Each cell needs ten valid trials; on failure, immediately activate that cell's next pre-arranged substitute to preserve temporal locality. If the same cell fails more than twice, or an unclassified failure occurs, the whole round is voided and restarted. This way there are only two outcomes, with no intermediate state where judgment continues despite an uneven denominator, and no room for the runner to adjust the sample after seeing the result.",
+      "outcome": "Failure handling changed from ad hoc judgment to a pre-registered state machine.",
+      "learned": "Allowing on-the-fly backfill is equivalent to allowing sample adjustment after seeing the result; only by writing backfill as a state machine can the meaning of pre-registration be preserved.",
+      "concepts": [
+        "pre-registered state machine",
+        "substitute",
+        "temporal locality",
+        "whole round voided",
+        "denominator completeness"
+      ]
+    },
+    "n16": {
+      "title": "Query-level discriminability cannot be extrapolated into a candidate-level ranking scheme; separate evidence is needed",
+      "summary": "That 0.841 is the discriminability of the highest query-level score, answering whether the highest score of an entire query can distinguish between two classes of queries; whereas the shift problem occurs in the relative position among candidates, which is candidate-level. A signal in the former does not mean the latter is controllable, so the ruling requires first gathering candidate-level ranking evidence separately on new data, and scores feeding into ranking cannot be directly treated as an implementation plan.",
+      "outcome": "The implementation plan was downgraded to a pending-evidence candidate, with the evidence-gathering track set up as a separate initiative.",
+      "learned": "The separability of the same score at different granularities is two different problems; query-level discriminability does not constitute evidence for candidate-level ranking.",
+      "concepts": [
+        "query-level",
+        "candidate-level",
+        "discriminability",
+        "extrapolation boundary",
+        "evidence-gathering track"
+      ]
+    },
+    "n01": {
+      "title": "Raising the cosine floor only shuts off the semantic leg, and the page gets filled back up as-is by lexical hits",
+      "summary": "The same hard-negative returns ten rows at floor 0.197, composed of five lexical rows, three hybrid rows, and two semantic rows; after raising the floor to 0.325 it is still ten rows, but all of them have become pure lexical hits. The floor only constrains admission of semantic candidates, the lexical leg does not read it, so the only effect of raising it is that the semantic side no longer contributes, and the freed-up slots are immediately filled back up by lexical hits.",
+      "outcome": "Confirmed that the floor is not the control point for false recall, and lexical admission must be governed separately in its own pass.",
+      "learned": "A threshold that only acts on a single channel looks like an overall tightening in multi-leg fusion, but in fact it is merely handing the share over to the other channel.",
+      "concepts": [
+        "cosine floor",
+        "lexical admission",
+        "false recall",
+        "multi-leg fusion",
+        "full-page phenomenon"
+      ]
+    }
+  }
+}
