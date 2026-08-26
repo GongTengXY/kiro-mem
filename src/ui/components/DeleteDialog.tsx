@@ -12,13 +12,8 @@
 import { AlertTriangle } from 'lucide-preact';
 import type { ViewerObservationDetail } from '../../server/viewer-types';
 import { formatBytes, formatTime } from '../merge';
+import { useT } from '../i18n';
 import { Field, Text } from './Common';
-
-/** Fixed wording from the plan. Not a paraphrase. */
-export const DELETE_WARNING =
-  '将永久删除这条生成记忆、原始对话事件和相关索引。删除后无法恢复。';
-export const DELETE_WARNING_EN =
-  'This permanently deletes the generated memory, the raw conversation events and the related indexes. It cannot be undone.';
 
 export function DeleteDialog({
   detail,
@@ -33,6 +28,7 @@ export function DeleteDialog({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const t = useT();
   const { memory, source } = detail;
   return (
     <div className="modal-backdrop" role="presentation" onClick={onCancel}>
@@ -44,42 +40,41 @@ export function DeleteDialog({
         onClick={(e) => e.stopPropagation()}
       >
         <h3 id="delete-title" className="modal-title">
-          <AlertTriangle size={18} /> 永久删除 / Permanent delete
+          <AlertTriangle size={18} /> {t.deleteHeading}
         </h3>
 
-        <Field label="Observation">
+        <Field label={t.dObservation}>
           <span className="mono">{`#O${memory.id}`}</span> <Text value={memory.title} />
         </Field>
-        <Field label="Workspace">
+        <Field label={t.dWorkspace}>
           <span className="mono break">{memory.scopeKey}</span>
         </Field>
-        <Field label="Turn">
+        <Field label={t.dTurn}>
           <span className="mono">{`#${source.turnId} · seq ${source.turnSeq}`}</span>{' '}
           {`${formatTime(source.startedAt)} → ${formatTime(source.stoppedAt)}`}
         </Field>
-        <Field label="Truth layer to be destroyed">
-          {`${source.events.count} raw events · ${formatBytes(source.events.payloadBytes)} captured`}
+        <Field label={t.dTruthLayer}>
+          {t.truthLayerValue(source.events.count, formatBytes(source.events.payloadBytes))}
         </Field>
 
-        <p className="modal-warning">{DELETE_WARNING}</p>
-        <p className="modal-warning-en">{DELETE_WARNING_EN}</p>
+        <p className="modal-warning">{t.deleteWarning}</p>
 
         {error ? (
           <p className="modal-error" role="alert">
             {error === 'deletion_in_progress'
-              ? '有关联任务正在执行（leased），未删除任何数据。等它结束后重试。 / A related job is running; nothing was deleted. Retry once it finishes.'
+              ? t.errLeased
               : error === 'not_found'
-                ? '这条记忆已经不存在了。 / This memory no longer exists.'
-                : `删除失败 / Delete failed: ${error}`}
+                ? t.errNotFound
+                : t.errDelete(error)}
           </p>
         ) : null}
 
         <div className="modal-actions">
           <button type="button" className="btn" onClick={onCancel} disabled={busy}>
-            取消 / Cancel
+            {t.cancel}
           </button>
           <button type="button" className="btn btn-danger" onClick={onConfirm} disabled={busy}>
-            {busy ? '删除中…' : '永久删除 / Permanently delete'}
+            {busy ? t.deleting : t.confirmDelete}
           </button>
         </div>
       </div>

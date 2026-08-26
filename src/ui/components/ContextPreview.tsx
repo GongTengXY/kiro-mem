@@ -11,17 +11,8 @@
 import { useState } from 'preact/hooks';
 import type { ViewerContextPreview } from '../../server/viewer-types';
 import { formatBytes } from '../merge';
+import { useT } from '../i18n';
 import { Empty, Raw, Section } from './Common';
-
-const SECTION_LABEL: Record<string, string> = {
-  'frame-open': 'frame',
-  'trust-boundary': 'trust boundary',
-  usage: 'usage note',
-  pinned: 'pinned',
-  'recent-detail': 'recent (detail)',
-  'recent-index': 'recent (index)',
-  'frame-close': 'frame close',
-};
 
 export function ContextPreview({
   preview,
@@ -34,26 +25,29 @@ export function ContextPreview({
   error: string | null;
   onReload: (maxOutputBytes?: number) => void;
 }) {
+  const t = useT();
   const [budget, setBudget] = useState<number | null>(null);
 
   if (error) {
     return (
-      <Section title="Context preview">
+      <Section title={t.contextPreview}>
         <Empty
-          message={error === 'unknown_scope'
-            ? 'This workspace is not known to the database yet.'
-            : error === 'scope_required'
-              ? 'Select a workspace to preview its injected context.'
-              : `Preview failed: ${error}`}
-          hint="Context injection is per-workspace; pick a workspace that has memory or session history."
+          message={
+            error === 'unknown_scope'
+              ? t.ctxUnknownScope
+              : error === 'scope_required'
+                ? t.ctxScopeRequired
+                : t.ctxFailed(error)
+          }
+          hint={t.ctxErrorHint}
         />
       </Section>
     );
   }
   if (!preview) {
     return (
-      <Section title="Context preview">
-        <Empty message={loading ? 'Loading…' : 'No preview yet.'} />
+      <Section title={t.contextPreview}>
+        <Empty message={loading ? t.loading : t.noPreview} />
       </Section>
     );
   }
@@ -62,10 +56,8 @@ export function ContextPreview({
   const max = preview.effectiveMaxBytes;
   return (
     <Section
-      title="Context preview"
-      actions={
-        <span className="muted">{`${used} / ${max} bytes (${((used / max) * 100).toFixed(0)}%)`}</span>
-      }
+      title={t.contextPreview}
+      actions={<span className="muted">{t.bytesUsed(used, max, ((used / max) * 100).toFixed(0))}</span>}
     >
       <div className="budget-bar" aria-hidden="true">
         <div className="budget-fill" style={{ width: `${Math.min(100, (used / max) * 100)}%` }} />
@@ -73,7 +65,7 @@ export function ContextPreview({
 
       <div className="budget-row">
         <label>
-          <span className="sr-only">Context budget in bytes</span>
+          <span className="sr-only">{t.contextBudgetAria}</span>
           <input
             type="number"
             min={512}
@@ -84,7 +76,7 @@ export function ContextPreview({
           />
         </label>
         <button type="button" className="btn" disabled={loading} onClick={() => onReload(budget ?? undefined)}>
-          {loading ? 'Rebuilding…' : 'Rebuild preview'}
+          {loading ? t.rebuilding : t.rebuild}
         </button>
         <button
           type="button"
@@ -95,24 +87,29 @@ export function ContextPreview({
             onReload(undefined);
           }}
         >
-          {`Use config (${preview.configuredMaxBytes})`}
+          {t.useConfig(preview.configuredMaxBytes)}
         </button>
       </div>
       {preview.requestedMaxBytes > preview.effectiveMaxBytes ? (
-        <p className="muted">{`Requested ${preview.requestedMaxBytes} bytes; the server caps injection at ${preview.effectiveMaxBytes}.`}</p>
+        <p className="muted">{t.cappedAt(preview.requestedMaxBytes, preview.effectiveMaxBytes)}</p>
       ) : null}
-      {preview.degraded ? (
-        <p className="warn-text">Budget too small for any content — only the frame would be injected.</p>
-      ) : null}
+      {preview.degraded ? <p className="warn-text">{t.budgetTooSmall}</p> : null}
 
       <table className="sections">
         <thead>
-          <tr><th>section</th><th>items</th><th>bytes</th></tr>
+          <tr>
+            <th>{t.colSection}</th>
+            <th>{t.colItems}</th>
+            <th>{t.colBytes}</th>
+          </tr>
         </thead>
         <tbody>
           {preview.sections.map((s) => (
             <tr key={s.kind} className={s.dropped ? 'dropped' : ''}>
-              <td>{SECTION_LABEL[s.kind] ?? s.kind}{s.dropped ? ' (dropped)' : ''}</td>
+              <td>
+                {t.sectionLabel[s.kind] ?? s.kind}
+                {s.dropped ? t.sectionDropped : ''}
+              </td>
               <td>{s.itemCount || '—'}</td>
               <td>{formatBytes(s.bytes)}</td>
             </tr>
@@ -121,7 +118,11 @@ export function ContextPreview({
       </table>
 
       <p className="muted">
-        {`Injected observations — pinned: ${preview.observationIds.pinned.length}, detail: ${preview.observationIds.detail.length}, index: ${preview.observationIds.index.length}`}
+        {t.injectedCounts(
+          preview.observationIds.pinned.length,
+          preview.observationIds.detail.length,
+          preview.observationIds.index.length,
+        )}
       </p>
       <Raw value={preview.text} maxHeight={420} />
     </Section>

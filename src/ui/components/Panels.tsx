@@ -10,6 +10,7 @@
 
 import type { ViewerLogLine, ViewerRetrievalHealth } from '../../server/viewer-types';
 import { formatTime } from '../merge';
+import { useT } from '../i18n';
 import { Empty, Field, Section } from './Common';
 
 export function RetrievalHealth({
@@ -21,24 +22,40 @@ export function RetrievalHealth({
   loading: boolean;
   error: string | null;
 }) {
-  if (error) return <Section title="Retrieval health"><Empty message={`Failed to load: ${error}`} /></Section>;
-  if (!health) return <Section title="Retrieval health"><Empty message={loading ? 'Loading…' : 'No data.'} /></Section>;
+  const t = useT();
+  if (error) {
+    return (
+      <Section title={t.retrievalHealth}>
+        <Empty message={t.failedToLoad(error)} />
+      </Section>
+    );
+  }
+  if (!health) {
+    return (
+      <Section title={t.retrievalHealth}>
+        <Empty message={loading ? t.loading : t.noData} />
+      </Section>
+    );
+  }
 
   const s = health.search24h;
   const pct = (v: number): string => `${(v * 100).toFixed(1)}%`;
   return (
-    <Section title="Retrieval health (last 24h)">
-      <Field label="profile">
-        {`${health.retrieval.profile} · floor ${health.retrieval.semanticFloor} · semantic-only cap ${health.retrieval.semanticOnlyLimit} · tie-break ${health.retrieval.tieBreak}`}
+    <Section title={t.retrievalHealth24h}>
+      <Field label={t.rProfile}>
+        {t.profileValue(
+          health.retrieval.profile,
+          health.retrieval.semanticFloor,
+          health.retrieval.semanticOnlyLimit,
+          health.retrieval.tieBreak,
+        )}
       </Field>
-      <Field label="agent searches">
-        {`${s.requests} requests · p50 ${s.latencyMsP50}ms · p95 ${s.latencyMsP95}ms`}
-      </Field>
-      <Field label="English space reach">
-        {`${s.protocolSemanticEn} of ${s.requests} (${pct(s.semanticEnRate)}) — independent semantic recall only works there`}
+      <Field label={t.rSearches}>{t.searchesValue(s.requests, s.latencyMsP50, s.latencyMsP95)}</Field>
+      <Field label={t.rEnglishReach}>
+        {t.englishReachValue(s.protocolSemanticEn, s.requests, pct(s.semanticEnRate))}
       </Field>
       {Object.keys(s.semanticQueryIssues).length ? (
-        <Field label="semantic_query_en issues">
+        <Field label={t.rSemanticIssues}>
           <div className="taglist">
             {Object.entries(s.semanticQueryIssues).map(([reason, count]) => (
               <span className="tag" key={reason}>{`${reason}: ${count}`}</span>
@@ -46,20 +63,24 @@ export function RetrievalHealth({
           </div>
         </Field>
       ) : null}
-      <Field label="degraded to keyword-only">{`${s.ftsOnly} (${pct(s.degradeRate)}) — embedding unavailable`}</Field>
-      <Field label="zero-keyword queries">{`${s.zeroFts}, recalled semantically ${s.zeroFtsRecalled}`}</Field>
-      <Field label="unverified semantic-only leads">
-        {`${s.semanticOnlyTotal} total · ${s.semanticOnlyPerRequest.toFixed(2)}/request · worst page ${s.semanticOnlyMax}`}
+      <Field label={t.rDegraded}>{t.degradedValue(s.ftsOnly, pct(s.degradeRate))}</Field>
+      <Field label={t.rZeroKeyword}>{t.zeroKeywordValue(s.zeroFts, s.zeroFtsRecalled)}</Field>
+      <Field label={t.rSemanticOnly}>
+        {t.semanticOnlyValue(s.semanticOnlyTotal, s.semanticOnlyPerRequest.toFixed(2), s.semanticOnlyMax)}
       </Field>
-      <Field label="vectors">
-        {`scope avg ${s.scopeVectorsAvg.toFixed(1)} · min ${s.scopeVectorsMin} · measured on ${s.scopeVectorsMeasured} requests · empty-scope requests ${s.emptyScopeRequests}`}
+      <Field label={t.rVectors}>
+        {t.vectorsValue(s.scopeVectorsAvg.toFixed(1), s.scopeVectorsMin, s.scopeVectorsMeasured, s.emptyScopeRequests)}
       </Field>
-      <Field label="embedding coverage">
-        {`${health.embeddings.ready} ready (${pct(health.embeddings.coverage)}) · semantic-en ready ${health.embeddings.semanticEn.ready}, pending ${health.embeddings.semanticEn.pending}, failed ${health.embeddings.semanticEn.failed}`}
+      <Field label={t.rCoverage}>
+        {t.coverageValue(
+          health.embeddings.ready,
+          pct(health.embeddings.coverage),
+          health.embeddings.semanticEn.ready,
+          health.embeddings.semanticEn.pending,
+          health.embeddings.semanticEn.failed,
+        )}
       </Field>
-      <p className="muted">
-        Counters cover agent searches through MCP. Viewer search is keyword-only and is deliberately not counted here.
-      </p>
+      <p className="muted">{t.countersNote}</p>
     </Section>
   );
 }
@@ -81,22 +102,23 @@ export function LogsDrawer({
   onComponentChange: (value: string) => void;
   onLoadMore: () => void;
 }) {
+  const t = useT();
   return (
     <Section
-      title="Worker error log"
+      title={t.workerErrorLog}
       actions={
         <input
           type="search"
           value={component}
-          placeholder="filter component"
-          aria-label="Filter log component"
+          placeholder={t.filterComponent}
+          aria-label={t.filterComponent}
           onInput={(e) => onComponentChange((e.target as HTMLInputElement).value)}
         />
       }
     >
-      {error ? <Empty message={`Failed to load: ${error}`} /> : null}
+      {error ? <Empty message={t.failedToLoad(error)} /> : null}
       {!error && lines.length === 0 ? (
-        <Empty message={loading ? 'Loading…' : 'No errors logged.'} hint="This log only records failures; an empty drawer is the healthy state." />
+        <Empty message={loading ? t.loading : t.noErrors} hint={t.noErrorsHint} />
       ) : null}
       {lines.length ? (
         <ul className="loglines">
@@ -111,7 +133,7 @@ export function LogsDrawer({
       ) : null}
       {cursor ? (
         <button type="button" className="btn" disabled={loading} onClick={onLoadMore}>
-          {loading ? 'Loading…' : 'Load older'}
+          {loading ? t.loading : t.loadOlder}
         </button>
       ) : null}
     </Section>

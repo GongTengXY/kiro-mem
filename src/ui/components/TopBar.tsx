@@ -9,16 +9,8 @@
 import { Activity, Database, FileText, Globe, Search, SlidersHorizontal } from 'lucide-preact';
 import type { ViewerBootstrap, ViewerQueueStatus } from '../../server/viewer-types';
 import type { StreamState } from '../stream';
-import { scopeLabel } from '../merge';
-
-export const ALL_SCOPES_VALUE = '__all__';
-
-const STREAM_LABEL: Record<StreamState, string> = {
-  connecting: 'connecting',
-  open: 'live',
-  closed: 'reconnecting',
-  unauthorized: 'unauthorized',
-};
+import { useT } from '../i18n';
+import { ScopePicker } from './ScopePicker';
 
 export function TopBar({
   bootstrap,
@@ -46,6 +38,13 @@ export function TopBar({
   onTogglePanel: (panel: string) => void;
 }) {
   const scopes = bootstrap?.scopes ?? [];
+  const t = useT();
+  const streamLabel: Record<StreamState, string> = {
+    connecting: t.streamConnecting,
+    open: t.streamOpen,
+    closed: t.streamClosed,
+    unauthorized: t.streamUnauthorized,
+  };
   return (
     <header className="topbar">
       <div className="topbar-row">
@@ -55,23 +54,7 @@ export function TopBar({
           {bootstrap ? <span className="brand-version">{`v${bootstrap.version}`}</span> : null}
         </div>
 
-        <label className="scope-select">
-          <span className="sr-only">Workspace scope</span>
-          <select
-            value={allScopes ? ALL_SCOPES_VALUE : (scopeKey ?? '')}
-            onChange={(e) => onScopeChange((e.target as HTMLSelectElement).value)}
-          >
-            <option value={ALL_SCOPES_VALUE}>All workspaces</option>
-            {scopeKey && !scopes.some((s) => s.scopeKey === scopeKey) ? (
-              <option value={scopeKey}>{`${scopeLabel(scopeKey)} (this workspace)`}</option>
-            ) : null}
-            {scopes.map((s) => (
-              <option key={s.scopeKey} value={s.scopeKey}>
-                {`${scopeLabel(s.scopeKey)} · ${s.observations}`}
-              </option>
-            ))}
-          </select>
-        </label>
+        <ScopePicker scopes={scopes} scopeKey={scopeKey} allScopes={allScopes} onChange={onScopeChange} />
 
         <form
           className="searchbox"
@@ -84,8 +67,8 @@ export function TopBar({
           <input
             type="search"
             value={query}
-            placeholder={`Search ${allScopes ? 'all workspaces' : 'this workspace'} (keyword)`}
-            aria-label="Search observations"
+            placeholder={allScopes ? t.searchAll : t.searchThis}
+            aria-label={t.searchAria}
             onInput={(e) => onQueryChange((e.target as HTMLInputElement).value)}
           />
         </form>
@@ -95,33 +78,33 @@ export function TopBar({
             type="button"
             className={`btn btn-ghost ${activePanel === 'context' ? 'btn-on' : ''}`}
             onClick={() => onTogglePanel('context')}
-            title="Preview the context the next session will receive"
+            title={t.panelContextTitle}
           >
-            <FileText size={15} /> Context
+            <FileText size={15} /> {t.panelContext}
           </button>
           <button
             type="button"
             className={`btn btn-ghost ${activePanel === 'retrieval' ? 'btn-on' : ''}`}
             onClick={() => onTogglePanel('retrieval')}
-            title="Retrieval health (last 24h)"
+            title={t.panelRetrievalTitle}
           >
-            <SlidersHorizontal size={15} /> Retrieval
+            <SlidersHorizontal size={15} /> {t.panelRetrieval}
           </button>
           <button
             type="button"
             className={`btn btn-ghost ${activePanel === 'logs' ? 'btn-on' : ''}`}
             onClick={() => onTogglePanel('logs')}
-            title="Worker error log"
+            title={t.panelLogsTitle}
           >
-            <Activity size={15} /> Logs
+            <Activity size={15} /> {t.panelLogs}
           </button>
         </nav>
 
         <div className="status">
           <span className={`dot dot-${streamState}`} aria-hidden="true" />
-          <span className="status-text">{STREAM_LABEL[streamState]}</span>
+          <span className="status-text">{streamLabel[streamState]}</span>
           {queue ? (
-            <span className="status-queue" title="pending / leased / dead jobs">
+            <span className="status-queue" title={t.queueTitle}>
               {`${queue.pending} / ${queue.leased} / ${queue.dead}`}
             </span>
           ) : null}
@@ -130,7 +113,7 @@ export function TopBar({
 
       {allScopes ? (
         <div className="warnbar" role="status">
-          <Globe size={14} /> Browsing every workspace on this machine. Memory from other projects is visible.
+          <Globe size={14} /> {t.globalWarning}
         </div>
       ) : null}
     </header>

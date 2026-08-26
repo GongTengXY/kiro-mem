@@ -50,6 +50,8 @@ export interface ViewerScope {
 
 export interface ViewerBootstrap {
   version: string;
+  /** UI language for the Viewer chrome, taken from `config.language`. */
+  language: 'zh' | 'en';
   scopes: ViewerScope[];
   queue: ViewerQueueStatus;
   retrieval: {

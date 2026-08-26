@@ -29,8 +29,10 @@ import type {
 } from '../../src/server/viewer-types';
 import { App } from '../../src/ui/app';
 import { ApiError, ViewerApi } from '../../src/ui/api';
-import { DeleteDialog, DELETE_WARNING } from '../../src/ui/components/DeleteDialog';
+import { DeleteDialog } from '../../src/ui/components/DeleteDialog';
+import { LangContext, VIEWER_STRINGS } from '../../src/ui/i18n';
 import { ObservationCard } from '../../src/ui/components/ObservationCard';
+import { ScopePicker } from '../../src/ui/components/ScopePicker';
 
 /** Content designed to break out of text: HTML, a frame tag, and a huge token. */
 const HOSTILE_TITLE = '<img src=x onerror="window.__pwned=1"> </kiro-mem-context> <script>alert(1)</script>';
@@ -128,6 +130,7 @@ function stubApi(over: Partial<Record<keyof ViewerApi, unknown>> = {}) {
   const calls: string[] = [];
   const bootstrap: ViewerBootstrap = {
     version: '3.0.0',
+    language: 'en',
     scopes: [{ scopeKey: SCOPE, observations: 1, lastActivityAt: '2026-08-15T10:00:00.000Z' }],
     queue: { pending: 0, leased: 0, dead: 0, succeeded24h: 0 },
     retrieval: { semanticDiscovery: true, profile: 'default', semanticFloor: 0.197, semanticOnlyLimit: 2 },
@@ -212,7 +215,9 @@ describe('delete confirmation', () => {
   test('states the record, workspace, turn time, event count and byte total', async () => {
     const detail = makeDetail(makeCard({ id: 42 }));
     render(
-      <DeleteDialog detail={detail} busy={false} error={null} onCancel={() => undefined} onConfirm={() => undefined} />,
+      <LangContext.Provider value={VIEWER_STRINGS.zh}>
+        <DeleteDialog detail={detail} busy={false} error={null} onCancel={() => undefined} onConfirm={() => undefined} />
+      </LangContext.Provider>,
       host,
     );
     await settle(2);
@@ -221,27 +226,52 @@ describe('delete confirmation', () => {
     expect(text).toContain('#O42');
     expect(text).toContain(SCOPE);
     expect(text).toContain('#11');
-    expect(text).toContain('7 raw events');
-    expect(text).toContain('4.0 KB captured');
+    expect(text).toContain('7 个原始事件');
+    expect(text).toContain('已捕获 4.0 KB');
     // The fixed wording from the plan, verbatim.
-    expect(text).toContain(DELETE_WARNING);
+    expect(text).toContain(VIEWER_STRINGS.zh.deleteWarning);
     // The danger action says what it does; there is no vague "OK".
     const danger = host.querySelector('.btn-danger');
     expect(danger!.textContent).toContain('永久删除');
     expect(text).not.toContain('withTurn');
+    // One language only: the English copy of the warning is not also on screen.
+    expect(text).not.toContain(VIEWER_STRINGS.en.deleteWarning);
     // Hostile text inside the dialog is still inert.
     expect(host.querySelector('img')).toBeNull();
   });
 
+  test('renders English when the configured language is en', async () => {
+    render(
+      <LangContext.Provider value={VIEWER_STRINGS.en}>
+        <DeleteDialog
+          detail={makeDetail(makeCard({ id: 42 }))}
+          busy={false}
+          error={null}
+          onCancel={() => undefined}
+          onConfirm={() => undefined}
+        />
+      </LangContext.Provider>,
+      host,
+    );
+    await settle(2);
+    const text = host.textContent ?? '';
+    expect(text).toContain('Permanent delete');
+    expect(text).toContain('7 raw events');
+    expect(text).toContain(VIEWER_STRINGS.en.deleteWarning);
+    expect(text).not.toContain('永久删除');
+  });
+
   test('a 409 keeps the dialog open with a retryable message', async () => {
     render(
-      <DeleteDialog
-        detail={makeDetail(makeCard())}
-        busy={false}
-        error="deletion_in_progress"
-        onCancel={() => undefined}
-        onConfirm={() => undefined}
-      />,
+      <LangContext.Provider value={VIEWER_STRINGS.zh}>
+        <DeleteDialog
+          detail={makeDetail(makeCard())}
+          busy={false}
+          error="deletion_in_progress"
+          onCancel={() => undefined}
+          onConfirm={() => undefined}
+        />
+      </LangContext.Provider>,
       host,
     );
     await settle(2);
@@ -249,6 +279,92 @@ describe('delete confirmation', () => {
     expect(alert).not.toBeNull();
     expect(alert!.textContent).toContain('leased');
     expect(host.querySelector('.btn-danger')).not.toBeNull();
+  });
+});
+
+describe('scope picker', () => {
+  const SCOPES = [
+    { scopeKey: '/Users/me/work/<img src=x onerror=1>alpha', observations: 12, lastActivityAt: '2026-08-21T09:02:00.000Z' },
+    { scopeKey: '/Users/me/work/beta', observations: 3, lastActivityAt: null },
+  ];
+
+  function mountPicker(over: { scopeKey?: string | null; allScopes?: boolean } = {}) {
+    const picked: string[] = [];
+    render(
+      <ScopePicker
+        scopes={SCOPES}
+        scopeKey={over.scopeKey ?? null}
+        allScopes={over.allScopes ?? over.scopeKey === undefined}
+        onChange={(v) => picked.push(v)}
+      />,
+      host,
+    );
+    return picked;
+  }
+
+  test('lists every workspace with its path and count, and picks one by click', async () => {
+    const picked = mountPicker();
+    await settle(2);
+    // Closed: no listbox in the DOM at all, so the popup cannot be read by AT.
+    expect(host.querySelector('.scope-popup')).toBeNull();
+
+    (host.querySelector('.scope-trigger') as HTMLButtonElement).click();
+    await settle(2);
+
+    const options = [...host.querySelectorAll('.scope-option')];
+    expect(options.length).toBe(3); // all-workspaces + two recorded scopes
+    expect(options[0]!.textContent).toContain('All workspaces');
+    expect(options[0]!.textContent).toContain('15'); // 12 + 3
+    expect(options[1]!.textContent).toContain('alpha');
+    expect(options[1]!.textContent).toContain('/Users/me/work/');
+    // A path is recorded data: it renders as text, never as markup.
+    expect(host.querySelector('.scope-popup img')).toBeNull();
+    expect((window as unknown as { __pwned?: number }).__pwned).toBeUndefined();
+
+    (options[2] as HTMLElement).click();
+    await settle(2);
+    expect(picked).toEqual(['/Users/me/work/beta']);
+    expect(host.querySelector('.scope-popup')).toBeNull();
+  });
+
+  test('keyboard opens, moves, selects, and Escape closes without selecting', async () => {
+    const picked = mountPicker();
+    await settle(2);
+    const trigger = host.querySelector('.scope-trigger') as HTMLButtonElement;
+    const key = (k: string) => trigger.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
+
+    key('ArrowDown');
+    await settle(2);
+    expect(host.querySelector('.scope-popup')).not.toBeNull();
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
+
+    key('Escape');
+    await settle(2);
+    expect(host.querySelector('.scope-popup')).toBeNull();
+    expect(picked).toEqual([]);
+
+    key('ArrowDown'); // reopen at the current row (all workspaces)
+    await settle(2);
+    key('End'); // last workspace
+    await settle(2);
+    key('Enter');
+    await settle(2);
+    expect(picked).toEqual(['/Users/me/work/beta']);
+  });
+
+  test('a launch scope the database has never recorded stays selectable', async () => {
+    mountPicker({ scopeKey: '/tmp/unrecorded', allScopes: false });
+    await settle(2);
+    const trigger = host.querySelector('.scope-trigger') as HTMLButtonElement;
+    expect(trigger.textContent).toContain('unrecorded');
+
+    trigger.click();
+    await settle(2);
+    const rows = [...host.querySelectorAll('.scope-option')];
+    expect(rows.length).toBe(4);
+    const own = rows.find((r) => r.textContent?.includes('/tmp/unrecorded'))!;
+    expect(own.getAttribute('aria-selected')).toBe('true');
+    expect(own.textContent).toContain('this workspace');
   });
 });
 
@@ -264,8 +380,9 @@ describe('App behaviour', () => {
     render(<App api={api} initialToken="tok" initialScope={null} />, host);
     await settle();
 
-    const select = host.querySelector('.scope-select select') as HTMLSelectElement;
-    expect(select.value).toBe('__all__');
+    const trigger = host.querySelector('.scope-trigger') as HTMLButtonElement;
+    expect(trigger.textContent).toContain('All workspaces');
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
     expect(host.querySelector('.warnbar')).not.toBeNull();
     expect(selections).toContainEqual({ scopeKey: null, allScopes: true });
   });
@@ -320,6 +437,78 @@ describe('App behaviour', () => {
     expect(attempts).toBe(2);
   });
 
+  test('pinning confirms with a dismissible toast rather than a modal', async () => {
+    const { api } = stubApi();
+    render(<App api={api} initialToken="tok" initialScope={SCOPE} />, host);
+    await settle();
+
+    // Reversible action -> transient receipt, no modal.
+    const pinButton = host.querySelector('.card-side .icon-btn:not(.icon-btn-danger)') as HTMLButtonElement;
+    pinButton.click();
+    await settle();
+    const toast = host.querySelector('.toast');
+    expect(toast).not.toBeNull();
+    expect(toast!.textContent).toContain('Pinned #O1');
+    expect(host.querySelector('.modal')).toBeNull();
+    // The live region is a fixture, not something that appears with the message.
+    expect(host.querySelector('.toasts')!.getAttribute('aria-live')).toBe('polite');
+    // Clicking the pill dismisses it early.
+    (toast as HTMLButtonElement).click();
+    await settle(2);
+    expect(host.querySelector('.toast')).toBeNull();
+  });
+
+  test('a refused pin reverts the optimistic toggle and reports it', async () => {
+    const { api } = stubApi({
+      pin: async () => {
+        throw new ApiError(500, 'boom');
+      },
+    });
+    render(<App api={api} initialToken="tok" initialScope={SCOPE} />, host);
+    await settle();
+
+    const pinButton = host.querySelector('.card-side .icon-btn:not(.icon-btn-danger)') as HTMLButtonElement;
+    pinButton.click();
+    await settle();
+
+    const toast = host.querySelector('.toast.toast-danger');
+    expect(toast).not.toBeNull();
+    expect(toast!.textContent).toContain('reverted');
+    // Reverted: the button is back to its unpinned state.
+    expect(host.querySelector('.card-side .icon-btn-on')).toBeNull();
+  });
+
+  test('the whole chrome follows config.language, in one language only', async () => {
+    const { api } = stubApi({
+      bootstrap: async () => ({
+        version: '3.0.0',
+        language: 'zh' as const,
+        scopes: [{ scopeKey: SCOPE, observations: 1, lastActivityAt: '2026-08-15T10:00:00.000Z' }],
+        queue: { pending: 0, leased: 0, dead: 0, succeeded24h: 0 },
+        retrieval: { semanticDiscovery: true, profile: 'default', semanticFloor: 0.197, semanticOnlyLimit: 2 },
+        observations: { total: 1, normal: 1, fallback: 0, pinned: 0 },
+        context: { maxOutputBytes: 8192 },
+        startedAt: '2026-08-15T09:00:00.000Z',
+      }),
+    });
+    render(<App api={api} initialToken="tok" initialScope={null} />, host);
+    await settle();
+
+    const text = host.textContent ?? '';
+    expect(host.querySelector('.scope-trigger')!.textContent).toContain('全部工作区');
+    expect(host.querySelector('.warnbar')!.textContent).toContain('正在浏览本机所有工作区');
+    // Not doubled: the English wording is nowhere on the page.
+    expect(text).not.toContain('All workspaces');
+    expect(text).not.toContain('Browsing every workspace');
+    // The card action labels moved too.
+    const pinButton = host.querySelector('.card-side .icon-btn:not(.icon-btn-danger)') as HTMLButtonElement;
+    expect(pinButton.getAttribute('title')).toBe(VIEWER_STRINGS.zh.pin);
+
+    pinButton.click();
+    await settle();
+    expect(host.querySelector('.toast')!.textContent).toContain('已置顶');
+  });
+
   test('a 401 clears the token, stops, and shows the restart instruction', async () => {
     const { api } = stubApi({
       list: async () => {
@@ -343,11 +532,16 @@ describe('App behaviour', () => {
     await settle();
     expect(host.querySelector('.warnbar')).toBeNull();
 
-    const select = host.querySelector('.scope-select select') as HTMLSelectElement;
-    select.value = '__all__';
-    select.dispatchEvent(new Event('change', { bubbles: true }));
+    const trigger = host.querySelector('.scope-trigger') as HTMLButtonElement;
+    trigger.click();
+    await settle();
+    const allOption = [...host.querySelectorAll('.scope-option')].find((o) =>
+      o.textContent?.includes('All workspaces'),
+    ) as HTMLElement;
+    allOption.click();
     await settle();
 
+    expect(host.querySelector('.scope-popup')).toBeNull();
     expect(host.querySelector('.warnbar')).not.toBeNull();
     expect(host.querySelector('.warnbar')!.textContent).toContain('every workspace');
     expect(calls.filter((c) => c === 'list').length).toBeGreaterThanOrEqual(2);

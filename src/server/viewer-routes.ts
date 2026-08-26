@@ -386,6 +386,9 @@ export function registerViewerRoutes(app: Hono, deps: ViewerRouteDeps): void {
     }
     return c.json({
       version: deps.version,
+      // Read from the live config object, so a `kiro-mem config` edit reaches the
+      // next page load without a Worker restart.
+      language: config.language,
       scopes,
       queue: deps.queueStatus(),
       retrieval: deps.retrievalProfile(),

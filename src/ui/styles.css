@@ -98,7 +98,7 @@ body {
 }
 .brand { display: flex; align-items: center; gap: 6px; font-weight: 600; }
 .brand-version { color: var(--fg-muted); font-weight: 400; font-size: 12px; }
-.scope-select select, .searchbox input, .panel-actions input, input[type='number'] {
+.searchbox input, .panel-actions input, input[type='number'] {
   background: var(--bg);
   color: var(--fg);
   border: 1px solid var(--border);
@@ -125,6 +125,91 @@ body {
   border-top: 1px solid var(--border);
   font-size: 12px;
 }
+
+/* --- scope picker ---
+ *
+ * Everything is sized here because the CSP is `style-src 'self'`: inline `style`
+ * attributes are dropped, so the popup is placed by CSS alone and a scope key —
+ * recorded, arbitrarily long data — is clamped by `text-overflow` instead of being
+ * allowed to widen the top bar.
+ */
+.scope-picker { position: relative; min-width: 0; }
+.scope-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 280px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+.scope-trigger:hover { border-color: var(--accent); }
+.scope-picker.is-open .scope-trigger { border-color: var(--accent); }
+.scope-trigger-icon { display: flex; flex: 0 0 auto; color: var(--fg-muted); }
+.scope-picker.is-open .scope-trigger-icon { color: var(--accent); }
+.scope-trigger-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.scope-trigger-count { flex: 0 0 auto; font-size: 12px; font-family: ui-monospace, monospace; color: var(--fg-muted); }
+.scope-chevron { flex: 0 0 auto; color: var(--fg-muted); transition: transform 120ms ease; }
+.scope-picker.is-open .scope-chevron { transform: rotate(180deg); }
+
+.scope-popup {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 30;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  min-width: 280px;
+  max-width: min(560px, 88vw);
+  max-height: min(360px, 60vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+}
+.scope-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.scope-option.is-active { background: var(--bg-alt); }
+.scope-option[aria-selected='true'] .scope-option-label { color: var(--accent); }
+.scope-option-icon { display: flex; flex: 0 0 auto; color: var(--fg-muted); }
+.scope-option[aria-selected='true'] .scope-option-icon { color: var(--accent); }
+.scope-option-main { flex: 1 1 auto; min-width: 0; }
+.scope-option-label,
+.scope-option-path {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scope-option-label { font-weight: 500; }
+.scope-option-path { font-size: 11px; font-family: ui-monospace, monospace; color: var(--fg-muted); }
+/* The all-workspaces row carries a sentence, not a path. */
+.scope-option-hint { font-family: inherit; }
+.scope-option-meta { flex: 0 0 auto; text-align: right; }
+.scope-option-count { display: block; font-size: 12px; font-family: ui-monospace, monospace; }
+.scope-option-note { display: block; font-size: 11px; color: var(--fg-muted); white-space: nowrap; }
+.scope-option-check { display: flex; flex: 0 0 auto; width: 14px; color: var(--accent); }
 
 /* --- buttons --- */
 .btn {
@@ -205,13 +290,53 @@ body {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   font-size: 12px; color: var(--fg-muted);
 }
+/* The drawer is a fixed-size region, not a flexible one.
+ *
+ * `flex-shrink: 1` here was a bug: shrinkage is weighted by flex base size, and
+ * `.layout`'s base size is the intrinsic height of the whole Feed, so a long list
+ * crushed the drawer to the height of its head and an empty panel looked like a
+ * rendering failure. So: never shrink, keep a min-height, and let `.panel-body`
+ * own the scroll — which is also what keeps the head (title + filter input) in
+ * place while a long log scrolls underneath.
+ */
 .drawer {
-  flex: 0 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: min(260px, 40vh);
   max-height: 55vh;
+  overflow: hidden;
+  padding: 12px 12px 0;
+}
+.drawer .panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.drawer .panel-head { flex: 0 0 auto; }
+.drawer .panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 12px 12px 0;
+  scrollbar-gutter: stable;
+}
+/* Centre the message instead of stranding it against the head. */
+.drawer .panel-body > .empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 100%;
+}
+.drawer .panel-body > .empty p { margin: 0; }
+/* Column labels stay readable once the body scrolls. */
+.drawer .sections thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-alt);
 }
 
 /* Narrow screens keep the old single-column document scroll: two short panes
@@ -220,7 +345,8 @@ body {
   .app { height: auto; min-height: 100vh; overflow: visible; }
   .layout { grid-template-columns: 1fr; grid-template-rows: none; overflow: visible; }
   .feed { overflow: visible; }
-  .drawer { max-height: none; overflow: visible; }
+  .drawer { max-height: none; min-height: 0; overflow: visible; }
+  .drawer .panel-body { overflow: visible; }
 }
 
 /* --- cards --- */
@@ -244,7 +370,8 @@ body {
   padding: 10px;
   cursor: pointer;
 }
-.card-side { display: flex; flex-direction: column; gap: 4px; padding: 8px 8px 8px 0; }
+/* `gap` is a misclick guard: pin is reversible, delete is not. */
+.card-side { display: flex; flex-direction: column; gap: 12px; padding: 8px 8px 8px 0; }
 .card-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; }
 .card-id { font-family: ui-monospace, monospace; color: var(--fg-muted); }
 .card-time { color: var(--fg-muted); margin-left: auto; }
@@ -392,3 +519,49 @@ body {
 .modal-warning-en { color: var(--fg-muted); font-size: 12px; margin: 4px 0 0; }
 .modal-error { color: var(--danger); font-size: 12px; margin-top: 10px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+/* --- toasts ---
+ *
+ * Above the modal layer so a message is never trapped behind a dialog; the
+ * container never intercepts clicks, only the pills do.
+ */
+.toasts {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(520px, 92vw);
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  animation: toast-in 140ms ease-out;
+}
+.toast-icon { display: flex; flex: 0 0 auto; color: #2e9e4f; }
+.toast-danger { border-color: var(--danger); }
+.toast-danger .toast-icon { color: var(--danger); }
+.toast-text { overflow-wrap: anywhere; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}

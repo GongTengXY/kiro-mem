@@ -27,13 +27,16 @@ import { ApiError, ViewerApi, type ScopeSelection } from './api';
 import { applyPin, mergeCards, removeCard } from './merge';
 import { ViewerStream, type StreamState } from './stream';
 import { clearSession, rememberScope } from './token';
-import { ALL_SCOPES_VALUE, TopBar } from './components/TopBar';
+import { ALL_SCOPES_VALUE } from './components/ScopePicker';
+import { TopBar } from './components/TopBar';
 import { ObservationCard } from './components/ObservationCard';
 import { DetailPanel } from './components/DetailPanel';
 import { DeleteDialog } from './components/DeleteDialog';
 import { ContextPreview } from './components/ContextPreview';
 import { LogsDrawer, RetrievalHealth } from './components/Panels';
+import { Toasts, useToasts } from './components/Toasts';
 import { Empty } from './components/Common';
+import { LangContext, VIEWER_STRINGS, type ViewerLang } from './i18n';
 
 type Panel = 'context' | 'retrieval' | 'logs';
 
@@ -77,6 +80,15 @@ export function App({ api, initialToken, initialScope }: { api: ViewerApi; initi
   const [pendingDelete, setPendingDelete] = useState<ViewerObservationDetail | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const { toasts, push: pushToast, dismiss: dismissToast } = useToasts();
+
+  /**
+   * UI language, from `config.language` via bootstrap. English until that lands: a
+   * one-frame default beats blocking the first paint on a round trip.
+   */
+  const lang: ViewerLang = bootstrap?.language === 'zh' ? 'zh' : 'en';
+  const t = VIEWER_STRINGS[lang];
 
   /**
    * Monotonic request id. A scope switch bumps it, so a response that was already
@@ -267,14 +279,16 @@ export function App({ api, initialToken, initialScope }: { api: ViewerApi; initi
       setSearchResults((prev) => (prev ? applyPin(prev, id, pinned) : prev));
       try {
         await api.pin(scope, id, pinned);
+        pushToast(pinned ? t.toastPinned(id) : t.toastUnpinned(id));
       } catch (err) {
-        handleError(err);
+        const code = handleError(err);
         // Revert an optimistic toggle the server refused.
         setCards((prev) => applyPin(prev, id, !pinned));
         setSearchResults((prev) => (prev ? applyPin(prev, id, !pinned) : prev));
+        pushToast(t.toastPinFailed(id, code), 'danger');
       }
     },
-    [api, scope, handleError],
+    [api, scope, handleError, pushToast, t],
   );
 
   // --- Delete ---
@@ -373,17 +387,17 @@ export function App({ api, initialToken, initialScope }: { api: ViewerApi; initi
 
   if (fatal === 'unauthorized' || !token) {
     return (
-      <div className="fatal">
-        <Empty
-          message="This Viewer session is no longer authorized."
-          hint="Run `kiro-mem viewer` again in your terminal to open a fresh session. The token lives only in this browser tab."
-        />
-      </div>
+      <LangContext.Provider value={t}>
+        <div className="fatal">
+          <Empty message={t.unauthorized} hint={t.unauthorizedHint} />
+        </div>
+      </LangContext.Provider>
     );
   }
 
   const visible = searchResults ?? cards;
   return (
+    <LangContext.Provider value={t}>
     <div className="app">
       <TopBar
         bootstrap={bootstrap}
@@ -426,22 +440,20 @@ export function App({ api, initialToken, initialScope }: { api: ViewerApi; initi
       ) : null}
 
       <main className="layout">
-        <section className="feed" aria-label="Observations">
+        <section className="feed" aria-label={t.observationsAria}>
           {searchResults ? (
             <div className="feed-note">
-              {`${searchResults.length} keyword matches. Viewer search is keyword-only; results labelled "semantic only" are unverified leads.`}
+              {t.searchNote(searchResults.length)}
               <button type="button" className="btn btn-ghost" onClick={() => { setSearchResults(null); setQuery(''); }}>
-                Clear
+                {t.clear}
               </button>
             </div>
           ) : null}
 
           {visible.length === 0 && !loading ? (
             <Empty
-              message={searchResults
-                ? `No keyword match in ${allScopes ? 'any workspace' : 'this workspace'}.`
-                : `No memory recorded for ${allScopes ? 'any workspace' : 'this workspace'} yet.`}
-              hint={searchResults ? 'Try a longer or different term — search here does not use the semantic leg.' : 'Observations appear here one per closed turn, once compression finishes.'}
+              message={searchResults ? t.emptySearch(allScopes) : t.emptyFeed(allScopes)}
+              hint={searchResults ? t.emptySearchHint : t.emptyFeedHint}
             />
           ) : null}
 
@@ -459,12 +471,12 @@ export function App({ api, initialToken, initialScope }: { api: ViewerApi; initi
 
           {!searchResults && cursor ? (
             <button type="button" className="btn load-more" disabled={loading} onClick={() => void loadPage(cursor, false)}>
-              {loading ? 'Loading…' : 'Load more'}
+              {loading ? t.loading : t.loadMore}
             </button>
           ) : null}
         </section>
 
-        <aside className="detail-pane" aria-label="Observation detail">
+        <aside className="detail-pane" aria-label={t.detailAria}>
           <DetailPanel
             detail={detail}
             events={events}
@@ -493,6 +505,9 @@ export function App({ api, initialToken, initialScope }: { api: ViewerApi; initi
           onConfirm={() => void confirmDelete()}
         />
       ) : null}
+
+      <Toasts toasts={toasts} onDismiss={dismissToast} />
     </div>
+    </LangContext.Provider>
   );
 }

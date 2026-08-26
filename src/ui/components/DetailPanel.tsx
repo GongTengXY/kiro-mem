@@ -12,6 +12,7 @@ import { useState } from 'preact/hooks';
 import { ChevronDown, ChevronRight, Trash2 } from 'lucide-preact';
 import type { ViewerObservationDetail, ViewerTurnEvent } from '../../server/viewer-types';
 import { formatBytes, formatTime } from '../merge';
+import { useT } from '../i18n';
 import { Block, Chip, Empty, Field, Raw, Section, TagList, Text } from './Common';
 
 export function DetailPanel({
@@ -33,13 +34,11 @@ export function DetailPanel({
   onDelete: (id: number) => void;
   onClose: () => void;
 }) {
+  const t = useT();
   if (!detail) {
     return (
       <div className="detail detail-empty">
-        <Empty
-          message="Select an observation"
-          hint="Each card opens the generated memory next to the prompt, artifacts and raw events it came from."
-        />
+        <Empty message={t.selectObservation} hint={t.selectObservationHint} />
       </div>
     );
   }
@@ -52,19 +51,19 @@ export function DetailPanel({
           <span className="card-id">{`#O${memory.id}`}</span>
           <Chip tone={memory.memoryType}>{memory.memoryType}</Chip>
           {memory.quality === 'fallback' ? <Chip tone="warn">fallback</Chip> : null}
-          {memory.pinned ? <Chip tone="muted">pinned</Chip> : null}
+          {memory.pinned ? <Chip tone="muted">{t.pinnedChip}</Chip> : null}
         </div>
         <div className="detail-head-actions">
           <button
             type="button"
             className="btn btn-danger-ghost"
-            title="Permanently delete this memory and its source turn"
+            title={t.deleteTitle}
             onClick={() => onDelete(memory.id)}
           >
-            <Trash2 size={15} /> Delete
+            <Trash2 size={15} /> {t.delete}
           </button>
           <button type="button" className="btn btn-ghost" onClick={onClose}>
-            Close
+            {t.close}
           </button>
         </div>
       </div>
@@ -76,24 +75,28 @@ export function DetailPanel({
 
         <div className="detail-grid">
           {/* --- Generated memory --- */}
-          <Section title="Generated memory">
-            <Field label="summary"><Block value={memory.summary} /></Field>
-            {memory.request ? <Field label="request"><Block value={memory.request} /></Field> : null}
-            {memory.outcome ? <Field label="outcome"><Block value={memory.outcome} /></Field> : null}
-            {memory.learned ? <Field label="learned"><Block value={memory.learned} /></Field> : null}
-            {memory.nextSteps ? <Field label="next steps"><Block value={memory.nextSteps} /></Field> : null}
+          <Section title={t.generatedMemory}>
+            <Field label={t.fSummary}><Block value={memory.summary} /></Field>
+            {memory.request ? <Field label={t.fRequest}><Block value={memory.request} /></Field> : null}
+            {memory.outcome ? <Field label={t.fOutcome}><Block value={memory.outcome} /></Field> : null}
+            {memory.learned ? <Field label={t.fLearned}><Block value={memory.learned} /></Field> : null}
+            {memory.nextSteps ? <Field label={t.fNextSteps}><Block value={memory.nextSteps} /></Field> : null}
 
-            <Field label="scores">
-              {`importance ${memory.scores.importance.toFixed(2)} · confidence ${memory.scores.confidence.toFixed(2)} · unresolved ${memory.scores.unresolved.toFixed(2)}`}
+            <Field label={t.fScores}>
+              {t.scoresValue(
+                memory.scores.importance.toFixed(2),
+                memory.scores.confidence.toFixed(2),
+                memory.scores.unresolved.toFixed(2),
+              )}
             </Field>
             {memory.files.length ? (
-              <Field label={`files (${memory.counts.files})`}><TagList items={memory.files} total={memory.counts.files} max={12} /></Field>
+              <Field label={t.fFiles(memory.counts.files)}><TagList items={memory.files} total={memory.counts.files} max={12} /></Field>
             ) : null}
             {memory.concepts.length ? (
-              <Field label={`concepts (${memory.counts.concepts})`}><TagList items={memory.concepts} total={memory.counts.concepts} max={12} /></Field>
+              <Field label={t.fConcepts(memory.counts.concepts)}><TagList items={memory.concepts} total={memory.counts.concepts} max={12} /></Field>
             ) : null}
             {memory.evidence.length ? (
-              <Field label={`evidence (${memory.counts.evidence})`}>
+              <Field label={t.fEvidence(memory.counts.evidence)}>
                 <ul className="evidence">
                   {memory.evidence.map((line, i) => (
                     <li key={`${i}-${line}`}>{line}</li>
@@ -102,36 +105,36 @@ export function DetailPanel({
               </Field>
             ) : null}
 
-            <Field label="semantic normalization">
+            <Field label={t.fSemantic}>
               {memory.semantic
                 ? `${memory.semantic.protocol}: ${memory.semantic.status}${memory.semantic.failureReason ? ` (${memory.semantic.failureReason})` : ''}`
-                : 'no derived value'}
+                : t.noDerivedValue}
             </Field>
-            <Field label="embeddings">
+            <Field label={t.fEmbeddings}>
               {memory.embeddings.length
                 ? memory.embeddings.map((e) => e.model).join(', ')
-                : 'none — not semantically reachable yet'}
+                : t.noEmbeddings}
             </Field>
           </Section>
 
           {/* --- Source truth --- */}
-          <Section title="Source turn (truth layer)">
-            <Field label="workspace"><span className="mono break">{source.scopeKey}</span></Field>
-            <Field label="session"><span className="mono break">{`${source.sessionId} · turn #${source.turnId} · seq ${source.turnSeq}`}</span></Field>
-            <Field label="cwd"><span className="mono break">{source.cwd}</span></Field>
-            <Field label="time">{`${formatTime(source.startedAt)} → ${formatTime(source.stoppedAt)} · ${source.state}`}</Field>
-            <Field label="prompt">
+          <Section title={t.sourceTurn}>
+            <Field label={t.fWorkspace}><span className="mono break">{source.scopeKey}</span></Field>
+            <Field label={t.fSession}><span className="mono break">{`${source.sessionId} · turn #${source.turnId} · seq ${source.turnSeq}`}</span></Field>
+            <Field label={t.fCwd}><span className="mono break">{source.cwd}</span></Field>
+            <Field label={t.fTime}>{`${formatTime(source.startedAt)} → ${formatTime(source.stoppedAt)} · ${source.state}`}</Field>
+            <Field label={t.fPrompt}>
               {source.promptText === null ? (
-                <span className="muted">no prompt recorded</span>
+                <span className="muted">{t.noPrompt}</span>
               ) : (
                 <>
                   <Raw value={source.promptText} maxHeight={220} />
-                  {source.promptTruncated ? <p className="muted">prompt truncated for display</p> : null}
+                  {source.promptTruncated ? <p className="muted">{t.promptTruncated}</p> : null}
                 </>
               )}
             </Field>
-            <Field label="raw events">
-              {`${source.events.count} events · ${formatBytes(source.events.payloadBytes)} original`}
+            <Field label={t.fRawEvents}>
+              {t.rawEventsValue(source.events.count, formatBytes(source.events.payloadBytes))}
               {source.events.byHook.length ? (
                 <div className="byhook">
                   {source.events.byHook.map((h) => (
@@ -143,34 +146,34 @@ export function DetailPanel({
 
             {source.artifacts ? (
               <>
-                {source.artifacts.files.length ? <Field label="artifact files"><TagList items={source.artifacts.files} max={12} /></Field> : null}
+                {source.artifacts.files.length ? <Field label={t.fArtifactFiles}><TagList items={source.artifacts.files} max={12} /></Field> : null}
                 {source.artifacts.commands.length ? (
-                  <Field label="commands">
+                  <Field label={t.fCommands}>
                     <ul className="evidence">{source.artifacts.commands.map((c, i) => <li key={`${i}-${c}`}>{c}</li>)}</ul>
                   </Field>
                 ) : null}
                 {source.artifacts.errorSignals.length ? (
-                  <Field label="errors">
+                  <Field label={t.fErrors}>
                     <ul className="evidence">{source.artifacts.errorSignals.map((c, i) => <li key={`${i}-${c}`}>{c}</li>)}</ul>
                   </Field>
                 ) : null}
                 {source.artifacts.decisionSignals.length ? (
-                  <Field label="decisions">
+                  <Field label={t.fDecisions}>
                     <ul className="evidence">{source.artifacts.decisionSignals.map((c, i) => <li key={`${i}-${c}`}>{c}</li>)}</ul>
                   </Field>
                 ) : null}
                 {source.artifacts.facts.length ? (
-                  <Field label="facts">
+                  <Field label={t.fFacts}>
                     <ul className="evidence">{source.artifacts.facts.map((c, i) => <li key={`${i}-${c}`}>{c}</li>)}</ul>
                   </Field>
                 ) : null}
               </>
             ) : (
-              <Field label="artifacts"><span className="muted">no deterministic artifacts stored</span></Field>
+              <Field label={t.fArtifacts}><span className="muted">{t.noArtifacts}</span></Field>
             )}
 
             {jobs.length ? (
-              <Field label="related jobs">
+              <Field label={t.fRelatedJobs}>
                 <div className="taglist">
                   {jobs.map((j) => (
                     <span className="tag" key={j.id}>{`${j.jobType}: ${j.state}`}</span>
@@ -209,10 +212,11 @@ function EventsList({
   total: number;
   onLoad: (cursor: string | null) => void;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   return (
     <Section
-      title={`Raw event payloads (${total})`}
+      title={t.rawPayloads(total)}
       actions={
         <button
           type="button"
@@ -223,12 +227,12 @@ function EventsList({
             if (next && events.length === 0) onLoad(null);
           }}
         >
-          {open ? <ChevronDown size={15} /> : <ChevronRight size={15} />} {open ? 'Hide' : 'Load'}
+          {open ? <ChevronDown size={15} /> : <ChevronRight size={15} />} {open ? t.hide : t.load}
         </button>
       }
     >
       {!open ? (
-        <p className="muted">Loaded on demand — a single turn can hold megabytes of tool output.</p>
+        <p className="muted">{t.payloadsOnDemand}</p>
       ) : (
         <>
           {events.map((event) => (
@@ -239,14 +243,14 @@ function EventsList({
                 <span className="muted">{`${formatBytes(event.payloadSize)} · ${formatTime(event.createdAt)}`}</span>
               </summary>
               <Raw value={event.payload} maxHeight={320} />
-              {event.payloadTruncated ? <p className="muted">payload truncated for display</p> : null}
+              {event.payloadTruncated ? <p className="muted">{t.payloadTruncated}</p> : null}
             </details>
           ))}
-          {events.length === 0 && !loading ? <Empty message="No raw events stored for this turn." /> : null}
-          {truncated ? <p className="muted">Response byte budget reached; load more to continue.</p> : null}
+          {events.length === 0 && !loading ? <Empty message={t.noRawEvents} /> : null}
+          {truncated ? <p className="muted">{t.byteBudgetReached}</p> : null}
           {cursor ? (
             <button type="button" className="btn" disabled={loading} onClick={() => onLoad(cursor)}>
-              {loading ? 'Loading…' : 'Load more events'}
+              {loading ? t.loading : t.loadMoreEvents}
             </button>
           ) : null}
         </>

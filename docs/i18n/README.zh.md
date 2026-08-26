@@ -36,7 +36,7 @@ kiro-mem 自动捕获 Kiro 会话中的每一轮对话（prompt → 工具调用
 - 🔒 **隐私控制** — 使用 `<private>` 标签在存储前脱敏
 - 🚀 **异步处理** — 持久任务队列，不阻塞工具调用
 - 🔄 **进程保活** — Worker 由 `launchd` 或 `systemd` 管理
-- 🌐 **国际化** — CLI 与运行时压缩提示词支持中英文
+- 🌐 **国际化** — CLI、运行时压缩提示词与 Web 查看器界面均支持中英文
 
 ## 快速开始
 
@@ -79,6 +79,21 @@ kiro-cli settings chat.defaultAgent kiro-mem
 ```text
 /agent kiro-mem
 ```
+
+> **中途切换不会注入记忆索引。** `agentSpawn` 是会话启动那一刻的触发点 —— 它在数组格式里的别名就叫
+> `SessionStart` —— Kiro CLI 切换 agent 时不会重放它。在 kiro-cli 2.19.1 上实测：用一个 `agentSpawn`
+> hook 只往文件追加一行的探针 agent，`--agent probe` 启动会写入 1 行；先用别的 agent 启动再
+> `/agent probe`，写入 0 行，尽管 TUI 已经回了 `Agent changed to probe`。
+>
+> 切进来的 agent 其余部分都是生效的：`/mcp` 显示 `kiro-mem ● running 4 tools`，
+> `userPromptSubmit` / `postToolUse` / `stop` 三个 hook 照常触发，所以这一轮仍会被捕获和压缩 ——
+> 丢的只是这次会话的注入索引。想补回来：直接用 kiro-mem 启动会话，或显式让 agent 调
+> `@kiro-mem/search`，或把 hook 本该注入的那段原文粘给它：
+>
+> ```bash
+> curl -s -H "Authorization: Bearer $(cat ~/.kiro-mem/.token)" \
+>   "http://127.0.0.1:37778/context/bootstrap?cwd=$PWD"
+> ```
 
 ### 验证安装
 
@@ -143,7 +158,9 @@ curl http://127.0.0.1:37778/health
 kiro-mem viewer
 ```
 
-由 Worker 自己提供的本机浏览器界面——零 CDN、零独立 dev server、除 loopback 之外不走网络。它默认显示**全部 workspace**；可通过 workspace 选择器把 Feed 缩小到单个项目。全局视图选中期间，界面上始终保留提示。
+由 Worker 自己提供的本机浏览器界面——零 CDN、零独立 dev server、除 loopback 之外不走网络。它默认显示**全部 workspace**；workspace 选择器可把 Feed 缩小到单个项目，并逐个列出完整路径、Observation 数量和最后活动时间。全局视图选中期间，界面上始终保留提示。
+
+整个界面只渲染**一种语言，由 `config.language` 决定**，随 bootstrap 响应下发——没有中英并排的标签。改完 `kiro-mem config` 下次打开页面即生效；若该字段缺失（旧版 Worker），回退为英文。
 
 它回答这些问题：
 
@@ -152,6 +169,8 @@ kiro-mem viewer
 - **下一次会话会收到什么** —— 上下文预览渲染 `agentSpawn` hook 实际注入的那一串文本，带 `usedBytes / effectiveMaxBytes` 和分段字节明细（frame、信任边界、usage、pinned、recent-detail、recent-index）。预算可临时调整，服务端强制封顶 9500 字节。
 - **搜索为什么命中** —— 当前 scope 内的关键词搜索，逐条显示 `match_source`。查看器搜索是**纯关键词**的：它不会替你伪造 `semantic_query_en`，所以标为 `semantic` 的结果来自 agent 那条路径，而不是这个界面。
 - **检索是否健康** —— 一个面板投影 `/health` 已有的 24 小时 `search_24h` 计数与 retrieval profile，另有 worker 错误日志抽屉。
+
+查看器只有两个写操作，确认方式与可逆性对应：**pin** 采用乐观更新，结果用短暂的 toast 告知（Worker 拒绝时也会提示已回滚）；**删除**一律弹出模态框，写清将被销毁的内容。
 
 ### 永久删除
 
@@ -206,6 +225,7 @@ Observation → 它的向量与语义归一化行 → 它的 FTS 条目 → 来�
 }
 ```
 
+- `language`：`zh` 或 `en`。同时决定 CLI 输出、运行时压缩 prompt **和** Web 查看器界面语言，界面只渲染这一种语言。
 - `compression.concurrency`：并行运行的 `kiro-cli acp` 进程数（默认 `3`）。
 - `compression.timeoutMs`：单次压缩超时（毫秒）。通过 `kiro-mem config` 修改时会限制在 `[5000, 60000]` 区间内（默认 `30000`）。
 - `compression.maxRetries`：JSON 修复重试次数，超出后降级为 `quality=fallback` 的 Observation（默认 `2`）。
@@ -280,6 +300,7 @@ kiro-mem uninstall --purge
 | 原始事件 payload 有上限 | 单个字符串字段超过 32KB 会被截断，单个 turn 最多存 4MB 原始 payload。截断会就地标记，但丢掉的字节不可恢复 | `payload_size` 仍记录原始大小；artifacts 提取在截断后的 payload 上继续工作 |
 | 依赖 Kiro CLI ACP | `kiro-cli acp` 不可用时无法压缩 | `kiro-mem diagnose` 会跑 ACP smoke 测试 |
 | `agentSpawn` 输出限制 10KB | 注入索引必须紧凑 | 预算控制的 context builder |
+| 中途 `/agent` 切换不注入任何东西 | `agentSpawn` 是会话启动触发点，用 `/agent` 切进 kiro-mem 的那次会话拿不到记忆索引。捕获和 MCP 工具仍然正常——缺的只是被注入的那份菜单 | 用 kiro-mem 启动会话（`--agent kiro-mem` 或 `chat.defaultAgent`），显式要求 `@kiro-mem/search`，或把 `/context/bootstrap` 的输出粘进去——见[设为默认 Agent](#设为默认-agent) |
 | 搜索词短于 3 字符 | 回退到 `LIKE`，精度较低 | 尽量使用较长搜索词 |
 | 默认搜索不限时间，也没有保留期策略 | `search` 默认搜索**全部历史**，因此可搜范围等于注入索引能展示的范围——两年前的记录也找得到，不会再出现"索引里看得见、搜索却搜不到"。代价是语义腿的工作集随语料增长，而且什么都不会过期。实测上界：50,000 条记录铺开在 3 年里，三次复现 p95 203–260ms、检索循环内存 +264…+294MB；超过这个规模的行为**未测** | 用 `days=N` 收窄单次搜索。`retrieval.semanticDiscovery: false` 会恢复旧 profile，同时也恢复它的 200 条候选池 |
 | 纯语义结果未经核实 | 词面零重叠的 query 现在能只靠语义找回记录，但这些结果的全部依据就是向量相似度；一个本项目从未做过的问题，仍然可能返回最多 2 条看起来很像的记录。独立盲审在 30 条 hard negative 上实测平均返回 **1.9 条**——几乎每一条都把配额用满了 | 它们标记为 `match_source: "semantic"`，每次搜索最多 2 条；据此行动前用 `get_observations` 或当前代码核实。该上限只覆盖 `semantic` 一档，`fts` 与 `hybrid` 不受它约束 |

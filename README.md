@@ -36,7 +36,7 @@ kiro-mem automatically captures each turn (prompt → tool calls → stop) durin
 - 🔒 **Privacy Control** — Use `<private>` tags to redact sensitive content before storage
 - 🚀 **Async Processing** — Persistent job queue, no tool-call blocking
 - 🔄 **Process Keepalive** — Worker managed by `launchd` or `systemd`
-- 🌐 **i18n** — `zh` and `en` for CLI and runtime compressor prompts
+- 🌐 **i18n** — `zh` and `en` for the CLI, the runtime compressor prompt and the Web Viewer UI
 
 ## Quick Start
 
@@ -79,6 +79,25 @@ Or switch inside a chat session:
 ```text
 /agent kiro-mem
 ```
+
+> **A mid-session switch does not inject the memory index.** `agentSpawn` is a
+> session-start trigger — its array-format alias is literally `SessionStart` — and
+> Kiro CLI does not replay it when you switch agents. Measured on kiro-cli 2.19.1
+> with a probe agent whose `agentSpawn` hook appends to a file: starting with
+> `--agent probe` writes one line, while starting on another agent and then running
+> `/agent probe` writes none, even though the TUI confirms `Agent changed to probe`.
+>
+> Everything else about the switched-in agent is live: `/mcp` shows `kiro-mem ●
+> running 4 tools` and the `userPromptSubmit` / `postToolUse` / `stop` hooks do
+> fire, so the turn is still captured and compressed — you only lose the injected
+> index for that session. To get it anyway, either start the session on kiro-mem,
+> ask the agent to `@kiro-mem/search` explicitly, or paste the exact string the
+> hook would have injected:
+>
+> ```bash
+> curl -s -H "Authorization: Bearer $(cat ~/.kiro-mem/.token)" \
+>   "http://127.0.0.1:37778/context/bootstrap?cwd=$PWD"
+> ```
 
 ### Verify Installation
 
@@ -143,7 +162,9 @@ Content inside `<private>` tags is replaced with `[REDACTED]` before it is writt
 kiro-mem viewer
 ```
 
-Opens a local browser UI served by the Worker itself — no CDN, no dev server, no network beyond loopback. It starts on **All workspaces**; use the workspace selector to narrow the feed to one project. A standing notice remains visible while the global view is selected.
+Opens a local browser UI served by the Worker itself — no CDN, no dev server, no network beyond loopback. It starts on **All workspaces**; the workspace picker narrows the feed to one project and lists each workspace with its full path, Observation count and last activity. A standing notice remains visible while the global view is selected.
+
+The whole UI renders in **one language, chosen by `config.language`** and delivered in the bootstrap response — no bilingual labels. A `kiro-mem config` change takes effect on the next page load. If the field is absent (an older Worker), it falls back to English.
 
 What it answers:
 
@@ -152,6 +173,8 @@ What it answers:
 - **What the next session will receive** — the context preview renders the exact string the `agentSpawn` hook injects, with `usedBytes / effectiveMaxBytes` and a per-section byte breakdown (frame, trust boundary, usage, pinned, recent-detail, recent-index). The budget is adjustable for preview and clamped server-side to 9500 bytes.
 - **Why a search matched** — keyword search over the current scope, with `match_source` shown per result. Viewer search is **keyword-only**: it never fabricates a `semantic_query_en` on your behalf, so results labelled `semantic` come from the agent-facing path, not from this UI.
 - **Whether retrieval is healthy** — a panel projecting the same trailing-24h `search_24h` counters and retrieval profile that `/health` reports, plus a worker error log drawer.
+
+The Viewer has exactly two write actions, and their confirmation matches their reversibility: **pin** toggles optimistically and reports the result in a transient toast (including a rollback notice if the Worker refuses it), while **delete** always opens a modal stating what will be destroyed.
 
 ### Permanent Deletion
 
@@ -206,6 +229,7 @@ Edit `~/.kiro-mem/config.json`, or run `kiro-mem config` for interactive setup:
 }
 ```
 
+- `language`: `zh` or `en`. Drives the CLI output, the runtime compressor prompt **and** the Web Viewer UI, which renders in this language only.
 - `compression.concurrency`: number of parallel `kiro-cli acp` runtime processes (default `3`).
 - `compression.timeoutMs`: per-prompt timeout in milliseconds, clamped to `[5000, 60000]` when set via `kiro-mem config` (default `30000`).
 - `compression.maxRetries`: how many JSON-repair retries to attempt before degrading to a `quality=fallback` Observation (default `2`).
@@ -281,6 +305,7 @@ kiro-mem uninstall --purge
 | Raw event payloads are capped        | A tool response over 32KB per string field is truncated, and a single turn stores at most 4MB of raw payload. Truncation is marked inline, but the dropped bytes are not recoverable | `payload_size` still records the original size; artifacts extraction keeps working on the capped payload |
 | Requires Kiro CLI ACP               | Compression cannot run without a working `kiro-cli acp` subcommand    | `kiro-mem diagnose` runs an ACP smoke test    |
 | `agentSpawn` output limit 10KB      | Injected index must stay compact                                      | Budget-controlled context builder             |
+| Mid-session `/agent` switch injects nothing | `agentSpawn` is a session-start trigger, so switching into kiro-mem with `/agent` leaves that session without the memory index. Capture and the MCP tools do keep working — only the injected menu is missing | Start the session on kiro-mem (`--agent kiro-mem` or `chat.defaultAgent`), ask for `@kiro-mem/search` explicitly, or paste `/context/bootstrap` output — see [Set As Default Agent](#set-as-default-agent) |
 | Search queries shorter than 3 chars | Falls back to `LIKE`, less precise                                    | Use longer terms when possible                |
 | Search has no default time limit, and no retention policy | `search` defaults to the whole history, so the searchable range equals what the injected index can show — a record from two years ago is reachable. The cost is that the semantic leg's working set grows with the corpus and nothing ever expires. Measured ceiling: 50,000 records spread over 3 years, p95 203–260ms and search-loop memory +264…+294MB across three runs. Beyond that size the behavior is unmeasured | Pass `days=N` to narrow one search. `retrieval.semanticDiscovery: false` restores the previous profile, which also restores its 200-record pool |
 | Semantic-only results are unverified | A query with no keyword overlap can now find records through meaning alone, but those results rest on vector similarity only, and a query about work this project never did can still return up to 2 plausible-looking records. An independent blind audit measured a mean of 1.9 returned records across 30 hard negatives — the cap is reached on nearly every one of them | They are labelled `match_source: "semantic"` and capped at 2 per search; verify with `get_observations` or the current code before acting. The cap covers only the `semantic` label — `fts` and `hybrid` results are not bounded by it |
