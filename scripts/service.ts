@@ -220,6 +220,15 @@ export function stop(lang: Language = 'zh') {
   if (existsSync(pidFile)) {
     const pid = readFileSync(pidFile, 'utf-8').trim();
     spawnSync('kill', [pid], { stdio: 'pipe' });
+    // Give the Worker a moment to close its ACP pool and in-flight jobs before
+    // uninstall removes the runtime directory. Escalate only this recorded PID.
+    const deadline = Date.now() + 5000;
+    while (Date.now() < deadline && spawnSync('kill', ['-0', pid], { stdio: 'pipe' }).status === 0) {
+      spawnSync('sleep', ['0.05'], { stdio: 'ignore' });
+    }
+    if (spawnSync('kill', ['-0', pid], { stdio: 'pipe' }).status === 0) {
+      spawnSync('kill', ['-KILL', pid], { stdio: 'pipe' });
+    }
   }
   rmSync(pidFile, { force: true });
   rmSync(portFile, { force: true });

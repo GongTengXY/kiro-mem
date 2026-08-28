@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { writeFileSync, readFileSync } from 'fs';
+import { writeFileSync, readFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { MemoryDB, detectRepo } from '../db';
 import type { MemoryType } from '../db/types';
@@ -1303,7 +1303,7 @@ const compressor: MemoryCompressor = new ACPCompressor({
   // Persist ACP repair / contamination events for the 24h observability window.
   onMetric: (kind) => db.recordAcpEvent(kind),
 });
-const { app, jobRunner, setListeningPort } = createApp({ db, compressor, config });
+const { app, jobRunner, viewerHub, setListeningPort } = createApp({ db, compressor, config });
 
 export { app };
 
@@ -1339,6 +1339,26 @@ export function startWorker() {
   const server = Bun.serve({ fetch: app.fetch, port, hostname: host });
   // Anchor the Viewer's Host check to the socket that is actually bound.
   setListeningPort(server.port ?? port);
+
+  let shuttingDown = false;
+  const shutdown = async () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    // Stop accepting requests and claiming new work first. Closing ACP runtimes
+    // rejects any prompt still in flight; wait for those jobs to record their
+    // final state before closing SQLite.
+    try { server.stop(true); } catch {}
+    jobRunner.stop();
+    try { await compressor.close?.(); } catch {}
+    await jobRunner.waitForIdle(5000);
+    viewerHub.closeAll();
+    try { db.close(); } catch {}
+    rmSync(join(dataDir, '.worker.pid'), { force: true });
+    rmSync(join(dataDir, '.worker.port'), { force: true });
+    process.exit(0);
+  };
+  process.once('SIGTERM', () => { void shutdown(); });
+  process.once('SIGINT', () => { void shutdown(); });
 }
 
 if (import.meta.main) {

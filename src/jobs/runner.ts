@@ -48,6 +48,15 @@ export class JobRunner {
     }
   }
 
+  /** Wait for jobs already claimed by this runner to finish. */
+  async waitForIdle(timeoutMs = 5000): Promise<boolean> {
+    const deadline = Date.now() + Math.max(0, timeoutMs);
+    while (this.inflight > 0 && Date.now() < deadline) {
+      await new Promise<void>((resolve) => setTimeout(resolve, 25));
+    }
+    return this.inflight === 0;
+  }
+
   get stats() {
     const now = Date.now();
     const oldestAge = (state: JobState, column: 'created_at' | 'leased_at'): number => {
