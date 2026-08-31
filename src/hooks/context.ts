@@ -1,8 +1,7 @@
 #!/usr/bin/env bun
 /**
- * agentSpawn hook: fetch bootstrap context without ever managing the Worker.
- * launchd/systemd owns process keepalive; any failure here is silent so agent
- * startup is never blocked by memory infrastructure.
+ * agentSpawn hook: fetch bootstrap context without ever managing the Worker —
+ * launchd/systemd owns process keepalive.
  */
 import { readFileSync } from 'fs';
 

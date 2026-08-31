@@ -9,6 +9,12 @@ export interface Config {
   compression: {
     /** Number of concurrent ACP runtime processes. */
     concurrency: number;
+    /** Runtimes idle-TTL retirement may never reclaim. `1` keeps one ACP
+     * process warm so low-frequency compression skips cold start. */
+    minWarmRuntimes: number;
+    /** Idle milliseconds before a released ACP runtime is retired. `0` turns
+     * idle retirement off; it never means "kill immediately". */
+    idleTtlMs: number;
     /** Per-prompt timeout for the ACP runtime, in milliseconds. */
     timeoutMs: number;
     /** Maximum repair retries when the model returns invalid JSON. */
@@ -24,28 +30,18 @@ export interface Config {
   retrieval: {
     /**
      * Gray-release switch for independent semantic recall (plan §8.1 item 4,
-     * the flag the plan calls `SEMANTIC_DISCOVERY_ENABLED`). It lives here
-     * rather than in a new environment variable because this file is already
-     * the project's configuration surface, and a retrieval strategy that can be
-     * flipped by whatever env a session inherited is not auditable.
-     *
-     * `true` (default) — the phase 2C production policy: a query with a legal
-     * `semantic_query_en` reaches the semantic leg even when FTS matched nothing.
-     *
-     * `false` — the explicit rollback: restores the phase 1b lexical-anchor
-     * profile in full (gate on, floor 0.2, no semantic-only cap). Takes effect
-     * for MCP servers started after the edit, i.e. the next Kiro session; no
-     * schema change, no re-embedding, no vector-protocol change, so it can be
-     * flipped back and forth freely.
+     * `SEMANTIC_DISCOVERY_ENABLED`). In config rather than an env var so
+     * retrieval strategy stays auditable.
+     * `true` (default, phase 2C): a legal `semantic_query_en` reaches the
+     * semantic leg even when FTS matched nothing. `false`: rollback to the phase
+     * 1b lexical-anchor profile (gate on, floor 0.2, no semantic-only cap) for
+     * sessions started after the edit; no schema or vector-protocol change.
      */
     semanticDiscovery: boolean;
   };
   runtime: {
-    /**
-     * Isolated KIRO_HOME used by the ACP compressor sub-agent. When empty,
-     * the worker defaults to `<dataDir>/kiro-runtime`, which is the layout
-     * `kiro-mem install` lays down.
-     */
+    /** Isolated KIRO_HOME for the ACP compressor sub-agent. Empty falls back to
+     * `<dataDir>/kiro-runtime`, the layout `kiro-mem install` lays down. */
     kiroHome: string;
   };
 }
@@ -55,6 +51,8 @@ const defaults: Config = {
   worker: { port: 37778, host: '127.0.0.1', logLevel: 'info' },
   compression: {
     concurrency: 3,
+    minWarmRuntimes: 1,
+    idleTtlMs: 600000,
     timeoutMs: 30000,
     maxRetries: 2,
   },
@@ -83,22 +81,47 @@ export function getDataDir(): string {
 export const DEFAULT_RUNTIME_DIRNAME = 'kiro-runtime';
 
 /**
- * The single answer to "where does the compressor sub-agent's KIRO_HOME live?".
- *
- * Five places need this path — install (lay the files down), config (display
- * and preserve), diagnose (integrity check), the ACP smoke test, and the Worker
- * (actually run it) — and they used to compute it three different ways. The
- * failure mode was quiet and confusing: a user with a custom `kiroHome` had a
- * working runtime that `diagnose` declared broken because it inspected the
- * default directory instead, and a re-install silently overwrote their setting.
- *
- * An empty / whitespace-only value means "use the default", matching the
- * documented `"kiroHome": ""` in config.json.
+ * Single answer to "where is the compressor sub-agent's KIRO_HOME?". Install,
+ * config, diagnose, the ACP smoke test and the Worker all need it and once
+ * computed it three ways: a custom `kiroHome` gave a working runtime that
+ * `diagnose` declared broken, and a re-install silently overwrote the setting.
+ * Empty / whitespace-only means "use the default".
  */
 export function resolveRuntimeHome(kiroHome?: string | null, dataDir?: string): string {
   const explicit = kiroHome?.trim();
   if (explicit) return explicit;
   return join(dataDir ?? getDataDir(), DEFAULT_RUNTIME_DIRNAME);
+}
+
+/** Smallest idle TTL a config file may ask for; below it the pool restarts ACP
+ * more than it compresses. The pool takes any positive value, which lets unit
+ * tests use millisecond TTLs. */
+const MIN_CONFIG_IDLE_TTL_MS = 1000;
+/** 24h. Beyond this is indistinguishable from "never reclaim", spelled 0. */
+const MAX_CONFIG_IDLE_TTL_MS = 86_400_000;
+
+/**
+ * `0` is legal and means "idle retirement off", so this cannot be a plain clamp:
+ * `Math.max` would raise it to the floor and give continuous recycling to an
+ * operator who asked for none. Unusable values (negative, NaN, Infinity,
+ * non-numeric) fall back to the default, not 0 — "reclaim nothing" is unsafe.
+ */
+function sanitizeIdleTtlMs(value: unknown): number {
+  if (value === 0) return 0;
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    return defaults.compression.idleTtlMs;
+  }
+  return Math.min(MAX_CONFIG_IDLE_TTL_MS, Math.max(MIN_CONFIG_IDLE_TTL_MS, value));
+}
+
+/** `0 <= minWarmRuntimes <= concurrency` (plan §4.1). 0 is legal and means
+ * "retire down to an empty pool"; only unusable values fall back to the default. */
+function sanitizeMinWarmRuntimes(value: unknown, concurrency: number): number {
+  const ceiling = Math.max(0, Number.isFinite(concurrency) ? Math.floor(concurrency) : 0);
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    return Math.min(defaults.compression.minWarmRuntimes, ceiling);
+  }
+  return Math.min(Math.floor(value), ceiling);
 }
 
 export function loadConfig(): Config {
@@ -109,22 +132,32 @@ export function loadConfig(): Config {
   return {
     language: raw.language === 'en' ? 'en' : 'zh',
     worker: { ...defaults.worker, ...raw.worker },
-    compression: {
-      concurrency: raw.compression?.concurrency ?? defaults.compression.concurrency,
-      timeoutMs: raw.compression?.timeoutMs ?? defaults.compression.timeoutMs,
-      maxRetries: raw.compression?.maxRetries ?? defaults.compression.maxRetries,
-    },
+    compression: (() => {
+      const concurrency =
+        raw.compression?.concurrency ?? defaults.compression.concurrency;
+      return {
+        concurrency,
+        // Clamped against the concurrency in effect, not the default:
+        // `minWarmRuntimes: 3` under `concurrency: 1` must not pin slots that
+        // cannot exist.
+        minWarmRuntimes: sanitizeMinWarmRuntimes(
+          raw.compression?.minWarmRuntimes,
+          concurrency,
+        ),
+        idleTtlMs: sanitizeIdleTtlMs(raw.compression?.idleTtlMs),
+        timeoutMs: raw.compression?.timeoutMs ?? defaults.compression.timeoutMs,
+        maxRetries: raw.compression?.maxRetries ?? defaults.compression.maxRetries,
+      };
+    })(),
     context: {
       maxOutputBytes:
         raw.context?.maxOutputBytes ?? defaults.context.maxOutputBytes,
     },
     filter: { ...defaults.filter, ...raw.filter },
     retrieval: {
-      // Strict `=== false` rather than `??`: a config written before 2C has no
-      // `retrieval` block at all, and an upgrade must not read that absence as
-      // "the operator asked for the rollback profile". Only an explicit `false`
-      // turns discovery off; any other value (missing, null, "off", 0) leaves the
-      // frozen default on, where a typo cannot silently downgrade retrieval.
+      // Strict `=== false`, not `??`: a config written before 2C has no
+      // `retrieval` block, and that absence must not read as "the operator asked
+      // for the rollback". Only an explicit `false` turns discovery off.
       semanticDiscovery: raw.retrieval?.semanticDiscovery !== false,
     },
     runtime: {

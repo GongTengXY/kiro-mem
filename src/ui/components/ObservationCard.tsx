@@ -1,10 +1,7 @@
 /** @jsxImportSource preact */
 /**
- * One Feed / search card (plan §3.2).
- *
- * Evidence, concepts and files are collapsed summaries here on purpose: the card
- * answers "is this the record I mean", and the judgement of whether the memory is
- * faithful happens on the detail page next to the turn it came from.
+ * One Feed / search card (plan §3.2). Evidence, concepts and files stay collapsed: the
+ * card answers "is this the record I mean"; faithfulness is judged on the detail page.
  */
 
 import { Pin, PinOff, Trash2 } from 'lucide-preact';

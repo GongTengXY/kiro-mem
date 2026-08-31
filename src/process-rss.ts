@@ -1,21 +1,14 @@
 /**
- * Resident-memory sampling for processes the Worker spawned or serves.
- *
- * Why a whole module for `ps`: the number that matters is a process SUBTREE, not
- * a process. Measured on this machine, one `kiro-cli acp` runtime is 9.8MB in the
- * process the pool holds a PID for, plus a 28.1MB child of its own — so sampling
- * the PID alone under-reports the pool by ~74%. A reading that says "the ACP pool
- * costs 10MB" would send the internal-test analysis in exactly the wrong
- * direction, which is the failure mode this whole observability change exists to
- * prevent.
- *
- * `process.memoryUsage()` cannot help here: it covers only the calling process,
- * and every expensive process in this system is a child.
+ * Resident-memory sampling for processes the Worker spawned or serves. The number
+ * that matters is a process subtree, not a process: measured on this machine, one
+ * `kiro-cli acp` runtime is 9.8MB in the process the pool holds a PID for, plus a
+ * 28.1MB child of its own — sampling the PID alone under-reports the pool by ~74%.
+ * `process.memoryUsage()` covers only the calling process, and every expensive
+ * process in this system is a child.
  */
 
 import { spawn, spawnSync } from 'child_process';
 
-/** One `ps` row, already parsed. */
 interface ProcRow {
   pid: number;
   ppid: number;
@@ -24,23 +17,21 @@ interface ProcRow {
 
 export interface RssSample {
   /**
-   * Subtree RSS per requested PID, in bytes: the process itself plus every
-   * descendant. Absent from the map when the PID was not found — a slot whose
-   * process already exited must not read as 0 bytes of memory.
+   * Subtree RSS per requested PID, in bytes. Absent from the map when the PID was
+   * not found — a slot whose process already exited must not read as 0 bytes.
    */
   byPid: Map<number, number>;
   /**
-   * False when `ps` could not be run or produced nothing parseable. Callers must
-   * surface this rather than publishing zeros, because "not measured" and
-   * "measured as small" are opposite conclusions.
+   * False when `ps` could not run or produced nothing parseable. Surface it rather
+   * than publishing zeros: "not measured" and "measured as small" are opposites.
    */
   measured: boolean;
 }
 
 /**
- * Parse `ps -Ao pid,ppid,rss` output. Exported for tests: the parser is the part
- * that silently rots when a platform changes its column padding, and a fixture
- * is the only way to test it without depending on the host's process table.
+ * Parse `ps -Ao pid,ppid,rss` output. This and `sumSubtrees` are exported so
+ * fixtures can test them: the parser silently rots when a platform changes its
+ * column padding, and the traversal needs a synthetic table for its cycle guard.
  */
 export function parsePsOutput(stdout: string): ProcRow[] {
   const rows: ProcRow[] = [];
@@ -60,12 +51,7 @@ export function parsePsOutput(stdout: string): ProcRow[] {
   return rows;
 }
 
-/**
- * Sum the subtree RSS of each requested PID from a parsed process table.
- *
- * Exported separately from the `ps` call so the traversal — the part with the
- * cycle guard and the multi-level nesting — is testable with a synthetic table.
- */
+/** Sum the subtree RSS of each requested PID from a parsed process table. */
 export function sumSubtrees(rows: ProcRow[], pids: number[]): Map<number, number> {
   const byPid = new Map<number, ProcRow>();
   const children = new Map<number, number[]>();
@@ -80,8 +66,7 @@ export function sumSubtrees(rows: ProcRow[], pids: number[]): Map<number, number
   for (const root of pids) {
     if (!byPid.has(root)) continue; // exited between stats read and sampling
     let total = 0;
-    // Iterative DFS with a seen-set: a malformed table (or PID reuse) must not
-    // turn observability into an infinite loop inside a health endpoint.
+    // Seen-set: a malformed table or PID reuse must not become an infinite loop in /health.
     const stack = [root];
     const seen = new Set<number>();
     while (stack.length > 0) {
@@ -99,11 +84,8 @@ export function sumSubtrees(rows: ProcRow[], pids: number[]): Map<number, number
 }
 
 /**
- * Sample subtree RSS for the given PIDs with a single `ps` invocation.
- *
- * One invocation regardless of PID count, and none at all for an empty list —
- * which is the common case on an idle Worker, so a polled `/health` pays nothing
- * until there is actually something to measure.
+ * One `ps` invocation regardless of PID count, and none at all for an empty list,
+ * so a polled `/health` pays nothing on an idle Worker.
  */
 export function sampleRssTree(pids: number[]): RssSample {
   const unique = [...new Set(pids.filter((p) => Number.isInteger(p) && p > 0))];
@@ -124,9 +106,8 @@ export function sampleRssTree(pids: number[]): RssSample {
 }
 
 /**
- * Non-blocking equivalent used by the production health endpoint. `ps` is an
- * external process, so it must not run synchronously on the Worker's event loop:
- * a wedged process table can otherwise pause hook ingestion for the full timeout.
+ * Non-blocking equivalent used by the production health endpoint: a synchronous
+ * `ps` on the event loop would pause hook ingestion for the full timeout.
  */
 export function sampleRssTreeAsync(pids: number[], timeoutMs = 2000): Promise<RssSample> {
   const unique = [...new Set(pids.filter((p) => Number.isInteger(p) && p > 0))];

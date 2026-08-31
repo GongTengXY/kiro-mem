@@ -1,11 +1,8 @@
 /** @jsxImportSource preact */
 /**
  * Detail: generated memory beside the turn it was projected from (plan §3.3).
- *
- * The layout exists to answer one question — is this memory faithful to what
- * actually happened — so the two sides are always on screen together, and the raw
- * event payloads load only when asked for. A 4MB turn must not be the cost of
- * opening a card.
+ * Both sides stay on screen together so faithfulness is checkable, and raw event
+ * payloads load only when asked for — a 4MB turn must not be the cost of opening a card.
  */
 
 import { useState } from 'preact/hooks';

@@ -1,29 +1,21 @@
 /**
  * Wire contract for the Web Viewer, shared by the Worker routes and the browser
- * bundle (plan §7).
- *
- * Deliberately dependency-free: the browser bundle imports it, so a single
- * `import { MemoryDB }` here would drag SQLite and the embedding runtime into
- * `viewer.js`. Types plus frozen numeric limits only.
+ * bundle (plan §7). Dependency-free by requirement: the bundle imports it, so one
+ * `import { MemoryDB }` would drag SQLite and the embedder into `viewer.js`.
  */
 
 // --- Limits (server enforces, client displays) ---
 
 /** Feed / search page size ceiling (plan §7). */
 export const VIEWER_PAGE_LIMIT = 50;
-/** Raw turn events per page. */
 export const VIEWER_EVENTS_PAGE_LIMIT = 20;
-/** Per-event payload bytes returned to the Viewer before inline truncation. */
+/** Two independent bounds: per event before inline truncation, and per events page. */
 export const VIEWER_EVENT_PAYLOAD_MAX_BYTES = 16 * 1024;
-/** Total payload bytes one events page may carry. */
 export const VIEWER_EVENTS_RESPONSE_MAX_BYTES = 192 * 1024;
-/** Log lines per page. */
 export const VIEWER_LOGS_PAGE_LIMIT = 100;
-/** Longest search query the Viewer will send. */
 export const VIEWER_QUERY_MAX_CHARS = 512;
-/** Hard ceiling for a context-preview budget request (plan §3.4). */
+/** Context-preview budget bounds; 9500 is the hard ceiling (plan §3.4). */
 export const VIEWER_CONTEXT_MAX_BYTES = 9500;
-/** Floor for a context-preview budget request. */
 export const VIEWER_CONTEXT_MIN_BYTES = 512;
 /** Bounded string/array sizes in projected cards, so one row cannot flood a page. */
 export const VIEWER_TEXT_CLIP = 400;
@@ -31,10 +23,8 @@ export const VIEWER_LIST_CLIP = 12;
 
 // --- Scope selection ---
 
-/**
- * Every data request carries this. `allScopes` must be strictly `true` to lift
- * the scope filter; a missing scope with `allScopes !== true` fails closed.
- */
+/** Every data request carries this. `allScopes` must be strictly `true` to lift the
+ * scope filter; a missing scope with `allScopes !== true` fails closed. */
 export interface ViewerScopeInput {
   scopeKey?: string;
   allScopes?: boolean;
@@ -111,7 +101,6 @@ export interface ViewerSearchResponse {
   items: ViewerObservationCard[];
   scopeKey: string | null;
   allScopes: boolean;
-  /** True when the query was too short for FTS and fell back to LIKE upstream. */
   query: string;
 }
 

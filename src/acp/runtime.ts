@@ -1,14 +1,12 @@
 /**
- * High-level ACP session runtime.
- * Wraps ACPClient to provide: initialize, create session, send prompt, collect
- * output from session/update notifications, then await the final stopReason.
+ * High-level ACP session runtime: initialize, create session, prompt, collect
+ * output from session/update notifications, await the final stopReason.
  *
- * Purity contract for the kiro-mem internal compressor:
- * - The session must run as the configured agent (passed via `kiro-cli acp --agent`).
- * - The session must NOT receive any ToolCall / ToolCallUpdate notifications.
- *   If it does, the runtime is considered contaminated, the current prompt
- *   fails immediately, and all subsequent calls reject until the runtime
- *   is recycled.
+ * Purity contract for the internal compressor: the session runs as the
+ * configured agent (`kiro-cli acp --agent`) and must receive no ToolCall /
+ * ToolCallUpdate notification. One marks the runtime contaminated — the current
+ * prompt fails immediately and every later call rejects until the pool recycles
+ * it.
  */
 
 import { ACPClient } from './client';
@@ -55,7 +53,7 @@ export class ACPRuntime {
   private truncated = false;
   private currentMaxOutputBytes = 16384;
 
-  // Purity state. Once contaminated, the runtime is fatal.
+  // Purity state. Fatal once set.
   private contamination: { type: string; tool: string } | null = null;
 
   constructor(opts: ACPRuntimeOptions = {}) {
@@ -75,9 +73,8 @@ export class ACPRuntime {
       env.KIRO_HOME = this.opts.kiroHome;
     }
 
-    // Use the official `kiro-cli acp --agent <name>` flag to select the agent
-    // for the first session. This is stronger than passing `params.agent` in
-    // session/new and matches the documented CLI contract.
+    // `--agent` on the CLI rather than `params.agent` in session/new: it is the
+    // documented contract and is the stronger binding for the first session.
     const args: string[] = ['acp'];
     if (this.opts.agentName) {
       args.push('--agent', this.opts.agentName);
@@ -89,7 +86,7 @@ export class ACPRuntime {
       env,
       onNotification: this.handleNotification.bind(this),
       onStderr: () => {
-        // Silently capture stderr; could log in debug mode
+        // stderr is dropped.
       },
     });
   }
@@ -108,7 +105,6 @@ export class ACPRuntime {
     return this.client.pid;
   }
 
-  /** Start process and initialize ACP protocol. */
   async start(): Promise<InitializeResult> {
     this.client.start();
     const result = await this.client.request('initialize', {
@@ -120,7 +116,6 @@ export class ACPRuntime {
     return result;
   }
 
-  /** Create a new session. */
   async createSession(cwd?: string): Promise<string> {
     if (!this.initialized) throw new Error('ACPRuntime not initialized');
     this.throwIfContaminated();
@@ -133,15 +128,10 @@ export class ACPRuntime {
     return result.sessionId;
   }
 
-  /**
-   * Send a prompt and collect streamed output until the prompt request
-   * completes with a stopReason.
-   */
   async prompt(text: string, opts?: { timeoutMs?: number; maxOutputBytes?: number }): Promise<PromptResult> {
     if (!this.sessionId) throw new Error('No active session');
     this.throwIfContaminated();
 
-    // Reset collection state
     this.chunks = [];
     this.collectedBytes = 0;
     this.truncated = false;
@@ -154,8 +144,8 @@ export class ACPRuntime {
       prompt: [{ type: 'text', text }] satisfies TextContentBlock[],
     }, timeout) as SessionPromptResult;
 
-    // Contamination check takes precedence over truncation: if we saw a tool
-    // event, the run was unsafe regardless of how much text leaked through.
+    // Precedence over truncation: a tool event makes the run unsafe regardless
+    // of how much text got through.
     this.throwIfContaminated();
     if (this.truncated) {
       throw new Error(`ACP output exceeded ${this.currentMaxOutputBytes} bytes limit`);
@@ -167,7 +157,6 @@ export class ACPRuntime {
     };
   }
 
-  /** Close the runtime and kill the process. */
   async close(): Promise<void> {
     await this.client.close();
     this.initialized = false;
@@ -205,12 +194,8 @@ export class ACPRuntime {
       }
       case 'tool_call':
       case 'tool_call_update': {
-        // The internal compressor agent declares `tools: []` and the prompt
-        // explicitly forbids tool use. If we see a tool event, the session
-        // is not running on the expected pure agent — either the agent was
-        // wrong, or the agent config drifted. Either way the result is
-        // unsafe to use. Mark as contaminated so this and all subsequent
-        // calls fail loudly, and let the pool recycle the slot.
+        // A tool event means the session is not on the pure `tools: []` agent —
+        // wrong agent, or agent config drift — so the result is unsafe to use.
         const update = p.update as Record<string, unknown>;
         const toolCall = (update.toolCall as Record<string, unknown> | undefined) ?? undefined;
         const toolName =

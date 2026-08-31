@@ -1,11 +1,8 @@
 /** @jsxImportSource preact */
 /**
- * Context injection preview (plan §3.4).
- *
- * The text shown here is the same string the agentSpawn hook injects — the server
- * returns one structured report and the hook takes its `text`, so this cannot
- * drift into a plausible-looking approximation. The per-section bytes come from
- * that same report rather than from parsing the rendered string.
+ * Context injection preview (plan §3.4). The text is the exact string the agentSpawn
+ * hook injects — server and hook share one structured report — so it cannot drift into
+ * an approximation. Per-section bytes come from that report, not the rendered string.
  */
 
 import { useState } from 'preact/hooks';

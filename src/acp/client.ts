@@ -1,7 +1,4 @@
-/**
- * Low-level JSON-RPC 2.0 stdio client for `kiro-cli acp`.
- * Handles process lifecycle, request/response routing, and notification dispatch.
- */
+/** Low-level JSON-RPC 2.0 stdio client for `kiro-cli acp`. */
 
 import { spawn, type Subprocess } from 'bun';
 import type {
@@ -12,6 +9,11 @@ import type {
 } from './types';
 
 export type NotificationHandler = (method: string, params: Record<string, unknown>) => void;
+
+/** How long a SIGTERM'd ACP process gets to exit on its own before SIGKILL. */
+const EXIT_GRACE_MS = 2000;
+/** How long SIGKILL gets before `close()` gives up and returns. */
+const EXIT_KILL_MS = 2000;
 
 export interface ACPClientOptions {
   command: string;
@@ -37,6 +39,9 @@ export class ACPClient {
   private onExit: (code: number | null) => void;
   private buffer = '';
   private closed = false;
+  /** Set by `close()`. Distinct from `closed`, which also goes true when the
+   * process exits on its own — that case is recoverable with a fresh client. */
+  private disposed = false;
   private opts: ACPClientOptions;
 
   constructor(opts: ACPClientOptions) {
@@ -46,8 +51,13 @@ export class ACPClient {
     this.onExit = opts.onExit ?? (() => {});
   }
 
-  /** Spawn the ACP process and start reading. */
   start(): void {
+    if (this.disposed) {
+      // A closed client must never spawn again. `close()` can run before
+      // `start()` — the pool may close a slot it reserved before the handshake —
+      // and resurrecting here spawned an unowned process: two leaked per shutdown.
+      throw new Error('ACP client already closed');
+    }
     if (this.proc) return;
     this.closed = false;
 
@@ -74,18 +84,14 @@ export class ACPClient {
 
   /**
    * PID of the spawned `kiro-cli acp` process, or null before start / after exit.
-   *
-   * Exposed only so the Worker can attribute resident memory to it. Measured on
+   * Exposed only so the Worker can attribute resident memory to it: measured on
    * this machine, one runtime is 9.8MB in this process plus a 28.1MB child of
-   * its own — reporting the Worker's own RSS alone therefore misses the larger
-   * half of the pool's cost, which is exactly the number the internal-test data
-   * collection has to answer.
+   * its own, so the Worker's own RSS misses the larger half of the pool's cost.
    */
   get pid(): number | null {
     return this.proc?.pid ?? null;
   }
 
-  /** Send a JSON-RPC request and wait for the response. */
   async request(method: string, params?: Record<string, unknown>, timeoutMs = 30000): Promise<unknown> {
     if (!this.proc || this.closed) {
       throw new Error('ACP client not started or already closed');
@@ -105,25 +111,52 @@ export class ACPClient {
     });
   }
 
-  /** Send a JSON-RPC notification (no response expected). */
   notify(method: string, params?: Record<string, unknown>): void {
     if (!this.proc || this.closed) return;
     const msg: JsonRpcNotification = { jsonrpc: '2.0', method, params };
     this.write(msg);
   }
 
-  /** Kill the process and clean up. */
+  /**
+   * Kill the process and clean up. Resolves only once the OS process has
+   * actually exited: `kill()` alone delivers SIGTERM, so returning there made
+   * "closed" mean "asked to close" — breaking a retiring slot's hold on its
+   * concurrency budget and the promise that no ACP child outlives its Worker.
+   *
+   * Escalates to SIGKILL after `EXIT_GRACE_MS`, then gives up after
+   * `EXIT_KILL_MS` rather than hanging shutdown: a survivor must be a leak the
+   * caller can see, not a stall.
+   */
   async close(): Promise<void> {
-    if (this.closed) return;
-    this.closed = true;
-    this.rejectAll(new Error('ACP client closed'));
-    if (this.proc) {
-      try {
-        (this.proc.stdin as any).end?.();
-        this.proc.kill();
-      } catch {}
-      this.proc = null;
+    const proc = this.proc;
+    this.proc = null;
+    this.disposed = true;
+    if (!this.closed) {
+      this.closed = true;
+      this.rejectAll(new Error('ACP client closed'));
     }
+    if (!proc) return;
+
+    try {
+      (proc.stdin as any)?.end?.();
+    } catch {}
+    try {
+      proc.kill();
+    } catch {}
+
+    const exited = await Promise.race([
+      proc.exited.then(() => true),
+      Bun.sleep(EXIT_GRACE_MS).then(() => false),
+    ]);
+    if (exited) return;
+
+    try {
+      proc.kill('SIGKILL');
+    } catch {}
+    await Promise.race([
+      proc.exited.then(() => true),
+      Bun.sleep(EXIT_KILL_MS).then(() => false),
+    ]);
   }
 
   // --- Internal ---

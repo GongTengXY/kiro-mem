@@ -1,16 +1,12 @@
 /**
  * Viewer credential handover (plan §6.1).
  *
- * `kiro-mem viewer` puts the token in the URL FRAGMENT, not the query string: a
- * fragment is never sent to the server, so it cannot land in an access log, and
- * it is not part of the Referer. The page reads it once, moves it into
- * `sessionStorage` for this tab only, and rewrites the URL so a copied link
- * carries no credential.
- *
- * `sessionStorage` rather than `localStorage` on purpose: closing the tab must
- * end the Viewer's access. A token that survives in `localStorage` would give
- * every later page on 127.0.0.1 — including one served by an unrelated dev
- * server on the same port — a stored credential to find.
+ * The token arrives in the URL fragment, not the query string: a fragment is
+ * never sent to the server, so it stays out of access logs and the Referer. The
+ * page reads it once, rewrites the URL so a copied link carries no credential,
+ * and keeps it in `sessionStorage`, not `localStorage` — closing the tab must end
+ * access, and a surviving token would be readable by any later page on 127.0.0.1,
+ * including one served by an unrelated dev server on the same port.
  */
 
 const TOKEN_KEY = 'kiro-mem.viewer.token';
@@ -31,17 +27,12 @@ export function parseLaunchFragment(fragment: string): { token: string; scopeKey
   return { token, scopeKey: scope || null };
 }
 
-/**
- * Resolve the session for this tab: fragment first (a fresh launch), then
- * whatever this tab already holds (a reload).
- */
+/** Resolve this tab's session: fragment first (a fresh launch), then stored (a reload). */
 export function bootstrapSession(location: Location, history: History, storage: Storage): ViewerSession {
   const fromFragment = parseLaunchFragment(location.hash || '');
   if (fromFragment.token) {
     storage.setItem(TOKEN_KEY, fromFragment.token);
-    // A fresh CLI launch defaults to all workspaces. A scoped fragment remains
-    // supported for old bookmarks/tests, but stale tab state must not override
-    // the new global default.
+    // The fragment's scope wins over stale tab state; a fresh launch defaults to all workspaces.
     rememberScope(storage, fromFragment.scopeKey);
     // Drop the credential from the address bar, history entry and any Referer.
     history.replaceState(null, '', `${location.pathname}${location.search}`);

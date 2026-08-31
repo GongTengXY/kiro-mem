@@ -26,6 +26,22 @@ describe('WP2 / JobRunner — lease & execute', () => {
     expect(jobs.length).toBe(1);
   });
 
+  test('waitForIdle waits for an already leased job after stop', async () => {
+    db.enqueueJob({ job_type: 'slow_job', payload_json: '{}' });
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const runner = new JobRunner(db, { concurrency: 1, pollMs: 50 });
+    runner.register('slow_job', async () => { await gate; });
+    runner.start();
+    while (runner.stats.inflight === 0) await Bun.sleep(1);
+
+    runner.stop();
+    expect(await runner.waitForIdle(5)).toBe(false);
+    release();
+    expect(await runner.waitForIdle(500)).toBe(true);
+    expect(db.listJobsByState('succeeded').length).toBe(1);
+  });
+
   test('failed job retries with backoff', async () => {
     db.enqueueJob({ job_type: 'flaky', payload_json: '{}', max_attempts: 3 });
 

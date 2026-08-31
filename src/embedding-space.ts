@@ -1,26 +1,20 @@
 /**
  * Vector-space identity and the pure helpers around it — everything about
- * embeddings that does NOT need the inference runtime.
+ * embeddings that does not need the inference runtime.
  *
- * Why this file exists: `./embedding` statically imports
- * `@huggingface/transformers`, and after phase 1b the MCP server process must
- * not hold a model at all (query vectors come from the Worker over HTTP, so a
- * single model instance serves every repo sharing one dataDir). Merely
- * importing the transformers module costs a measured 54MB RSS / 128ms on this
- * machine even when `pipeline()` is never called — paid once per kiro-cli
- * session, which is exactly the per-process duplication phase 1b is removing.
- *
- * `./embedding` re-exports everything here, so existing call sites are
- * unaffected; only the paths that must stay runtime-free (the retrieval kernel,
- * the MCP server, the protocol module) import this file directly.
+ * `./embedding` statically imports `@huggingface/transformers`, and merely
+ * importing that module costs a measured 54MB RSS / 128ms on this machine even
+ * when `pipeline()` is never called. The MCP server must not hold a model (query
+ * vectors come from the Worker over HTTP), so the paths that must stay
+ * runtime-free — retrieval kernel, MCP server, protocol module — import this file
+ * directly; `./embedding` re-exports it all for existing call sites.
  */
 
 /**
- * Identity of the embedding MODEL. Not the identity of the vector space —
- * see `embeddingSpaceKey()` in `./semantic-en`, which also carries the text
- * normalization protocol. Two vectors from this model built from differently
- * normalized text are not comparable, and 384 dimensions on both sides makes
- * that mistake invisible.
+ * Identity of the embedding model, not of the vector space — see
+ * `embeddingSpaceKey()` in `./semantic-en`, which also carries the text
+ * normalization protocol. Vectors built from differently normalized text are not
+ * comparable, and 384 dimensions on both sides makes that mistake invisible.
  */
 export const EMBEDDING_MODEL = 'all-MiniLM-L6-v2';
 export const MODEL_DTYPE = 'q8';
@@ -36,11 +30,7 @@ export class EmbeddingTimeoutError extends Error {
   }
 }
 
-/**
- * Bound an embedding operation without leaving a late rejection unobserved.
- * The underlying local inference cannot be cancelled, but both fulfillment and
- * rejection remain handled after the timeout has won the race.
- */
+/** Local inference cannot be cancelled, so both outcomes stay handled after the timeout wins — a late rejection must never go unobserved. */
 export function withEmbeddingTimeout<T>(
   operation: Promise<T>,
   timeoutMs: number,
@@ -71,26 +61,17 @@ export function withEmbeddingTimeout<T>(
 }
 
 /**
- * The exact text that becomes an Observation's vector.
+ * The exact text that becomes an Observation's vector — part of the space
+ * contract, since changing this concatenation changes what stored vectors mean as
+ * much as changing the model does. The offline probes under `benchmark/` call it
+ * for that reason: a hand-copied concatenation would measure a different space
+ * and report the difference as an encoder result.
  *
- * Lives next to the space identity because it is part of the same contract:
- * changing this concatenation changes what the stored vectors *mean*, every bit
- * as much as changing the model does.
- *
- * It was inline inside the `embed_observation` job, which made it unreachable
- * from anything else. The offline retrieval probes under `benchmark/` have to
- * embed the same text the production job embeds — a second, hand-copied
- * concatenation there would silently measure a different vector space and
- * report the difference as an encoder result.
- *
- * Deliberately NOT included: `request`, `next_steps`, `evidence`, and the full
- * assistant response — the vector is for finding work, not for reproducing it,
- * and raw tool output would drag noise/PII into the space.
- *
- * Both normalization protocols use this same builder: `raw-v1` feeds it the
- * stored Observation fields, `semantic-en-v1` feeds it the English derived
- * values for the same fields. Keeping one builder is what makes the A/B a
- * text-only comparison.
+ * Excluded: `request`, `next_steps`, `evidence` and the full assistant response —
+ * the vector is for finding work, not reproducing it, and raw tool output would
+ * drag noise and PII into the space. Both protocols share this builder (`raw-v1`
+ * feeds stored fields, `semantic-en-v1` the English derived values), which is
+ * what keeps the A/B a text-only comparison.
  */
 export function buildObservationSearchText(input: {
   title: string;

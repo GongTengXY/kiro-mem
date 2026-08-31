@@ -211,6 +211,8 @@ Edit `~/.kiro-mem/config.json`, or run `kiro-mem config` for interactive setup:
   "language": "zh",
   "compression": {
     "concurrency": 3,
+    "minWarmRuntimes": 1,
+    "idleTtlMs": 600000,
     "timeoutMs": 30000,
     "maxRetries": 2
   },
@@ -230,12 +232,39 @@ Edit `~/.kiro-mem/config.json`, or run `kiro-mem config` for interactive setup:
 ```
 
 - `language`: `zh` or `en`. Drives the CLI output, the runtime compressor prompt **and** the Web Viewer UI, which renders in this language only.
-- `compression.concurrency`: number of parallel `kiro-cli acp` runtime processes (default `3`).
+- `compression.concurrency`: number of parallel `kiro-cli acp` runtime processes (default `3`). This is a hard ceiling on **processes**, not just on pool slots: a runtime being shut down keeps its place in the budget until its process is actually gone, so a replacement is never started alongside it.
+- `compression.minWarmRuntimes`: how many runtimes idle reclamation may never take away (default `1`, clamped to `[0, concurrency]`). It is a floor, not a target — a Worker that has never compressed anything still holds zero. `0` lets the pool empty out completely between bursts, at the cost of an ACP cold start on the next turn.
+- `compression.idleTtlMs`: how long a released runtime may sit idle before it is retired (default `600000`, 10 minutes; clamped to `[1000, 86400000]` when set via `kiro-mem config`). **`0` turns idle reclamation off** — it never means "kill immediately". Negative, `NaN` and `Infinity` fall back to the default.
 - `compression.timeoutMs`: per-prompt timeout in milliseconds, clamped to `[5000, 60000]` when set via `kiro-mem config` (default `30000`).
 - `compression.maxRetries`: how many JSON-repair retries to attempt before degrading to a `quality=fallback` Observation (default `2`).
 - `runtime.kiroHome`: isolated `KIRO_HOME` for the compressor sub-agent. Empty falls back to `<dataDir>/kiro-runtime`, which is the layout `kiro-mem install` lays down.
 - `context.maxOutputBytes`: byte budget for the injected Observation index, kept below the `agentSpawn` 10KB limit (default `8192`).
 - `retrieval.semanticDiscovery`: whether semantic similarity may surface records that keyword search never matched (default `true`). See below.
+
+### ACP Process Governance
+
+Compression runs in `kiro-cli acp` sub-processes, and each one costs real resident memory — measured on a dev machine at ~38MB per runtime (9.8MB in the direct child plus a 28.1MB child of its own). Several Kiro windows do **not** get a Worker each: they all reach the same `~/.kiro-mem` Worker over loopback and share one pool, so the ceiling below is a ceiling for the whole machine, not per window.
+
+The pool starts empty and stays empty until the first compression job. From then on:
+
+- a finished runtime is **reused** for the next job rather than restarted;
+- a runtime idle for longer than `idleTtlMs` is **retired** — its process is killed and not replaced — as long as that leaves at least `minWarmRuntimes` behind;
+- `concurrency` bounds **processes**, not bookkeeping: a runtime being retired keeps its slot in the budget until its process has actually exited, so a replacement is never spawned next to one that is still shutting down;
+- a runtime that hit `maxJobsPerProcess` or an ACP error/contamination is restarted **in place**. The slot count does not change, so the warm floor does not block it — even for the last remaining runtime;
+- a slot whose process died on its own is dropped unconditionally, ignoring both the TTL and the warm floor. A dead runtime is not warm.
+
+Nothing interrupts work in flight: idle time only starts counting after a job releases its runtime, and a busy runtime is never retired.
+
+Two readings tell you whether this is working:
+
+```bash
+curl -s http://127.0.0.1:37778/health | jq '.acp'   # idleRecycles, config, per-slot idleMs
+kiro-mem diagnose                                    # same signals, formatted
+```
+
+`/health.acp` separates the three reasons a runtime was closed — `jobLimitRecycles`, `errorRecycles`, `idleRecycles` — plus `deadDrops` for processes that vanished on their own. `restarts` keeps its original meaning of in-place restarts only (`jobLimitRecycles + errorRecycles`), so idle reclamation never shows up as instability. `config` reports the values **in effect** in that Worker process, which is not necessarily what `config.json` says right now: pool parameters are read at Worker start, so an edit applies after `kiro-mem stop && kiro-mem start`.
+
+On shutdown the pool is closed **before** the Worker waits for in-flight jobs to record their final state, so no ACP child outlives its Worker. `kiro-mem stop`, `uninstall` and `uninstall --purge` all go through that path, and each only ever signals the PID recorded in `.worker.pid` — kiro-mem never scans for or kills processes it did not start.
 
 ### Semantic Discovery and Rollback
 
@@ -304,6 +333,8 @@ kiro-mem uninstall --purge
 | Deletion is not a forensic wipe    | Ordinary SQLite `DELETE` leaves the old bytes reachable in the WAL, the freelist, filesystem snapshots and any backup you already took. kiro-mem deliberately runs no automatic `VACUUM` and never rewrites the database, so "permanently deleted" means unreachable to every kiro-mem read path — not scrubbed from the disk | Treat the promise as product-level: not queryable, not retrievable, not rebuildable. For media-level guarantees use full-disk encryption and control your own backups |
 | Raw event payloads are capped        | A tool response over 32KB per string field is truncated, and a single turn stores at most 4MB of raw payload. Truncation is marked inline, but the dropped bytes are not recoverable | `payload_size` still records the original size; artifacts extraction keeps working on the capped payload |
 | Requires Kiro CLI ACP               | Compression cannot run without a working `kiro-cli acp` subcommand    | `kiro-mem diagnose` runs an ACP smoke test    |
+| One warm ACP runtime stays resident | Between bursts the pool keeps `minWarmRuntimes` processes alive so the next turn does not pay ACP cold start — ~38MB at the default of 1. Idle reclamation never drops below that floor, and a second Worker on an isolated `KIRO_MEMORY_DATA_DIR` keeps its own floor rather than sharing one; ordinary multi-window use does not create a second Worker | Set `compression.minWarmRuntimes: 0` to let the pool empty out, or shorten `compression.idleTtlMs`. Both trade memory for cold-start latency on the next compression |
+| Pool parameters are read at Worker start | Editing `concurrency`, `minWarmRuntimes` or `idleTtlMs` in `config.json` does not affect a Worker that is already running, so process behavior and the file can disagree until a restart | `/health.acp.config` reports the values in effect in that process; `kiro-mem stop && kiro-mem start` (or `kiro-mem config`, which restarts for you) applies the edit |
 | `agentSpawn` output limit 10KB      | Injected index must stay compact                                      | Budget-controlled context builder             |
 | Mid-session `/agent` switch injects nothing | `agentSpawn` is a session-start trigger, so switching into kiro-mem with `/agent` leaves that session without the memory index. Capture and the MCP tools do keep working — only the injected menu is missing | Start the session on kiro-mem (`--agent kiro-mem` or `chat.defaultAgent`), ask for `@kiro-mem/search` explicitly, or paste `/context/bootstrap` output — see [Set As Default Agent](#set-as-default-agent) |
 | Search queries shorter than 3 chars | Falls back to `LIKE`, less precise                                    | Use longer terms when possible                |

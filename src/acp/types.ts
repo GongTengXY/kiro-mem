@@ -103,9 +103,20 @@ export interface ACPPoolOptions extends ACPRuntimeOptions {
   concurrency?: number;
   maxJobsPerProcess?: number;
   /**
-   * Best-effort observability hook (§12.4). Fired on each JSON-repair attempt
-   * ('repair') and each contamination-driven runtime recycle ('contamination').
-   * The worker wires this to persist a metric_events row.
+   * Floor on runtimes idle-TTL retirement may take away, clamped to
+   * `[0, concurrency]`. Not a target: a Worker that has never compressed holds
+   * zero. Only slot-reducing retirement is gated — an in-place recycle leaves
+   * the count unchanged.
    */
+  minWarmRuntimes?: number;
+  /**
+   * Idle milliseconds before a released runtime is retired. `0` disables idle
+   * retirement entirely (and its housekeeping timer); it never means "kill
+   * immediately".
+   */
+  idleTtlMs?: number;
+  /** Observability hook (§12.4): one call per JSON-repair attempt ('repair')
+   * and per contamination recycle ('contamination'). The worker persists a
+   * metric_events row. */
   onMetric?: (kind: ACPMetricKind) => void;
 }

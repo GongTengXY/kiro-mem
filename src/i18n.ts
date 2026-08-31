@@ -12,6 +12,8 @@ const messages = {
     compressionConcurrency: '? ACP 压缩并发数 (范围 1-10)',
     compressionTimeoutMs: '? 单次压缩超时 (毫秒, 范围 5000-60000)',
     compressionMaxRetries: '? 压缩失败时重试次数 (范围 2-5)',
+    compressionMinWarmRuntimes: '? 空闲时至少保留几个 ACP 进程 (0 表示全部回收)',
+    compressionIdleTtlMs: '? ACP 进程空闲多久后回收 (毫秒, 范围 1000-86400000, 0 表示不回收)',
 
     // --- setup: install ---
     installing: '正在安装...',
@@ -47,6 +49,9 @@ const messages = {
     concurrencyLabel: '并发数:',
     timeoutLabel: '压缩超时 (ms):',
     maxRetriesLabel: '最大重试:',
+    minWarmLabel: '保留 warm 进程:',
+    idleTtlLabel: '空闲回收 (ms):',
+    idleTtlOff: '已关闭',
     runtimeHomeLabel: 'kiro-runtime:',
     discoveryLabel: '独立语义召回:',
     language: '语言:',
@@ -156,6 +161,9 @@ const messages = {
     diagAcpIdle: '空闲',
     diagAcpBusy: '忙',
     diagAcpJobs: 'job',
+    diagAcpIdleRecycle: '空闲回收',
+    diagAcpTtl: '阈值',
+    diagAcpWarm: '保留',
     diagMcpClients: 'MCP 调用方',
     diagTotal: '合计',
     diagRssUnmeasured: '未采集到（ps 调用失败）',
@@ -192,11 +200,9 @@ const messages = {
     repairFound: '发现丢失的投影：',
     repairTurns: '缺 Observation 的 turn',
     repairEmbeddings: '向量缺失或需重建的 Observation',
-    // 英文派生值（semantic-en-v1）缺失或待补的 Observation。它们只能靠 ACP 补译，
-    // 所以与"本地可重算"的向量孤儿分开显示。
+    // 英文派生值（semantic-en-v1）缺失或待补：只能靠 ACP 补译，故与"本地可重算"的向量孤儿分开显示。
     repairSemanticTexts: '英文语义派生值待补的 Observation',
-    // 护栏两次拒绝过的派生值不进重建队列，但必须显示——否则它是个永不自愈、
-    // 也没人知道的黑洞。
+    // 护栏两次拒绝过的派生值不进重建队列，但必须显示——否则是个永不自愈、也没人知道的黑洞。
     repairSemanticFailed: '英文派生值被护栏拒绝（需改协议/prompt，不会自动重试）：',
     repairQueued: '已重新入队：',
     repairHint: 'Worker 会在后台处理；失败任务的原始记录已保留，便于排查。',
@@ -230,6 +236,8 @@ const messages = {
     compressionConcurrency: '? ACP compression concurrency (1-10)',
     compressionTimeoutMs: '? Per-compression timeout (ms, 5000-60000)',
     compressionMaxRetries: '? Max retries on compression failure (2-5)',
+    compressionMinWarmRuntimes: '? ACP processes to keep alive while idle (0 = reclaim all)',
+    compressionIdleTtlMs: '? Retire an idle ACP process after (ms, 1000-86400000, 0 = never)',
 
     // --- setup: install ---
     installing: '[kiro-mem] Installing...',
@@ -265,6 +273,9 @@ const messages = {
     concurrencyLabel: 'Concurrency:',
     timeoutLabel: 'Compression timeout (ms):',
     maxRetriesLabel: 'Max retries:',
+    minWarmLabel: 'Warm runtimes:',
+    idleTtlLabel: 'Idle retire (ms):',
+    idleTtlOff: 'off',
     runtimeHomeLabel: 'kiro-runtime:',
     discoveryLabel: 'Semantic discovery:',
     language: 'Language:',
@@ -374,6 +385,9 @@ const messages = {
     diagAcpIdle: 'idle',
     diagAcpBusy: 'busy',
     diagAcpJobs: 'jobs',
+    diagAcpIdleRecycle: 'Idle retired',
+    diagAcpTtl: 'after',
+    diagAcpWarm: 'keep warm',
     diagMcpClients: 'MCP callers seen',
     diagTotal: 'total',
     diagRssUnmeasured: 'not measured (ps call failed)',

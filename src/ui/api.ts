@@ -1,9 +1,7 @@
 /**
- * Viewer API client.
- *
- * Everything goes through `fetch` with an `Authorization` header — including the
- * SSE stream, which is why `EventSource` is not used anywhere in this bundle
- * (it cannot set headers, and the alternative is a token in the URL).
+ * Viewer API client. Everything goes through `fetch` with an `Authorization`
+ * header, including the SSE stream — which is why `EventSource` appears nowhere in
+ * this bundle: it cannot set headers, and the alternative is a token in the URL.
  */
 
 import type {
@@ -117,11 +115,7 @@ export class ViewerApi {
     return this.post('/api/viewer/observations/pin', { ...scopeBody(scope), id, pinned });
   }
 
-  /**
-   * Permanent deletion. One id, no options: the server deletes the Observation
-   * and the turn truth together, and there is deliberately no flag here that
-   * could express anything else.
-   */
+  /** Permanent deletion: one id, no options — the Observation and its turn go together. */
   async remove(scope: ScopeSelection, id: number): Promise<ViewerDeleteResponse> {
     const res = await fetch(`/api/viewer/observations/${id}`, {
       method: 'DELETE',

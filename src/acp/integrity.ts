@@ -1,12 +1,7 @@
 /**
- * Runtime home integrity checks for the internal compressor agent.
- *
- * The kiro-mem ACP runtime relies on a hand-installed isolated KIRO_HOME
- * that contains exactly one purpose-built agent. Once installed it should be
- * treated as a contract; if anything in there drifts (file deleted, tools
- * field accidentally populated, prompt missing), the purity assumption no
- * longer holds. These checks let `startWorker()` and `diagnose` fail loudly
- * before we ever spawn a runtime against a broken layout.
+ * Integrity checks on the isolated KIRO_HOME holding the compressor agent. A
+ * drifted layout (file deleted, `tools` populated, prompt missing) breaks the
+ * purity assumption, so `startWorker()` and `diagnose` fail loudly here.
  */
 
 import { existsSync, readFileSync } from 'fs';
@@ -57,8 +52,8 @@ export function checkRuntimeHome(
     }
   }
 
-  // Setup writes the prompt at kiroHome/<agentName>-prompt.md (the agent JSON
-  // references it as file://.../kiro-runtime/<agentName>-prompt.md).
+  // Setup writes the prompt here; the agent JSON references it as
+  // file://.../kiro-runtime/<agentName>-prompt.md.
   const promptPath = join(kiroHome, `${agentName}-prompt.md`);
   if (!existsSync(promptPath)) {
     issues.push({ severity: 'error', message: `agent prompt missing: ${promptPath}` });

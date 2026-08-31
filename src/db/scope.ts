@@ -3,7 +3,6 @@
 import { resolve, normalize } from 'path';
 import { realpathSync } from 'fs';
 
-/** Resolve + realpath + normalize a path to a stable canonical form. */
 function normalizePathInput(input: string): string {
   const trimmed = input.trim();
   if (!trimmed) return '';
@@ -13,8 +12,8 @@ function normalizePathInput(input: string): string {
   try {
     abs = realpathSync.native(abs);
   } catch {
-    // Path doesn't exist or is inaccessible — keep the resolved-but-not-real
-    // form so callers still get a stable key.
+    // Missing or inaccessible — keep the resolved-but-not-real form so callers
+    // still get a stable key.
   }
 
   const n = normalize(abs);
@@ -34,15 +33,10 @@ export function computeScopeKey(
 }
 
 /**
- * Detect the enclosing git repo root for a directory, or null.
- *
- * The SINGLE implementation, deliberately colocated with `computeScopeKey`:
- * whatever this returns becomes the first component of the scope key, so the
- * ingest path (which freezes `scope_key` at write time), the MCP authorization
- * layer and the bootstrap injector must all derive it identically. Three
- * independent copies meant any drift would silently write memories into one
- * scope and read them from another — a workspace whose memory appears empty,
- * with nothing logged.
+ * Enclosing git repo root, or null. The single implementation, colocated with
+ * `computeScopeKey` because its result is the scope key's first component — if
+ * ingest, MCP authorization and the bootstrap injector ever derive it
+ * differently, memories are silently written to one scope and read from another.
  */
 export function detectRepo(cwd: string): string | null {
   if (!cwd) return null;

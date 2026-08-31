@@ -1,7 +1,5 @@
 #!/usr/bin/env bun
-/**
- * postToolUse hook: forward tool observation to Worker with session_id.
- */
+/** postToolUse hook: forward tool observation to Worker with session_id. */
 import { readFileSync } from 'fs';
 import { injectSessionId } from './session';
 import { classifyCaptureError, recordCaptureMiss } from './capture-log';
@@ -27,8 +25,7 @@ try {
     method: 'POST', headers, body: input,
     signal: AbortSignal.timeout(700),
   });
-  // 200 with {skipped:true} is a normal filter decision, not a miss; only a
-  // non-2xx means the Worker refused or failed to store the tool event.
+  // 200 with {skipped:true} is a normal filter decision, not a miss; only a non-2xx is.
   if (!response.ok) recordCaptureMiss(DATA_DIR, 'postToolUse', 'rejected', response.status);
 } catch (error) {
   recordCaptureMiss(DATA_DIR, 'postToolUse', classifyCaptureError(error));

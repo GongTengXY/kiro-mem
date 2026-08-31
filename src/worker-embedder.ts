@@ -1,22 +1,14 @@
 /**
- * Query embedder that calls the local Worker instead of loading a model.
+ * Query embedder that calls the local Worker instead of loading a model
+ * (plan §5.4 / §10). The MCP server runs once per kiro-cli session, so embedding
+ * in-process meant one copy of the model per open repo; the Worker is already a
+ * per-dataDir singleton. Scope isolation is unaffected — it lives in `scope_key`
+ * at the data layer and this call carries no scope, only text in, vector out.
  *
- * Why (plan §5.4 / §10): the MCP server runs once per kiro-cli session, so
- * embedding in-process meant one full copy of the model per open repo — three
- * repos, three sets of weights, three cold starts, and a first search that pays
- * the load. The Worker is already a per-dataDir singleton kept alive by
- * launchd/systemd, so it is the natural place for the single model instance.
- * Scope isolation is unaffected: it lives in `scope_key` at the data layer, and
- * this call carries no scope at all — only text in, vector out.
- *
- * Deliberately NOT imported from here: `../embedding`. Pulling the inference
- * runtime into this process would give back 54MB RSS per session (measured) for
- * a model it must never instantiate.
- *
- * Every failure — Worker down, 429 backpressure, timeout, malformed reply —
- * surfaces as a thrown error, which the retrieval kernel already treats as
- * "degrade to FTS-only". A search that returns keyword hits is a correct answer;
- * a search that waits on a dead Worker is not.
+ * Never import `../embedding` here: the inference runtime costs 54MB RSS per
+ * session (measured) for a model this process must never instantiate. Every
+ * failure — Worker down, 429 backpressure, timeout, malformed reply — throws, and
+ * the retrieval kernel treats that as "degrade to FTS-only".
  */
 
 import { readFileSync } from 'fs';
@@ -36,12 +28,9 @@ export interface WorkerEmbedderOptions {
 }
 
 /**
- * Resolve the Worker's port.
- *
- * `<dataDir>/.worker.port` is written by the running Worker and is therefore
- * authoritative; the config value is the fallback for the window before the
- * first start. Reading the file each time is intentional — a Worker restart on a
- * different port must not require restarting every MCP session.
+ * `<dataDir>/.worker.port` is authoritative (written by the running Worker);
+ * config is the fallback before the first start. Read on every call so a Worker
+ * restart on a different port does not require restarting every MCP session.
  */
 function resolveWorkerPort(dataDir: string, fallback: number): number {
   try {
@@ -62,11 +51,8 @@ export class WorkerEmbeddingError extends Error {
 }
 
 /**
- * Build a `(text) => Float32Array` backed by `POST /embed/query`.
- *
- * The returned function is what gets injected as
- * `ObservationSearchDeps.generateEmbedding`, so the retrieval kernel stays
- * unaware of where vectors come from.
+ * Build a `(text) => Float32Array` backed by `POST /embed/query`, injected as
+ * `ObservationSearchDeps.generateEmbedding` so the kernel stays source-agnostic.
  */
 export function createWorkerEmbedder(
   opts?: WorkerEmbedderOptions,
@@ -83,9 +69,8 @@ export function createWorkerEmbedder(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // Lets the Worker attribute RSS to a recently observed MCP caller. This
-        // is not a liveness heartbeat: callers only identify themselves when an
-        // embedding request is made. Carries no scope, query text or path.
+        // Lets the Worker attribute RSS to a recent MCP caller; not a liveness
+        // heartbeat, and carries no scope, query text or path.
         'X-Kiro-Mem-Pid': String(process.pid),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
@@ -105,8 +90,8 @@ export function createWorkerEmbedder(
       throw new WorkerEmbeddingError('worker embed returned no vector');
     }
     const buffer = Buffer.from(body.embedding, 'base64');
-    // A short/odd buffer must not be read as a shorter vector and scored against
-    // a partial dot product — the same guard the stored-blob read path applies.
+    // A short buffer must not be scored as a partial dot product — same guard as
+    // the stored-blob read path.
     const expectedBytes = (body.dimensions ?? DIMENSIONS) * 4;
     if (buffer.byteLength !== expectedBytes) {
       throw new WorkerEmbeddingError(

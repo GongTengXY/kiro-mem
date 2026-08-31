@@ -2,11 +2,8 @@
 
 import type { Database } from 'bun:sqlite';
 
-// -------------------------------------------------------------
 // Core layer — session isolation, the append-only turn truth layer,
-// deterministic artifacts, and the persistent job queue. This is the
-// ground truth that observations are projected from.
-// -------------------------------------------------------------
+// deterministic artifacts and the job queue. Observations project from this.
 
 export const CORE_SCHEMA = `
 -- Isolation metadata. Not a memory container.
@@ -167,13 +164,9 @@ CREATE INDEX IF NOT EXISTS idx_metric_events_kind_time
   ON metric_events(kind, created_at);
 `;
 
-// -------------------------------------------------------------
-// Observation layer — the immutable projection of a closed turn.
-// One closed turn -> at most one Observation. Text fields are never
-// updated after INSERT; the repair path is to rebuild from the core
-// truth layer into a new projection, not to overwrite a row. There is
-// deliberately no topic, no merge, and no superseded state.
-// -------------------------------------------------------------
+// Observation layer — one closed turn -> at most one Observation. Text fields are
+// never updated after INSERT; repair rebuilds a new projection from the core truth
+// layer rather than overwriting a row. No topic, no merge, no superseded state.
 
 export const OBSERVATIONS_SCHEMA = `
 CREATE TABLE IF NOT EXISTS observations (
@@ -296,10 +289,8 @@ CREATE VIRTUAL TABLE IF NOT EXISTS observations_fts USING fts5(
 );
 `;
 
-// Observation text is immutable at the application layer (no updateObservation
-// method exists), but is_pinned is mutable. The AFTER UPDATE trigger keeps the
-// external-content FTS index consistent for any row-level UPDATE regardless of
-// which column changed.
+// Observation text is immutable at the application layer, but is_pinned is not, so
+// the AFTER UPDATE trigger re-syncs external-content FTS on any row-level UPDATE.
 export const OBSERVATIONS_FTS_TRIGGERS = `
 CREATE TRIGGER IF NOT EXISTS observations_ai AFTER INSERT ON observations BEGIN
   INSERT INTO observations_fts(rowid, title, summary, request, outcome,
@@ -327,11 +318,8 @@ CREATE TRIGGER IF NOT EXISTS observations_au AFTER UPDATE ON observations BEGIN
 END;
 `;
 
-/**
- * Single entry point for DB schema initialization. Called from the `MemoryDB`
- * constructor. Order matters: base tables first, then FTS virtual tables,
- * then triggers that depend on both.
- */
+/** Schema init from the `MemoryDB` constructor. Order matters: base tables, then
+ * FTS virtual tables, then the triggers that depend on both. */
 export const ALL_SCHEMA = [
   CORE_SCHEMA,
   OBSERVATIONS_SCHEMA,
@@ -340,10 +328,7 @@ export const ALL_SCHEMA = [
 ].join('\n');
 
 /**
- * Shape changes that `CREATE TABLE IF NOT EXISTS` cannot express.
- *
- * Called from the `MemoryDB` constructor after the declarative schema, so a
- * fresh database short-circuits on every step. Each migration must be
+ * Shape changes that `CREATE TABLE IF NOT EXISTS` cannot express. Each must be
  * idempotent and safe to run while another process holds the same file open —
  * both the Worker and the MCP server construct `MemoryDB`.
  */
@@ -353,19 +338,13 @@ export function migrateSchema(db: Database): void {
 }
 
 /**
- * Rebuild `observation_embeddings` when an existing database still has the old
- * single-column primary key.
- *
- * `CREATE TABLE IF NOT EXISTS` cannot change a key, so without this an upgraded
- * install would keep a table where storing a `semantic-en-v1` vector overwrites
- * the `raw-v1` one for the same Observation — the protocol isolation would be
- * declared in the schema file and absent in the actual database.
- *
- * Existing rows are preserved rather than dropped. They were written under the
- * bare model name, which is no longer a valid space key, so they are inert at
- * read time; `kiro-mem repair` re-embeds them under the new key locally, with no
- * ACP call. Dropping them would have been simpler and would have destroyed the
- * only copy of work that a repair could still use.
+ * Rebuild `observation_embeddings` when a database still has the old
+ * single-column primary key. `CREATE TABLE IF NOT EXISTS` cannot change a key,
+ * so otherwise an upgraded install keeps a table where a `semantic-en-v1` vector
+ * overwrites the `raw-v1` one for the same Observation. Existing rows are
+ * preserved rather than dropped: written under the bare model name they are
+ * inert at read time, and `kiro-mem repair` re-embeds them under the new key
+ * locally with no ACP call.
  */
 function migrateObservationEmbeddingsPrimaryKey(db: Database): void {
   const row = db
@@ -395,20 +374,15 @@ function migrateObservationEmbeddingsPrimaryKey(db: Database): void {
 }
 
 /**
- * Add the phase 2C search columns to an existing `metric_events` table.
- *
- * `CREATE TABLE IF NOT EXISTS` is a no-op on a database that already has the
- * table, so without this an upgraded install would keep the 4-column shape and
- * every `recordSearchMetric` INSERT would fail — silently, because metric writes
- * are best-effort by design. The result would be a release whose whole gray
- * release rests on counters that are never written.
+ * Add the phase 2C search columns to an existing `metric_events` table. Without
+ * it an upgraded install keeps the 4-column shape and every `recordSearchMetric`
+ * INSERT fails silently, because metric writes are best-effort by design.
  *
  * Additive and idempotent: existing rows keep NULL in the new columns, which the
- * aggregation reads as "unknown" rather than as zero. No table rebuild, so it
- * cannot lose the ACP / auth history a running Worker has already written, and
- * an older Worker binary keeps working against the new shape (it just leaves the
- * new columns NULL) — the compound-key incompatibility phase 1b hit came from a
- * rebuild, and this migration deliberately avoids that class.
+ * aggregation reads as "unknown" rather than zero. No table rebuild, so the ACP /
+ * auth history a running Worker already wrote survives and an older Worker binary
+ * keeps working against the new shape — a rebuild is what caused the compound-key
+ * incompatibility in phase 1b.
  */
 function migrateMetricEventsSearchColumns(db: Database): void {
   const existing = new Set(

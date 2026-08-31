@@ -13,13 +13,11 @@ declare module '@huggingface/transformers' {
   ): Promise<FeatureExtractionPipeline>;
 
   /**
-   * Runtime environment knobs. Only the two fields the benchmark's
-   * encoder-selection probe needs are declared: it downloads candidate models
-   * from the Hub into a cache directory outside the repo, while production stays
-   * on `local_files_only` against the bundled model.
-   *
-   * This whole module is a hand-written shim, so anything not listed here is
-   * invisible to the type checker even though the package exports it.
+   * Only the two fields the benchmark's encoder-selection probe needs: it pulls
+   * candidate models from the Hub into a cache outside the repo, while production
+   * stays on `local_files_only` against the bundled model. This module is a
+   * hand-written shim — anything not declared here is invisible to the type
+   * checker even though the package exports it.
    */
   export const env: {
     cacheDir: string | null;

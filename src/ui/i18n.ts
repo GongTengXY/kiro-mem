@@ -1,14 +1,9 @@
 /** @jsxImportSource preact */
 /**
- * Viewer strings (zh / en), one language at a time, chosen by `config.language`
- * and delivered in the bootstrap response.
- *
- * Deliberately separate from `src/i18n.ts`: that file is CLI and compressor
- * wording and imports server config types, neither of which belongs in a browser
- * bundle.
- *
- * Interpolating strings are functions, so a translation can place the value where
- * its own grammar needs it instead of following English word order.
+ * Viewer strings (zh / en), one language at a time, chosen by `config.language` and
+ * delivered in the bootstrap response. Separate from `src/i18n.ts`, which imports
+ * server config types that do not belong in a browser bundle. Interpolating strings
+ * are functions so a translation can place the value where its grammar needs it.
  */
 
 import { createContext } from 'preact';

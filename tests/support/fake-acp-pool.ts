@@ -73,9 +73,24 @@ export class FakeACPPool {
     return {
       total: 1,
       busy: 0,
+      retiring: 0,
       queued: 0,
       restarts: 0,
       contaminations: 0,
+      jobLimitRecycles: 0,
+      errorRecycles: 0,
+      idleRecycles: 0,
+      deadDrops: 0,
+      // No housekeeping timer exists here, so "never ran" is the honest reading.
+      lastHousekeepingAt: null as string | null,
+      // Mirrors the production defaults so a test asserting on the effective
+      // config sees a plausible shape rather than zeros.
+      config: {
+        concurrency: 3,
+        minWarmRuntimes: 1,
+        idleTtlMs: 600000,
+        maxJobsPerProcess: 50,
+      },
       // No subprocess exists here, so `pid` is null by construction. Kept in the
       // shape so `ACPPoolLike` still matches structurally.
       slots: [{ pid: null as number | null, jobCount: 0, idleMs: 0, busy: false }],

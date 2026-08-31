@@ -1,30 +1,28 @@
 /**
  * `semantic-en-v1` — the two-sided English semantic normalization protocol.
  *
- * Why it exists (measured, not assumed): the bundled encoder is
- * `all-MiniLM-L6-v2`, whose 30522-token vocabulary contains 244 pure-CJK
- * tokens. Chinese input therefore lands in a degenerate region of the space —
- * unrelated Chinese sentence pairs score cosine 0.42…0.85 while annotated true
- * positives span 0.08…0.61. The same model behaves normally on English. So the
- * fix is not a bigger multilingual model; it is to put BOTH sides of the
- * comparison into English before embedding.
+ * Measured cause: the bundled `all-MiniLM-L6-v2` carries only 244 pure-CJK tokens
+ * in its 30522-token vocabulary, so Chinese input lands in a degenerate region of
+ * the space — unrelated Chinese sentence pairs score cosine 0.42…0.85 while
+ * annotated true positives span 0.08…0.61. The same model behaves normally on
+ * English, so the fix is putting both sides of the comparison into English before
+ * embedding, not a bigger multilingual model. Two load-bearing facts from the
+ * phase 1a evaluation:
  *
- * Two facts from the phase 1a evaluation are load-bearing here:
- *
- *  1. **Both sides or neither.** Translating only the record side and letting a
- *     Chinese query compare against English vectors measured MRR 0.437 —
- *     *worse* than the 0.529 raw baseline. A missing/invalid English query must
- *     therefore never be silently compared against `semantic-en-v1` vectors.
- *  2. **The protocol is part of the vector-space identity.** `raw-v1` and
+ *  1. Both sides or neither. Translating only the record side and letting a Chinese
+ *     query compare against English vectors measured MRR 0.437, worse than the
+ *     0.529 raw baseline. A missing/invalid English query must therefore never be
+ *     silently compared against `semantic-en-v1` vectors.
+ *  2. The protocol is part of the vector-space identity. `raw-v1` and
  *     `semantic-en-v1` are both 384-dimensional output of the same model, which
- *     makes mixing them look harmless. It is not: the mixed-space probe read
- *     0.972 one way and 0.613 the other. Hence `embeddingSpaceKey()` — the
- *     model name alone is not a version key.
+ *     makes mixing them look harmless; the mixed-space probe read 0.972 one way and
+ *     0.613 the other. Hence `embeddingSpaceKey()`: the model name alone is not a
+ *     version key.
  *
- * The guardrails below are also a measured requirement, not defensive habit. In
- * the phase 1a run the translator returned the literal string `...` for query
- * q16; the JSON was valid, the schema matched, and that query's rank went from
- * 1 to 18. A schema check alone does not detect a well-formed useless value.
+ * The guardrails below are measured too: in phase 1a the translator returned the
+ * literal string `...` for query q16 — valid JSON, matching schema — and that
+ * query's rank went from 1 to 18. A schema check does not detect a well-formed
+ * useless value.
  */
 
 import { DIMENSIONS, EMBEDDING_MODEL, MODEL_DTYPE } from './embedding-space';
@@ -32,7 +30,6 @@ import { DIMENSIONS, EMBEDDING_MODEL, MODEL_DTYPE } from './embedding-space';
 export const RAW_PROTOCOL = 'raw-v1';
 export const SEMANTIC_EN_PROTOCOL = 'semantic-en-v1';
 
-/** Text normalization applied before embedding. Part of the space identity. */
 export type NormalizationProtocol = typeof RAW_PROTOCOL | typeof SEMANTIC_EN_PROTOCOL;
 
 export const NORMALIZATION_PROTOCOLS: readonly NormalizationProtocol[] = [
@@ -44,23 +41,15 @@ export function isNormalizationProtocol(value: unknown): value is NormalizationP
   return value === RAW_PROTOCOL || value === SEMANTIC_EN_PROTOCOL;
 }
 
-/**
- * Identity of a comparable vector space: model + quantization + dimensions +
- * text protocol.
- *
- * This string is written into `observation_embeddings.model` and used as the
- * read filter, so two protocols can coexist in the table while remaining
- * impossible to rank against each other. Comparing on model name and
- * dimensionality alone was not enough — that is precisely the mistake this key
- * makes unrepresentable.
- */
+/** Identity of a comparable vector space: model + quantization + dimensions + text
+ * protocol. Written into `observation_embeddings.model` and used as the read filter,
+ * so two protocols coexist in the table while staying impossible to rank against each
+ * other — model name and dimensionality alone were not enough. */
 export function embeddingSpaceKey(protocol: NormalizationProtocol): string {
   return `${EMBEDDING_MODEL}:${MODEL_DTYPE}:${DIMENSIONS}:${protocol}`;
 }
 
-// ---------------------------------------------------------------------------
-// Derived value shape
-// ---------------------------------------------------------------------------
+// --- Derived value shape ---
 
 /** The English derived value for one Observation. Mirrors the embedded fields. */
 export interface SemanticEnRecord {
@@ -71,7 +60,6 @@ export interface SemanticEnRecord {
   concepts: string[];
 }
 
-/** The original-language fields the derived value must faithfully mirror. */
 export interface SemanticEnRecordSource {
   title: string;
   summary: string;
@@ -103,9 +91,7 @@ const fail = (reason: NormalizationRejectReason, detail: string): NormalizationC
   detail,
 });
 
-// ---------------------------------------------------------------------------
-// Bounds
-// ---------------------------------------------------------------------------
+// --- Bounds ---
 
 /** Same caps the compressor already applies to the original fields. */
 const TITLE_MAX_CHARS = 200;
@@ -115,15 +101,10 @@ const CONCEPT_MAX_CHARS = 400;
 /** A search query, not a document. Anything longer is not a normalized query. */
 export const QUERY_MAX_CHARS = 500;
 
-/**
- * How much CJK may survive in an "English" value.
- *
- * Not zero: a faithful translation legitimately keeps a quoted Chinese string
- * literal or a Chinese product name that appears in the record. But a value
- * that is still mostly Chinese was not translated at all, and that is the
- * failure that silently reintroduces the degenerate region this protocol
- * exists to avoid.
- */
+/** How much CJK may survive in an "English" value. Not zero: a faithful translation
+ * legitimately keeps a quoted Chinese string literal or a Chinese product name. But a
+ * value that is still mostly Chinese was not translated at all, which silently
+ * reintroduces the degenerate region this protocol exists to avoid. */
 const MAX_CJK_RATIO = 0.15;
 
 /** Record side: English is usually longer than Chinese, never much shorter. */
@@ -133,14 +114,9 @@ const RECORD_MAX_LENGTH_RATIO = 6;
 const QUERY_MIN_LENGTH_RATIO = 0.4;
 const QUERY_MAX_LENGTH_RATIO = 10;
 
-// ---------------------------------------------------------------------------
-// Primitive checks
-// ---------------------------------------------------------------------------
+// --- Primitive checks ---
 
-/**
- * Well-formed but useless output. `...` is here because the translator actually
- * produced it (phase 1a, q16) and a JSON/schema check accepted it.
- */
+/** Well-formed but useless output — `...` is here because phase 1a q16 produced it. */
 const PLACEHOLDER_VALUES = new Set([
   '...', '..', '.', '…', '-', '--', '---', '—', '?', '??', '_', '*',
   'n/a', 'n.a.', 'na', 'none', 'null', 'nil', 'undefined', 'unknown',
@@ -172,25 +148,18 @@ function cjkRatio(text: string): number {
   return len === 0 ? 0 : cjkCharCount(text) / len;
 }
 
-/**
- * Language-neutral, high-signal tokens that a faithful translation must keep:
- * paths, dotted/hyphenated identifiers, SCREAMING_SNAKE constants, and
- * multi-digit numbers.
- *
- * Single digits are deliberately exempt: "第 1 位" legitimately becomes "first",
- * so requiring the character `1` would reject a correct translation. Numbers of
- * two or more characters (`200`, `0.2`, `37778`) carry meaning that no
- * translation should restate in words.
- */
+/** Language-neutral, high-signal tokens a faithful translation must keep: paths,
+ * dotted/hyphenated identifiers, SCREAMING_SNAKE constants, and multi-digit numbers.
+ * Single digits are exempt — "第 1 位" legitimately becomes "first", so requiring the
+ * character `1` would reject a correct translation — while numbers of two or more
+ * characters (`200`, `0.2`, `37778`) carry meaning no translation should restate in
+ * words. */
 const IDENTIFIER_RE = /[A-Za-z_$][A-Za-z0-9_$]*(?:[.\-/:][A-Za-z0-9_$]+)+/g;
 const CONSTANT_RE = /\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b/g;
-/**
- * Bare code identifiers, which the separator-based pattern above misses.
- * `extractFtsSearchUnits` is exactly the kind of token a translator "helpfully"
- * turns into "the unit extractor" — losing the one string a future reader could
- * grep for. Casing makes them safe to require: ordinary English prose does not
- * contain camelCase, PascalCase compounds or snake_case.
- */
+/** Bare code identifiers, which the separator-based pattern above misses: a translator
+ * turns `extractFtsSearchUnits` into "the unit extractor", losing the one string a
+ * future reader could grep for. Casing makes them safe to require — English prose
+ * contains no camelCase, PascalCase compounds or snake_case. */
 const CAMEL_RE = /\b[a-z][a-z0-9]*(?:[A-Z][A-Za-z0-9]*)+\b/g;
 const PASCAL_RE = /\b[A-Z][a-z0-9]+(?:[A-Z][A-Za-z0-9]*)+\b/g;
 const SNAKE_RE = /\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/g;
@@ -209,11 +178,8 @@ function missingTokens(source: string, candidate: string): string[] {
   return protectedTokens(source).filter((token) => !candidate.includes(token));
 }
 
-/**
- * A degenerate model loop: the same sentence emitted over and over. Cheap to
- * detect, and the alternative is a vector built from one idea repeated ten
- * times.
- */
+/** A degenerate model loop: the same sentence over and over, which would otherwise
+ * embed one idea repeated ten times. */
 function hasRepetition(text: string): boolean {
   const sentences = text
     .split(/[.!?;\n]+/)
@@ -225,19 +191,15 @@ function hasRepetition(text: string): boolean {
   return [...counts.values()].some((c) => c >= 3);
 }
 
-// ---------------------------------------------------------------------------
-// Record side
-// ---------------------------------------------------------------------------
+// --- Record side ---
 
 function asString(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
 
-/**
- * Coerce an untrusted object into a `SemanticEnRecord` shape without judging
- * its content. Validation is `checkSemanticEnRecord`; keeping the two apart
- * means a malformed shape and a bad translation produce different reasons.
- */
+/** Coerce an untrusted object into a `SemanticEnRecord` shape without judging its
+ * content — separate from `checkSemanticEnRecord` so a malformed shape and a bad
+ * translation produce different reasons. */
 export function coerceSemanticEnRecord(value: unknown): SemanticEnRecord | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const v = value as Record<string, unknown>;
@@ -253,16 +215,13 @@ export function coerceSemanticEnRecord(value: unknown): SemanticEnRecord | null 
   };
 }
 
-/**
- * Decide whether an English derived value may enter the `semantic-en-v1` space.
+/** Decide whether an English derived value may enter the `semantic-en-v1` space.
  *
- * The contract is *faithful mirror*, not summary: same fields, same concept
- * count, same identifiers, no invention. A value that fails here is not
- * downgraded or patched — the Observation keeps its original text, gets no
- * `semantic-en-v1` vector, and is recorded as pending/failed. Writing a vector
- * from a wrong translation would be worse than having none, because it looks
- * exactly like a good one at read time.
- */
+ * The contract is faithful mirror, not summary: same fields, same concept count,
+ * same identifiers, no invention. A failing value is never downgraded or patched —
+ * the Observation keeps its original text, gets no `semantic-en-v1` vector, and is
+ * recorded as pending/failed. A vector from a wrong translation is worse than none,
+ * because at read time it looks exactly like a good one. */
 export function checkSemanticEnRecord(
   candidate: SemanticEnRecord | null,
   source: SemanticEnRecordSource,
@@ -281,8 +240,8 @@ export function checkSemanticEnRecord(
     const value = candidate[field];
     if (sourceValue && !value) return fail('empty', field);
     if (sourceValue && isPlaceholderText(value)) return fail('placeholder', field);
-    // The reverse direction is invention, which is the other way a "faithful"
-    // translator silently changes what the record says.
+    // The reverse direction is invention — the other way a "faithful" translation
+    // silently changes what the record says.
     if (!sourceValue && value) return fail('invented', field);
   }
 
@@ -339,18 +298,12 @@ function joinRecord(record: SemanticEnRecord): string {
     .join('\n');
 }
 
-// ---------------------------------------------------------------------------
-// Query side
-// ---------------------------------------------------------------------------
+// --- Query side ---
 
-/**
- * Decide whether a caller-supplied `semantic_query_en` may be embedded into the
- * `semantic-en-v1` space.
- *
- * The query side has no retry: it is on the interactive path and phase 1b
- * forbids spending a second LLM round trip there. So a value that fails here
- * degrades the search (raw leg or FTS-only), it never gets repaired.
- */
+/** Decide whether a caller-supplied `semantic_query_en` may be embedded into the
+ * `semantic-en-v1` space. No retry: this is the interactive path and phase 1b forbids
+ * a second LLM round trip there, so a value that fails here degrades the search (raw
+ * leg or FTS-only) instead of getting repaired. */
 export function checkSemanticEnQuery(candidate: string, source: string): NormalizationCheck {
   const value = candidate.trim();
   if (!value) return fail('empty', 'semantic_query_en');
@@ -394,8 +347,8 @@ export function semanticEnSearchTextFields(
     outcome: record.outcome || null,
     learned: record.learned || null,
     concepts: record.concepts,
-    // Paths are language-neutral and high-signal: translating them would change
-    // the retrieval task itself, so both protocols embed the same file list.
+    // Paths are language-neutral: translating them would change the retrieval task
+    // itself, so both protocols embed the same file list.
     files,
   };
 }

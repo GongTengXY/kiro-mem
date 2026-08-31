@@ -1,11 +1,8 @@
 /** @jsxImportSource preact */
 /**
- * Retrieval health and the log drawer (plan §3.5, §9 P3).
- *
- * Both are projections of numbers the Worker already computes — `search_24h`,
- * the retrieval profile, and the worker error log. Nothing here recalculates a
- * metric, because a second implementation of a counter is a second answer to the
- * same question.
+ * Retrieval health and the log drawer (plan §3.5, §9 P3). Both project numbers the
+ * Worker already computes — `search_24h`, the retrieval profile, the worker error log.
+ * Nothing here recalculates a metric: a second counter is a second answer.
  */
 
 import type { ViewerLogLine, ViewerRetrievalHealth } from '../../server/viewer-types';

@@ -22,8 +22,6 @@ export const ansi = {
 const HOME = process.env.HOME || '~';
 const DATA_DIR = join(HOME, '.kiro-mem');
 
-// --- Platform detection ---
-
 type Platform = 'macos' | 'linux';
 
 function getPlatform(): Platform {
@@ -46,10 +44,8 @@ function generatePlist(): string {
   const workerPath = join(DATA_DIR, 'src', 'server', 'worker.ts');
   const stdoutLog = join(DATA_DIR, 'logs', 'worker-stdout.log');
   const stderrLog = join(DATA_DIR, 'logs', 'worker-stderr.log');
-  // launchd ignores the user shell's PATH (it only sees a minimal default
-  // like `/usr/bin:/bin:...`), so the worker's spawn of `kiro-cli` would
-  // ENOENT. Snapshot the install-time PATH (which already passed the
-  // `kiro-cli --version` precheck) into the plist instead.
+  // launchd ignores the shell's PATH, so the worker's spawn of `kiro-cli` would
+  // ENOENT. Snapshot the install-time PATH into the plist instead.
   const pathEnv = process.env.PATH || '/usr/local/bin:/usr/bin:/bin';
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -98,8 +94,7 @@ const SERVICE_PATH = join(SYSTEMD_DIR, SERVICE_NAME);
 function generateService(): string {
   const bunPath = getBunPath();
   const workerPath = join(DATA_DIR, 'src', 'server', 'worker.ts');
-  // systemd user services start with a minimal PATH; mirror the install-time
-  // PATH so spawning `kiro-cli` from the worker keeps working.
+  // Same minimal-PATH problem as launchd above; mirror the install-time PATH.
   const pathEnv = process.env.PATH || '/usr/local/bin:/usr/bin:/bin';
   return `[Unit]
 Description=kiro-mem Worker Service
@@ -180,13 +175,9 @@ export function start(lang: Language = 'zh') {
 }
 
 /**
- * Restart the Worker so freshly copied source actually takes effect.
- *
- * `start()` is deliberately a no-op when the Worker is already running, which
- * is right for `kiro-mem start` but wrong right after an install: the install
- * overwrites `<dataDir>/src/**`, while the running process keeps executing the
- * code it loaded at boot. Without this, a repair install reports success and
- * silently leaves the old build live.
+ * Restart the Worker so freshly copied source actually takes effect: `start()` is
+ * a no-op when the Worker is already running, so an install would otherwise report
+ * success while the process kept running the build it loaded at boot.
  */
 export function restart(lang: Language = 'zh') {
   const m = t(lang);
@@ -197,8 +188,7 @@ export function restart(lang: Language = 'zh') {
     wasRunning = spawnSync('kill', ['-0', pid]).status === 0;
   }
 
-  // Only stop when something is actually running — otherwise a first install
-  // would print a misleading "worker stopped" line.
+  // Otherwise a first install prints a misleading "worker stopped" line.
   if (wasRunning) stop(lang);
   start(lang);
   if (wasRunning) console.log(`${ansi.ok('✓')} ${m.workerRestarted}`);
@@ -220,6 +210,15 @@ export function stop(lang: Language = 'zh') {
   if (existsSync(pidFile)) {
     const pid = readFileSync(pidFile, 'utf-8').trim();
     spawnSync('kill', [pid], { stdio: 'pipe' });
+    // Grace period so the Worker closes its ACP pool before uninstall removes the
+    // runtime dir. Only ever this recorded PID — never a broad process scan.
+    const deadline = Date.now() + 5000;
+    while (Date.now() < deadline && spawnSync('kill', ['-0', pid], { stdio: 'pipe' }).status === 0) {
+      spawnSync('sleep', ['0.05'], { stdio: 'ignore' });
+    }
+    if (spawnSync('kill', ['-0', pid], { stdio: 'pipe' }).status === 0) {
+      spawnSync('kill', ['-KILL', pid], { stdio: 'pipe' });
+    }
   }
   rmSync(pidFile, { force: true });
   rmSync(portFile, { force: true });

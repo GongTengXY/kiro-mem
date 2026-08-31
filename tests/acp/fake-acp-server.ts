@@ -22,6 +22,14 @@ async function main() {
       handleMessage(JSON.parse(line));
     }
   }
+  // By default the server exits when its stdin closes, which is what a real ACP
+  // agent does when its parent dies. `KIRO_MEM_FAKE_SURVIVE_EOF` opts out, so an
+  // orphaned runtime stays observable: otherwise a leaked process self-terminates
+  // the moment the Worker exits and a shutdown-leak test passes vacuously.
+  if (process.env.KIRO_MEM_FAKE_SURVIVE_EOF === '1') {
+    setInterval(() => {}, 1000);
+    await new Promise(() => {});
+  }
 }
 
 function send(msg: unknown) {
@@ -48,6 +56,27 @@ function handleMessage(msg: { id?: number; method?: string; params?: any }) {
   } else if (msg.method === 'session/prompt') {
     const sessionId = msg.params?.sessionId ?? 'test-session-001';
     const text = msg.params?.prompt?.[0]?.text ?? '';
+
+    // Test directive: `hang:` never answers, so the prompt stays in flight until
+    // the client closes it. Used to reproduce the shutdown race where a prompt
+    // rejected by `close()` used to trigger a replacement runtime.
+    //
+    // `KIRO_MEM_FAKE_HANG` does the same for every prompt, which is how the
+    // Worker-level test gets a prompt in flight: the Worker builds its own
+    // compression prompt, so the directive cannot be injected through the text.
+    //
+    // `KIRO_MEM_FAKE_HANG_MARKER` is how a test knows the prompt is REALLY in
+    // flight. Waiting on "a pid exists" is not enough — slots are reserved before
+    // `start()` resolves, so a test that closes on that signal interrupts the
+    // handshake instead of the prompt and never reaches the race it targets.
+    const hangAll = process.env.KIRO_MEM_FAKE_HANG === '1';
+    if (hangAll || (typeof text === 'string' && text.startsWith('hang:'))) {
+      const marker = process.env.KIRO_MEM_FAKE_HANG_MARKER;
+      if (marker) {
+        try { require('fs').writeFileSync(marker, 'hanging'); } catch {}
+      }
+      return;
+    }
 
     // Test directive: `tool:<name>` simulates a contamination event. The fake
     // agent emits a tool_call update and still completes the prompt turn.

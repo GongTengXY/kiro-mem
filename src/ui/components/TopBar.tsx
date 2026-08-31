@@ -1,10 +1,5 @@
 /** @jsxImportSource preact */
-/**
- * Top bar (plan §3.1).
- *
- * The scope selector defaults to "All workspaces" and can narrow the feed to a
- * single workspace. The standing notice keeps the global visibility explicit.
- */
+/** Top bar (plan §3.1). The standing notice keeps the all-workspaces default explicit. */
 
 import { Activity, Database, FileText, Globe, Search, SlidersHorizontal } from 'lucide-preact';
 import type { ViewerBootstrap, ViewerQueueStatus } from '../../server/viewer-types';

@@ -1,15 +1,7 @@
 /** @jsxImportSource preact */
 /**
- * Viewer application shell.
- *
- * The invariants this component is responsible for:
- *   - a scope switch clears the previous workspace's cards and cursor BEFORE the
- *     new fetch, and late responses from the old scope are discarded by request id;
- *   - the Feed has two writers (pagination + SSE) and merges them by Observation id;
- *   - a 401 stops the stream and shows the recovery instruction instead of
- *     reconnecting forever;
- *   - deletion is confirmed against freshly fetched detail, and a 409 keeps the
- *     card on screen so the user can retry.
+ * Viewer application shell: owns scope selection, Feed state, the SSE wiring and
+ * the delete flow.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
@@ -83,18 +75,11 @@ export function App({ api, initialToken, initialScope }: { api: ViewerApi; initi
 
   const { toasts, push: pushToast, dismiss: dismissToast } = useToasts();
 
-  /**
-   * UI language, from `config.language` via bootstrap. English until that lands: a
-   * one-frame default beats blocking the first paint on a round trip.
-   */
+  /** From `config.language` via bootstrap; English until that lands, rather than blocking first paint. */
   const lang: ViewerLang = bootstrap?.language === 'zh' ? 'zh' : 'en';
   const t = VIEWER_STRINGS[lang];
 
-  /**
-   * Monotonic request id. A scope switch bumps it, so a response that was already
-   * in flight for the previous workspace is dropped instead of being merged into
-   * the new one.
-   */
+  /** Bumped by every scope switch: a response already in flight for the old workspace is dropped. */
   const requestId = useRef(0);
 
   const handleError = useCallback((err: unknown): string => {
@@ -175,8 +160,7 @@ export function App({ api, initialToken, initialScope }: { api: ViewerApi; initi
             break;
           case 'observation_created':
           case 'observation_updated':
-            // Fetch the row itself rather than trusting the event to carry it:
-            // the event is a notification, the API is the source of truth.
+            // The event is a notification, not the row: the API is the source of truth.
             void api
               .list({ scopeKey: event.scopeKey, allScopes: false }, null, 5)
               .then((res) => {
@@ -297,8 +281,8 @@ export function App({ api, initialToken, initialScope }: { api: ViewerApi; initi
     async (id: number) => {
       setDeleteError(null);
       try {
-        // Always re-read: the dialog states the exact event count and byte total
-        // that will be destroyed, and a stale card cannot be trusted for that.
+        // Always re-read: the dialog quotes the exact event count and bytes destroyed,
+        // which a stale card cannot supply.
         setPendingDelete(await api.detail(scope, id));
       } catch (err) {
         handleError(err);
@@ -322,8 +306,7 @@ export function App({ api, initialToken, initialScope }: { api: ViewerApi; initi
       }
       setPendingDelete(null);
     } catch (err) {
-      // 409 (a leased job) and 404 both keep the dialog open: the card is still
-      // real for a 409, and the user needs to see why nothing happened.
+      // 409 (a leased job) and 404 both keep the dialog open so the user sees why nothing happened.
       setDeleteError(handleError(err));
     } finally {
       setDeleteBusy(false);
