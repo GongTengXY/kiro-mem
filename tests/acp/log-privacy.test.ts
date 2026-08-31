@@ -34,7 +34,7 @@ describe('compressor log privacy', () => {
         stats: { total: 1, busy: 0, queued: 0, restarts: 0, contaminations: 0, slots: [] },
         run: async () => ({ text: `${secret} invalid json`, stopReason: 'end_turn' }),
         close: async () => {},
-      });
+      } as any);
       await compressor.summarizeObservation({
         user_prompt: 'request', assistant_response: 'response',
         artifacts: { files_touched: [], commands: [], test_signals: [], error_signals: [], facts: [] },

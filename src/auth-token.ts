@@ -39,10 +39,7 @@ export interface AuthTokenInspection {
   mode?: number;
 }
 
-/**
- * Non-destructive token check for `kiro-mem diagnose`. Reports what is wrong
- * with the credential without ever returning or logging it.
- */
+/** Non-destructive check for `kiro-mem diagnose`: reports what is wrong without ever returning or logging the credential. */
 export function inspectLocalAuthToken(dataDir: string): AuthTokenInspection {
   const tokenPath = join(dataDir, '.token');
   if (!existsSync(tokenPath)) return { state: 'missing', ok: false };

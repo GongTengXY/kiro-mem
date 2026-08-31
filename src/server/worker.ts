@@ -44,23 +44,16 @@ if (typeof process !== 'undefined') {
   process.on('unhandledRejection', (reason) => { logError('unhandledRejection', reason); });
 }
 
-// --- Shared utilities ---
-
 const PRIVATE_OPEN = '<private>';
 const PRIVATE_CLOSE = '</private>';
 const REDACTED = '[REDACTED]';
 
 /**
- * Fail-closed `<private>` redaction.
- *
- * A regex like /<private>[\s\S]*?<\/private>/ only redacts well-formed pairs,
- * so a user who forgets the closing tag gets their secret written verbatim into
- * the append-only Truth Layer — the one place we cannot retract it from. This
- * scanner instead treats an *unterminated* `<private>` as "redact to the end of
- * the string", and counts nesting depth so an inner `</private>` cannot end the
- * outer block early.
- *
- * Exported for tests.
+ * Fail-closed `<private>` redaction. A regex over well-formed pairs writes the
+ * secret verbatim into the append-only Truth Layer whenever the closing tag is
+ * missing — the one place we cannot retract it from. So an unterminated
+ * `<private>` redacts to the end of the string, and nesting depth is counted so
+ * an inner `</private>` cannot end the outer block early. Exported for tests.
  */
 export function redactPrivate(text: string): string {
   const lower = text.toLowerCase();
@@ -90,7 +83,6 @@ export function redactPrivate(text: string): string {
     i++;
   }
 
-  // Unterminated block: everything after the opening tag stays redacted.
   if (depth > 0) out += REDACTED;
   return out;
 }
@@ -114,16 +106,10 @@ function shouldSkip(toolName: string, skipTools: string[]): boolean {
 }
 
 /**
- * Extract the assistant's final response from a turn's Stop event.
- *
- * The Stop payload is already private-tag-redacted at ingest time, so whatever
- * we read here is safe to feed the compressor.
- *
- * VERIFIED against kiro-cli 2.12.1 (and the official hooks docs, updated
- * 2026-06-05): the Stop hook payload carries the assistant's last response as
- * a top-level string field named `assistant_response`. We read exactly that
- * and tolerate its absence (returns ''), so a missing/older payload never
- * breaks the job.
+ * The Stop payload is already private-tag-redacted at ingest, so what we read
+ * here is safe to feed the compressor. Verified against kiro-cli 2.12.1 and the
+ * hooks docs (updated 2026-06-05): it carries the last assistant response as a
+ * top-level `assistant_response` string. Absence returns ''.
  */
 function extractAssistantResponse(db: MemoryDB, turn_id: number): string {
   const events = db.listTurnEvents(turn_id);
@@ -142,12 +128,9 @@ function extractAssistantResponse(db: MemoryDB, turn_id: number): string {
 const SEMANTIC_EN_TRANSLATOR = 'acp:kiro-mem-compressor';
 
 /**
- * Concurrent query embeddings allowed before the Worker sheds load.
- *
- * A local MiniLM query embedding is ~2-5ms warm, so this is a burst allowance,
- * not a throughput knob: with three repos searching at once the queue never
- * approaches it, and if it does the caller is better off with FTS-only than
- * with a search that misses its 1.2s deadline.
+ * Burst allowance, not a throughput knob: a warm MiniLM query embedding is ~2-5ms,
+ * so three repos searching at once never approach this, and a caller that does is
+ * better off FTS-only than missing its 1.2s deadline.
  */
 const EMBED_QUEUE_LIMIT = 8;
 /** Longest query text accepted for embedding (a query, not a document). */
@@ -162,25 +145,17 @@ interface ResolvedSemanticEn {
 
 /**
  * Decide the `semantic-en-v1` derived value for one Observation, at most two
- * attempts.
+ * attempts: attempt 1 rides along with the compression response, attempt 2 is a
+ * translation-only ACP call made only when the guardrails refused attempt 1.
  *
- * Attempt 1 rode along with the compression response (no extra call — that is
- * the whole point of the design). Attempt 2 is a translation-only ACP call, and
- * only happens because attempt 1 produced something the guardrails refused.
- *
- * The three outcomes are deliberately distinguishable:
  *   ready   — validated, gets an English vector.
- *   failed  — the guardrails refused it twice. A content problem: retrying the
- *             same translator with the same input will refuse it again, so it
- *             needs a protocol/prompt change, not a queue.
- *   pending — no usable attempt happened (translator unavailable, ACP error, or
- *             a fallback-quality Observation with nothing to translate). Fixable
- *             by re-running later.
+ *   failed  — refused twice; the same translator on the same input refuses
+ *             again, so this needs a protocol change, not a queue.
+ *   pending — no usable attempt happened. Retryable.
  *
- * Neither non-ready outcome writes a vector. A wrong translation is worse than a
- * missing one: at read time it is indistinguishable from a good one, and the
- * phase 1a `zh query → en record` measurement (MRR 0.437 vs 0.529 raw) is what a
- * silently mismatched pair actually costs.
+ * Neither non-ready outcome writes a vector: a wrong translation is worse than a
+ * missing one, being indistinguishable from a good one at read time — phase 1a
+ * measured `zh query → en record` at MRR 0.437 vs 0.529 raw.
  */
 async function resolveSemanticEn(
   compressor: MemoryCompressor,
@@ -228,14 +203,11 @@ async function resolveSemanticEn(
   };
 }
 
-// =============================================================
-// createApp — testable factory. Tests inject their own DB/compressor.
-// =============================================================
+// --- createApp — testable factory. Tests inject their own DB/compressor. ---
 export interface AppDeps {
   db: MemoryDB;
   compressor: MemoryCompressor;
   config: Config;
-  /** Set false to skip embedding generation (tests). */
   enableEmbeddings?: boolean;
   /** Override local embedding generation for deterministic failure tests. */
   embeddingGenerator?: (text: string) => Promise<Float32Array>;
@@ -243,26 +215,20 @@ export interface AppDeps {
   jobPollMs?: number;
   /** Explicit token for tests; undefined reads <dataDir>/.token. Empty disables auth. */
   authToken?: string;
-  /** Set false to disable token auth (legacy tests). */
   enableAuth?: boolean;
   /** Viewer bundle search path. Tests point this at a fixture directory. */
   viewerUiDirs?: string[];
-  /** Viewer log-drawer source directory. Tests point this at a fixture. */
   viewerLogsDir?: string;
 }
 
 /**
- * The gray-release switch as it is ON DISK right now.
- *
- * `/health` needs the live value, not the one this Worker booted with: the switch
- * is read per MCP server process, so an operator who edits `config.json` has new
- * sessions on the new profile immediately while this long-lived process still
- * holds its startup copy. Falls back to the injected config when the file is
- * missing or unreadable (fresh install, tests), and treats only an explicit
- * `false` as a rollback — same rule as `loadConfig()`.
- *
- * One small JSON read per health check. `/health` is polled by `diagnose` and by
- * hand, not per request, so this is not on any hot path.
+ * The gray-release switch as it is on disk right now. `/health` needs the live
+ * value, not the one this Worker booted with: the switch is read per MCP server
+ * process, so an operator's edit puts new sessions on the new profile while this
+ * long-lived process still holds its startup copy, and a cached answer to "did my
+ * rollback take effect?" would be last week's. Falls back to the injected config
+ * when the file is missing or unreadable, and treats only an explicit `false` as
+ * a rollback — same rule as `loadConfig()`.
  */
 function readSemanticDiscoverySwitch(fallback: Config): boolean {
   try {
@@ -284,28 +250,19 @@ export function createApp(deps: AppDeps) {
   const enableAuth = deps.enableAuth ?? true;
   const skipTools = config.filter.skipTools;
 
-  // =============================================================
-  // Runtime observability state (in-memory, since worker start)
-  // =============================================================
+  // --- Runtime observability state (in-memory, since worker start) ---
   //
-  // None of this is persisted. It answers "what is this machine doing right
-  // now", which a restart legitimately resets — and keeping it out of SQLite
-  // means a polled `/health` adds no writes.
+  // Not persisted: a restart legitimately resets "what is this machine doing
+  // now", and keeping it out of SQLite means a polled `/health` adds no writes.
 
   /**
-   * MCP processes seen recently, `pid -> last seen epoch ms`.
-   *
-   * The Worker has no other way to know they exist: MCP servers are spawned by
-   * kiro-cli, not by us, and they never registered before. Without this, the one
-   * question the internal test most needs answered — "is the per-session memory
-   * duplication actually gone now that the model is a Worker singleton?" — can
-   * only be answered by asking each tester to run `ps` and correlate by hand.
-   *
-   * Best-effort by construction: a PID lands here when it calls `/embed/query`,
-   * and there is no exit notification, so entries are pruned by age.
+   * MCP processes seen recently, `pid -> last seen epoch ms`. kiro-cli spawns them
+   * and they never register, so the Worker has no other way to know they exist —
+   * and without it "is the per-session model duplication gone?" can only be
+   * answered by running `ps` by hand. Best-effort: a PID lands here when it calls
+   * `/embed/query`, there is no exit notification, so entries are pruned by age.
    */
   const mcpClientsSeen = new Map<number, number>();
-  /** Beyond this the caller is no longer considered recently observed. */
   const MCP_CLIENT_TTL_MS = 10 * 60 * 1000;
   /** Hard cap so a PID-churning caller cannot grow this map without bound. */
   const MCP_CLIENT_MAX = 64;
@@ -328,14 +285,11 @@ export function createApp(deps: AppDeps) {
   };
 
   /**
-   * Rolling latency of the raw-event ingest route, in ms.
-   *
-   * Hooks give the Worker 700ms and never block the user's turn, so a Worker that
-   * got slow shows up as permanently missing memory rather than as a slow turn.
-   * `capture_misses_24h` already counts the misses; this says whether the Worker
-   * is the reason.
-   *
-   * Bounded ring buffer — this is a health endpoint, not a metrics backend.
+   * Rolling latency of the raw-event ingest route, in ms. Hooks give the Worker
+   * 700ms and never block the user's turn, so a slow Worker shows up as
+   * permanently missing memory rather than a slow turn — `capture_misses_24h`
+   * counts the misses, this says whether the Worker is the reason. Bounded ring
+   * buffer: a health endpoint, not a metrics backend.
    */
   const INGEST_SAMPLE_MAX = 512;
   const ingestLatencies: number[] = [];
@@ -381,7 +335,6 @@ export function createApp(deps: AppDeps) {
     });
   };
 
-  // --- Job Runner ---
   const jobRunner = new JobRunner(db, {
     concurrency: config.compression.concurrency,
     pollMs: deps.jobPollMs ?? 2000,
@@ -389,10 +342,8 @@ export function createApp(deps: AppDeps) {
 
   // --- Viewer SSE hub (plan §8) ---
   //
-  // Created here rather than beside the routes because the synthesis jobs below
-  // publish into it: an Observation appearing in the Feed the moment its
-  // transaction commits is the whole point of the stream. Broadcasts are no-ops
-  // while nobody is connected, so an idle Worker pays nothing for it.
+  // Here rather than beside the routes because the synthesis jobs below publish
+  // into it. Broadcasts are no-ops while nobody is connected.
   const viewerHub = new ViewerStreamHub({
     queueStatus: () => viewerQueueStatus(),
   });
@@ -406,18 +357,15 @@ export function createApp(deps: AppDeps) {
     };
   };
 
-  // =============================================================
-  // Synthesis jobs — project closed turns into atomic Observations.
-  // =============================================================
+  // --- Synthesis jobs — project closed turns into atomic Observations. ---
 
   // --- summarize_turn job ---
   //
-  // Projects exactly one closed turn into at most one immutable Observation.
-  // Input = user prompt + assistant final response + deterministic artifacts.
-  // Idempotent on observations.turn_id (UNIQUE). Compression failure never
-  // touches the Truth Layer; on retry exhaustion it degrades to a
-  // quality='fallback' Observation carrying only deterministic evidence.
-  // It never schedules any cross-observation organization job.
+  // Exactly one closed turn → at most one immutable Observation, idempotent on
+  // observations.turn_id (UNIQUE). Compression failure never touches the Truth
+  // Layer; on retry exhaustion it degrades to a quality='fallback' Observation
+  // carrying only deterministic evidence, and it never schedules any
+  // cross-observation organization job.
   jobRunner.register('summarize_turn', async (job) => {
     const { turn_id } = JSON.parse(job.payload_json) as { turn_id: number };
     const turn = db.getTurn(turn_id);
@@ -444,10 +392,9 @@ export function createApp(deps: AppDeps) {
         },
       });
     } catch (err) {
-      // ACP infra failure (timeout / contamination / process death). Retry
-      // with backoff while attempts remain; on the final attempt degrade to a
-      // fallback Observation so the closed turn still yields a retrievable
-      // record. The Truth Layer is untouched either way.
+      // ACP infra failure (timeout / contamination / process death): retry with
+      // backoff while attempts remain, then degrade so the closed turn still
+      // yields a retrievable record.
       const isFinalAttempt = job.attempts + 1 >= job.max_attempts;
       if (!isFinalAttempt) throw err;
       result = {
@@ -458,8 +405,7 @@ export function createApp(deps: AppDeps) {
     }
 
     const validTypes = ['decision', 'bugfix', 'feature', 'refactor', 'discovery', 'change'];
-    // Empty title AND summary => the model produced nothing usable (parse
-    // repair exhausted, or the ACP-final-attempt degrade above).
+    // Empty title and summary => nothing usable (parse repair exhausted, or degrade).
     const isFallback = !result.title.trim() && !result.summary.trim();
 
     let fields: {
@@ -510,13 +456,9 @@ export function createApp(deps: AppDeps) {
       };
     }
 
-    // Observation + its embedding job are one unit of work: an Observation with
-    // no embed job is silently semantic-search-invisible, and only shows up as a
-    // slightly lower coverage percentage.
-    //
-    // The English derived value joins that unit for the same reason: written in
-    // the same transaction, it is either visible to the embed job or absent, but
-    // never half-applied.
+    // Observation + embedding job + English derived value are one transaction: an
+    // Observation with no embed job is silently semantic-search-invisible, showing
+    // up only as a slightly lower coverage percentage.
     const semanticSource: SemanticEnRecordSource = {
       title: fields.title,
       summary: fields.summary,
@@ -556,8 +498,7 @@ export function createApp(deps: AppDeps) {
         failure_reason: derived.reason,
       });
 
-      // Embedding runs as its own job (§5.7). Gate the enqueue on embeddings
-      // being enabled so tests don't accrue no-op jobs.
+      // Embedding is its own job (§5.7); gate the enqueue so tests accrue no no-ops.
       if (enableEmbeddings) {
         db.enqueueJob({
           job_type: 'embed_observation',
@@ -567,10 +508,8 @@ export function createApp(deps: AppDeps) {
           payload_json: JSON.stringify({ observation_id: observationId }),
         });
 
-        // `pending` means "no usable attempt happened", which is retryable — so
-        // it must not sit there waiting for someone to run `kiro-mem repair`.
-        // `failed` is deliberately NOT requeued: the guardrails refused the
-        // content twice already, and a third identical attempt is just cost.
+        // `pending` is retryable, so it must not wait for `kiro-mem repair`.
+        // `failed` is not requeued: a third identical attempt is just cost.
         if (derived.status === 'pending' && compressor.normalizeSemanticEn) {
           db.enqueueJob({
             job_type: 'renormalize_observation',
@@ -583,10 +522,9 @@ export function createApp(deps: AppDeps) {
       }
     });
 
-    // After the transaction, never inside it: a Viewer told that an Observation
-    // exists must be able to fetch it, and a rolled-back transaction must not
-    // have announced anything. The annotation keeps the declared union — the id
-    // is assigned inside a callback, which control-flow analysis cannot see.
+    // After the transaction, never inside it: a rolled-back transaction must not
+    // have announced anything. The annotation stays because the id is assigned
+    // inside a callback, which control-flow analysis cannot see.
     const createdId: number | null = observationId;
     if (createdId != null) {
       const created = db.getObservation(createdId);
@@ -602,13 +540,10 @@ export function createApp(deps: AppDeps) {
 
   // --- embed_observation job ---
   //
-  // Generates the local semantic vectors for an Observation. Embedding input is
-  // the structured search text (§5.5) — never the full assistant_response or
-  // raw tool output, to keep the vector space clean and free of noise/PII.
-  //
-  // Keep the locally rebuildable raw projection for compatibility, although
-  // current search never scores it. The semantic-en vector is written only after
-  // the derived value passes the current guardrails again.
+  // Input is the structured search text (§5.5) — never the full assistant_response
+  // or raw tool output, to keep the vector space free of noise/PII. The raw
+  // projection stays for compatibility though search never scores it; the
+  // semantic-en vector is written only after the guardrails re-pass.
   jobRunner.register('embed_observation', async (job) => {
     if (!enableEmbeddings) return;
     const { observation_id } = JSON.parse(job.payload_json) as { observation_id: number };
@@ -624,9 +559,8 @@ export function createApp(deps: AppDeps) {
     const concepts = parseArr(obs.concepts_json);
     const files = parseArr(obs.files_touched_json);
 
-    // Idempotent, but only against a vector in the CURRENT space: a row written
-    // by an older model (or an older protocol) must be REPLACED, not treated as
-    // "already done", or `kiro-mem repair` would requeue jobs that no-op forever.
+    // Idempotent only against a vector in the CURRENT space: a row from an older
+    // model or protocol must be replaced, or `repair` requeues no-op jobs forever.
     const has = (spaceKey: string): boolean =>
       db.getObservationEmbeddingsByIds([observation_id], {
         model: spaceKey,
@@ -670,9 +604,8 @@ export function createApp(deps: AppDeps) {
       concepts,
     });
     if (!check.ok || !payload) {
-      // Demote the row instead of embedding it: the protocol table must not
-      // claim `ready` for a value the current guardrails reject. This is the one
-      // permitted downgrade — it carries proof, having just re-run the check.
+      // Demote rather than embed: the table must not claim `ready` for a value the
+      // guardrails now reject. The one permitted downgrade, and it carries proof.
       db.upsertObservationSemanticText({
         observation_id,
         protocol: SEMANTIC_EN_PROTOCOL,
@@ -692,8 +625,7 @@ export function createApp(deps: AppDeps) {
       buildObservationSearchText(semanticEnSearchTextFields(payload, files)),
     );
 
-    // The Viewer shows whether an Observation is semantically reachable yet, so
-    // the state change has to reach an open page without a manual refresh.
+    // Semantic reachability must reach an open Viewer page without a refresh.
     viewerHub.broadcast({
       type: 'observation_updated',
       scopeKey: obs.scope_key,
@@ -704,24 +636,15 @@ export function createApp(deps: AppDeps) {
 
   // --- renormalize_observation job ---
   //
-  // Second chance for an English derived value that is not `ready`: the one that
-  // came with the compression response failed the guardrails, or no attempt
-  // happened at all (translator unavailable, ACP error, an older build).
+  // Second chance for an English derived value that is not `ready`. Its own job
+  // rather than more retries inside `summarize_turn`, because the Observation is
+  // already written and immutable by then, and because a protocol or translator
+  // upgrade invalidates derived values written months ago — without a job there is
+  // no path from "we changed the protocol" to "the corpus is rebuilt".
   //
-  // Two reasons this exists as its own job rather than more retries inside
-  // `summarize_turn`:
-  //   1. By then the Observation is already written and immutable, so re-running
-  //      the whole compression would produce text that disagrees with it.
-  //   2. A protocol or translator upgrade invalidates derived values for
-  //      Observations that were compressed months ago. Without a job there is no
-  //      path from "we changed the protocol" to "the corpus is rebuilt".
-  //
-  // Retryable vs not is the whole design here. Measured (phase 1b verification):
-  // a standalone translation call succeeds 11/20 on the first pass but 9/9 on a
-  // targeted retry — so an unparsable/absent answer must go back on the queue
-  // with backoff. A value the guardrails REFUSED is different: the same input
-  // through the same translator will be refused again, so it is recorded as
-  // `failed` and left alone rather than burning five attempts.
+  // Measured (phase 1b): a standalone translation call succeeds 11/20 on the first
+  // pass but 9/9 on a targeted retry, so an unparsable/absent answer goes back on
+  // the queue with backoff. Refused content does not.
   jobRunner.register('renormalize_observation', async (job) => {
     if (!enableEmbeddings) return;
     const { observation_id } = JSON.parse(job.payload_json) as { observation_id: number };
@@ -731,8 +654,7 @@ export function createApp(deps: AppDeps) {
     const existing = db.getObservationSemanticText(observation_id, SEMANTIC_EN_PROTOCOL);
     // Idempotent: a concurrent run (or the original summarize) already got one.
     if (existing?.status === 'ready') return;
-    // A fallback Observation has no compressed prose to mirror — translating
-    // "Compression unavailable; deterministic evidence only." buys nothing.
+    // A fallback Observation has no compressed prose worth translating.
     if (obs.quality === 'fallback') return;
     if (!compressor.normalizeSemanticEn) return;
 
@@ -780,8 +702,7 @@ export function createApp(deps: AppDeps) {
     const check = checkSemanticEnRecord(candidate, source);
     if (check.ok && candidate) {
       record('ready', candidate, null);
-      // The vector is a separate job on purpose: this one owns the translation,
-      // that one owns the embedding, and either can fail without the other.
+      // Separate job: this one owns the translation, that one the embedding.
       db.enqueueJob({
         job_type: 'embed_observation',
         dedupe_key: `embed:obs:${observation_id}:renorm`,
@@ -794,30 +715,23 @@ export function createApp(deps: AppDeps) {
 
     if (!candidate) {
       record('pending', null, `retry_empty:${check.ok ? 'null' : check.reason}`);
-      // Retryable: the measured failure mode here is a non-JSON answer, and a
-      // targeted retry recovered 9/9 of those.
+      // Retryable: the measured failure mode here is a non-JSON answer.
       throw new Error(`semantic-en renormalize produced nothing for #${observation_id}`);
     }
-    // Refused content. Retrying the same input through the same translator will
-    // be refused again, so stop here instead of consuming the retry budget.
+    // Refused content: the same input through the same translator is refused again.
     record('failed', null, `renorm:${check.ok ? 'unknown' : `${check.reason}:${check.detail}`}`);
   });
 
-  // --- Hono app ---
   const app = new Hono();
 
   // --- Local token auth middleware ---
   //
-  // The expected token is resolved PER REQUEST, not captured at startup: a
-  // repair install regenerates `<dataDir>/.token` while the Worker keeps
-  // running, and a startup-only snapshot would then reject every Hook forever.
-  //
-  // A missing or blank token file is regenerated instead of disabling auth.
-  // Silently running unauthenticated would mean anyone able to delete one file
-  // can bypass the credential; regenerating keeps auth always-on and lets the
-  // Hooks pick the new value up on their next event, so the user sees nothing.
-  //
-  // `authToken: ''` still disables auth explicitly for legacy tests.
+  // The expected token is resolved per request, not captured at startup: a repair
+  // install regenerates `<dataDir>/.token` under a running Worker, and a startup
+  // snapshot would then reject every Hook forever. A missing or blank file is
+  // regenerated rather than disabling auth — otherwise anyone able to delete one
+  // file bypasses the credential. `authToken: ''` still disables auth explicitly
+  // for legacy tests.
   if (enableAuth && deps.authToken !== '') {
     const dataDir = getDataDir();
     const fixedToken = deps.authToken;
@@ -844,10 +758,9 @@ export function createApp(deps: AppDeps) {
       return lastKnownToken;
     };
 
-    // Hooks are fire-and-forget, so a rejected event is invisible to the user
-    // and to `app.onError`. Count every rejection for /health and log the
-    // reason, throttled per reason so a persistent mismatch (one 401 per tool
-    // event) cannot grow the log without bound. Never log token values.
+    // A rejected hook event is invisible to the user and to `app.onError`, so
+    // count it for /health and log the reason, throttled per reason so a
+    // persistent mismatch cannot grow the log without bound. Never log token values.
     const reject = (path: string, reason: string) => {
       db.recordAuthEvent('unauthorized');
       const now = Date.now();
@@ -858,10 +771,9 @@ export function createApp(deps: AppDeps) {
     };
 
     app.use('*', async (c, next) => {
-      // /health is public. So is the Viewer's static shell: a browser cannot set
-      // an Authorization header on a top-level navigation, and the shell carries
-      // no memory content — it fetches everything under /api/viewer/*, which is
-      // deliberately NOT exempt here and therefore fails closed.
+      // /health is public, and so is the Viewer's static shell: a browser cannot
+      // set an Authorization header on a top-level navigation, and the shell
+      // carries no memory content. /api/viewer/* is not exempt and fails closed.
       if (c.req.path === '/health') return next();
       if (c.req.path === '/ui' || c.req.path.startsWith('/ui/')) return next();
 
@@ -895,8 +807,7 @@ export function createApp(deps: AppDeps) {
   // --- Ingest latency instrumentation ---
   //
   // Wraps the whole handler, body parse included, because that is what the hook's
-  // 700ms deadline actually covers. Registered before the routes so it applies to
-  // every `/events/*` path, current and future.
+  // 700ms deadline covers. Before the routes, so it covers every `/events/*` path.
   app.use('/events/*', async (c, next) => {
     const started = performance.now();
     try {
@@ -924,12 +835,8 @@ export function createApp(deps: AppDeps) {
       jobs_24h: stats.jobs24h,
       search_24h: stats.search24h,
       // Which retrieval profile MCP servers started from this dataDir will serve
-      // (plan §8.2). Read from DISK on every call, not from the config this
-      // Worker booted with: the switch takes effect per MCP process, so after a
-      // rollback edit new sessions are already on the old profile while the
-      // long-lived Worker still holds the value from its own start. Reporting the
-      // cached one would make /health answer "did my rollback take effect?" with
-      // last week's answer — the README promises the opposite.
+      // (plan §8.2). Read from DISK on every call, not from the config this Worker
+      // booted with — see `readSemanticDiscoverySwitch`.
       //
       // `semantic_only_limit` is reported as 'none' when uncapped, because JSON
       // turns Infinity into null.
@@ -943,10 +850,8 @@ export function createApp(deps: AppDeps) {
           semantic_only_limit: Number.isFinite(policy.semanticOnlyLimit)
             ? policy.semanticOnlyLimit
             : 'none',
-          // Reported for the same reason floor and cap are: `profile: 'default'`
-          // means `recency` on a pre-2D build and `semantic-rank` on this one, so
-          // without this field /health cannot answer "which fusion order am I
-          // actually serving?" without reading the binary's source.
+          // `profile: 'default'` means `recency` on a pre-2D build and
+          // `semantic-rank` on this one, so the fusion order needs its own field.
           tie_break: policy.tieBreak,
         };
       })(),
@@ -967,19 +872,14 @@ export function createApp(deps: AppDeps) {
           ? Math.round(Math.max(...embedLatencies))
           : 0,
       },
-      // Live cumulative pool/compressor state (since worker start).
       acp: acpStats,
-      // Windowed repair / contamination counts over the last 24h.
       acp_24h: stats.acp24h,
       // Rejected Hook requests over the last 24h (silent-failure detector).
       auth_24h: stats.auth24h,
-      // Capture is best-effort (P0-3): raw events the hooks could NOT deliver.
-      // Non-zero means some turns are permanently missing input, which no
-      // projection repair can undo — surfaced so the gap is never silent.
+      // Capture is best-effort (P0-3): raw events the hooks could not deliver.
+      // Non-zero means turns are permanently missing input, which no projection
+      // repair can undo.
       capture_misses_24h: readCaptureMisses(getDataDir()),
-      // How long the Worker itself took to accept raw events. Paired with
-      // capture_misses_24h: that field says events were lost, this one says
-      // whether the Worker was the bottleneck that lost them.
       ingest_runtime: (() => {
         const sorted = [...ingestLatencies].sort((a, b) => a - b);
         return {
@@ -1002,8 +902,8 @@ export function createApp(deps: AppDeps) {
         const acpPids = slots
           .map((s) => s.pid)
           .filter((p): p is number => typeof p === 'number');
-        // One asynchronous `ps` refresh for both groups. The response uses the
-        // previous completed sample so a slow process table cannot block /health.
+        // One async `ps` refresh for both groups; the response uses the previous
+        // completed sample so a slow process table cannot block /health.
         requestRssSample([...acpPids, ...mcpPids]);
         const sample = rssSample;
         const acpSlots = slots.map((s) => ({
@@ -1017,13 +917,12 @@ export function createApp(deps: AppDeps) {
         }));
         const acpTotal = acpSlots.reduce((sum, s) => sum + (s.rssBytes ?? 0), 0);
         return {
-          // The Worker's own heap. Historically small (measured 10.7MB after 18
-          // days), so its job here is to RULE OUT the Worker — a large value
-          // means the whole diagnosis has to be reconsidered.
+          // The Worker's own heap, historically small (measured 10.7MB after 18
+          // days), so its job here is to rule the Worker out.
           workerSelfRssBytes: process.memoryUsage().rss,
           acpSlots,
-          // This is attributed subtree RSS, not a machine-wide total: shared
-          // pages may be counted once per process subtree.
+          // Attributed subtree RSS, not a machine-wide total: shared pages may be
+          // counted once per process subtree.
           acpAttributedSubtreeRssBytes: acpTotal,
           mcpClientsSeen: mcpPids.map((pid) => ({
             pid,
@@ -1033,38 +932,32 @@ export function createApp(deps: AppDeps) {
           mcpClientObservationTtlMs: MCP_CLIENT_TTL_MS,
           rssSampleAt: rssSampleAt > 0 ? new Date(rssSampleAt).toISOString() : null,
           rssSampleAgeMs: rssSampleAt > 0 ? Math.max(0, now - rssSampleAt) : null,
-          // False means `ps` failed. Every rssBytes above is then unreliable and
+          // False means `ps` failed: every rssBytes above is then unreliable and
           // must not be read as a small number.
           rssMeasured: sample.measured,
         };
       })(),
-      // On-disk growth. Sampled repeatedly, this is what turns "越用越大" from a
-      // feeling into a rate.
+      // On-disk growth. Sampled repeatedly, this turns "越用越大" into a rate.
       storage: stats.storage,
     });
   });
 
   // --- Query embedding (§5.4: one model instance per dataDir) ---
   //
-  // The MCP server used to embed queries in its own process, which meant one
-  // model per kiro-cli session: three repos open => three copies of the same
-  // weights, three cold starts. Centralizing it here makes the Worker the only
-  // holder of the model, and `scope_key` keeps the repos isolated at the data
-  // layer where isolation actually belongs.
+  // Embedding in the MCP server meant one model per kiro-cli session: three repos
+  // open, three copies of the same weights, three cold starts. The Worker is the
+  // only holder of the model; `scope_key` keeps repos isolated at the data layer.
   //
-  // Bounded on purpose. Inference is CPU-bound and cannot be cancelled midway,
-  // so an unbounded queue would let one repo's burst push another repo's
-  // interactive search past its deadline. Over the limit we reject immediately
-  // (429) instead of queueing: the caller degrades to FTS-only in single-digit
-  // milliseconds, which is a better answer than a slow correct one.
+  // Bounded because inference is CPU-bound and cannot be cancelled midway: over
+  // the limit we reject with 429 rather than queueing, so the caller degrades to
+  // FTS-only in single-digit milliseconds instead of missing its deadline.
   let embedInFlight = 0;
   let embedRejected = 0;
   app.post('/embed/query', async (c) => {
     const started = performance.now();
     try {
       if (!enableEmbeddings) return c.json({ ok: false, error: 'embeddings disabled' }, 503);
-      // This is an observation point, not a liveness registry: only callers that
-      // request an embedding identify themselves, and the PID header is optional.
+      // An observation point, not a liveness registry: the PID header is optional.
       noteMcpClient(c.req.header('X-Kiro-Mem-Pid'));
       // Reserve the slot BEFORE the first await. Checking the counter and then
       // yielding on `req.json()` let an entire concurrent burst pass the check
@@ -1083,8 +976,7 @@ export function createApp(deps: AppDeps) {
           return c.json({ ok: false, error: 'invalid body' }, 400);
         }
         if (!text.trim()) return c.json({ ok: false, error: 'text required' }, 400);
-        // Bound the input the same way the embed job does implicitly: a caller must
-        // not be able to turn one search into an arbitrarily long inference.
+        // Bound the input: one search must not become an arbitrarily long inference.
         if (text.length > EMBED_TEXT_MAX_CHARS) {
           return c.json({ ok: false, error: 'text too long' }, 413);
         }
@@ -1114,8 +1006,7 @@ export function createApp(deps: AppDeps) {
   });
 
   // --- AgentSpawn bootstrap index (§7.3) ---
-  // Compact atomic-Observation menu for the current scope. Deterministic:
-  // no ACP, no embedding, no LLM synthesis. This is the sole context route.
+  // Deterministic: no ACP, no embedding, no LLM synthesis. The sole context route.
   app.get('/context/bootstrap', async (c) => {
     const cwd = c.req.query('cwd') || '';
     const text = buildBootstrapContext(db, cwd, config.context, config.language);
@@ -1141,7 +1032,6 @@ export function createApp(deps: AppDeps) {
 
     db.upsertSessionRef({ session_id: sessionId, cwd, repo, branch: null });
 
-    // Close stale open turn + enqueue its summarize job
     const staleOpen = db.getOpenTurnBySession(sessionId);
     if (staleOpen) {
       db.markTurnClosed(staleOpen.id);
@@ -1210,10 +1100,9 @@ export function createApp(deps: AppDeps) {
     const turn = db.getOpenTurnBySession(sessionId);
     if (!turn) return c.json({ ok: true, no_open_turn: true });
 
-    // Close-out is one transaction. These three writes are a single fact
-    // ("this turn ended and needs summarizing"); interleaving a crash or a
-    // SQLITE_BUSY between them leaves an orphan — a closed turn with no job, or
-    // a stop event on a still-open turn — that nothing later would notice.
+    // Close-out is one transaction: these three writes are a single fact, and a
+    // crash or SQLITE_BUSY between them leaves an orphan — a closed turn with no
+    // job, or a stop event on a still-open turn — that nothing later would notice.
     db.transaction(() => {
       db.appendTurnEvent({
         turn_id: turn.id,
@@ -1238,13 +1127,10 @@ export function createApp(deps: AppDeps) {
 
   // --- Web Viewer (plan §6, §7) ---
   //
-  // Registered last so the auth middleware above already covers every
-  // /api/viewer/* path. The static shell is exempt there by explicit path, not by
-  // ordering, so this position cannot accidentally expose memory data.
-  //
-  // `listeningPort` starts at the configured value and is corrected by
-  // `startWorker` once the socket is bound, so the Host check is anchored to the
-  // port that is really serving rather than to the one config hoped for.
+  // Registered last so the auth middleware already covers every /api/viewer/*
+  // path. The static shell is exempt there by explicit path, not by ordering, so
+  // this position cannot accidentally expose memory data. `listeningPort` is
+  // corrected by `startWorker` once bound, anchoring the Host check to the real port.
   let listeningPort = config.worker.port;
   registerViewerRoutes(app, {
     db,
@@ -1281,16 +1167,13 @@ export function createApp(deps: AppDeps) {
   };
 }
 
-// =============================================================
-// Production singleton (used when running as main or via startWorker)
-// =============================================================
+// --- Production singleton (used when running as main or via startWorker) ---
 
 const config = loadConfig();
 const db = new MemoryDB();
 
-// kiroHome holds the isolated KIRO_HOME for the ACP compressor sub-agent.
-// Empty config falls back to the layout `kiro-mem install` lays down at
-// <dataDir>/kiro-runtime.
+// Isolated KIRO_HOME for the ACP compressor sub-agent. Empty config falls back to
+// the layout `kiro-mem install` lays down at <dataDir>/kiro-runtime.
 const KIRO_RUNTIME_HOME = resolveRuntimeHome(config.runtime.kiroHome);
 const COMPRESSOR_AGENT_NAME = 'kiro-mem-compressor';
 
@@ -1298,9 +1181,12 @@ const compressor: MemoryCompressor = new ACPCompressor({
   agentName: COMPRESSOR_AGENT_NAME,
   kiroHome: KIRO_RUNTIME_HOME,
   concurrency: config.compression.concurrency,
+  // Idle governance, read at Worker start: a config edit takes effect on the next
+  // start, and `/health.acp.config` reports what this process actually holds.
+  minWarmRuntimes: config.compression.minWarmRuntimes,
+  idleTtlMs: config.compression.idleTtlMs,
   timeoutMs: config.compression.timeoutMs,
   maxRetries: config.compression.maxRetries,
-  // Persist ACP repair / contamination events for the 24h observability window.
   onMetric: (kind) => db.recordAcpEvent(kind),
 });
 const { app, jobRunner, viewerHub, setListeningPort } = createApp({ db, compressor, config });
@@ -1327,9 +1213,8 @@ export function startWorker() {
   writeFileSync(join(dataDir, '.worker.port'), String(port));
 
   console.log(`[kiro-mem] Worker starting on ${host}:${port}`);
-  // The Worker is now the only process that holds the model (§5.4), so the cold
-  // start belongs here rather than in each MCP session. Best-effort: a failed
-  // prewarm must not stop the ingest path, and the first real embed retries it.
+  // Best-effort: a failed prewarm must not stop the ingest path, and the first
+  // real embed retries it.
   void prewarmEmbeddingModel().catch((error) => {
     logError('embedding/prewarm', {
       error_type: error instanceof Error ? error.name : 'UnknownError',
@@ -1337,7 +1222,6 @@ export function startWorker() {
   });
   jobRunner.start();
   const server = Bun.serve({ fetch: app.fetch, port, hostname: host });
-  // Anchor the Viewer's Host check to the socket that is actually bound.
   setListeningPort(server.port ?? port);
 
   let shuttingDown = false;

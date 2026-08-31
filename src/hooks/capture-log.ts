@@ -1,38 +1,28 @@
 /**
  * Capture observability for the best-effort ingest hooks (P0-3).
  *
- * Product semantics, stated explicitly: capture is BEST-EFFORT. Every write
- * hook gives the Worker at most ~700ms and then gives up, because a Kiro turn
- * must never be blocked by the memory system. That means a Worker restart, a
- * transient SQLITE_BUSY or a port change can drop a raw event — and unlike a
- * failed projection, a dropped input cannot be reconstructed later.
- *
- * We are not turning this into a guaranteed-delivery queue (a local spool would
- * bring its own privacy and capacity surface, which contradicts the "local and
- * light" positioning). What we DO owe the user is visibility: a silent gap is
- * indistinguishable from "nothing happened that turn".
- *
- * So each hook appends one metadata-only line here when a POST does not land.
- * No prompt text, no tool payload, no assistant response — only which hook, why
- * it failed, and when. The Worker's /health and `kiro-mem diagnose` surface a
- * 24h summary from this file.
+ * Capture is best-effort: each write hook gives the Worker at most ~700ms, because
+ * a Kiro turn must never be blocked by the memory system. A Worker restart, a
+ * transient SQLITE_BUSY or a port change can drop a raw event, and unlike a failed
+ * projection a dropped input cannot be reconstructed later. This is not becoming a
+ * guaranteed-delivery queue — a local spool brings its own privacy and capacity
+ * surface — but a silent gap is indistinguishable from "nothing happened that
+ * turn", so each hook appends one metadata-only line when a POST does not land:
+ * which hook, why, and when. No prompt text, no tool payload, no assistant
+ * response. /health and `kiro-mem diagnose` surface a 24h summary from this file.
  */
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 
 /**
- * Only the three WRITE hooks are tracked. A failed `agentSpawn` bootstrap is a
- * missed injection, not lost data — nothing becomes unrecoverable — so counting
- * it here would blur what this metric means: raw facts that never made it into
- * the Truth Layer.
+ * Only the three write hooks are tracked. A failed `agentSpawn` bootstrap is a
+ * missed injection, not lost data, so counting it would blur what this metric
+ * means: raw facts that never reached the Truth Layer.
  */
 export type CaptureHook = 'userPromptSubmit' | 'postToolUse' | 'stop';
 
-/**
- * Why a capture attempt did not land. Deliberately coarse — enough to tell a
- * dead Worker apart from a rejecting Worker, without recording request content.
- */
+/** Coarse by design: enough to tell a dead Worker from a rejecting one, without recording request content. */
 export type CaptureMissReason =
   | 'unreachable' // connection refused / DNS / socket error — Worker not running
   | 'timeout' // hook budget elapsed before the Worker answered
@@ -62,10 +52,7 @@ export function captureLogPath(dataDir: string): string {
   return join(dataDir, 'capture-misses.jsonl');
 }
 
-/**
- * Append one miss. Never throws: an observability write must not be the reason a
- * hook fails, and hooks run inside the user's turn.
- */
+/** Append one miss. Never throws: an observability write must not be the reason a hook fails. */
 export function recordCaptureMiss(
   dataDir: string,
   hook: CaptureHook,
@@ -125,10 +112,7 @@ export function readCaptureMisses(dataDir: string, withinHours = 24): CaptureMis
   return summary;
 }
 
-/**
- * Classify a thrown fetch error into a coarse reason. Timeouts come through as
- * an AbortError from `AbortSignal.timeout`.
- */
+/** Coarse reason from a thrown fetch error; timeouts arrive as an AbortError from `AbortSignal.timeout`. */
 export function classifyCaptureError(error: unknown): CaptureMissReason {
   const name = error instanceof Error ? error.name : '';
   if (name === 'TimeoutError' || name === 'AbortError') return 'timeout';

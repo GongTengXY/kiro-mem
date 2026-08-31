@@ -1,5 +1,4 @@
 /** @jsxImportSource preact */
-/** Viewer bundle entry point. */
 
 import { render } from 'preact';
 import { App } from './app';

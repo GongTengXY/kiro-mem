@@ -1,13 +1,9 @@
 /** @jsxImportSource preact */
 /**
- * Transient confirmations for reversible actions.
- *
- * Pin is the one action whose effect is invisible here: the icon flips, but "the
- * next session sees this first" happens elsewhere. Deliberately NOT used for
- * delete — that has no undo, so it gets a modal stating what will be destroyed.
- *
- * The container is always mounted and is an `aria-live` region, so announcements
- * reach assistive tech without the region itself appearing and disappearing.
+ * Transient confirmations for reversible actions — pin, whose effect is otherwise
+ * invisible here. Not used for delete: that has no undo, so it gets a modal stating
+ * what will be destroyed. The container is always mounted as an `aria-live` region,
+ * so announcements reach assistive tech.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
@@ -30,8 +26,7 @@ export function useToasts(ttlMs = TTL_MS) {
   const seq = useRef(0);
   const timers = useRef<number[]>([]);
 
-  // A pending timer must not outlive the component: it would call setState on an
-  // unmounted tree after a scope switch or a 401.
+  // A pending timer must not outlive the component: it would setState on an unmounted tree.
   useEffect(
     () => () => {
       for (const handle of timers.current) clearTimeout(handle);

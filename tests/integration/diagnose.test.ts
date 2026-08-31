@@ -14,12 +14,14 @@ afterEach(() => { for (const cleanup of cleanups.splice(0)) cleanup(); });
  * Stands in for a running Worker: only `/context/bootstrap` is authenticated,
  * exactly like the real one, so diagnose's probe exercises the real contract.
  */
-function fakeWorker(expectedToken: string, version = '3.0.0') {
+function fakeWorker(expectedToken: string, version = '3.0.0', healthExtra: Record<string, unknown> = {}) {
   const server = Bun.serve({
     port: 0,
     fetch(req) {
       const url = new URL(req.url);
-      if (url.pathname === '/health') return Response.json({ status: 'ok', version, jobs: {} });
+      if (url.pathname === '/health') {
+        return Response.json({ status: 'ok', version, jobs: {}, ...healthExtra });
+      }
       if (req.headers.get('Authorization') !== `Bearer ${expectedToken}`) {
         return Response.json({ ok: false, error: 'unauthorized' }, { status: 401 });
       }
@@ -51,7 +53,7 @@ async function runDiagnose(home: string) {
   return { stdout: stdout.replace(/\x1b\[[0-9;]*m/g, ''), exitCode };
 }
 
-function isolatedHome(): { home: string; dataDir: string } {
+function isolatedHome(language: 'zh' | 'en' = 'en'): { home: string; dataDir: string } {
   const home = mkdtempSync(join(tmpdir(), 'kiro-mem-diag-'));
   cleanups.push(() => rmSync(home, { recursive: true, force: true }));
   const dataDir = join(home, '.kiro-mem');
@@ -59,7 +61,7 @@ function isolatedHome(): { home: string; dataDir: string } {
   mkdirSync(dataDir, { recursive: true });
   mkdirSync(binDir);
   // diagnose picks its language from config.json, not from the environment.
-  writeFileSync(join(dataDir, 'config.json'), JSON.stringify({ language: 'en' }));
+  writeFileSync(join(dataDir, 'config.json'), JSON.stringify({ language }));
   for (const name of ['kiro-cli', 'bun', 'launchctl', 'systemctl']) {
     const path = join(binDir, name);
     writeFileSync(path, '#!/bin/sh\nexit 0\n', { mode: 0o755 });
@@ -126,5 +128,101 @@ describe('diagnose / version drift', () => {
     expect(drifted.stdout).toContain('not the installed build');
     expect(drifted.stdout).toContain('kiro-mem stop && kiro-mem start');
     expect(drifted.stdout).toContain('worker v3.0.0 / installed v3.1.0');
+  }, 20_000);
+});
+
+/**
+ * ACP idle governance in `kiro-mem diagnose`.
+ *
+ * `diagnose` is the command the runtime data-collection guide asks users to run,
+ * so it is the only place most people will ever see whether idle ACP processes
+ * are actually being released. A counter that exists solely in `/health` would be
+ * shipped but unreachable.
+ */
+describe('diagnose / ACP idle governance', () => {
+  const liveHealth = (acpConfig: Record<string, unknown>, idleRecycles: number) => ({
+    memory: {
+      workerSelfRssBytes: 120 * 1048576,
+      acpSlots: [
+        { pid: 4242, rssBytes: 38 * 1048576, jobCount: 3, idleMs: 12_000, busy: false },
+      ],
+      acpAttributedSubtreeRssBytes: 38 * 1048576,
+      mcpClientsSeen: [],
+      rssMeasured: true,
+    },
+    acp: { idleRecycles, config: acpConfig },
+  });
+
+  function liveWorker(home: string, dataDir: string, health: Record<string, unknown>) {
+    const token = 'a'.repeat(64);
+    const port = fakeWorker(token, '3.0.0', health);
+    writeFileSync(join(dataDir, '.token'), token, { mode: 0o600 });
+    writeFileSync(join(dataDir, '.worker.pid'), String(process.pid));
+    writeFileSync(join(dataDir, '.worker.port'), String(port));
+    return home;
+  }
+
+  test('reports the idle retire count alongside the settings in effect', async () => {
+    const { home, dataDir } = isolatedHome('en');
+    liveWorker(home, dataDir, liveHealth(
+      { concurrency: 3, minWarmRuntimes: 1, idleTtlMs: 600000, maxJobsPerProcess: 50 },
+      2,
+    ));
+
+    const out = await runDiagnose(home);
+    expect(out.exitCode).toBe(0);
+    // The count answers "is reclaim happening?"; the two settings answer "under
+    // what policy?". Neither is useful without the other.
+    expect(out.stdout).toContain('Idle retired');
+    expect(out.stdout).toContain('after 600s');
+    expect(out.stdout).toContain('keep warm 1');
+  }, 20_000);
+
+  test('says the reclaim is off instead of printing a 0ms threshold', async () => {
+    const { home, dataDir } = isolatedHome('en');
+    liveWorker(home, dataDir, liveHealth(
+      { concurrency: 3, minWarmRuntimes: 1, idleTtlMs: 0, maxJobsPerProcess: 50 },
+      0,
+    ));
+
+    const out = await runDiagnose(home);
+    // "after 0s" would read as "retire immediately", the opposite of what 0 means.
+    expect(out.stdout).toContain('Idle retired');
+    expect(out.stdout).toContain('after off');
+    expect(out.stdout).not.toContain('after 0s');
+  }, 20_000);
+
+  test('renders the same signals in Chinese', async () => {
+    const { home, dataDir } = isolatedHome('zh');
+    liveWorker(home, dataDir, liveHealth(
+      { concurrency: 3, minWarmRuntimes: 2, idleTtlMs: 120000, maxJobsPerProcess: 50 },
+      5,
+    ));
+
+    const out = await runDiagnose(home);
+    // Missing zh keys would surface as `undefined` in the output.
+    expect(out.stdout).toContain('空闲回收');
+    expect(out.stdout).toContain('阈值 120s');
+    expect(out.stdout).toContain('保留 2');
+    expect(out.stdout).not.toContain('undefined');
+  }, 20_000);
+
+  test('stays silent when the Worker predates these fields', async () => {
+    const { home, dataDir } = isolatedHome('en');
+    // An older Worker reports no `acp` group at all. diagnose must not invent a
+    // reading, and must not crash.
+    liveWorker(home, dataDir, {
+      memory: {
+        workerSelfRssBytes: 120 * 1048576,
+        acpSlots: [],
+        acpAttributedSubtreeRssBytes: 0,
+        mcpClientsSeen: [],
+        rssMeasured: true,
+      },
+    });
+
+    const out = await runDiagnose(home);
+    expect(out.exitCode).toBe(0);
+    expect(out.stdout).not.toContain('Idle retired');
   }, 20_000);
 });

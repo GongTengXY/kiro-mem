@@ -32,7 +32,6 @@ import type {
   ObservabilityStats,
 } from './types';
 
-// Re-export types
 export * from './types';
 export { computeScopeKey, detectRepo } from './scope';
 
@@ -43,13 +42,9 @@ function nowISO(): string {
   return new Date().toISOString();
 }
 
-/**
- * Size of a file in bytes, or -1 when it cannot be stat'ed.
- *
- * -1 rather than 0: "the WAL does not exist" and "the WAL is empty" lead to
- * opposite conclusions about checkpoint health, and a collected reading that
- * conflates them is worse than a missing one.
- */
+/** Size of a file in bytes, or -1 when it cannot be stat'ed. -1 rather than 0:
+ * "the WAL does not exist" and "the WAL is empty" lead to opposite conclusions
+ * about checkpoint health. */
 function fileBytes(path: string): number {
   try {
     return statSync(path).size;
@@ -59,42 +54,21 @@ function fileBytes(path: string): number {
 }
 
 /**
- * The default time window for `search`: **unbounded** (phase 3C).
+ * Default time window for `search`: **unbounded** (phase 3C).
  *
- * Why unbounded, and why it is a named constant rather than four `?? 90`s:
- *
- * bootstrap injects the Observation index with NO time filter at all — see
- * `getRecentObservations` / `getPinnedObservations` below, whose SQL has no
- * `turn_stopped_at` predicate, only a row-count limit. Search used to default to
- * 90 days, so a workspace idle for four months would list `#O42` in the session's
- * opening index and then fail to find it. Two visible ranges in one product is
- * not a relevance problem; it is a contradiction, and the wider side is the one
- * with evidence behind it (narrowing bootstrap would REMOVE history the user can
- * see today).
- *
- * `Infinity` rather than a large number such as 3650: a large number is a hidden
- * cliff — records ten years and one day old would vanish silently with no line of
- * code saying that was intended. It also matches the idiom this codebase already
- * uses for "no bound" (`semanticCandidatePool`, `semanticTopK`, and the
- * `Number.isFinite(limit)` guard in `getRecentObservationIds`).
- *
- * Explicit `days=N` still narrows, and that capability is what makes the default
- * safe to widen. The cost bound is measured, not assumed: the window only ever
- * REDUCED the working set, so the cost of an unbounded default at N records is
- * bounded by the already-measured cost of N records all inside the window
- * (`benchmark/reports/phase3c-submission.md`).
+ * bootstrap injects the Observation index with no time filter at all, so a 90-day
+ * search default made a workspace idle for four months list `#O42` in the opening
+ * index and then fail to find it — a contradiction, and narrowing bootstrap would
+ * remove history the user can see today. `Infinity` rather than 3650 because a
+ * large number is a hidden cliff no line of code declares; explicit `days=N` still
+ * narrows. The cost bound is measured, not assumed: the window only ever REDUCED
+ * the working set (`benchmark/reports/phase3c-submission.md`).
  */
 export const DEFAULT_SEARCH_DAYS = Number.POSITIVE_INFINITY;
 
-/**
- * ISO threshold for a `days` window, or `null` when the window is unbounded.
- *
- * `null` means the CALLER MUST OMIT the `turn_stopped_at > ?` clause entirely
- * rather than bind some sentinel value. Returning a very old date instead would
- * still emit the predicate, which keeps a filter in the query plan that the
- * product no longer has — and would silently reintroduce a cliff at whatever
- * date the sentinel happened to be.
- */
+/** ISO threshold for a `days` window, or `null` when unbounded — the caller must
+ * then OMIT the `turn_stopped_at > ?` clause entirely. A sentinel old date would
+ * still emit the predicate and reintroduce a cliff at the sentinel's own date. */
 function searchDateThreshold(days: number): string | null {
   if (!Number.isFinite(days)) return null;
   return new Date(Date.now() - days * 86400000).toISOString();
@@ -105,34 +79,21 @@ const FTS_MIN_UNIT_LEN = 3;/** Sliding window over an unsegmented CJK run, match
 const FTS_CJK_WINDOW = 3;
 /** Bounds the OR expression so a pathological query can't explode the scan. */
 const FTS_MAX_UNITS = 32;
-/**
- * Bounds how many CJK bigrams one search may turn into auxiliary LIKE probes
- * (phase 3A). Same role as `FTS_MAX_UNITS`, different mechanism: each surviving
- * bigram becomes one `CASE WHEN ... LIKE` term in a SINGLE scan, so this caps
- * per-row work rather than the number of scans.
- *
- * 16 covers a 17-character unsegmented Chinese question in full. Past that the
- * budget is sampled ACROSS the run, not consumed from its head — see
- * `extractCjkBigrams`.
- */
+/** Bounds how many CJK bigrams one search may turn into auxiliary LIKE probes
+ * (phase 3A). Each surviving bigram becomes one `CASE WHEN ... LIKE` term in a
+ * SINGLE scan, so this caps per-row work, not the number of scans. 16 covers a
+ * 17-character unsegmented Chinese question in full; past that the budget is
+ * sampled ACROSS the run — see `extractCjkBigrams`. */
 const BIGRAM_MAX_UNITS = 16;
 /** CJK / Japanese / Korean runs, which carry no whitespace word boundaries. */
 const CJK_RUN_RE = /[\u3400-\u4dbf\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]{3,}/g;
-/**
- * Same alphabet as `CJK_RUN_RE` but from length 2, because the whole point of
- * phase 3A is the two-character word a 3-character window cannot reach.
- */
+/** Same alphabet as `CJK_RUN_RE` but from length 2 — the phase 3A two-char word. */
 const CJK_RUN_BIGRAM_RE = /[\u3400-\u4dbf\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]{2,}/g;
-/**
- * The columns `observations_fts` indexes, in its own order.
- *
- * Single source of truth for both LIKE paths — the sub-trigram fallback in
- * `searchObservationsFts` and the phase 3A bigram leg. When this list covered
- * only 5 of the 9 indexed columns, a 2-character query could not reach a term
- * that appears solely in `request` or `evidence_json`, so the same word was
- * findable at 3 characters and invisible at 2. Two hand-maintained copies of the
- * list is the same bug waiting to happen once.
- */
+/** The columns `observations_fts` indexes, in its own order. Single source of
+ * truth for both LIKE paths — the sub-trigram fallback in `searchObservationsFts`
+ * and the phase 3A bigram leg. When this list covered only 5 of the 9 indexed
+ * columns, a 2-character query could not reach a term appearing solely in
+ * `request` or `evidence_json`: findable at 3 chars, invisible at 2. */
 const FTS_INDEXED_COLUMNS = [
   'title', 'summary', 'request', 'outcome', 'learned',
   'next_steps', 'concepts_json', 'files_touched_json', 'evidence_json',
@@ -144,13 +105,9 @@ const CJK_CHAR_RE = /[\u3400-\u4dbf\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]/;
 /** Latin/digit runs, extracted only out of mixed-script segments (see below). */
 const LATIN_RUN_RE = /[A-Za-z0-9_]{3,}/g;
 
-/**
- * Pick `take` indices spread across `[0, count-1]`, always including both ends.
- *
- * This is what keeps the tail of a long query reachable: sampling the window
- * positions evenly means the LAST window is always in the set, whereas walking
- * from the head and stopping at the budget never reaches it.
- */
+/** Pick `take` indices spread across `[0, count-1]`, always including both ends.
+ * Keeps the tail of a long query reachable: walking from the head and stopping at
+ * the budget never reaches the last window. */
 function evenIndices(count: number, take: number): number[] {
   if (take >= count) return Array.from({ length: count }, (_, i) => i);
   if (take <= 1) return [0];
@@ -161,23 +118,17 @@ function evenIndices(count: number, take: number): number[] {
 
 // ---------- Truth Layer size bounds (§6) ----------
 
-/**
- * Per-string cap inside a raw event payload.
- *
- * The realistic overflow is ONE huge string leaf — a tool's stdout holding a
- * full build log or test run. Capping leaves rather than the whole payload
- * keeps the surrounding object shape intact, so `extractArtifacts` still finds
- * `tool_input.command`, error signals and file paths.
- */
+/** Per-string cap inside a raw event payload. The realistic overflow is one huge
+ * string leaf — a tool's stdout holding a build log. Capping leaves rather than
+ * the whole payload keeps the object shape intact, so `extractArtifacts` still
+ * finds `tool_input.command`, error signals and file paths. */
 const MAX_PAYLOAD_STRING_BYTES = 32 * 1024;
 /** Hard per-event cap, applied after string capping. */
 const MAX_EVENT_PAYLOAD_BYTES = 256 * 1024;
-/**
- * Cumulative per-turn cap. `turn_events` is append-only and — until a retention
- * policy exists — never pruned, so a single pathological turn must not be able
- * to grow the database without bound. Past this point only metadata stubs are
- * stored for the remaining events of that turn.
- */
+/** Cumulative per-turn cap. `turn_events` is append-only and — until a retention
+ * policy exists — never pruned, so one pathological turn must not grow the
+ * database without bound. Past this point only metadata stubs are stored for that
+ * turn's remaining events. */
 const MAX_TURN_PAYLOAD_BYTES = 4 * 1024 * 1024;
 
 /** Marker appended to any value this layer shortened. Never silent. */
@@ -210,17 +161,10 @@ function capStringLeaves(value: unknown, maxBytes: number): unknown {
   return value;
 }
 
-/**
- * Bound what one raw event can commit to the append-only Truth Layer.
- *
- * Anything accepted here is accepted forever: the layer is never rewritten and
- * currently has no retention policy, so an unbounded payload is an unbounded
- * disk and extraction cost. Returns the payload to store plus the ORIGINAL byte
- * size, which is what `payload_size` records — the truth about how big the
- * event really was must survive the truncation.
- *
- * Exported for tests.
- */
+/** Bound what one raw event can commit to the append-only Truth Layer. Anything
+ * accepted here is accepted forever, so an unbounded payload is unbounded disk and
+ * extraction cost. Returns the payload to store plus the ORIGINAL byte size, which
+ * is what `payload_size` records. Exported for tests. */
 export function capEventPayload(
   payloadJson: string,
   turnBytesSoFar: number,
@@ -267,29 +211,21 @@ export function capEventPayload(
 }
 
 /**
- * Split a user query into the units that get matched against the trigram FTS
- * index. Each unit is later wrapped in its own FTS5 string literal, so the
- * user's punctuation, code symbols and reserved words stay literal.
+ * Split a user query into the units matched against the trigram FTS index. Each
+ * unit is later wrapped in its own FTS5 string literal, so the user's punctuation,
+ * code symbols and reserved words stay literal.
  *
- * Three shapes are handled:
- *   - whitespace-delimited segments (identifiers, paths, versions, words) are
- *     kept whole, because a full `src/db/index.ts` match is far more precise
- *     than its fragments;
- *   - unsegmented CJK runs longer than the window are additionally sliced into
- *     overlapping sub-strings, because Chinese queries carry no word
- *     boundaries and a whole-sentence substring match never succeeds;
- *   - mixed-script segments (`修复bug`) additionally surface their latin/digit
- *     runs, because the CJK half is usually too short to window and the whole
- *     segment is an exact-substring match nothing satisfies.
+ *   - whitespace-delimited segments stay whole — a full `src/db/index.ts` match is
+ *     far more precise than its fragments;
+ *   - unsegmented CJK runs longer than the window are also sliced into overlapping
+ *     sub-strings, because without word boundaries a whole-sentence substring
+ *     match never succeeds;
+ *   - mixed-script segments (`修复bug`) also surface their latin/digit runs.
  *
- * The window budget is sampled ACROSS each run rather than consumed from its
- * head. Head-first consumption meant a long unsegmented Chinese question spent
- * the entire budget on its opening words and silently dropped the terms that
- * actually distinguish it — which is the whole point of asking in a sentence.
- * When the budget is not binding the result is unchanged (head-to-tail, every
- * window).
- *
- * Exported for tests.
+ * The window budget is sampled ACROSS each run: head-first consumption spent it
+ * all on a long question's opening words and silently dropped the terms that
+ * distinguish it. When the budget is not binding the result is unchanged. Exported
+ * for tests.
  */
 export function extractFtsSearchUnits(query: string): string[] {
   const units: string[] = [];
@@ -312,9 +248,9 @@ export function extractFtsSearchUnits(query: string): string[] {
       push(run);
       if (run.length > FTS_CJK_WINDOW) windowRuns.push(run);
     }
-    // Only for mixed-script segments. Splitting a pure-latin path such as
-    // `src/db/index.ts` into `src` / `index` would OR in units that match
-    // almost every document, trading a real precision loss for no recall gain.
+    // Mixed-script only: splitting a pure-latin path such as `src/db/index.ts`
+    // into `src` / `index` would OR in units matching almost every document —
+    // a real precision loss for no recall gain.
     if (CJK_CHAR_RE.test(segment)) {
       for (const run of segment.match(LATIN_RUN_RE) ?? []) push(run);
     }
@@ -345,30 +281,20 @@ export function extractFtsSearchUnits(query: string): string[] {
  * Split a query into the CJK **two-character** units the trigram index cannot
  * reach (phase 3A).
  *
- * Why this exists: FTS5 tokenizes with trigram, so a query unit must be ≥3
- * characters AND appear as an exact substring. A Chinese two-character word is
- * therefore reachable only when the 3-character windows happen to line up on
- * BOTH sides. Measured on q32: the query yields `带引号` / `引号或`, while the
- * record holds `未闭合引号等` and `双引号翻倍` → `合引号` / `引号等` / `双引号` /
- * `引号翻`. Both sides contain 引号; not one window matches.
+ * FTS5 tokenizes with trigram, so a query unit must be ≥3 characters AND appear as
+ * an exact substring; a Chinese two-character word is reachable only when the
+ * 3-character windows line up on BOTH sides. Measured on q32: the query yields
+ * `带引号` / `引号或`, the record holds `未闭合引号等` and `双引号翻倍` → `合引号` /
+ * `引号等` / `双引号` / `引号翻`. Both sides contain 引号; not one window matches.
+ * There is no FTS5 shortcut — a prefix query (`"引号" *`) returns nothing because
+ * the tokenizer tokenizes the QUERY too, so a 2-character string yields zero
+ * tokens. Hence the auxiliary LIKE path in `searchObservationsByCjkBigrams`.
  *
- * The FTS5 shortcut does not exist. A prefix query (`"引号" *`) returns nothing
- * because the trigram tokenizer tokenizes the QUERY too — a 2-character string
- * yields zero tokens, so `*` has nothing to attach to. The index vocabulary does
- * contain `引号等` and `引号翻`; MATCH simply cannot reach them. Hence the
- * auxiliary LIKE path in `searchObservationsByCjkBigrams`.
- *
- * No segmentation. Without a dictionary there is no way to know that 引号 is a
- * word and 号或 is not, and adding a segmenter would put a second independent
- * variable (dictionary version) inside phase 3A. Sliding windows therefore emit
- * non-words by construction, so noise is controlled downstream by a document
- * frequency ceiling and a structural cap — NOT by segmenting accurately.
- *
- * Budget is sampled ACROSS each run for the same reason as the trigram windows:
- * head-first consumption spends everything on the opening words of a long
- * question and silently drops the terms that distinguish it.
- *
- * Exported for tests.
+ * No segmentation: without a dictionary there is no way to know that 引号 is a word
+ * and 号或 is not, and a segmenter would put a second independent variable
+ * (dictionary version) inside phase 3A. Windows therefore emit non-words by
+ * construction, so noise is controlled downstream by a document frequency ceiling
+ * and a structural cap — not by segmenting accurately. Exported for tests.
  */
 export function extractCjkBigrams(query: string): string[] {
   const runs = query.trim().match(CJK_RUN_BIGRAM_RE) ?? [];
@@ -395,18 +321,15 @@ export function extractCjkBigrams(query: string): string[] {
     for (const idx of evenIndices(count, quota)) push(run.slice(idx, idx + 2));
   });
 
-  // Dedup across runs can leave us under budget; it can never leave us over,
-  // because each run's quota is already proportional. The slice is belt and
-  // braces for the `Math.max(2, ...)` floor on many short runs.
+  // Dedup across runs can leave us under budget, never over, because each run's
+  // quota is already proportional; the slice guards the `Math.max(2, ...)` floor
+  // on many short runs.
   return out.slice(0, BIGRAM_MAX_UNITS);
 }
 
-/**
- * Resolve the on-disk path for the DB file. When a caller passes an explicit
- * `dbPath` we create just its parent directory; when not, we fall back to the
- * global `~/.kiro-mem/kiro-mem.db`. Tests should always pass an explicit path
- * (use `:memory:` or a tmp file) so `getDataDir()` is never touched.
- */
+/** Resolve the on-disk path for the DB file, falling back to the global
+ * `~/.kiro-mem/kiro-mem.db`. Tests should always pass an explicit path
+ * (`:memory:` or a tmp file) so `getDataDir()` is never touched. */
 function resolveDbPath(dbPath?: string): string {
   if (dbPath) {
     if (dbPath !== ':memory:') {
@@ -422,9 +345,7 @@ function resolveDbPath(dbPath?: string): string {
   return join(dir, 'kiro-mem.db');
 }
 
-// =============================================================
-// MemoryDB
-// =============================================================
+// ---------- MemoryDB ----------
 
 export class MemoryDB {
   private db: Database;
@@ -436,11 +357,11 @@ export class MemoryDB {
     this.db = new Database(path);
     this.db.exec('PRAGMA journal_mode=WAL');
     this.db.exec('PRAGMA foreign_keys=ON');
-    // The Worker and the MCP server are two separate writer processes (jobs +
-    // Observations vs. pin + search metrics). Without a busy timeout a
-    // concurrent write fails immediately with SQLITE_BUSY, which surfaces as a
-    // thrown MCP tool call or a silently dropped metric. This is a mitigation,
-    // not a substitute for the transactional writes in the ingest path.
+    // Worker and MCP server are two separate writer processes (jobs +
+    // Observations vs. pin + search metrics). Without a busy timeout a concurrent
+    // write fails immediately with SQLITE_BUSY — a thrown MCP tool call or a
+    // silently dropped metric. Mitigation, not a substitute for the transactional
+    // writes in the ingest path.
     this.db.exec('PRAGMA busy_timeout=3000');
     this.db.exec(ALL_SCHEMA);
     // Shape changes that `CREATE TABLE IF NOT EXISTS` cannot express. Runs after
@@ -457,33 +378,24 @@ export class MemoryDB {
     return this.db;
   }
 
-  /** Resolved path of the SQLite file backing this instance. */
   get dbPath(): string {
     return this.path;
   }
 
-  /**
-   * Run `fn` inside a single SQLite transaction.
-   *
-   * Used by the ingest path where several statements express ONE fact (close a
-   * turn and enqueue its summarize job; write an Observation and enqueue its
-   * embedding). Without this, a crash or SQLITE_BUSY between statements leaves
-   * an orphan that no later step notices — see `findOrphans()` / `kiro-mem
-   * repair` for the recovery side.
-   */
+  /** Run `fn` inside a single SQLite transaction. Used where several statements
+   * express ONE fact (close a turn and enqueue its summarize job; write an
+   * Observation and enqueue its embedding); a crash or SQLITE_BUSY between them
+   * leaves an orphan no later step notices — see `findOrphans()` / `kiro-mem
+   * repair` for the recovery side. */
   transaction<T>(fn: () => T): T {
     return this.db.transaction(fn)() as T;
   }
 
-  // ===========================================================
-  // session_refs
-  // ===========================================================
+  // ---------- session_refs ----------
 
-  /**
-   * Idempotent upsert keyed by `session_id`. Touches `last_seen_at` on every
-   * call so a session that goes silent for a while still has a sensible
-   * recency signal for cleanup / diagnostics (it is NOT used for attribution).
-   */
+  /** Idempotent upsert keyed by `session_id`. Touches `last_seen_at` on every call
+   * so a silent session still has a recency signal for cleanup / diagnostics —
+   * it is NOT used for attribution. */
   upsertSessionRef(input: {
     session_id: string;
     cwd: string;
@@ -542,10 +454,8 @@ export class MemoryDB {
     );
   }
 
-  /**
-   * Atomically allocate the next per-session turn seq. Single SQL statement so
-   * concurrent HTTP ingest cannot produce duplicate seqs for the same session.
-   */
+  /** Atomically allocate the next per-session turn seq. Single SQL statement so
+   * concurrent HTTP ingest cannot produce duplicate seqs for the same session. */
   allocateNextTurnSeq(session_id: string): number {
     const now = nowISO();
     const row = this.db
@@ -566,9 +476,7 @@ export class MemoryDB {
     return row.last_turn_seq;
   }
 
-  // ===========================================================
-  // turns
-  // ===========================================================
+  // ---------- turns ----------
 
   createTurn(input: {
     session_id: string;
@@ -612,11 +520,8 @@ export class MemoryDB {
       .get(id) as Turn | null;
   }
 
-  /**
-   * The only supported way to find an open turn. Attribution MUST go through
-   * `session_id`. We deliberately do NOT expose any cwd-based lookup as the
-   * main attribution primitive.
-   */
+  /** The only supported way to find an open turn: attribution MUST go through
+   * `session_id`. No cwd-based lookup is exposed as an attribution primitive. */
   getOpenTurnBySession(session_id: string): Turn | null {
     return this.db
       .query(
@@ -660,10 +565,8 @@ export class MemoryDB {
     );
   }
 
-  /**
-   * Update turn counters after an event is appended. Kept atomic against the
-   * current row values so concurrent events don't stomp each other.
-   */
+  /** Update turn counters after an event is appended. Kept atomic against the
+   * current row values so concurrent events don't stomp each other. */
   incrementTurnCounters(
     turn_id: number,
     delta: {
@@ -687,9 +590,7 @@ export class MemoryDB {
     );
   }
 
-  // ===========================================================
-  // turn_events (append-only truth layer)
-  // ===========================================================
+  // ---------- turn_events (append-only truth layer) ----------
 
   appendTurnEvent(input: {
     turn_id: number;
@@ -700,9 +601,7 @@ export class MemoryDB {
     redaction_state?: RedactionState;
   }): TurnEvent {
     const now = nowISO();
-    // §6: bound what enters the append-only layer. `payload_size` keeps the
-    // ORIGINAL size so the truncation does not also erase the record of how big
-    // the event was.
+    // §6 truth-layer bound; `payload_size` keeps the ORIGINAL size.
     const turnBytesSoFar = this.turnPayloadBytes(input.turn_id);
     const { payload, originalSize } = capEventPayload(input.payload_json, turnBytesSoFar);
     // Compute the next event_seq inline inside the INSERT to keep it atomic
@@ -760,9 +659,7 @@ export class MemoryDB {
     return row.cnt;
   }
 
-  // ===========================================================
-  // turn_artifacts
-  // ===========================================================
+  // ---------- turn_artifacts ----------
 
   upsertTurnArtifacts(turn_id: number, a: Partial<TurnArtifacts>) {
     const now = nowISO();
@@ -802,18 +699,13 @@ export class MemoryDB {
       .get(turn_id) as TurnArtifacts | null;
   }
 
-  // ===========================================================
-  // observations (immutable atomic projection)
-  // ===========================================================
+  // ---------- observations (immutable atomic projection) ----------
 
-  /**
-   * Insert the Observation for a closed turn. `turn_id` is UNIQUE, so this is
-   * the single idempotency gate: a retry or concurrent run returns `null`
-   * instead of creating a second row. `scope_key` is frozen here via
-   * {@link computeScopeKey} so retrieval never disambiguates NULL repo.
-   *
-   * Text fields are write-once — there is deliberately no `updateObservation`.
-   */
+  /** Insert the Observation for a closed turn. `turn_id` is UNIQUE, so this is the
+   * single idempotency gate: a retry or concurrent run returns `null` instead of
+   * creating a second row. `scope_key` is frozen here via {@link computeScopeKey}
+   * so retrieval never disambiguates NULL repo. Text fields are write-once —
+   * there is no `updateObservation`. */
   insertObservation(input: {
     turn_id: number;
     session_id: string;
@@ -876,9 +768,8 @@ export class MemoryDB {
       );
       return Number(result.lastInsertRowid);
     } catch (err) {
-      // UNIQUE(turn_id) collision means an Observation already exists for this
-      // turn — a concurrent run or retry won the race. That's the idempotent
-      // outcome, not an error.
+      // UNIQUE(turn_id): a concurrent run or retry won the race. That is the
+      // idempotent outcome, not an error.
       if (String(err).includes('UNIQUE')) return null;
       throw err;
     }
@@ -896,15 +787,11 @@ export class MemoryDB {
       .get(turn_id) as Observation | null;
   }
 
-  /**
-   * Fetch Observations by ID.
-   *
-   * `scopeKey` is NOT optional in spirit: every ID-addressed MCP tool must pass
-   * the caller's authorized scope, otherwise knowing (or guessing) an ID leaks
-   * another workspace's Observation body. `undefined` means "no filter" and is
-   * reserved for the explicit all-scopes browse and for internal callers that
-   * already resolved authorization (e.g. bootstrap, which selects by scope).
-   */
+  /** Fetch Observations by ID. Every ID-addressed MCP tool must pass the caller's
+   * authorized `scopeKey`, otherwise knowing (or guessing) an ID leaks another
+   * workspace's Observation body. `undefined` means "no filter" and is reserved
+   * for the explicit all-scopes browse and for internal callers that already
+   * resolved authorization (e.g. bootstrap, which selects by scope). */
   getObservationsByIds(ids: number[], opts?: { scopeKey?: string }): Observation[] {
     if (!ids.length) return [];
     const placeholders = ids.map(() => '?').join(',');
@@ -924,14 +811,10 @@ export class MemoryDB {
 
   // ---------- observation_embeddings ----------
 
-  /**
-   * Store one vector for one (observation, vector space) pair.
-   *
-   * `model` is the full space key from `embeddingSpaceKey()`, so the same
-   * Observation can carry a `raw-v1` and a `semantic-en-v1` vector at once. The
-   * conflict target is the composite key: re-embedding under one protocol must
-   * not touch the other protocol's row.
-   */
+  /** Store one vector for one (observation, vector space) pair. `model` is the full
+   * space key from `embeddingSpaceKey()`, so one Observation can carry a `raw-v1`
+   * and a `semantic-en-v1` vector at once; the composite conflict target keeps
+   * re-embedding under one protocol off the other protocol's row. */
   upsertObservationEmbedding(
     observation_id: number,
     model: string,
@@ -963,10 +846,8 @@ export class MemoryDB {
       .get(observation_id) as ObservationEmbeddingRow | null;
   }
 
-  /**
-   * Fetch one vector chunk, filtering by the complete space identity and blob
-   * dimensions. The retrieval kernel keeps chunks below SQLite's bind limit.
-   */
+  /** Fetch one vector chunk, filtering by the complete space identity and blob
+   * dimensions. The retrieval kernel keeps chunks below SQLite's bind limit. */
   getObservationEmbeddingsByIds(
     ids: number[],
     opts?: { model?: string; dimensions?: number },
@@ -983,9 +864,9 @@ export class MemoryDB {
       observation_id: number; embedding: Buffer; dimensions: number;
     }[];
 
-    // Length check: `dimensions` is metadata, the blob is the payload, and a
-    // truncated or corrupted blob would otherwise be read as a shorter vector
-    // and score against a partial dot product.
+    // `dimensions` is metadata, the blob is the payload: a truncated or corrupted
+    // blob would otherwise be read as a shorter vector and score against a
+    // partial dot product.
     return rows
       .filter((r) => r.embedding.byteLength === r.dimensions * 4)
       .map((r) => ({ observation_id: r.observation_id, embedding: r.embedding }));
@@ -995,18 +876,12 @@ export class MemoryDB {
 
   /**
    * Record (or update) the English derived value for one Observation under one
-   * protocol.
-   *
-   * By default the conflict clause refuses to downgrade a `ready` row: a later
-   * attempt that fails must not erase a translation that already validated, or a
-   * transient translator hiccup would silently remove an Observation from the
-   * `semantic-en-v1` space and the only symptom would be slightly lower coverage.
-   *
-   * `allowDowngrade` is the one exception, and it exists because the two rules
-   * collide: the embed-time gate re-validates the stored payload, so when it
-   * refuses one it holds proof that `ready` is wrong — leaving the row alone
-   * would make the table claim a compliant value that the current guardrails
-   * reject. Only a caller that just re-ran the guardrails may pass it.
+   * protocol. The conflict clause refuses to downgrade a `ready` row: a transient
+   * translator hiccup must not silently drop an Observation out of the
+   * `semantic-en-v1` space, whose only symptom would be lower coverage.
+   * `allowDowngrade` is the one exception — the embed-time gate re-validates the
+   * stored payload, so a refusal there is proof that `ready` is wrong. Only a caller
+   * that just re-ran the guardrails may pass it.
    */
   upsertObservationSemanticText(input: {
     observation_id: number;
@@ -1090,20 +965,13 @@ export class MemoryDB {
   }
 
   /**
-   * Observations that still owe a `ready` derived value under `protocol`.
-   *
-   * This is the entry point a protocol or translator upgrade needs: without it,
-   * "we changed the normalization protocol" has no path to "the corpus was
-   * rebuilt", and the only symptom would be a permanently partial
-   * `semantic-en-v1` coverage that looks like a queue backlog.
-   *
-   * Excluded on purpose:
-   *   - `quality = 'fallback'` Observations — their prose is a generated
-   *     placeholder, so there is nothing faithful to mirror.
-   *   - rows already `failed` — the guardrails refused that content twice; a
-   *     third identical attempt costs an ACP call and changes nothing. They are
-   *     visible in `countObservationSemanticTexts()` and need a protocol/prompt
-   *     change, not a retry.
+   * Observations that still owe a `ready` derived value under `protocol` — the entry
+   * point a protocol or translator upgrade needs to rebuild the corpus. Excluded:
+   *   - `quality = 'fallback'` — their prose is a generated placeholder, so there
+   *     is nothing faithful to mirror.
+   *   - rows already `failed` — the guardrails refused that content twice; a third
+   *     identical attempt costs an ACP call and changes nothing. Visible in
+   *     `countObservationSemanticTexts()`; needs a protocol/prompt change.
    *   - anything with an in-flight job, so a second call is idempotent.
    */
   findObservationsMissingSemanticText(opts: {
@@ -1154,12 +1022,10 @@ export class MemoryDB {
   /**
    * FTS search over Observations, hard-scoped by `scope_key` when provided.
    *
-   * There is no `state` filter — Observations are
-   * immutable and never superseded/archived, so every row is a valid hit.
-   * Scope isolation is enforced on `scope_key` (frozen at write time), so a
-   * caller passing a scope never sees another workspace's Observations.
-   * Queries with no usable search unit (e.g. shorter than the trigram floor)
-   * fall back to LIKE.
+   * No `state` filter — Observations are immutable and never superseded, so every
+   * row is a valid hit. Scope isolation is enforced on `scope_key` (frozen at write
+   * time), so a caller passing a scope never sees another workspace's Observations.
+   * Queries with no usable search unit fall back to LIKE.
    */
   searchObservationsFts(
     query: string,
@@ -1174,11 +1040,8 @@ export class MemoryDB {
 
     const units = extractFtsSearchUnits(literalQuery);
     if (units.length === 0) {
-      // Below the trigram floor (or punctuation-only): LIKE is the only option.
-      // The column list must mirror `observations_fts` exactly — when it covered
-      // only 5 of the 9 indexed columns, a 2-char query could not reach a term
-      // that appears solely in `request` or `evidence_json`, so the same word
-      // was findable at 3 chars and invisible at 2.
+      // Below the trigram floor (or punctuation-only): LIKE is the only option,
+      // over `FTS_INDEXED_COLUMNS` so 2-char reach matches 3-char reach.
       const like = `%${literalQuery}%`;
       let sql = `SELECT * FROM observations WHERE 1 = 1`;
       const params: (string | number)[] = [];
@@ -1193,41 +1056,31 @@ export class MemoryDB {
       return this.db.query(sql).all(...params) as Observation[];
     }
 
-    // Each search unit becomes its own FTS5 string literal, OR-joined. Doubling
-    // an embedded quote is FTS5's quoted-string escape, so punctuation and
-    // reserved words inside a unit keep their literal meaning instead of
-    // becoming query operators or column selectors. OR (not phrase) matching is
-    // what makes multi-word and natural-language queries recall anything at
-    // all: under the trigram tokenizer a single quoted string is an exact
-    // substring match, which a whole user sentence essentially never satisfies.
-    // bm25 then ranks documents matching more units higher.
+    // Each search unit becomes its own FTS5 string literal, OR-joined. Doubling an
+    // embedded quote is FTS5's escape, so punctuation and reserved words stay
+    // literal instead of becoming query operators or column selectors. OR rather
+    // than phrase matching is what gives natural-language queries any recall at
+    // all: under the trigram tokenizer one quoted string is an exact substring
+    // match, which a whole user sentence never satisfies. bm25 then ranks documents
+    // matching more units higher.
     const ftsExpr = units.map((u) => `"${u.replaceAll('"', '""')}"`).join(' OR ');
-    // `CROSS JOIN`, not `JOIN` — and this is a performance fix with measured
-    // evidence behind it, not a style choice.
-    //
-    // With a plain JOIN and `LIMIT ?` as a BOUND PARAMETER, SQLite cannot see the
-    // limit at planning time and flips the join order: it drives from
-    // `observations` (scanning every row in scope inside the time window), probes
-    // the FTS table once per row, then sorts the result in a temp B-tree. The cost
-    // becomes O(corpus) instead of O(matching rows). Measured on a 1,970-record
-    // fixture, one query, same 50 rows returned:
+    // `CROSS JOIN`, not `JOIN` — a measured performance fix. With a plain JOIN and
+    // `LIMIT ?` as a BOUND PARAMETER, SQLite cannot see the limit at planning time
+    // and flips the join order: it drives from `observations`, probes FTS once per
+    // row, then sorts in a temp B-tree — O(corpus), not O(matching rows). Measured
+    // on a 1,970-record fixture, one query, same 50 rows returned:
     //
     //   plain JOIN + LIMIT ?      995ms      SEARCH o USING idx_observations_scope_time
     //                                       SCAN fts / USE TEMP B-TREE FOR ORDER BY
     //   CROSS JOIN + LIMIT ?      0.52ms     SCAN fts / SEARCH o USING INTEGER PRIMARY KEY
     //
-    // 1,900x. It is invisible on the 30-record benchmark corpus (O(corpus) of 30 is
-    // 30), which is why every historical p95 reading is both valid and blind to it
-    // — full audit: `benchmark/reports/fix-fts-limit-audit.json`, where this is the
-    // ONLY one of 12 `LIMIT ?` sites whose plan flips.
-    //
-    // `CROSS JOIN` is SQLite's documented way to pin join order: the FTS table
-    // stays the outer loop, so its own rank ordering is used directly and no sort
-    // is needed. The alternative — interpolating the limit as a literal — measured
-    // the same (0.54ms) but puts a value into the SQL string, so it needs integer
-    // validation to stay injection-free. Pinning the order costs nothing here
-    // because there is only one sensible order: FTS narrows to a handful of rows,
-    // `observations` is then a primary-key lookup.
+    // 1,900x, and invisible on the 30-record benchmark corpus, so every historical
+    // p95 reading is both valid and blind to it. Full audit:
+    // `benchmark/reports/fix-fts-limit-audit.json` — the ONLY one of 12 `LIMIT ?`
+    // sites whose plan flips. `CROSS JOIN` pins join order, keeping FTS the outer
+    // loop so its own rank ordering needs no sort. Interpolating the limit as a
+    // literal measured the same (0.54ms) but would need integer validation to stay
+    // injection-free.
     let sql = `SELECT o.* FROM observations_fts fts
       CROSS JOIN observations o ON fts.rowid = o.id
       WHERE observations_fts MATCH ?`;
@@ -1235,62 +1088,40 @@ export class MemoryDB {
     if (dateThreshold !== null) { sql += ' AND o.turn_stopped_at > ?'; params.push(dateThreshold); }
     if (opts?.scopeKey) { sql += ' AND o.scope_key = ?'; params.push(opts.scopeKey); }
     if (opts?.type) { sql += ' AND o.memory_type = ?'; params.push(opts.type); }
-    // Ranking is bm25, then `o.id` as a TECHNICAL TOTAL-ORDER KEY.
+    // Ranking is bm25, then `o.id` as a technical total-order key.
     //
-    // `is_pinned` deliberately does NOT participate: the hybrid layer turns this
-    // row order into the FTS rank it feeds into RRF (see observation-search.ts),
-    // so ordering pinned rows first would let a weakly-matching pinned
-    // Observation steal rank 1 from a strong match. Pin affects bootstrap
-    // injection, not search relevance.
+    // `is_pinned` does NOT participate: the hybrid layer turns this row order into
+    // the FTS rank it feeds into RRF (see observation-search.ts), so ordering
+    // pinned rows first would let a weakly-matching pinned Observation steal rank 1
+    // from a strong match. Pin affects bootstrap injection, not search relevance.
     //
-    // Why `, o.id ASC` exists, and why it is `id` and nothing else:
+    // `, o.id ASC` exists because bm25 produces EXACT ties and SQLite guarantees no
+    // order among them, so the pre-fix order was a query-plan artifact:
+    //   1. Tied rows could swap position when the plan changed — measured on the
+    //      gold corpus as 3 queries out of 90 with FTS hits.
+    //   2. When matches EXCEED the internal limit of 50 the tie sits on the
+    //      truncation boundary, so *which 50 rows survive* — MEMBERSHIP, not just
+    //      order — was also undefined. Membership flows into RRF and the semantic
+    //      fusion, so it can change final recall. Measured: 1 of 5 probe queries
+    //      on a 1,970-record fixture returned exactly 50 rows.
+    // `o.id` is the only unique, immutable field available without consulting the
+    // other leg; `turn_stopped_at` would smuggle recency into relevance.
     //
-    // bm25 produces EXACT ties, and SQLite does not guarantee any order among
-    // them — so the pre-fix order was an artifact of the query plan, not a
-    // decision. That has two consequences, and the second one is the reason this
-    // clause is here rather than in a "nice to have" list:
+    // Known limitation (final recall audit): this key is NOT ranking-neutral. Since
+    // phase 3C the window is unbounded and `id` is monotonic with insertion, so
+    // `id ASC` is an explicit oldest-first policy over the whole corpus. Left in
+    // place because the audit could not measure its independent contribution: the
+    // 50,000-record fixture correlates age with bm25 advantage by construction (the
+    // oldest 10,000 rows are the un-suffixed originals, hence shortest, which bm25
+    // favours), and the observed page churn had FTS ranks 1–8, i.e. NOT exact ties.
+    // Replacing it needs equal bm25 with age decoupled from document length; if
+    // recency wins, the key must be a real time key (`turn_stopped_at DESC,
+    // turn_seq DESC, id ASC`), never `id DESC` posing as time.
     //
-    //   1. Tied rows could swap position when the plan changed. Cosmetic on its
-    //      own — measured on the gold corpus as 3 queries out of 90 with FTS hits.
-    //   2. When matches EXCEED the internal limit of 50, the tie sits on the
-    //      truncation boundary, so *which 50 rows survive* — the MEMBERSHIP, not
-    //      just the order — was also undefined. Membership flows into RRF and the
-    //      semantic fusion, so it can change the final recall. Measured: 1 of 5
-    //      probe queries on a 1,970-record fixture returned exactly 50 rows.
-    //
-    // `o.id` is chosen because it is the only field that is unique, immutable and
-    // available without consulting another leg. `turn_stopped_at` would smuggle
-    // recency into relevance, `is_pinned` would smuggle curation, a semantic score
-    // would smuggle the other leg — any of them turns a defect fix into an
-    // uncalibrated ranking change.
-    //
-    // ## Correction (final recall audit): this key is NOT ranking-neutral
-    //
-    // The original comment here claimed `id` "carries no ranking opinion" and that
-    // older-wins was "a stated, arbitrary, stable convention rather than a
-    // relevance claim". That was defensible only while a time window bounded the
-    // candidate set to recent records. It no longer is: since phase 3C the default
-    // window is unbounded, so `id ASC` is an explicit **oldest-first** policy over
-    // the entire corpus — `id` is monotonic with insertion, so on a bm25 tie the
-    // oldest record in the whole workspace wins. Calling that neutral hides a real
-    // ranking decision.
-    //
-    // Not changed here, deliberately. The audit that surfaced this could not
-    // measure the tie-break's independent contribution: its 50,000-record fixture
-    // correlates age with bm25 advantage by construction (the oldest 10,000 rows
-    // are the un-suffixed originals, hence the shortest documents, which bm25
-    // favours). The observed page churn had FTS ranks 1–8, i.e. NOT exact ties, so
-    // it is not attributable to this clause. Replacing it needs a fixture with
-    // equal bm25 and age decoupled from document length, comparing `id ASC`
-    // against an explicit recency key — and if recency wins, the key must be a
-    // real time key (`turn_stopped_at DESC, turn_seq DESC, id ASC`), never `id
-    // DESC` posing as time.
-    //
-    // Cost: this reintroduces `USE TEMP B-TREE FOR ORDER BY` (the FTS module can
-    // stream its own rank order but not a composite key), measured at ~11% on the
-    // 1,970-record fixture — 0.581ms vs 0.522ms. The 50,000-record scale
-    // measurement is what decides whether that is affordable; the FTS table stays
-    // the OUTER loop either way, which is where the 1,900x came from.
+    // Cost: reintroduces `USE TEMP B-TREE FOR ORDER BY` (the FTS module can stream
+    // its own rank order but not a composite key), measured at ~11% on the
+    // 1,970-record fixture — 0.581ms vs 0.522ms. FTS stays the OUTER loop either
+    // way, which is where the 1,900x came from.
     sql += ' ORDER BY fts.rank, o.id ASC LIMIT ?';
     params.push(limit);
     return this.db.query(sql).all(...params) as Observation[];
@@ -1301,47 +1132,37 @@ export class MemoryDB {
    * trigram index cannot reach.
    *
    * ONE table scan, not one per bigram: each bigram becomes a `CASE WHEN ... LIKE`
-   * column, so the per-row cost grows with the number of bigrams while the number
-   * of scans stays at 1. The alternative (a query per bigram) was measured at
-   * 0.035ms per bigram on a 26-record corpus, which is cheap here and linear in
-   * corpus size × bigram count — this shape is linear in corpus size only.
+   * column, so per-row cost grows with bigram count while scans stay at 1. A query
+   * per bigram measured 0.035ms per bigram on a 26-record corpus — cheap there, but
+   * linear in corpus size × bigram count; this shape is linear in corpus size only.
    *
-   * `LIKE '%XY%'` rather than the FTS index because the index cannot serve it:
-   * FTS5's trigram tokenizer tokenizes the query too, so a 2-character string
-   * yields zero tokens and matches nothing, prefix syntax included. An
-   * `fts5vocab` prefix expansion (`XY?` → a MATCH over those trigrams) WAS
-   * measured as the index-backed alternative and lost on both axes at this scale:
-   * 14× slower (0.496ms vs 0.035ms) and incomplete — it misses a record where the
-   * bigram sits at the very end of a column, because only `?XY` is indexed there
-   * (9 such hits, e.g. 「问题」 in three records). That latency comparison IS
-   * scale-dependent and is registered for phase 3B; the incompleteness is not.
+   * `LIKE '%XY%'` rather than the FTS index because the index cannot serve it: the
+   * trigram tokenizer tokenizes the query too, so a 2-character string yields zero
+   * tokens, prefix syntax included. An `fts5vocab` prefix expansion (`XY?` → a
+   * MATCH over those trigrams) WAS measured and lost on both axes at this scale:
+   * 14× slower (0.496ms vs 0.035ms) and incomplete — it misses a bigram at the very
+   * end of a column, where only `?XY` is indexed (9 such hits, e.g. 「问题」 in three
+   * records). That latency comparison IS scale-dependent and is registered for
+   * phase 3B; the incompleteness is not. Columns mirror `observations_fts` exactly
+   * and are matched per column, never against a concatenation, so a bigram cannot
+   * match across a column boundary.
    *
-   * Columns mirror `observations_fts` exactly, matched per column rather than
-   * against a concatenation, so a bigram can never match across a column
-   * boundary — the same semantics FTS5 gives by tokenizing each column
-   * separately.
+   * Two noise controls:
+   *  - `dfRatioCeiling` drops bigrams matching too large a FRACTION of the scope.
+   *    A ratio, not an absolute count: on the 26-record benchmark corpus `df <= 1`
+   *    is the only non-breaching pure-DF setting, but at 10,000 records 「引号」
+   *    will not have df 1 and the feature would silently stop firing. A fraction is
+   *    scale-invariant — 「测试」 takes 30-50% of any corpus, 「引号」 a few percent.
+   *  - `minMatches` requires several DISTINCT bigram hits. Effective but blunt: at
+   *    2 it drives worst-case false recall to 0-2 but cuts reachable targets from
+   *    32/72 to 9/72, worse than the DF ceiling achieves. Defaulted to 1.
    *
-   * Two noise controls, and the division of labour between them matters:
+   * NEITHER is the release gate. The bound that holds regardless of corpus size and
+   * DF distribution is the post-fusion `bigramOnlyLimit` in the retrieval kernel —
+   * guaranteed by construction, not by a threshold that fit 26 records.
    *
-   *  - `dfRatioCeiling` drops bigrams that match too large a FRACTION of the
-   *    scope. A ratio, not an absolute count, because an absolute threshold does
-   *    not survive a change of corpus size: on the 26-record benchmark corpus
-   *    `df <= 1` is the only non-breaching pure-DF setting, but on 10,000 records
-   *    「引号」 will not have df 1 and the whole feature would silently stop
-   *    firing. A fraction is scale-invariant — 「测试」 takes 30-50% of any
-   *    corpus, 「引号」 a few percent.
-   *  - `minMatches` requires a record to hit several DISTINCT bigrams. Measured
-   *    as effective but blunt: at 2 it drives worst-case false recall to 0-2 but
-   *    cuts reachable targets from 32/72 to 9/72, which is worse than the DF
-   *    ceiling achieves. Kept as a knob, defaulted to 1.
-   *
-   * NEITHER of them is the release gate. The bound that holds regardless of
-   * corpus size and DF distribution is the post-fusion `bigramOnlyLimit` in the
-   * retrieval kernel — same shape as `semanticOnlyLimit`, worst case guaranteed
-   * by construction rather than by a threshold that happened to fit 26 records.
-   *
-   * Returns candidates ordered by how many distinct bigrams they matched, then
-   * recency, then id. That order becomes the leg's rank in RRF.
+   * Candidates come back ordered by distinct bigrams matched, then recency, then
+   * id; that order becomes the leg's rank in RRF.
    */
   searchObservationsByCjkBigrams(
     bigrams: string[],
@@ -1398,9 +1219,8 @@ export class MemoryDB {
     const scopeSize = rows.length;
     if (scopeSize === 0) return { ...empty, unitsProbed: bigrams.length };
 
-    // DF per bigram, then the ceiling. Computed from the SAME scan rather than
-    // by separate COUNT queries so the ratio's denominator is provably the set
-    // of rows the candidates come from.
+    // DF per bigram from the SAME scan rather than separate COUNT queries, so the
+    // ratio's denominator is provably the set of rows the candidates come from.
     const df = bigrams.map((_, i) => rows.reduce((n, r) => n + (r[`b${i}`] ?? 0), 0));
     const droppedByDf: { bigram: string; df: number }[] = [];
     let zeroDf = 0;
@@ -1414,10 +1234,9 @@ export class MemoryDB {
 
     const scored: { id: number; matches: number; bigrams: string[]; stoppedAt: string }[] = [];
     for (const r of rows) {
-      // Which bigrams matched, not just how many. Plan §10 requires the phase 3A
-      // gain be attributable to a SPECIFIC two-character word — "FTS got better"
-      // is not an attribution, and recomputing this in the benchmark would be a
-      // second source of truth for what the leg matched.
+      // Which bigrams matched, not just how many: plan §10 requires the phase 3A
+      // gain be attributable to a SPECIFIC two-character word, and recomputing it
+      // in the benchmark would be a second source of truth.
       const hit: string[] = [];
       for (const i of usable) if (r[`b${i}`]) hit.push(bigrams[i]!);
       if (hit.length >= opts.minMatches && hit.length > 0) {
@@ -1442,11 +1261,10 @@ export class MemoryDB {
   /**
    * Recent Observation ids for the semantic candidate pool, scoped and typed.
    *
-   * `limit: Infinity` means "the whole scope" and drops the LIMIT clause. It is
-   * handled here rather than at the call site because binding `Infinity` into
-   * SQLite does NOT fail loudly: it coerces, and the caller gets some row count
-   * nobody chose. The phase 3B `pool-full` arm depends on this being an explicit,
-   * checked branch.
+   * `limit: Infinity` means "the whole scope" and drops the LIMIT clause. Handled
+   * here rather than at the call site because binding `Infinity` into SQLite does
+   * NOT fail loudly: it coerces, and the caller gets a row count nobody chose. The
+   * phase 3B `pool-full` arm depends on this being an explicit, checked branch.
    */
   getRecentObservationIds(opts: { scopeKey?: string; type?: string; days?: number; limit: number }): number[] {
     const dateThreshold = searchDateThreshold(opts.days ?? DEFAULT_SEARCH_DAYS);
@@ -1460,10 +1278,8 @@ export class MemoryDB {
     return (this.db.query(sql).all(...params) as { id: number }[]).map((r) => r.id);
   }
 
-  /**
-   * Count vectors in one complete embedding space across the scope. Type and days
-   * are intentionally omitted because this is corpus coverage, not request reach.
-   */
+  /** Count vectors in one complete embedding space across the scope. Type and days
+   * are intentionally omitted because this is corpus coverage, not request reach. */
   countScopeVectors(opts: { scopeKey?: string; model: string; dimensions: number }): number {
     let sql = `SELECT COUNT(*) AS c FROM observation_embeddings e
                  JOIN observations o ON o.id = e.observation_id
@@ -1477,18 +1293,11 @@ export class MemoryDB {
     return row?.c ?? 0;
   }
 
-  /**
-   * Timeline anchored on an Observation's SOURCE TURN, not on the Observation's
-   * auto-increment id. Ordering key is (turn_stopped_at, turn_seq, id) so the
-   * result reflects the real work timeline even when Observations were written
-   * out of turn order (retries, async compression).
-   *
-   * - mode='scope' (default): neighbors within the same workspace scope_key —
-   *   good for cross-session continuous work.
-   * - mode='session': neighbors within the same session only.
-   *
-   * `before` is returned oldest→anchor; `after` is anchor→newest.
-   */
+  /** Timeline anchored on an Observation's SOURCE TURN, not on its auto-increment id.
+   * Ordering key is (turn_stopped_at, turn_seq, id) so the result reflects the real
+   * work timeline even when Observations were written out of turn order (retries,
+   * async compression). mode='scope' walks the workspace, mode='session' one
+   * session; `before` is oldest→anchor, `after` anchor→newest. */
   observationTimeline(
     observation_id: number,
     opts?: { before?: number; after?: number; mode?: 'scope' | 'session' },
@@ -1529,10 +1338,8 @@ export class MemoryDB {
     return { anchor, before: olderDesc.reverse(), after: newerAsc };
   }
 
-  /**
-   * Pinned Observations for the AgentSpawn bootstrap index, hard-scoped.
-   * Ordered by recency. Independent of session.
-   */
+  /** Pinned Observations for the AgentSpawn bootstrap index, hard-scoped, recent
+   * first. Independent of session. */
   getPinnedObservations(opts: { scopeKey?: string; limit: number }): Observation[] {
     let sql = `SELECT * FROM observations WHERE is_pinned = 1`;
     const params: (string | number)[] = [];
@@ -1542,11 +1349,9 @@ export class MemoryDB {
     return this.db.query(sql).all(...params) as Observation[];
   }
 
-  /**
-   * Most recent Observations in a scope, ordered by turn_stopped_at desc.
-   * "Recent N" for the bootstrap index is independent of session_id (session
-   * is only for event attribution/isolation, not index selection).
-   */
+  /** Most recent Observations in a scope. "Recent N" for the bootstrap index is
+   * independent of session_id — session is only for event attribution/isolation,
+   * not index selection. */
   getRecentObservations(opts: { scopeKey?: string; limit: number }): Observation[] {
     let sql = `SELECT * FROM observations`;
     const params: (string | number)[] = [];
@@ -1556,22 +1361,15 @@ export class MemoryDB {
     return this.db.query(sql).all(...params) as Observation[];
   }
 
-  // ===========================================================
-  // Viewer reads (plan §7)
-  // ===========================================================
+  // ---------- Viewer reads (plan §7) ----------
   //
-  // Every method here takes `scopeKey` the same way retrieval does: the filter is
-  // applied in SQL, not after the rows are handed to a caller. A Viewer that
-  // fetched cross-scope rows and dropped them in the browser would have already
-  // put another workspace's memory on the wire.
+  // `scopeKey` is filtered in SQL, not after the rows are handed to a caller: a
+  // Viewer that fetched cross-scope rows and dropped them in the browser would
+  // already have put another workspace's memory on the wire.
 
-  /**
-   * Workspace scopes that actually hold Observations, newest first.
-   *
-   * Drives the Viewer's scope selector. The launching workspace is added by the
-   * caller, because a fresh workspace with no memory yet still has to be
-   * selectable — otherwise the Viewer opens on "all workspaces" by accident.
-   */
+  /** Workspace scopes that actually hold Observations, newest first — the Viewer's
+   * scope selector. The launching workspace is added by the caller, so a fresh
+   * workspace with no memory yet is still selectable. */
   listObservationScopes(limit = 200): {
     scopeKey: string;
     observations: number;
@@ -1590,14 +1388,11 @@ export class MemoryDB {
       .all(limit) as { scopeKey: string; observations: number; lastActivityAt: string | null }[];
   }
 
-  /**
-   * One Feed page, keyset-paginated on the Feed's own sort key.
-   *
-   * Keyset rather than OFFSET because the Feed is live: an Observation created
-   * between two pages shifts every later offset, which shows up as a duplicated
-   * or skipped card. `(turn_stopped_at, id)` is exactly the ORDER BY, so the
-   * cursor is stable under concurrent inserts and deletes.
-   */
+  /** One Feed page, keyset-paginated on the Feed's own sort key. Keyset rather than
+   * OFFSET because the Feed is live: an Observation created between two pages
+   * shifts every later offset into a duplicated or skipped card.
+   * `(turn_stopped_at, id)` is exactly the ORDER BY, so the cursor is stable under
+   * concurrent inserts and deletes. */
   listObservationsPage(opts: {
     scopeKey?: string;
     limit: number;
@@ -1649,14 +1444,10 @@ export class MemoryDB {
     };
   }
 
-  /**
-   * Per-turn raw-event shape: how many events, of which kinds, and how many
-   * ORIGINAL bytes they carried.
-   *
-   * `payload_size` is the pre-truncation size, so this is what the delete
-   * confirmation must show: the user is agreeing to destroy that much captured
-   * input, not the possibly-capped copy that survived.
-   */
+  /** Per-turn raw-event shape: how many events, of which kinds, and how many
+   * ORIGINAL bytes they carried. `payload_size` is the pre-truncation size, which
+   * is what the delete confirmation must show — the user is agreeing to destroy
+   * that much captured input, not the possibly-capped copy that survived. */
   turnEventStats(turn_id: number): {
     events: number;
     payloadBytes: number;
@@ -1700,17 +1491,12 @@ export class MemoryDB {
       .all(observation_id) as { model: string; dimensions: number }[];
   }
 
-  /**
-   * Every scope key this database knows about, whether or not it has memory yet.
-   *
-   * Two sources on purpose. `observations` answers "what can I browse", but a
-   * workspace whose first turn has not compressed yet has only a `session_refs`
-   * row — and the Viewer still has to accept it, because that is exactly the
-   * scope a context preview should show as "frame only, nothing recorded".
-   *
-   * Derived from STORED repo/cwd, never from caller input, so validating a
-   * requested scope cannot make the Worker probe an arbitrary path.
-   */
+  /** Every scope key this database knows about, whether or not it has memory yet.
+   * `observations` answers "what can I browse", but a workspace whose first turn has
+   * not compressed yet has only a `session_refs` row, and a context preview must
+   * still show it as "frame only". Derived from STORED repo/cwd, never from caller
+   * input, so validating a requested scope cannot make the Worker probe an
+   * arbitrary path. */
   listKnownScopeKeys(limit = 200): string[] {
     const keys = new Set<string>();
     for (const row of this.db
@@ -1726,29 +1512,22 @@ export class MemoryDB {
     return [...keys];
   }
 
-  // ===========================================================
-  // Manual permanent deletion (plan §4)
-  // ===========================================================
+  // ---------- Manual permanent deletion (plan §4) ----------
 
   /**
    * Permanently delete one Observation together with the turn truth it was
-   * projected from.
+   * projected from. There is no "delete the memory but keep the truth" mode: a kept
+   * closed turn with no Observation is exactly what `kiro-mem repair` re-enqueues,
+   * so the record the user asked to forget would come back with a new id.
    *
-   * There is deliberately no "delete the memory but keep the truth" mode. Keeping
-   * the turn would leave `kiro-mem repair` a closed turn with no Observation,
-   * which it is built to re-enqueue — the record the user asked to forget would
-   * come back on the next repair, with a new id and no trace of the deletion.
+   * `BEGIN IMMEDIATE`, not the default deferred transaction: the leased-job check
+   * and the deletion of pending jobs must be one atomic step against the JobRunner.
+   * A deferred transaction takes no write lock until its first write, so the runner
+   * could lease the pending job between "no leased jobs found" and the DELETE, then
+   * write derived rows for an Observation that no longer exists.
    *
-   * `BEGIN IMMEDIATE`, not the default deferred transaction: the check for a
-   * leased job and the deletion of pending jobs must be one atomic step against
-   * the JobRunner. A deferred transaction takes no write lock until its first
-   * write, so the runner could lease the pending job in the window between "no
-   * leased jobs found" and the DELETE, and then write derived rows for an
-   * Observation that no longer exists.
-   *
-   * Returns the minimum needed to route an SSE event. No prompt, summary, event
-   * payload or file path is returned or logged: a deletion must not leave the
-   * content in a log line.
+   * Returns only what an SSE event needs. No prompt, summary, event payload or file
+   * path is returned or logged.
    */
   deleteObservationWithTruth(
     observationId: number,
@@ -1772,8 +1551,8 @@ export class MemoryDB {
       if (!obs) return { ok: false, reason: 'not_found' };
 
       // A leased job owns CPU or an ACP sub-process that cannot be cancelled
-      // mid-flight. Refusing is the only honest answer: deleting underneath it
-      // would let the handler write derived rows for a row that is gone.
+      // mid-flight; deleting underneath it would let the handler write derived
+      // rows for a row that is gone.
       const related = this.db
         .query(
           `SELECT id, state FROM jobs
@@ -1794,8 +1573,8 @@ export class MemoryDB {
       // the intended behaviour, but only reachable through a wrong order.
       this.db.run('DELETE FROM observation_embeddings WHERE observation_id = ?', [obs.id]);
       this.db.run('DELETE FROM observation_semantic_texts WHERE observation_id = ?', [obs.id]);
-      // The observations_ad trigger removes the FTS row; there is deliberately no
-      // second hand-written FTS delete to drift from it.
+      // The observations_ad trigger removes the FTS row; no second hand-written
+      // FTS delete to drift from it.
       this.db.run('DELETE FROM observations WHERE id = ?', [obs.id]);
       this.db.run('DELETE FROM turn_artifacts WHERE turn_id = ?', [obs.turn_id]);
       this.db.run('DELETE FROM turn_events WHERE turn_id = ?', [obs.turn_id]);
@@ -1816,10 +1595,9 @@ export class MemoryDB {
         }
       }
 
-      // Belt and braces. `PRAGMA foreign_keys=ON` already aborts a statement that
-      // would orphan a row, so this is a verification rather than the mechanism —
-      // and it is scoped to the tables this transaction touched, because the
-      // database-wide form scans every FK in the file on every delete.
+      // Verification, not the mechanism: `PRAGMA foreign_keys=ON` already aborts a
+      // statement that would orphan a row. Scoped to the tables this transaction
+      // touched because the database-wide form scans every FK in the file.
       for (const table of [
         'observations',
         'observation_embeddings',
@@ -1830,8 +1608,8 @@ export class MemoryDB {
       ]) {
         const violations = this.db.query(`PRAGMA foreign_key_check(${table})`).all();
         if (violations.length > 0) {
-          // Throwing is the rollback: partial deletion is never an acceptable
-          // outcome for an operation the user was told is permanent.
+          // Throwing is the rollback; partial deletion is never acceptable for an
+          // operation the user was told is permanent.
           throw new Error(`foreign_key_check failed after delete: ${table}`);
         }
       }
@@ -1842,9 +1620,7 @@ export class MemoryDB {
     return run.immediate() as Result;
   }
 
-  // ===========================================================
-  // jobs
-  // ===========================================================
+  // ---------- jobs ----------
 
   enqueueJob(input: {
     job_type: string;
@@ -1903,30 +1679,22 @@ export class MemoryDB {
   // ---------- reconciliation (P0-5) ----------
 
   /**
-   * Find projection work that was lost rather than merely failed.
+   * Find projection work that was lost rather than merely failed. Two orphan
+   * classes, both invisible in normal operation:
+   *   - a CLOSED turn with no Observation and no active summarize job: the enqueue
+   *     never landed, or the job went terminal producing nothing. A dropped raw
+   *     event cannot be recovered, but a missing projection can.
+   *   - an Observation whose stored vector is missing **or unusable**: written by a
+   *     different embedding model, a different dimensionality, or with a mismatched
+   *     blob length. Retrieval skips such rows (§7.1), so they degrade to
+   *     keyword-only reachability silently — and the first version of this check
+   *     only looked for a *missing row*, which left every historical vector
+   *     permanently dark after a model upgrade with no command able to rebuild it.
    *
-   * Two orphan classes, both invisible in normal operation:
-   *   - a CLOSED turn with no Observation and no active summarize job. Either
-   *     the enqueue never landed (crash between close and enqueue, pre-
-   *     transaction data) or the job reached a terminal state without producing
-   *     anything. A dropped raw event cannot be recovered, but a missing
-   *     projection can — the Truth Layer still holds the events.
-   *   - an Observation whose stored vector is missing **or unusable**: written
-   *     by a different embedding model, a different dimensionality, or with a
-   *     blob whose byte length does not match. The retrieval layer skips such
-   *     rows (§7.1), so they degrade to keyword-only reachability silently —
-   *     and the first version of this check only looked for a *missing row*,
-   *     which meant an embedding-model upgrade left every historical vector
-   *     permanently dark with no command able to rebuild it.
-   *
-   * The vector identity is a **required** argument rather than an optional
-   * filter: a lenient default is exactly how the stale-vector class went
-   * unnoticed. Callers must state which vector space they consider current.
-   *
-   * `succeeded` counts as active for turns: a succeeded summarize job that left
-   * no Observation is a real bug, but re-running it is safe (the handler
-   * short-circuits) and surfacing it is more useful than hiding it — so it is
-   * deliberately NOT filtered out here.
+   * The vector identity is a **required** argument, not an optional filter: a
+   * lenient default is exactly how the stale-vector class went unnoticed.
+   * `succeeded` counts as active for turns — such a job leaving no Observation is a
+   * real bug, but re-running is safe (the handler short-circuits).
    */
   findOrphans(opts: {
     embeddingModel: string;
@@ -1981,13 +1749,10 @@ export class MemoryDB {
     return { turnsWithoutObservation, observationsWithoutEmbedding };
   }
 
-  /**
-   * Re-enqueue the orphans found by `findOrphans()`.
-   *
-   * Idempotent by construction: the active-only dedupe index means a second run
-   * while the first is still pending is swallowed, and terminal rows are left in
-   * place so the original `last_error` stays available for diagnosis.
-   */
+  /** Re-enqueue the orphans found by `findOrphans()`. Idempotent by construction:
+   * the active-only dedupe index swallows a second run while the first is still
+   * pending, and terminal rows are left in place so their `last_error` stays
+   * available for diagnosis. */
   requeueOrphans(opts: {
     embeddingModel: string;
     embeddingDimensions: number;
@@ -2023,21 +1788,17 @@ export class MemoryDB {
     return { summarize, embed };
   }
 
-  // ===========================================================
-  // observability (design §12.4)
-  // ===========================================================
+  // ---------- observability (design §12.4) ----------
 
   /**
    * Record one MCP search request. `degraded` marks an FTS-only fallback (query
-   * embedding unavailable). Written from the MCP server process. Never throws
-   * out — metric recording must not break search.
+   * embedding unavailable). Never throws out — metric recording must not break
+   * search.
    *
-   * Everything past `degraded` is the phase 2C retrieval observability (plan
-   * §8.2) and is optional: a caller that only knows latency still writes a valid
-   * row, and the aggregation reports the rest as unknown instead of zero. All of
-   * it is counts and enum reasons — no query text, no Observation text, no scope
-   * key — because these rows outlive the request and a metric table is the one
-   * place nobody expects to find user content.
+   * Everything past `degraded` is the phase 2C retrieval observability (plan §8.2)
+   * and optional; the aggregation reports absent fields as unknown, not zero.
+   * Counts and enum reasons only — no query text, no Observation text, no scope key
+   * — because these rows outlive the request.
    */
   recordSearchMetric(opts: {
     latencyMs: number;
@@ -2083,10 +1844,7 @@ export class MemoryDB {
     }
   }
 
-  /**
-   * Record one ACP runtime event (JSON-repair attempt or contamination recycle).
-   * Written from the worker process. Best-effort.
-   */
+  /** One ACP runtime event (JSON-repair attempt or contamination recycle). Best-effort. */
   recordAcpEvent(kind: 'repair' | 'contamination'): void {
     try {
       const r = this.db.run(
@@ -2099,11 +1857,9 @@ export class MemoryDB {
     }
   }
 
-  /**
-   * Record one Worker request rejected by local token auth. Written from the
-   * worker process so an otherwise invisible failure (Hooks never surface a
-   * 401) shows up in /health and diagnose. Best-effort.
-   */
+  /** One Worker request rejected by local token auth, recorded so an otherwise
+   * invisible failure (Hooks never surface a 401) shows up in /health and
+   * diagnose. Best-effort. */
   recordAuthEvent(kind: 'unauthorized'): void {
     try {
       const r = this.db.run(
@@ -2116,22 +1872,17 @@ export class MemoryDB {
     }
   }
 
-  /**
-   * Opportunistic retention cap on metric_events (~every 256 inserts). We only
-   * ever report a trailing 24h window; 7 days of retention gives ample buffer
-   * without an unbounded ops table.
-   */
+  /** Opportunistic retention cap on metric_events (~every 256 inserts). Only a
+   * trailing 24h window is ever reported; 7 days of retention gives ample buffer
+   * without an unbounded ops table. */
   private maybePruneMetrics(rowid: number): void {
     if (rowid % 256 !== 0) return;
     const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     this.db.run('DELETE FROM metric_events WHERE created_at < ?', [cutoff]);
   }
 
-  /**
-   * DB-derived observability snapshot for `/health` and `kiro-mem diagnose`.
-   * Pure counts — never returns observation text. Cheap enough to call per
-   * health check on a normal-sized DB.
-   */
+  /** DB-derived observability snapshot for `/health` and `kiro-mem diagnose`. Pure
+   * counts — never returns observation text. */
   getObservabilityStats(): ObservabilityStats {
     const scalar = (sql: string, ...params: (string | number)[]): number => {
       const row = this.db.query(sql).get(...params) as { c: number } | null;
@@ -2143,10 +1894,9 @@ export class MemoryDB {
       "SELECT COUNT(*) AS c FROM observations WHERE quality = 'fallback'",
     );
     const pinned = scalar('SELECT COUNT(*) AS c FROM observations WHERE is_pinned = 1');
-    // Per-space counts. `model` is the full space key, so a row written under an
-    // older key (or a bare model name from before protocol isolation) counts for
-    // no protocol — which is the honest reading: it cannot be compared against
-    // anything the current code produces.
+    // `model` is the full space key, so a row written under an older key (or a bare
+    // model name from before protocol isolation) counts for no protocol — it cannot
+    // be compared against anything the current code produces.
     const spaceKeys = NORMALIZATION_PROTOCOLS.map((protocol) => ({
       protocol,
       spaceKey: embeddingSpaceKey(protocol),

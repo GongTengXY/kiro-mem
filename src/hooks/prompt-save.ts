@@ -1,7 +1,5 @@
 #!/usr/bin/env bun
-/**
- * userPromptSubmit hook: forward prompt event to Worker with session_id.
- */
+/** userPromptSubmit hook: forward prompt event to Worker with session_id. */
 import { readFileSync } from 'fs';
 import { injectSessionId } from './session';
 import { classifyCaptureError, recordCaptureMiss } from './capture-log';
@@ -27,8 +25,7 @@ try {
     method: 'POST', headers, body: input,
     signal: AbortSignal.timeout(700),
   });
-  // A dropped userPromptSubmit means the whole turn has no open turn row, so
-  // every later event for it is orphaned. Record the miss (metadata only).
+  // A dropped userPromptSubmit leaves no open turn row, orphaning every later event.
   if (!response.ok) recordCaptureMiss(DATA_DIR, 'userPromptSubmit', 'rejected', response.status);
 } catch (error) {
   recordCaptureMiss(DATA_DIR, 'userPromptSubmit', classifyCaptureError(error));

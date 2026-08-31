@@ -2,15 +2,9 @@
 /**
  * Build the Web Viewer bundle (plan §5.2).
  *
- * One IIFE file plus a copied stylesheet and HTML shell. Preact is a
- * devDependency and is compiled INTO the bundle, so the installed Worker gains no
- * runtime dependency and the page loads with zero network beyond loopback — there
- * is deliberately no CDN reference and no separate dev server.
- *
- * The CSS is copied rather than imported through the bundler: the plan requires a
- * standalone `styles.css` (an inline <style> would force `style-src
- * 'unsafe-inline'` into the CSP), and a plain copy has no bundler behaviour to
- * drift with.
+ * Preact is a devDependency compiled into one IIFE, so the installed Worker gains
+ * no runtime dependency. `styles.css` is copied rather than bundled: an inline
+ * <style> would force `style-src 'unsafe-inline'` into the CSP.
  */
 
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
@@ -24,8 +18,7 @@ const OUT = join(ROOT, 'dist', 'ui');
 const FORBIDDEN_REMOTE = /(https?:)?\/\/(?!127\.0\.0\.1|localhost)[a-z0-9-]+\.[a-z]{2,}/i;
 
 function main(): void {
-  // Repeatable by construction: the output directory is rebuilt from scratch, so
-  // a renamed or deleted source file cannot leave a stale asset behind.
+  // Rebuilt from scratch, so a renamed source file cannot leave a stale asset.
   rmSync(OUT, { recursive: true, force: true });
   mkdirSync(OUT, { recursive: true });
 

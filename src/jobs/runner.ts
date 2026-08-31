@@ -76,9 +76,7 @@ export class JobRunner {
     };
   }
 
-  // ----------------------------------------------------------
-  // Internal
-  // ----------------------------------------------------------
+  // --- Internal ---
 
   private countByState(state: JobState): number {
     const row = this.db.raw
@@ -87,10 +85,7 @@ export class JobRunner {
     return row.cnt;
   }
 
-  /**
-   * On startup, any jobs left in `leased` state from a previous process are
-   * considered abandoned. Reset them to `pending` so they get retried.
-   */
+  /** Jobs left `leased` by a previous process are abandoned; reset them to `pending`. */
   private reclaimStaleLeases() {
     const now = new Date().toISOString();
     this.db.raw.run(
@@ -112,10 +107,7 @@ export class JobRunner {
     }
   }
 
-  /**
-   * Atomically lease the next available job. Uses UPDATE ... RETURNING to
-   * avoid TOCTOU races in single-writer SQLite.
-   */
+  /** Atomic lease via UPDATE ... RETURNING, avoiding a TOCTOU race in single-writer SQLite. */
   private fetchNext(): Job | null {
     const now = new Date().toISOString();
     const row = this.db.raw
@@ -166,7 +158,6 @@ export class JobRunner {
       this.markDead(job, error);
       return;
     }
-    // Exponential backoff
     const delayMs = BACKOFF_BASE_MS * Math.pow(2, attempts - 1);
     const availableAt = new Date(Date.now() + delayMs).toISOString();
     this.db.raw.run(

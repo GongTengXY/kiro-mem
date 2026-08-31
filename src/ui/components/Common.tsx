@@ -1,12 +1,9 @@
 /** @jsxImportSource preact */
 /**
- * Render primitives (plan §6.3).
- *
- * Every string these components receive originates from a past user prompt, tool
- * output or LLM compression, so it is UNTRUSTED. They render it as text children
- * only. `dangerouslySetInnerHTML` appears nowhere in this bundle, and V1
- * deliberately renders no Markdown and auto-links no URLs or file paths — a
- * clickable path is an easy way to turn recorded data into an action.
+ * Render primitives (plan §6.3). Every string here comes from a past user prompt,
+ * tool output or LLM compression, so it is untrusted: text children only, no
+ * `dangerouslySetInnerHTML` anywhere in this bundle, no Markdown, and no
+ * auto-linked URL or file path — a clickable path turns recorded data into an action.
  */
 
 import type { ComponentChildren } from 'preact';

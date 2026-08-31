@@ -1,10 +1,7 @@
 /**
- * Feed state merging (plan §3.2).
- *
- * The Feed has two writers — paginated fetches and the SSE stream — so "the same
- * Observation twice" and "an Observation from the workspace I just switched away
- * from" are the two defects this module exists to prevent. Kept pure and
- * DOM-free so it can be tested without a browser.
+ * Feed state merging (plan §3.2). Two writers — paginated fetches and the SSE
+ * stream — so this module guards against the same Observation twice and against
+ * a card from the workspace the user just switched away from. Pure and DOM-free.
  */
 
 import type { ViewerObservationCard } from '../server/viewer-types';
@@ -16,13 +13,10 @@ export function compareCards(a: ViewerObservationCard, b: ViewerObservationCard)
 }
 
 /**
- * Merge incoming cards into the current list.
- *
- * Dedupe is by Observation id, and the INCOMING copy wins: it is either the same
- * row or a fresher read of it (a pin toggle, an embedding that just landed).
- * `scopeKey` is the second line of defence the plan asks for — the server already
- * filtered, and a stale in-flight response from the previous workspace must not
- * be able to slip a card in after a scope switch.
+ * Dedupe is by Observation id and the incoming copy wins: the same row, or a fresher
+ * read of it (a pin toggle, an embedding that just landed). The `scopeKey` filter is
+ * the plan's second line of defence: a stale in-flight response from the previous
+ * workspace must not slip a card in after a scope switch.
  */
 export function mergeCards(
   current: ViewerObservationCard[],
@@ -39,7 +33,6 @@ export function mergeCards(
   return kept.sort(compareCards);
 }
 
-/** Remove one card (an `observation_deleted` event, or a local delete). */
 export function removeCard(current: ViewerObservationCard[], id: number): ViewerObservationCard[] {
   return current.filter((card) => card.id !== id);
 }
@@ -53,7 +46,6 @@ export function applyPin(
   return current.map((card) => (card.id === id ? { ...card, pinned } : card));
 }
 
-/** Human-readable byte size for the delete dialog and context breakdown. */
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return '—';
   if (bytes < 1024) return `${bytes} B`;

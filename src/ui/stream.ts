@@ -1,14 +1,10 @@
 /**
- * fetch-based SSE client (plan §8).
+ * fetch-based SSE client (plan §8). `parseSseChunk` is a pure incremental parser;
+ * `ViewerStream` owns the reader loop, the AbortController and reconnect.
  *
- * Two responsibilities kept apart: `parseSseChunk` is a pure incremental parser
- * (testable with no browser), and `ViewerStream` owns the reader loop, the
- * AbortController and the reconnect policy.
- *
- * A 401 must NOT be retried. The token lives in this tab's `sessionStorage`, so
- * once it is rejected no amount of reconnecting will fix it — the user has to run
- * `kiro-mem viewer` again. Looping would just hammer the Worker and hide the
- * actual instruction.
+ * A 401 is never retried: the token lives in this tab's `sessionStorage`, so
+ * reconnecting cannot fix it and would only hammer the Worker while hiding the
+ * instruction to run `kiro-mem viewer` again.
  */
 
 import type { ViewerStreamEvent } from '../server/viewer-types';
@@ -16,10 +12,7 @@ import { ApiError, type ScopeSelection, type ViewerApi } from './api';
 
 export type StreamState = 'connecting' | 'open' | 'closed' | 'unauthorized';
 
-/**
- * Feed raw text into a buffer and pull out whole SSE frames.
- * Returns the events found plus the unconsumed tail.
- */
+/** Pull whole SSE frames out of a buffer; returns the events plus the unconsumed tail. */
 export function parseSseChunk(buffer: string): { events: ViewerStreamEvent[]; rest: string } {
   const events: ViewerStreamEvent[] = [];
   let rest = buffer;

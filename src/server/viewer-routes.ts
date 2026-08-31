@@ -1,18 +1,13 @@
 /**
- * Web Viewer HTTP surface (plan §6, §7).
- *
- * Two very different kinds of route live here:
- *
- *   - `/ui` and its two static assets are a PUBLIC shell. They contain no memory
- *     content, so they are exempt from the bearer token — a browser cannot set an
- *     Authorization header on a top-level navigation, and putting the token in the
- *     URL would leak it into history, Referer and access logs.
- *   - every `/api/viewer/*` route is data and fails CLOSED: the Worker's existing
- *     token middleware covers them because they are NOT on its exempt list.
- *
- * Both kinds additionally require a loopback `Host`. That check is what stops DNS
- * rebinding: a page on evil.com that resolves to 127.0.0.1 still sends
- * `Host: evil.com`, and the Worker refuses it before any handler runs.
+ * Web Viewer HTTP surface (plan §6, §7). Two kinds of route:
+ *   - `/ui` and its two static assets are a public shell with no memory content,
+ *     exempt from the bearer token: a browser cannot set an Authorization header
+ *     on a top-level navigation, and a token in the URL would leak into history,
+ *     Referer and access logs.
+ *   - every `/api/viewer/*` route is data and fails closed — the Worker's token
+ *     middleware covers them because they are not on its exempt list.
+ * Both also require a loopback `Host`, which is what stops DNS rebinding: a page
+ * on evil.com resolving to 127.0.0.1 still sends `Host: evil.com`.
  */
 
 import type { Hono } from 'hono';
@@ -45,7 +40,6 @@ const DETAIL_TEXT_CLIP = 4000;
 const PROMPT_MAX_CHARS = 20_000;
 /** Longest scope key the Viewer may send. Real ones are filesystem paths. */
 const SCOPE_KEY_MAX_CHARS = 1024;
-/** Newest log files scanned for the log drawer. */
 const LOG_FILES_SCANNED = 3;
 /** Tail bytes read per log file, so a huge log cannot be pulled into memory. */
 const LOG_FILE_TAIL_BYTES = 512 * 1024;
@@ -66,15 +60,10 @@ export interface ViewerRouteDeps {
   retrievalPolicy: RetrievalPolicy;
   version: string;
   startedAt: string;
-  /**
-   * The port the Worker is ACTUALLY listening on.
-   *
-   * A function, not a number, because `createApp` runs before `Bun.serve` picks
-   * the socket up: the plan requires the Host check to be anchored to the real
-   * listener, and reading `config.worker.port` would silently reject every
-   * request whenever the two differ (a port-0 bind, or a config edit that has not
-   * been restarted into). Defaults to the configured port.
-   */
+  /** The port the Worker is actually listening on — a function, not a number, because
+   * `createApp` runs before `Bun.serve` binds. The Host check must anchor to the real
+   * listener; `config.worker.port` would silently reject every request whenever the
+   * two differ (a port-0 bind, or an unrestarted config edit). */
   listeningPort?: () => number;
   /** Override for tests. Production resolves <dataDir>/ui then repo dist/ui. */
   uiDirs?: string[];
@@ -82,17 +71,12 @@ export interface ViewerRouteDeps {
   logsDir?: string;
 }
 
-// =============================================================
-// Security primitives
-// =============================================================
+// --- Security primitives ---
 
 const LOOPBACK_HOSTNAMES = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
 
-/**
- * Split a `Host` header into hostname and port without inventing a URL parse.
- * IPv6 literals keep their brackets so `[::1]:37778` does not split on the colons
- * inside the address.
- */
+/** Split a `Host` header into hostname and port. IPv6 literals keep their brackets
+ * so `[::1]:37778` does not split on the colons inside the address. */
 function splitHost(host: string): { hostname: string; port: string } {
   if (host.startsWith('[')) {
     const close = host.indexOf(']');
@@ -106,13 +90,9 @@ function splitHost(host: string): { hostname: string; port: string } {
   return { hostname: host.slice(0, idx), port: host.slice(idx + 1) };
 }
 
-/**
- * Accept only an exact loopback authority on the port this Worker listens on.
- *
- * A missing port is accepted because an in-process `app.fetch()` request (tests,
- * and Bun's own default-port form) carries none; it cannot be produced by a
- * browser pointed at a rebound hostname, which is the threat this guards.
- */
+/** Accept only an exact loopback authority on the port this Worker listens on. A
+ * missing port is accepted because an in-process `app.fetch()` carries none; a
+ * browser pointed at a rebound hostname cannot produce that form. */
 export function isLoopbackHost(host: string | undefined | null, port: number): boolean {
   if (!host) return false;
   const { hostname, port: hostPort } = splitHost(host.trim().toLowerCase());
@@ -120,14 +100,10 @@ export function isLoopbackHost(host: string | undefined | null, port: number): b
   return hostPort === '' || hostPort === String(port);
 }
 
-/**
- * A destructive request must come from the Viewer page itself.
- *
- * The rule is exact equality with the request's own authority — not "some
- * loopback origin" — so a page served from a different local port cannot delete
- * this Worker's memory. Missing `Origin` is refused: `fetch` from the Viewer
- * always sends it.
- */
+/** A destructive request must come from the Viewer page itself: exact equality with the
+ * request's own authority, not "some loopback origin", so a page on a different local
+ * port cannot delete this Worker's memory. Missing `Origin` is refused — the Viewer's
+ * `fetch` always sends it. */
 export function isSameViewerOrigin(origin: string | undefined | null, host: string | undefined | null): boolean {
   if (!origin || !host) return false;
   return origin.trim().toLowerCase() === `http://${host.trim().toLowerCase()}`;
@@ -141,19 +117,14 @@ const SECURITY_HEADERS: Record<string, string> = {
   'Cross-Origin-Resource-Policy': 'same-origin',
 };
 
-/**
- * `'self'` everywhere and no `unsafe-inline`. That is why the stylesheet is a
- * separate file instead of a `<style>` block: one inline style would force
- * `style-src 'unsafe-inline'`, which also re-opens the injection surface that
- * rendering untrusted memory as text nodes is meant to close.
- */
+/** `'self'` everywhere, no `unsafe-inline` — which is why the stylesheet is a separate
+ * file: one inline style would force `style-src 'unsafe-inline'` and re-open the
+ * injection surface that rendering untrusted memory as text nodes closes. */
 const CSP =
   "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; " +
   "connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
-// =============================================================
-// Static shell
-// =============================================================
+// --- Static shell ---
 
 const STATIC_ASSETS: Record<string, { file: string; type: string }> = {
   'viewer.html': { file: 'viewer.html', type: 'text/html; charset=utf-8' },
@@ -161,14 +132,9 @@ const STATIC_ASSETS: Record<string, { file: string; type: string }> = {
   'styles.css': { file: 'styles.css', type: 'text/css; charset=utf-8' },
 };
 
-/**
- * Where the built bundle lives.
- *
- * `<dataDir>/ui` first: that is what `kiro-mem install` lays down, and a real
- * installation has no repository to fall back to. The repo path exists only so
- * `bun run src/server/worker.ts` during development serves the local build; the
- * plan explicitly forbids treating that fallback as installation acceptance.
- */
+/** `<dataDir>/ui` first — what `kiro-mem install` lays down; a real installation has
+ * no repo to fall back to. The repo path serves the local build during development
+ * only, and the plan forbids treating it as installation acceptance. */
 export function resolveViewerUiDirs(override?: string[]): string[] {
   if (override) return override;
   return [join(getDataDir(), 'ui'), resolve(import.meta.dir, '../../dist/ui')];
@@ -191,22 +157,16 @@ const BUILD_MISSING_HTML = `<!doctype html>
 <code>bun run build:ui</code> when working from a source checkout.</p>
 </body></html>`;
 
-// =============================================================
-// Shared request helpers
-// =============================================================
+// --- Shared request helpers ---
 
 export interface ResolvedScope {
   scopeKey: string | undefined;
   allScopes: boolean;
 }
 
-/**
- * Fail-closed scope resolution.
- *
- * `allScopes` must be strictly `true`; a truthy string like `"false"` does not
- * unlock cross-workspace browsing. Without a scope and without that explicit
- * flag the request is rejected rather than silently served globally.
- */
+/** Fail-closed scope resolution: `allScopes` must be strictly `true` — a truthy string
+ * like `"false"` does not unlock cross-workspace browsing — and a request with neither
+ * a scope nor that flag is rejected rather than silently served globally. */
 export function resolveScopeInput(body: unknown): ResolvedScope | null {
   const raw = (body ?? {}) as { scopeKey?: unknown; allScopes?: unknown };
   if (raw.allScopes === true) return { scopeKey: undefined, allScopes: true };
@@ -308,18 +268,13 @@ function formatPayload(raw: string): { payload: string; truncated: boolean } {
   return { payload: buf.toString('utf8'), truncated: true };
 }
 
-/**
- * A worker log line never contains the token today, but the log drawer is the one
- * place that ships log text to a browser. Strip anything shaped like the 64-hex
- * local token before it leaves the process.
- */
+/** The log drawer is the one place that ships log text to a browser, so strip anything
+ * shaped like the 64-hex local token before it leaves the process. */
 function redactTokens(line: string): string {
   return line.replace(/\b[a-f0-9]{64}\b/gi, '[REDACTED]');
 }
 
-// =============================================================
-// Route registration
-// =============================================================
+// --- Route registration ---
 
 export function registerViewerRoutes(app: Hono, deps: ViewerRouteDeps): void {
   const { db, config, hub } = deps;
@@ -327,11 +282,8 @@ export function registerViewerRoutes(app: Hono, deps: ViewerRouteDeps): void {
   const uiDirs = resolveViewerUiDirs(deps.uiDirs);
   const logsDir = deps.logsDir ?? join(getDataDir(), 'logs');
 
-  // --- Browser-facing guard rails ---
-  //
-  // One middleware for both the shell and the API: every browser-reachable path
-  // needs the loopback Host check, and every response needs the same hardening
-  // headers whether it carries HTML, JSON or an SSE stream.
+  // One middleware for shell and API alike: every browser-reachable path needs the
+  // loopback Host check and the same hardening headers, HTML/JSON/SSE included.
   for (const pattern of ['/ui', '/ui/*', '/api/viewer/*']) {
     app.use(pattern, async (c, next) => {
       if (!isLoopbackHost(c.req.header('host'), port())) {
@@ -358,9 +310,7 @@ export function registerViewerRoutes(app: Hono, deps: ViewerRouteDeps): void {
   app.get('/ui', (c) => {
     const asset = serveAsset('viewer.html');
     if (!asset) {
-      // Deliberately not a crash and not a 404: the Worker's memory functions are
-      // fine, only the optional UI payload is absent, and the user needs to be
-      // told which command fixes it.
+      // Not a crash and not a 404: memory works, only the optional UI payload is absent.
       return c.html(BUILD_MISSING_HTML, 503);
     }
     return c.body(asset.body, 200, { 'Content-Type': asset.type, 'Cache-Control': 'no-store' });
@@ -379,15 +329,13 @@ export function registerViewerRoutes(app: Hono, deps: ViewerRouteDeps): void {
     const withObservations = db.listObservationScopes();
     const seen = new Set(withObservations.map((s) => s.scopeKey));
     const scopes: ViewerScope[] = [...withObservations];
-    // A workspace whose first turn has not compressed yet must still be
-    // selectable, or the Viewer silently opens on the wrong scope.
+    // Still selectable before its first compression, or the Viewer opens the wrong scope.
     for (const key of db.listKnownScopeKeys()) {
       if (!seen.has(key)) scopes.push({ scopeKey: key, observations: 0, lastActivityAt: null });
     }
     return c.json({
       version: deps.version,
-      // Read from the live config object, so a `kiro-mem config` edit reaches the
-      // next page load without a Worker restart.
+      // Live config object, so a `kiro-mem config` edit lands on the next page load.
       language: config.language,
       scopes,
       queue: deps.queueStatus(),
@@ -440,8 +388,7 @@ export function registerViewerRoutes(app: Hono, deps: ViewerRouteDeps): void {
     const id = clampInt((body as { id?: unknown }).id, 1, Number.MAX_SAFE_INTEGER, 0);
     if (!id) return c.json({ ok: false, error: 'id_required' }, 400);
 
-    // Scope is applied in the query, not after the fetch: a cross-scope row must
-    // never be read into this process only to be discarded here.
+    // Scope filters in the query, not after: a cross-scope row never enters this process.
     const [obs] = db.getObservationsByIds([id], scope.scopeKey ? { scopeKey: scope.scopeKey } : {});
     if (!obs) return c.json({ ok: false, error: 'not_found' }, 404);
 
@@ -527,9 +474,8 @@ export function registerViewerRoutes(app: Hono, deps: ViewerRouteDeps): void {
     const afterSeq = clampInt((body as { cursor?: unknown }).cursor, 0, Number.MAX_SAFE_INTEGER, 0);
     const page = db.listTurnEventsPage(obs.turn_id, { limit, afterSeq });
 
-    // Two independent bounds: per event, and per response. One 4MB tool payload
-    // must not be able to make a page unreadable even if the per-event cap allows
-    // it through.
+    // Two independent bounds, per event and per response: one 4MB tool payload must
+    // not make a page unreadable even if the per-event cap lets it through.
     const items = [];
     let bytes = 0;
     let truncated = false;
@@ -576,11 +522,8 @@ export function registerViewerRoutes(app: Hono, deps: ViewerRouteDeps): void {
     const days = (body as { days?: unknown }).days;
     const limit = clampInt((body as { limit?: unknown }).limit, 1, VIEWER_PAGE_LIMIT, 20);
 
-    // No `semanticQueryEn`: the Viewer must not fabricate an English form on the
-    // user's behalf. Without it the search is keyword-only by construction — the
-    // semantic leg is not eligible outside the English space — so the embedder is
-    // never reached, and this stub exists to make that invariant fail loudly if
-    // that ever changes.
+    // No `semanticQueryEn`: the Viewer must not fabricate an English form, so this
+    // search is keyword-only. The throwing stub fails loudly if the embedder is reached.
     const results = await hybridSearchObservations(
       db,
       q,
@@ -617,14 +560,12 @@ export function registerViewerRoutes(app: Hono, deps: ViewerRouteDeps): void {
     const scopeKey = typeof (body as { scopeKey?: unknown }).scopeKey === 'string'
       ? (body as { scopeKey: string }).scopeKey.trim()
       : '';
-    // Context injection is per-workspace by definition, so `allScopes` is not a
-    // legal input here — there is no such thing as a cross-workspace injection.
+    // Injection is per-workspace by definition, so `allScopes` is not legal here.
     if (!scopeKey || scopeKey.length > SCOPE_KEY_MAX_CHARS) {
       return c.json({ ok: false, error: 'scope_required' }, 400);
     }
-    // Only a scope this database already knows. The report takes a scope key
-    // rather than a cwd precisely so a Viewer request can never make the Worker
-    // run `git rev-parse` against an attacker-chosen path.
+    // Only a scope this database already knows: the report takes a scope key, not a
+    // cwd, so a request can never make the Worker `git rev-parse` an attacker path.
     if (!db.listKnownScopeKeys().includes(scopeKey)) {
       return c.json({ ok: false, error: 'unknown_scope' }, 404);
     }
@@ -664,8 +605,7 @@ export function registerViewerRoutes(app: Hono, deps: ViewerRouteDeps): void {
   // --- Permanent deletion (plan §4) ---
 
   app.delete('/api/viewer/observations/:id', async (c) => {
-    // Destructive, so the origin check is on top of the loopback Host check: a
-    // page on another local port must not be able to delete this Worker's memory.
+    // Destructive, so the Origin check sits on top of the loopback Host check.
     if (!isSameViewerOrigin(c.req.header('origin'), c.req.header('host'))) {
       return c.json({ ok: false, error: 'forbidden_origin' }, 403);
     }
@@ -683,7 +623,7 @@ export function registerViewerRoutes(app: Hono, deps: ViewerRouteDeps): void {
       return c.json({ ok: false, error: result.reason }, result.reason === 'not_found' ? 404 : 409);
     }
 
-    // Only after the transaction committed. A rollback or a 409 must leave every
+    // Only after the transaction committed: a rollback or a 409 must leave every
     // connected Viewer showing the card, because the record still exists.
     hub.broadcast({
       type: 'observation_deleted',
@@ -733,8 +673,7 @@ export function registerViewerRoutes(app: Hono, deps: ViewerRouteDeps): void {
 
   app.get('/api/viewer/logs', (c) => {
     const level = c.req.query('level') ?? '';
-    // The worker log has exactly one level today (`logError`). Filtering by any
-    // other value must return nothing rather than quietly returning errors.
+    // One level exists today (`logError`); any other filter returns nothing, not errors.
     if (level && level !== 'error') return c.json({ items: [], nextCursor: null });
 
     const component = (c.req.query('component') ?? '').trim().toLowerCase();
@@ -761,12 +700,8 @@ async function readJson(c: { req: { json: () => Promise<unknown> } }): Promise<u
   }
 }
 
-/**
- * Newest worker log lines, most recent first, bounded in both files and bytes.
- *
- * Reads only the tail of each file so a long-running Worker's log cannot be
- * pulled into memory to answer a log-drawer request.
- */
+/** Newest worker log lines, most recent first. Reads only the tail of each file so a
+ * long-running Worker's log cannot be pulled into memory for one log-drawer request. */
 export function readRecentLogLines(
   logsDir: string,
 ): { at: string | null; component: string; message: string }[] {

@@ -1,7 +1,5 @@
 #!/usr/bin/env bun
-/**
- * stop hook: notify Worker that the current turn has ended.
- */
+/** stop hook: notify Worker that the current turn has ended. */
 import { readFileSync } from 'fs';
 import { injectSessionId } from './session';
 import { classifyCaptureError, recordCaptureMiss } from './capture-log';
@@ -27,8 +25,7 @@ try {
     method: 'POST', headers, body: input,
     signal: AbortSignal.timeout(700),
   });
-  // Capture is best-effort, but a dropped raw event is unrecoverable, so record
-  // that it happened (metadata only) instead of failing silently.
+  // A dropped raw event is unrecoverable, so record the miss (metadata only).
   if (!response.ok) recordCaptureMiss(DATA_DIR, 'stop', 'rejected', response.status);
 } catch (error) {
   recordCaptureMiss(DATA_DIR, 'stop', classifyCaptureError(error));

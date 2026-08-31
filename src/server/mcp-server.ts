@@ -18,36 +18,23 @@ const db = new MemoryDB();
 const config = loadConfig();
 const isEnglish = config.language === 'en';
 
-/**
- * The single query-vector source for this process. Holds no model — it posts to
- * the Worker, which is the one place a model lives per dataDir (§5.4).
- */
+/** Holds no model — posts to the Worker, the one place a model lives per dataDir (§5.4). */
 const workerEmbedder = createWorkerEmbedder();
 
 /**
- * The retrieval strategy this process serves every `search` with.
- *
- * Resolved ONCE at module load from the gray-release switch, so every request in
- * a session runs the same policy and the per-request metrics can be attributed
- * to one profile. Flipping `retrieval.semanticDiscovery` in
- * `~/.kiro-mem/config.json` takes effect for MCP servers started afterwards —
- * the next Kiro session — which is also the rollback path documented in the
- * README.
- *
- * There is no environment variable and no tool parameter: phase 2B used a
- * process-level env seam to test the real MCP path before the default changed,
- * and it is gone. A retrieval strategy that any inherited env could change would
- * make the shipped behavior unknowable from the config file.
+ * Retrieval strategy for every `search` here, resolved once at module load so one
+ * session cannot mix profiles. Flipping `retrieval.semanticDiscovery` applies to
+ * MCP servers started afterwards — the next Kiro session, the README's rollback
+ * path. No env var and no tool parameter: a strategy an inherited env could
+ * change would make the shipped behavior unknowable from the config file.
  */
 const retrievalPolicy = resolveRetrievalPolicy(config.retrieval.semanticDiscovery);
 
 /**
- * Resolve the default search scope from the active Kiro session. Kiro injects
- * KIRO_SESSION_ID into this MCP server process; the worker records that
- * session's real workspace (cwd/repo) in session_refs via the userPromptSubmit
- * hook. Using it makes the default scope authoritative instead of relying on
- * where this process was launched. Returns undefined when no session is known;
- * a scope-less search then fails closed and asks for repo/cwd.
+ * Default search scope from the active Kiro session: the worker records that
+ * session's real workspace in session_refs, which is authoritative where this
+ * process's launch directory is not. Returns undefined when no session is known,
+ * and a scope-less search then fails closed and asks for repo/cwd.
  */
 function sessionScopeKey(): string | undefined {
   const sessionId = process.env.KIRO_SESSION_ID;
@@ -136,9 +123,8 @@ function compactCard(o: Observation & { match_source?: string; semantic_score?: 
     title: o.title,
     type: o.memory_type,
     date: o.turn_stopped_at?.slice(0, 10),
-    // Source-turn identity travels with every card, not just with
-    // get_observations: a timeline is only auditable if each entry can be traced
-    // back to the turn it was projected from.
+    // Source-turn identity travels with every card: a timeline is only auditable
+    // if each entry traces back to the turn it was projected from.
     turn_id: o.turn_id,
     turn_seq: o.turn_seq,
     files: safeArr(o.files_touched_json),
@@ -152,15 +138,11 @@ function compactCard(o: Observation & { match_source?: string; semantic_score?: 
 
 // --- get_observations response budget (P1-3) ---
 //
-// The injected bootstrap index is byte-budgeted, but the PULL side was not, so
-// a single `get_observations` call could put far more text into the agent's
-// context than the whole injection budget allows — which makes progressive
-// disclosure decorative rather than real. Three bounds, all reported when hit:
-// per prose field, per array field, and one total response budget.
+// The pull side needs its own bound: one call could otherwise put more text into
+// the agent's context than the whole injection budget allows. Three bounds, all
+// reported when hit: per prose field, per array field, total response.
 
-/** Per-field character cap for the long prose fields. */
 const DETAIL_FIELD_CHARS = 1500;
-/** Array fields (evidence, files, concepts): item count and per-item length. */
 const DETAIL_ARRAY_ITEMS = 20;
 const DETAIL_ARRAY_ITEM_CHARS = 300;
 /** Total serialized response budget. Kept well under a typical context slice. */
@@ -238,11 +220,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           type: { type: 'string', enum: ['decision', 'bugfix', 'feature', 'refactor', 'discovery', 'change'], description: T.typeDescription },
           repo: { type: 'string', description: T.repoDescription },
           cwd: { type: 'string', description: T.cwdDescription },
-          // Phase 3C: NO `default` here on purpose. The default is unbounded
-          // (`DEFAULT_SEARCH_DAYS`), and a JSON-Schema `default` cannot express
-          // that — writing `default: 90` back would make the schema lie to the
-          // agent about what omitting the field does. `maximum` still bounds an
-          // EXPLICIT narrowing value, which is a different question.
+          // No `default` here: the real default is unbounded
+          // (`DEFAULT_SEARCH_DAYS`) and JSON Schema cannot express that — writing
+          // `default: 90` back would make the schema lie about what omitting the
+          // field does. `maximum` still bounds an explicit narrowing value.
           days: { type: 'integer', minimum: 1, maximum: 3650, description: T.daysDescription },
           limit: { type: 'integer', minimum: 1, maximum: 50, description: T.limitDescription, default: 20 },
           all_scopes: { type: 'boolean', description: T.allScopesDescription, default: false },
@@ -301,14 +282,11 @@ const MEMORY_TYPES = ['decision', 'bugfix', 'feature', 'refactor', 'discovery', 
 interface ScopeInput { repo?: unknown; cwd?: unknown; all_scopes?: unknown }
 
 /**
- * Resolve the caller's authorized scope for ANY tool, not just `search`.
- *
- * Every tool that reaches an Observation — by query or by ID — must go through
- * this. `get_observations`, `timeline` and `pin` address rows by global ID, so
- * skipping it means an ID is enough to read (or, for `pin`, mutate) another
- * workspace's memory. `allowAllScopes: false` is used by `pin`, which has no
- * legitimate cross-workspace use: a pinned Observation is only ever injected
- * into its own workspace (design §14.3).
+ * Authorized scope for every tool that reaches an Observation, by query or by ID.
+ * `get_observations`, `timeline` and `pin` address rows by global ID, so skipping
+ * this means an ID alone can read — or for `pin`, mutate — another workspace's
+ * memory. `allowAllScopes: false` is for `pin`: a pinned Observation is only ever
+ * injected into its own workspace (design §14.3).
  */
 function resolveToolScope(
   a: ScopeInput,
@@ -384,14 +362,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const startedAt = Date.now();
     let degraded = false;
     // Per-request observability (plan §8.2). Counts, enum reasons and latency
-    // only — never the query text, never Observation text. `protocol` and
-    // `rejectReason` are what make "the English space did not help" separable
-    // from "the agent never passed semantic_query_en", which is the whole
-    // question the 2C gray release has to answer.
+    // only — never the query text, never Observation text.
     //
-    // Flat locals rather than one object: the kernel reports through callbacks,
-    // and a nullable object assigned inside a callback reads as never-assigned to
-    // the type checker at the recording site.
+    // Flat locals rather than one object: a nullable object assigned inside a
+    // callback reads as never-assigned to the type checker at the recording site.
     let protocol: string | undefined;
     let rejectReason: string | null = null;
     let ftsCount: number | undefined;
@@ -410,10 +384,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       policy: retrievalPolicy,
       onCandidates: (i) => {
         protocol = i.protocol;
-        // 'missing' is a distinct reason from every guardrail rejection: one is
-        // a caller that never supplied the derived value, the other is a supplied
-        // value the protocol refused. Collapsing them would hide which of the two
-        // the gray release has to fix.
+        // 'missing' is distinct from a guardrail rejection: never supplied vs
+        // supplied and refused. Collapsing them hides which one has to be fixed.
         rejectReason = semanticQueryEn.trim() ? i.semanticQueryRejected : 'missing';
         ftsCount = i.ftsCount;
         semanticCount = i.semanticCount;
@@ -558,8 +530,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (a.pinned !== undefined && typeof a.pinned !== 'boolean') {
       return toolError('pin.pinned must be a boolean');
     }
-    // pin MUTATES another workspace's injected context if left unscoped, so it
-    // never accepts all_scopes — the caller must be in the owning workspace.
     const scope = resolveToolScope(a, { allowAllScopes: false });
     if (!scope.ok) return scope.error;
     const observation = db.getObservation(observationId);
@@ -578,11 +548,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 
 export async function startMcpServer() {
-  // No model prewarm here any more. Query vectors come from the Worker
-  // (`createWorkerEmbedder`), which is a per-dataDir singleton — prewarming in
-  // this process would recreate exactly the per-session model duplication that
-  // phase 1b removed. The first search after a Worker restart pays that cold
-  // start once, for all sessions, instead of once per session.
+  // No model prewarm here: query vectors come from the Worker's per-dataDir
+  // singleton, and prewarming here would recreate the per-session model
+  // duplication phase 1b removed. Cold start is paid once per Worker restart for
+  // all sessions instead of once per session.
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }

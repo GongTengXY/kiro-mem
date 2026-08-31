@@ -10,23 +10,20 @@ export interface ExtractedArtifacts {
   error_signals: string[];
   /**
    * Test / build / lint outcomes distilled from commands + responses, e.g.
-   * "test PASS: 119 pass, 0 fail" or "build FAIL (exit 1)". The summarize_turn job
-   * uses these as high-priority evidence. Computed live from turn_events; not
-   * persisted to the turn_artifacts cache.
+   * "test PASS: 119 pass, 0 fail" or "build FAIL (exit 1)". Computed live from
+   * turn_events; not persisted to the turn_artifacts cache.
    */
   test_signals: string[];
   /**
-   * VCS / dependency state-change commands (git commit/merge/checkout, package
-   * installs) that did not explicitly fail. Truth-layer signal that a
-   * project-state decision was committed. Persisted to turn_artifacts; NOT part
-   * of the ACP summarize input contract (§6.4).
+   * VCS / dependency state-change commands (git commit/merge, package installs)
+   * that did not explicitly fail. Persisted to turn_artifacts; not part of the
+   * ACP summarize input contract (§6.4).
    */
   decision_signals: string[];
   /**
-   * High-confidence, tool-verifiable fact fragments (§6.2). Currently: file
-   * mutation semantics — "created|modified|deleted <path>" distilled from
-   * write-family tool calls. This is distinct from files_touched, which also
-   * collects paths that were merely read. Fed to the compressor as evidence.
+   * High-confidence, tool-verifiable fact fragments (§6.2): "created|modified|
+   * deleted <path>" from write-family tool calls. Distinct from files_touched,
+   * which also collects paths that were merely read.
    */
   facts: string[];
   stats: { event_count: number; total_payload_bytes: number };
@@ -65,9 +62,7 @@ export function extractArtifacts(db: MemoryDB, turnId: number): ExtractedArtifac
     stats: { event_count: events.length, total_payload_bytes: totalBytes },
   };
 
-  // Persist the cached subset to turn_artifacts (the deterministic cache).
-  // test_signals is intentionally NOT persisted here — it is derived live from
-  // turn_events, so the shared Truth-layer table keeps its stable schema.
+  // test_signals is not persisted — derived live, keeping the Truth-layer schema stable.
   db.upsertTurnArtifacts(turnId, {
     tool_names_json: JSON.stringify(result.tool_names),
     files_touched_json: JSON.stringify(result.files_touched),
@@ -106,33 +101,25 @@ function extractFromToolEvent(
   const input = payload.tool_input as Record<string, unknown> | undefined;
   const response = payload.tool_response as unknown;
 
-  // Error signal from the response (prefer stderr). Computed up front so a file
-  // mutation fact can be gated on the tool call NOT having failed.
+  // Computed up front so a file-mutation fact can be gated on the call not failing.
   const errText = extractErrorText(response);
 
-  // File paths from common tool patterns
   if (input) {
     const path = (input.path || input.file_path || input.filePath) as string | undefined;
     if (path && typeof path === 'string') files.add(path);
 
-    // glob/pattern results
     const paths = input.paths as string[] | undefined;
     if (Array.isArray(paths)) paths.forEach(p => { if (typeof p === 'string') files.add(p); });
 
-    // High-confidence fact: a file was actually mutated (create/edit/delete),
-    // as opposed to merely read. files_touched can't express this because it
-    // also collects read paths.
     const mutation = detectFileMutation(toolName, input, !!errText);
     if (mutation) facts.push(mutation);
 
-    // shell commands
     const cmd = input.command as string | undefined;
     if (cmd && typeof cmd === 'string' && (toolName != null && SHELL_TOOLS.has(toolName))) {
       const exit = extractExitStatus(response);
       const base = cmd.replace(/\s+/g, ' ').trim().slice(0, 180);
       commands.push(exit != null ? `${base} (exit ${exit})` : base);
 
-      // Test / build / lint signal detection.
       const sig = detectBuildKind(cmd);
       if (sig) {
         const verdict = classifyOutcome(exit, response);
@@ -142,7 +129,6 @@ function extractFromToolEvent(
         );
       }
 
-      // Decision signal: a VCS / dependency state change was committed.
       const decision = detectDecisionSignal(cmd, exit);
       if (decision) decisions.push(decision);
     }
@@ -151,7 +137,6 @@ function extractFromToolEvent(
   if (errText) errors.push(errText.slice(0, 200));
 }
 
-// Write-family classification for file-mutation facts.
 const WRITE_COMMAND_VERBS: Record<string, string> = {
   create: 'created',
   strreplace: 'modified',
@@ -163,11 +148,10 @@ const DELETE_TOOL_RE = /delete|remove|unlink|\brm\b/i;
 const WRITE_TOOL_RE = /write|create|edit|replace/i;
 
 /**
- * Map a write-family tool call to a "<verb> <path>" fact, or null. Detection
- * keys primarily off the write tool's `command` (create/strReplace/insert),
- * then falls back to the tool name for command-less write/delete tools. A
- * failed call (`hadError`) never yields a mutation fact — we don't claim a file
- * was changed when the tool reported an error.
+ * Map a write-family tool call to a "<verb> <path>" fact. Keys off the tool's
+ * `command` first, then falls back to the tool name for command-less write/delete
+ * tools. A failed call never yields a mutation fact — we do not claim a file
+ * changed when the tool reported an error.
  */
 function detectFileMutation(
   toolName: string | null,
@@ -193,9 +177,8 @@ const VCS_RE = /\bgit\s+(commit|merge|rebase|checkout|switch|reset|revert|cherry
 const DEP_RE = /\b(npm|yarn|pnpm|bun)\s+(install|add|remove|uninstall|i)\b|\b(pip|pip3)\s+(install|uninstall)\b|\bcargo\s+(add|remove)\b|\bgo\s+(get|mod)\b/;
 
 /**
- * Detect a VCS / dependency state-change command. Only records commands that
- * did not explicitly fail (exit 0 or unknown) — a failed state change is not a
- * committed decision.
+ * Only records commands that did not explicitly fail (exit 0 or unknown) — a
+ * failed state change is not a committed decision.
  */
 function detectDecisionSignal(cmd: string, exit: number | null): string | null {
   if (exit != null && exit !== 0) return null;
@@ -204,10 +187,7 @@ function detectDecisionSignal(cmd: string, exit: number | null): string | null {
   return cmd.replace(/\s+/g, ' ').trim().slice(0, 120);
 }
 
-/**
- * Best-effort exit-status extraction. Handles object responses with common
- * key names and string responses like "exit status: 1" / "exit code 1".
- */
+/** Best-effort exit status: common object keys, or "exit status: 1" inside a string. */
 function extractExitStatus(response: unknown): number | null {
   if (response == null) return null;
   if (typeof response === 'object') {
@@ -229,7 +209,6 @@ function extractExitStatus(response: unknown): number | null {
   return null;
 }
 
-/** Returns 'test' | 'build' | 'lint' if the command looks like one, else null. */
 function detectBuildKind(cmd: string): 'test' | 'build' | 'lint' | null {
   const c = cmd.toLowerCase();
   if (/\b(eslint|prettier|ruff|flake8|clippy|golangci-lint|\blint\b)/.test(c)) return 'lint';
@@ -263,9 +242,8 @@ function extractTestCounts(response: unknown): string | null {
 }
 
 /**
- * A negated count ("0 failures", "no errors") is evidence of success, not of an
- * error. Strip those before looking for error words, so a fully green test run
- * ("138 pass, 0 fail") is never mistaken for a failure.
+ * A negated count ("0 failures") is evidence of success. Strip it before matching
+ * error words, so a green run ("138 pass, 0 fail") is never read as a failure.
  */
 const NEGATED_COUNT_RE = /\b(0|no|zero)\s+(errors?|failures?|failed|failing|fails?)\b/gi;
 
@@ -274,14 +252,11 @@ function looksLikeError(text: string): boolean {
 }
 
 /**
- * Extract a meaningful error string from a tool response.
- *
  * Ordering matters: a known exit status is authoritative. Exit 0 means the call
- * succeeded, so we must NOT go on to keyword-match the payload — that is how
- * `{"exit_status":0,"stdout":"138 pass, 0 fail"}` used to produce a bogus error
- * signal, and how reading a file that merely contains the word "error" used to
- * mark a whole turn as failed. Keyword matching over the raw payload survives
- * only as a last resort for responses that report no status at all.
+ * succeeded, so we must not keyword-match the payload afterwards — that is how
+ * `{"exit_status":0,"stdout":"138 pass, 0 fail"}` produced a bogus error signal,
+ * and how reading a file that merely contains "error" marked a whole turn failed.
+ * Keyword matching survives only for responses that report no status at all.
  */
 function extractErrorText(response: unknown): string | null {
   if (typeof response === 'string') {

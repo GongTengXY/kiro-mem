@@ -1,12 +1,8 @@
 /** @jsxImportSource preact */
 /**
- * Permanent-delete confirmation (plan §4.2).
- *
- * The dialog must state what is destroyed in concrete terms — which record, which
- * workspace, when the turn ran, and how many raw events and captured bytes go
- * with it — because the operation has no undo and no export. There is no
- * `withTurn` checkbox: the truth layer is not an option the user can leave
- * behind, since a kept turn would be re-summarized by `kiro-mem repair`.
+ * Permanent-delete confirmation (plan §4.2). States concretely what is destroyed —
+ * record, workspace, turn time, raw event count, captured bytes — because there is no
+ * undo and no export. No `withTurn` checkbox: a kept turn would come back via `repair`.
  */
 
 import { AlertTriangle } from 'lucide-preact';

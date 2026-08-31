@@ -1,17 +1,12 @@
 /** @jsxImportSource preact */
 /**
- * Workspace scope picker (plan §3.1).
+ * Workspace scope picker (plan §3.1). A listbox popup rather than a native `<select>`,
+ * so a row can carry the basename, full path, Observation count and last activity.
  *
- * A listbox popup rather than a native `<select>`, so a row can carry the
- * basename, the full path, the Observation count and the last activity.
- *
- * Two constraints shaped it: the CSP is `style-src 'self'`, which drops inline
- * `style` attributes, so the popup is positioned by CSS and never by measured
- * coordinates; and a scope key is recorded data, so labels are text nodes clamped
- * by `text-overflow` rather than something that can widen the top bar.
- *
- * Keyboard: Arrow/Home/End move a cursor, Enter picks, Escape closes and returns
- * focus, Tab leaves.
+ * The CSP is `style-src 'self'`, which drops inline `style` attributes, so the popup is
+ * positioned by CSS and never by measured coordinates; and a scope key is recorded data,
+ * so labels are text nodes clamped by `text-overflow` rather than something that can
+ * widen the top bar.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
@@ -92,7 +87,6 @@ export function ScopePicker({
   const currentIndex = Math.max(0, items.findIndex((i) => i.value === currentValue));
   const current = items[currentIndex] ?? items[0]!;
 
-  // Close on any click that lands outside the control.
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
@@ -102,7 +96,6 @@ export function ScopePicker({
     return () => document.removeEventListener('mousedown', onDown);
   }, [open]);
 
-  // Keep the keyboard cursor inside the scroll box.
   useEffect(() => {
     if (!open) return;
     const el = popupRef.current?.querySelector<HTMLElement>('.is-active');

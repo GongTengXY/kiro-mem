@@ -3,10 +3,8 @@
 export type SessionRefState = 'active' | 'idle' | 'stale';
 
 /**
- * `quarantined` was removed: nothing ever assigned it. Events that fail
- * validation are rejected at the HTTP boundary (the `quarantined: true`
- * response flag) and never create a turn, so a turn could not reach that state
- * — keeping it in the union advertised an isolation mechanism that did not run.
+ * No `quarantined` state: events that fail validation are rejected at the HTTP
+ * boundary and never create a turn, so no turn can reach it.
  */
 export type TurnState = 'open' | 'closed' | 'archived';
 
@@ -29,12 +27,7 @@ export type MemoryType =
 
 export type JobState = 'pending' | 'leased' | 'succeeded' | 'failed' | 'dead';
 
-/**
- * Per-session metadata. Not a memory container. Used for:
- *   - event isolation via `session_id`
- *   - per-session turn seq allocation
- *   - coarse-grained diagnostics / cleanup policy
- */
+/** Per-session metadata: event isolation and turn-seq allocation. Not a memory container. */
 export interface SessionRef {
   session_id: string;
   cwd: string;
@@ -49,10 +42,7 @@ export interface SessionRef {
   updated_at: string;
 }
 
-/**
- * One Kiro turn: `userPromptSubmit` → … → `stop`. The append-only truth unit
- * that an Observation is projected from.
- */
+/** One Kiro turn (`userPromptSubmit` → … → `stop`): the truth unit an Observation is projected from. */
 export interface Turn {
   id: number;
   session_id: string;
@@ -70,10 +60,7 @@ export interface Turn {
   updated_at: string;
 }
 
-/**
- * Append-only raw hook payload rows. This is the truth layer that allows future
- * re-compression, re-embedding without data loss.
- */
+/** Append-only raw hook payloads — the truth layer that allows later re-compression / re-embedding. */
 export interface TurnEvent {
   id: number;
   turn_id: number;
@@ -87,10 +74,7 @@ export interface TurnEvent {
   created_at: string;
 }
 
-/**
- * Deterministic extraction from a turn's raw events. Does NOT depend on LLM.
- * Used to cheapen the compression prompt and enable exact-match retrieval.
- */
+/** Deterministic extraction from a turn's raw events — no LLM, enables exact-match retrieval. */
 export interface TurnArtifacts {
   turn_id: number;
   tool_names_json: string;
@@ -104,7 +88,6 @@ export interface TurnArtifacts {
   updated_at: string;
 }
 
-/** Persistent job queue row. */
 export interface Job {
   id: number;
   job_type: string;
@@ -124,25 +107,15 @@ export interface Job {
   updated_at: string;
 }
 
-// -------------------------------------------------------------
-// Observation — the immutable projection of a single closed turn.
-// One closed turn -> at most one Observation. Text fields are immutable
-// after INSERT. There is intentionally no state, topic, or merge concept.
-// -------------------------------------------------------------
+// Observation — one closed turn -> at most one Observation. Text is immutable
+// after INSERT; no state, no topic, no merge.
 
 /**
- * Observation generation quality.
- * - `normal`: produced by a successful compression.
- * - `fallback`: compression exhausted retries; the row carries only
- *   request / known files / explicit errors with confidence_score = 0.
+ * `normal`: successful compression. `fallback`: retries exhausted, so the row
+ * carries only request / known files / explicit errors, confidence_score = 0.
  */
 export type ObservationQuality = 'normal' | 'fallback';
 
-/**
- * Primary memory unit: one closed turn -> at most one Observation.
- * `memory_type` is a deterministic classification, not a topic. Text fields
- * are never updated after INSERT.
- */
 export interface Observation {
   id: number;
   /** Idempotency key. UNIQUE — a job retry never creates a second row. */
@@ -179,7 +152,6 @@ export interface Observation {
   created_at: string;
 }
 
-/** Vector index row, scoped to observations. */
 export interface ObservationEmbeddingRow {
   observation_id: number;
   /** Full vector-space key: model:dtype:dims:protocol (see semantic-en.ts). */
@@ -190,12 +162,9 @@ export interface ObservationEmbeddingRow {
 }
 
 /**
- * Lifecycle of an English derived value.
- *
- * `pending` and `failed` both mean "this Observation has no `semantic-en-v1`
- * vector". They are distinct because the first is retryable and the second
- * records a translation the guardrails refused — losing that distinction would
- * make a permanent protocol violation look like a queue backlog.
+ * `pending` and `failed` both mean "no `semantic-en-v1` vector", but the first
+ * is retryable and the second records a translation the guardrails refused;
+ * merging them makes a permanent protocol violation look like a queue backlog.
  */
 export type SemanticTextStatus = 'ready' | 'pending' | 'failed';
 
@@ -223,30 +192,23 @@ export interface ObservationSemanticTextRow {
   updated_at: string;
 }
 
-/**
- * DB-derived observability snapshot (design §12.4). Everything here is computed
- * from the persisted tables — no observation text is ever exposed.
- */
+/** DB-derived observability snapshot (design §12.4). Computed from the persisted
+ * tables only — no observation text is ever exposed. */
 export interface ObservabilityStats {
   observations: {
     total: number;
-    /** quality='normal' (successful compression). */
+    /** Split of `total` by {@link ObservationQuality}. */
     normal: number;
-    /** quality='fallback' (compression degraded to deterministic evidence). */
     fallback: number;
     pinned: number;
   };
   embeddings: {
-    /** Observations with a vector in at least one CURRENT vector space. */
+    /** Observations with a vector in at least one current vector space. */
     ready: number;
     /** ready / total, 0..1. A proxy for how often hybrid search can use vectors. */
     coverage: number;
-    /**
-     * Per-protocol breakdown. `ready` alone cannot answer the question phase 1b
-     * actually asks — "is the `semantic-en-v1` rebuild finished for this
-     * dataDir?" — because an Observation with only a `raw-v1` vector is fully
-     * `ready` and completely invisible to an English query.
-     */
+    /** Per-protocol breakdown: a `raw-v1`-only Observation is fully `ready` yet
+     * invisible to an English query, so `ready` cannot tell if the rebuild finished. */
     byProtocol: { protocol: string; spaceKey: string; ready: number; coverage: number }[];
     /** Derived-value lifecycle for `semantic-en-v1` (rebuild progress). */
     semanticEn: { ready: number; pending: number; failed: number };
@@ -268,18 +230,14 @@ export interface ObservabilityStats {
     ftsOnly: number;
     /** ftsOnly / requests, 0..1. */
     degradeRate: number;
-    /** Mean end-to-end search latency (ms). */
+    /** End-to-end search latency in ms: mean, median, 95th percentile. */
     latencyMsAvg: number;
-    /** Median end-to-end search latency (ms). */
     latencyMsP50: number;
-    /** 95th-percentile search latency (ms). */
     latencyMsP95: number;
     /**
-     * Requests that ran in the `semantic-en-v1` space, i.e. the agent supplied a
-     * `semantic_query_en` the guardrail accepted. This is the coverage number
-     * the phase 2C gray release turns on: independent semantic recall is only
-     * available in this space, so a low rate means the feature is shipped but
-     * mostly unreachable, no matter how good the offline numbers are.
+     * Requests that ran in the `semantic-en-v1` space (the guardrail accepted
+     * the agent's `semantic_query_en`). Independent semantic recall exists only
+     * there, so a low rate means the feature is shipped but mostly unreachable.
      */
     protocolSemanticEn: number;
     /** Requests without a usable English form; current search serves them FTS-only. */
@@ -287,27 +245,26 @@ export interface ObservabilityStats {
     /** protocolSemanticEn / requests, 0..1. */
     semanticEnRate: number;
     /**
-     * Why the English form was unusable, keyed by reason: `missing` (never
-     * passed) plus the `checkSemanticEnQuery` reject reasons. Bounded by that
-     * enum, so it cannot grow with traffic, and it never contains query text.
+     * Why the English form was unusable: `missing` plus the
+     * `checkSemanticEnQuery` reject reasons. Bounded by that enum, so it cannot
+     * grow with traffic, and it never contains query text.
      */
     semanticQueryIssues: Record<string, number>;
-    /** Requests where discovery was requested by policy AND available. */
+    /** Requests where discovery was requested by policy and available. */
     discoveryEffective: number;
     /** Requests with zero FTS candidates — only semantic recall can answer these. */
     zeroFts: number;
     /** Of those, how many returned at least one semantic-only result. */
     zeroFtsRecalled: number;
-    /** semantic-only results returned across the window. */
     semanticOnlyTotal: number;
     /** semanticOnlyTotal / requests. Compare against the frozen cap. */
     semanticOnlyPerRequest: number;
     /** Worst single request. Must never exceed the policy cap. */
     semanticOnlyMax: number;
     /**
-     * Mean number of stored vectors the semantic leg could actually score. Near
-     * zero while a `semantic-en-v1` rebuild is pending, which is the difference
-     * between "nothing relevant" and "nothing comparable".
+     * Mean stored vectors the semantic leg could score. Near zero while a
+     * `semantic-en-v1` rebuild is pending — "nothing comparable", which is not
+     * the same reading as "nothing relevant".
      */
     comparableVectorsAvg: number;
     /** Mean active-space vectors across the whole searched scope. */
@@ -317,7 +274,7 @@ export interface ObservabilityStats {
     /** Requests where the count actually ran (the semantic step was reached). */
     scopeVectorsMeasured: number;
     /**
-     * Requests whose scope had NO vectors in the active space. Non-zero means
+     * Requests whose scope had no vectors in the active space. Non-zero means
      * semantic recall was structurally impossible for them — a rebuild or job
      * backlog issue, not a relevance one.
      */
@@ -328,42 +285,29 @@ export interface ObservabilityStats {
     repairs: number;
     contaminations: number;
   };
-  /**
-   * Worker requests rejected by local token auth in the last 24h. Non-zero
-   * means Hooks are failing silently — usually a token rotated underneath a
-   * running Worker.
-   */
+  /** Worker requests rejected by local token auth in the last 24h. Non-zero means
+   * Hooks are failing silently — usually a token rotated under a running Worker. */
   auth24h: {
     unauthorized: number;
   };
-  /**
-   * On-disk footprint. Exists because "越用越大" is a growth-rate question, and a
-   * rate needs a number that can be sampled repeatedly — `du` run by hand on
-   * someone else's machine cannot produce a series.
-   */
+  /** On-disk footprint. A growth rate needs a number that can be sampled repeatedly. */
   storage: {
     /** `kiro-mem.db` size in bytes. -1 when the file could not be stat'ed. */
     dbBytes: number;
     /**
-     * `-wal` size in bytes. -1 when absent (no WAL, or not stat-able).
-     *
-     * Reported separately from `dbBytes` because a WAL that dwarfs the main
-     * database means checkpoints are being starved by long-lived readers, which
-     * is a different defect with a different fix than "the corpus grew".
+     * `-wal` size in bytes. -1 when absent. Reported separately from `dbBytes`
+     * because a WAL that dwarfs the database means checkpoints are starved by
+     * long-lived readers, not that the corpus grew.
      */
     walBytes: number;
     /**
-     * Approximate `turn_events` row count, from `MAX(rowid)` rather than
-     * `COUNT(*)`, so `/health` stays O(1) on a table that grows with every tool
-     * call. Nothing deletes from this table today, so the approximation is exact
-     * in practice; it can only over-report if a future retention policy prunes.
+     * Approximate `turn_events` count from `MAX(rowid)`, not `COUNT(*)`, so
+     * `/health` stays O(1) on a table that grows with every tool call. Exact
+     * today; it can only over-report once a retention policy prunes.
      */
     turnEventsApprox: number;
-    /**
-     * Jobs in terminal `succeeded` state. The existing `jobs` group reports
-     * pending / leased / dead but not this one — and `succeeded` is precisely the
-     * set nothing ever deletes, so it is the one that quantifies the leak.
-     */
+    /** Jobs in terminal `succeeded` state — the set nothing ever deletes, so the one
+     * that quantifies the leak. The `jobs` group above omits it. */
     jobsSucceeded: number;
   };
 }

@@ -1,14 +1,11 @@
 /**
  * Viewer SSE hub (plan §8).
- *
- * Native `EventSource` cannot set an Authorization header, so the Viewer opens
- * the stream with `fetch` and reads the body itself. That is why this is a POST
- * route producing `text/event-stream`: the scope selection travels in the body
- * and the bearer token in a header, neither of them in a URL that would land in
- * an access log.
- *
- * Every event carries its `scopeKey`. A single-scope client filters again before
- * merging, but the filter here is the one that decides what leaves the process.
+ * A POST route producing `text/event-stream`: native `EventSource` cannot set an
+ * Authorization header, so the Viewer streams via `fetch` with the scope in the
+ * body and the token in a header — neither in a URL that would land in an access
+ * log.
+ * Every event carries its `scopeKey`; the filter here decides what leaves the
+ * process, the client's own filter is only a re-check.
  */
 
 import type { ViewerQueueStatus, ViewerStreamEvent } from './viewer-types';
@@ -17,11 +14,8 @@ import type { ViewerQueueStatus, ViewerStreamEvent } from './viewer-types';
 const HEARTBEAT_MS = 20_000;
 /** Queue polling for `processing_status`; the plan caps the event at 1/s. */
 const QUEUE_POLL_MS = 1000;
-/**
- * Per-client queue of pending frames. A tab that stops reading (backgrounded,
- * suspended laptop) must not become unbounded memory in the Worker; past this
- * the connection is dropped and the client reconnects with fresh state.
- */
+/** Per-client pending-frame bound: a backgrounded or suspended tab must not become
+ * unbounded Worker memory. Past this the connection drops and reconnects fresh. */
 const MAX_QUEUED_FRAMES = 256;
 
 interface Client {
@@ -59,12 +53,8 @@ export class ViewerStreamHub {
     return this.clients.size;
   }
 
-  /**
-   * Build the SSE response for one client.
-   *
-   * `initial_state` goes to this connection only — broadcasting it would make
-   * every already-open tab reset its state because a new tab appeared.
-   */
+  /** SSE response for one client. `initial_state` goes to this connection only —
+   * broadcasting it would reset every already-open tab because a new one appeared. */
   connect(input: { scopeKey: string | null; allScopes: boolean; signal?: AbortSignal }): Response {
     const encoder = new TextEncoder();
     const id = this.nextId++;
@@ -112,8 +102,7 @@ export class ViewerStreamHub {
         };
         this.clients.set(id, client);
 
-        // A comment frame first: it opens the stream for the browser without
-        // being delivered as an application event.
+        // Comment frame: opens the stream for the browser without delivering an event.
         write(': kiro-mem viewer stream\n\n');
         client.send({
           type: 'initial_state',
@@ -145,10 +134,7 @@ export class ViewerStreamHub {
     });
   }
 
-  /**
-   * Fan out one event. Skipped entirely when nobody is connected, so the write
-   * paths that call this never pay for payload construction on an idle Worker.
-   */
+  /** Fan out one event; a no-op with no clients, so callers pay nothing when idle. */
   broadcast(event: ViewerStreamEvent): void {
     if (this.clients.size === 0) return;
     const scoped = 'scopeKey' in event ? (event.scopeKey as string | null) : null;
@@ -172,8 +158,7 @@ export class ViewerStreamHub {
         if (this.clients.size === 0) return;
         const status = this.opts.queueStatus();
         const json = JSON.stringify(status);
-        // Only on change, and at most once per poll interval — a Worker chewing
-        // through a backlog must not turn into a per-job SSE storm.
+        // On change only, at most once per poll: a backlog must not become an SSE storm.
         if (json === this.lastQueueJson) return;
         this.lastQueueJson = json;
         this.broadcast({ type: 'processing_status', queue: status });
@@ -189,11 +174,8 @@ export class ViewerStreamHub {
     }
   }
 
-  /**
-   * Timers exist only while somebody is watching. Started unconditionally they
-   * would keep a `bun test` process alive after the assertions finished, and
-   * would poll the job table forever on a Worker nobody has a Viewer open on.
-   */
+  /** Timers run only while somebody is watching: left running they keep a `bun test`
+   * process alive past its assertions and poll the job table forever. */
   private stopTimersIfIdle(): void {
     if (this.clients.size > 0) return;
     if (this.timer !== null) {

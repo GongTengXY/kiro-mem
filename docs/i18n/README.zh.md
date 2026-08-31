@@ -207,6 +207,8 @@ Observation → 它的向量与语义归一化行 → 它的 FTS 条目 → 来�
   "language": "zh",
   "compression": {
     "concurrency": 3,
+    "minWarmRuntimes": 1,
+    "idleTtlMs": 600000,
     "timeoutMs": 30000,
     "maxRetries": 2
   },
@@ -226,12 +228,39 @@ Observation → 它的向量与语义归一化行 → 它的 FTS 条目 → 来�
 ```
 
 - `language`：`zh` 或 `en`。同时决定 CLI 输出、运行时压缩 prompt **和** Web 查看器界面语言，界面只渲染这一种语言。
-- `compression.concurrency`：并行运行的 `kiro-cli acp` 进程数（默认 `3`）。
+- `compression.concurrency`：并行运行的 `kiro-cli acp` 进程数（默认 `3`）。这是对**进程数**的硬上限，而不只是对池内槽位的限制：正在关闭的 runtime 在其进程真正退出前仍占用配额，所以永远不会出现替补进程和尚未退出的旧进程并存。
+- `compression.minWarmRuntimes`：空闲回收永远不会动的 runtime 数量（默认 `1`，会被夹到 `[0, concurrency]`）。这是下限而不是目标——从未压缩过任何东西的 Worker 仍然是 0 个。设为 `0` 允许高峰过后池子完全清空，代价是下一次压缩要付 ACP 冷启动。
+- `compression.idleTtlMs`：runtime 释放后允许空闲多久才被回收（默认 `600000`，即 10 分钟；通过 `kiro-mem config` 修改时夹在 `[1000, 86400000]`）。**`0` 表示关闭空闲回收**，绝不表示"立即杀掉"。负数、`NaN` 和 `Infinity` 一律回退到默认值。
 - `compression.timeoutMs`：单次压缩超时（毫秒）。通过 `kiro-mem config` 修改时会限制在 `[5000, 60000]` 区间内（默认 `30000`）。
 - `compression.maxRetries`：JSON 修复重试次数，超出后降级为 `quality=fallback` 的 Observation（默认 `2`）。
 - `runtime.kiroHome`：压缩子 agent 使用的隔离 `KIRO_HOME`。空串时会回退到 `<dataDir>/kiro-runtime`，这是 `kiro-mem install` 默认布局。
 - `context.maxOutputBytes`：注入 Observation 索引的字节预算，保持在 `agentSpawn` 的 10KB 上限之下（默认 `8192`）。
 - `retrieval.semanticDiscovery`：语义相似度是否可以浮出关键词从未命中的记录（默认 `true`）。见下。
+
+### ACP 进程治理
+
+压缩跑在 `kiro-cli acp` 子进程里，每个都占真实的常驻内存——开发机上实测单个 runtime 约 38MB（直接子进程 9.8MB，加上它自己的一个 28.1MB 子进程）。多个 Kiro 窗口**不会**各自启动一个 Worker：它们都通过 loopback 进入同一个 `~/.kiro-mem` Worker、共享同一个池，所以下面这个上限是整机上限，不是每个窗口的上限。
+
+池子初始为空，直到第一个压缩任务才创建进程。之后：
+
+- 任务结束的 runtime 会被**复用**给下一个任务，而不是重启；
+- 空闲超过 `idleTtlMs` 的 runtime 会被**回收**——进程被杀掉且不建替补——前提是回收后仍留有至少 `minWarmRuntimes` 个；
+- `concurrency` 约束的是**进程**而不是账面数字：正在回收的 runtime 在其进程真正退出前仍占着配额，所以替补永远不会和尚未关完的旧进程并存；
+- 达到 `maxJobsPerProcess` 或发生 ACP 错误/污染的 runtime 会**原地重启**。槽位数量不变，因此 warm 下限不会挡住它——即使池里只剩最后一个 runtime；
+- 进程自己死掉的槽位会被无条件清除，既不看 TTL 也不受 warm 下限保护。死掉的 runtime 不算 warm。
+
+在途任务不会被打断：空闲时间只从任务释放 runtime 之后开始计算，正在忙的 runtime 永远不会被回收。
+
+有两个读数能判断它是否在工作：
+
+```bash
+curl -s http://127.0.0.1:37778/health | jq '.acp'   # idleRecycles、生效配置、逐 slot 空闲时长
+kiro-mem diagnose                                    # 同样的信号，已排版
+```
+
+`/health.acp` 把 runtime 被关闭的三种原因分开——`jobLimitRecycles`、`errorRecycles`、`idleRecycles`——另有 `deadDrops` 表示自己消失的进程。`restarts` 保持原义，只统计原地重启（`jobLimitRecycles + errorRecycles`），所以空闲回收永远不会被读成不稳定。`config` 报告的是那个 Worker 进程中**实际生效**的值，不一定等于 `config.json` 现在写的内容：池参数在 Worker 启动时读取，改完要 `kiro-mem stop && kiro-mem start` 才生效。
+
+关闭时池子会在 Worker 等待在途任务写完最终状态**之前**先关闭，因此不会有 ACP 子进程活得比 Worker 更久。`kiro-mem stop`、`uninstall` 和 `uninstall --purge` 都走这条路径，而且每一条都只对 `.worker.pid` 里记录的那个 PID 发信号——kiro-mem 从不扫描或杀掉不是自己启动的进程。
 
 ### 独立语义召回与回滚
 
@@ -299,6 +328,8 @@ kiro-mem uninstall --purge
 | 删除不是法证级擦除 | 普通 SQLite `DELETE` 会把旧字节留在 WAL、freelist、文件系统快照和你已经做过的备份里。kiro-mem 刻意不做自动 `VACUUM`、也从不重写数据库，所以“永久删除”指的是 kiro-mem 所有读取路径都触达不到——不是把磁盘上的痕迹擦干净 | 请按产品层面的承诺理解：不可查询、不可检索、不可重建。需要介质级保证请用全盘加密并自己管好备份 |
 | 原始事件 payload 有上限 | 单个字符串字段超过 32KB 会被截断，单个 turn 最多存 4MB 原始 payload。截断会就地标记，但丢掉的字节不可恢复 | `payload_size` 仍记录原始大小；artifacts 提取在截断后的 payload 上继续工作 |
 | 依赖 Kiro CLI ACP | `kiro-cli acp` 不可用时无法压缩 | `kiro-mem diagnose` 会跑 ACP smoke 测试 |
+| 会常驻一个 warm ACP runtime | 高峰之间池子保留 `minWarmRuntimes` 个进程，让下一个 turn 不必付 ACP 冷启动——默认 1 个约 38MB。空闲回收永远不会低于这个下限；另外，用隔离 `KIRO_MEMORY_DATA_DIR` 起的第二个 Worker 会各自保留自己的下限而不是共用一个，普通多窗口使用不会产生第二个 Worker | 设 `compression.minWarmRuntimes: 0` 让池子清空，或缩短 `compression.idleTtlMs`。两者都是用下一次压缩的冷启动延迟换内存 |
+| 池参数在 Worker 启动时读取 | 改 `config.json` 里的 `concurrency`、`minWarmRuntimes` 或 `idleTtlMs` 不会影响已在运行的 Worker，所以在重启前进程行为和配置文件可能不一致 | `/health.acp.config` 报告该进程中实际生效的值；`kiro-mem stop && kiro-mem start`（或 `kiro-mem config`，它会替你重启）才生效 |
 | `agentSpawn` 输出限制 10KB | 注入索引必须紧凑 | 预算控制的 context builder |
 | 中途 `/agent` 切换不注入任何东西 | `agentSpawn` 是会话启动触发点，用 `/agent` 切进 kiro-mem 的那次会话拿不到记忆索引。捕获和 MCP 工具仍然正常——缺的只是被注入的那份菜单 | 用 kiro-mem 启动会话（`--agent kiro-mem` 或 `chat.defaultAgent`），显式要求 `@kiro-mem/search`，或把 `/context/bootstrap` 的输出粘进去——见[设为默认 Agent](#设为默认-agent) |
 | 搜索词短于 3 字符 | 回退到 `LIKE`，精度较低 | 尽量使用较长搜索词 |

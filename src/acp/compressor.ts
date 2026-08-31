@@ -1,7 +1,4 @@
-/**
- * ACP-backed MemoryCompressor implementation.
- * Uses ACPPool to send compression prompts through Kiro CLI ACP.
- */
+/** ACP-backed MemoryCompressor: sends compression prompts through Kiro CLI ACP. */
 
 import { ACPPool } from './pool';
 import type { ACPPoolOptions } from './types';
@@ -13,9 +10,10 @@ import {
 } from '../semantic-en';
 import { logError } from '../logger';
 
-// An empty Observation result. When the model exhausts repair retries the job
-// (summarize_turn) detects the empty title/summary and writes a
-// quality='fallback' Observation composed from deterministic artifacts.
+// Empty Observation result: the empty title/summary is what tells the
+// `summarize_turn` job, once repair retries are exhausted, to write a
+// `quality='fallback'` Observation from deterministic artifacts — never a
+// fabricated one.
 const OBSERVATION_SUMMARY_FALLBACK: ObservationSummaryResult = {
   title: '', summary: '', request: '', outcome: '', learned: '',
   next_steps: '', memory_type: 'change', files_touched: [], concepts: [],
@@ -37,9 +35,8 @@ export class ACPCompressor implements MemoryCompressor {
   private onMetric: (kind: 'repair' | 'contamination') => void;
 
   constructor(opts: ACPCompressorOptions = {}, pool?: ACPPoolLike) {
-    // Matches the documented `compression.maxRetries` default in config.json.
-    // Diverging here meant a direct `new ACPCompressor()` retried once while the
-    // README and the config file both promised two.
+    // Matches the documented `compression.maxRetries` default: diverging here
+    // meant a direct `new ACPCompressor()` retried once against a promised two.
     this.maxRetries = opts.maxRetries ?? 2;
     this.onMetric = opts.onMetric ?? (() => {});
     this.pool = pool ?? new ACPPool(opts);
@@ -73,12 +70,10 @@ export class ACPCompressor implements MemoryCompressor {
   }
 
   /**
-   * Second attempt at the English derived value, translation only.
-   *
-   * Returns null rather than throwing on any failure: by the time this runs the
-   * Observation is already being written, and the caller's contract is "no
-   * English vector" — never "fail the whole turn because a derived value could
-   * not be produced".
+   * Second attempt at the English derived value, translation only. Returns null
+   * rather than throwing on any failure: the Observation is already being
+   * written, and the caller's contract is "no English vector", never "fail the
+   * whole turn because a derived value could not be produced".
    */
   async normalizeSemanticEn(source: SemanticEnRecordSource): Promise<SemanticEnRecord | null> {
     try {
@@ -101,10 +96,8 @@ export class ACPCompressor implements MemoryCompressor {
     return result.text;
   }
 
-  /**
-   * Run prompt, parse JSON, validate schema. On failure, send a repair prompt and retry.
-   * Falls back to `fallback` if all retries exhausted.
-   */
+  /** Run prompt, parse JSON, validate schema; on failure send a repair prompt,
+   * and fall back once retries are exhausted. */
   private async runAndParse<T>(
     prompt: string,
     maxBytes: number,
@@ -183,19 +176,14 @@ Validation error: ${error}`;
 
 const OBSERVATION_SUMMARY_SCHEMA = '{"title":"string","summary":"string","request":"string","outcome":"string","learned":"string","next_steps":"string","memory_type":"decision|bugfix|feature|refactor|discovery|change","files_touched":["string"],"concepts":["string"],"evidence":["string"],"importance_score":0-1,"confidence_score":0-1,"unresolved_score":0-1,"semantic_en":{"title":"string","summary":"string","outcome":"string","learned":"string","concepts":["string"]}}';
 
-/** Translation-only schema for the second (and last) derived-value attempt. */
 const SEMANTIC_EN_SCHEMA = '{"title":"string","summary":"string","outcome":"string","learned":"string","concepts":["string"]}';
 
 // --- Output size bounds (S2) ---
 //
-// The only limit on compressor output used to be the 16KB ACP read cap, so a
-// single verbose Observation could carry multi-KB prose and dozens of evidence
-// items straight into storage. That is not just a disk cost: it inflates the FTS
-// trigram index, skews the read-cost estimate shown in the injected index, and
-// eats the pull-side response budget. Bound it at the boundary, before it
-// becomes immutable.
+// The only cap was the 16KB ACP read limit, so one verbose Observation could carry
+// multi-KB prose into storage: disk cost, an inflated FTS trigram index, a skewed
+// read-cost estimate in the injected index, an eaten pull-side response budget.
 
-/** Per-field character cap for the prose fields. */
 const FIELD_MAX_CHARS = 2000;
 /** `title` is rendered in the injected index, so it is far tighter. */
 const TITLE_MAX_CHARS = 200;
@@ -216,12 +204,9 @@ function boundedStringArray(val: unknown): string[] {
     .map((s) => (s.length > ARRAY_ITEM_MAX_CHARS ? s.slice(0, ARRAY_ITEM_MAX_CHARS) : s));
 }
 
-/**
- * Bound the English derived value with the same caps as the fields it mirrors.
- * Returns null for a missing/unusable shape — an absent derived value costs one
- * Observation its English vector, while an unbounded one would carry model prose
- * straight into storage.
- */
+/** Bound the English derived value with the same caps as the fields it mirrors.
+ * `null` for an unusable shape: an absent derived value costs one Observation its
+ * English vector, an unbounded one carries model prose into storage. */
 function boundedSemanticEn(val: unknown): SemanticEnRecord | null {
   const coerced = coerceSemanticEnRecord(val);
   if (!coerced) return null;
@@ -234,13 +219,9 @@ function boundedSemanticEn(val: unknown): SemanticEnRecord | null {
   };
 }
 
-/**
- * Validate and coerce parsed JSON to match the Observation schema.
- *
- * Exported for tests: the unknown-context branch is unreachable through the
- * public API today, and an invariant that cannot be observed is an invariant
- * that quietly rots.
- */
+/** Validate and coerce parsed JSON to the Observation schema. Exported for tests:
+ * the unknown-context branch is unreachable through the public API today, and an
+ * invariant that cannot be observed quietly rots. */
 export function validateSchema<T>(parsed: any, fallback: T, context: string): T {
   if (!parsed || typeof parsed !== 'object') return fallback;
 
@@ -259,19 +240,15 @@ export function validateSchema<T>(parsed: any, fallback: T, context: string): T 
       importance_score: clampScore(parsed.importance_score),
       confidence_score: clampScore(parsed.confidence_score),
       unresolved_score: clampScore(parsed.unresolved_score),
-      // Shape coercion only. Whether this value may enter the
-      // `semantic-en-v1` vector space is decided later, by
-      // `checkSemanticEnRecord()` against the fields actually stored — the
-      // caller is the only place that knows those (it applies its own
-      // defaults and fallbacks first).
+      // Shape coercion only. Admission to the `semantic-en-v1` space is decided
+      // later by `checkSemanticEnRecord()` against the fields actually stored.
       semantic_en: boundedSemanticEn(parsed.semantic_en),
     } as T;
   }
 
-  // S8: an unrecognized context used to `return parsed as T` — i.e. the one
-  // path that skips validation entirely was also the silent one. There is
-  // exactly one caller today, so reaching here means a new call site forgot to
-  // add its branch; fall back rather than let unvalidated model output through.
+  // S8: an unrecognized context used to `return parsed as T` — the one path that
+  // skips validation was also the silent one. Reaching here means a new call site
+  // forgot its branch; fall back rather than pass unvalidated model output.
   return fallback;
 }
 
@@ -286,9 +263,8 @@ function clampScore(val: unknown): number {
 
 // --- Prompt builder ---
 //
-// Body language is intentionally Chinese to match upstream behavior validated
-// against multiple Kiro models. Memory-level language follows the user's actual
-// prompt language, so the body language here only affects the model's framing.
+// Body language is Chinese to match upstream behavior validated across multiple
+// Kiro models; memory-level language still follows the user's prompt language.
 
 function clampText(s: string, max: number): string {
   if (!s) return '';
@@ -298,9 +274,8 @@ function clampText(s: string, max: number): string {
   return `${s.slice(0, head)}\n…\n${s.slice(s.length - tail)}`;
 }
 
-// Single implementation. Tests reach it through `ACPCompressor` with a fake pool
-// (`tests/support/fake-acp-pool.ts`) and script responses by the distinctive
-// "本轮事实来源" marker; there is no second copy of this builder to keep in sync.
+// Single implementation; tests reach it through `ACPCompressor` with a fake pool
+// (`tests/support/fake-acp-pool.ts`) keyed on the "本轮事实来源" marker.
 function buildObservationSummaryPrompt(input: {
   user_prompt: string;
   assistant_response: string;
@@ -349,14 +324,10 @@ function buildObservationSummaryPrompt(input: {
 {"title":"一句话工作标题(<40字)","summary":"2-4句紧凑事实摘要","request":"用户想完成什么","outcome":"实际完成/验证结果/未完成状态","learned":"可复用的技术事实或取舍","next_steps":"明确未完成项，没有则空串","memory_type":"decision|bugfix|feature|refactor|discovery|change","files_touched":["文件路径"],"concepts":["标签"],"evidence":["证据"],"importance_score":0.0-1.0,"confidence_score":0.0-1.0,"unresolved_score":0.0-1.0,"semantic_en":{"title":"English title","summary":"English summary","outcome":"English outcome","learned":"English learned","concepts":["English tag"]}}`;
 }
 
-// ---------------------------------------------------------------------------
-// Translation-only prompt (second and last derived-value attempt)
-// ---------------------------------------------------------------------------
+// --- Translation-only prompt (second and last derived-value attempt) ---
 //
-// Separate from the summary prompt on purpose: when the derived value that came
-// back with the summary fails the guardrails, re-running the whole compression
-// would also re-roll the Observation text — which is immutable by then, so the
-// two would disagree. This prompt sees only the fields it must mirror.
+// Separate from the summary prompt: re-running the whole compression would
+// re-roll Observation text that is immutable by then, so the two would disagree.
 
 function buildSemanticEnPrompt(source: SemanticEnRecordSource): string {
   const input = {

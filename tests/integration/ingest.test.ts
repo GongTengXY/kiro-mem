@@ -168,9 +168,30 @@ describe('Integration / real createApp — full ingest cycle', () => {
     expect(h.acp).toEqual({
       total: 1,
       busy: 0,
+      // Slots still being killed. They stay counted in `total` and against
+      // `concurrency` until their process exits, so `total - retiring` is the
+      // real capacity at that instant.
+      retiring: 0,
       queued: 0,
       restarts: 0,
       contaminations: 0,
+      // The three recycle causes, split so resource governance (idle) is never
+      // read as instability (job-limit / error). `restarts` stays the in-place
+      // total, which is why it can still be compared against older readings.
+      jobLimitRecycles: 0,
+      errorRecycles: 0,
+      idleRecycles: 0,
+      deadDrops: 0,
+      // null, not 0: housekeeping has never run on this fake pool.
+      lastHousekeepingAt: null,
+      // The parameters in effect, so "did my config change take effect?" is
+      // answerable from /health without reading the Worker's source.
+      config: {
+        concurrency: 3,
+        minWarmRuntimes: 1,
+        idleTtlMs: 600000,
+        maxJobsPerProcess: 50,
+      },
       repairs: 0,
       parseFallbacks: 0,
       // Per-slot detail. The aggregates above cannot tell a saturated pool from

@@ -1,13 +1,5 @@
 #!/usr/bin/env bun
-/**
- * kiro-mem CLI: install, uninstall, config, status, start, stop, diagnose.
- *
- * V3 highlights:
- * - Atomic Observations with read-time organization and no V2 data migration.
- * - ACP-native compression through an isolated KIRO_HOME.
- * - Bundled local embedding model copied into `~/.kiro-mem/models/`.
- * - Local Worker requests authenticated by an installer-generated token.
- */
+/** kiro-mem CLI: install, uninstall, config, status, start, stop, diagnose, repair, viewer. */
 import {
   existsSync,
   mkdirSync,
@@ -41,15 +33,11 @@ import { PACKAGE_VERSION } from '../src/version';
 
 const HOME = process.env.HOME || '~';
 /**
- * Where this installation's state lives.
- *
- * `KIRO_MEMORY_DATA_DIR` first, matching `getDataDir()` in `src/config.ts` —
- * the Worker, the MCP server and every hook resolve it that way. This file used
- * to look only at `HOME`, so the override silently isolated two of the three
- * entry points: a command run with `KIRO_MEMORY_DATA_DIR=<tmp> kiro-mem repair`
- * looked isolated and actually read, migrated and enqueued jobs into the
- * developer's real database. Tests isolate by overriding `HOME`, so nothing
- * caught it.
+ * `KIRO_MEMORY_DATA_DIR` first, matching `getDataDir()` in `src/config.ts` — the
+ * Worker, the MCP server and every hook resolve it that way. Reading only `HOME`
+ * here once made `KIRO_MEMORY_DATA_DIR=<tmp> kiro-mem repair` look isolated while
+ * it wrote to the developer's real database; tests isolate by overriding `HOME`,
+ * so nothing caught it.
  */
 const DATA_DIR = process.env.KIRO_MEMORY_DATA_DIR || join(HOME, '.kiro-mem');
 const KIRO_HOME = process.env.KIRO_HOME || join(HOME, '.kiro');
@@ -60,13 +48,9 @@ const SRC_DIR = join(PKG_ROOT, 'src');
 const MODELS_DIR = join(PKG_ROOT, 'models');
 
 /**
- * Where the compressor runtime actually lives for THIS installation.
- *
  * Read from config so install / config / diagnose / smoke all inspect the same
- * directory the Worker will use. Previously these were three independent
- * expressions, so a custom `runtime.kiroHome` produced a runtime that worked but
- * that `diagnose` reported as broken, and a re-install silently discarded the
- * setting.
+ * directory the Worker will use. As three independent expressions, a custom
+ * `runtime.kiroHome` gave a working runtime that `diagnose` reported as broken.
  */
 function runtimeHomeFromDisk(): string {
   try {
@@ -90,16 +74,10 @@ const MODEL_FILES = [
   'onnx/model_quantized.onnx',
 ] as const;
 
-/**
- * Web Viewer bundle. Built by `bun run build:ui` into `dist/ui` and published in
- * the npm `files` list, so an installed package carries it without needing the
- * source repository to still exist.
- */
+/** Built by `bun run build:ui`; in the npm `files` list so an installed package carries it. */
 const VIEWER_SRC_DIR = join(PKG_ROOT, 'dist', 'ui');
 const VIEWER_DEST_DIR = join(DATA_DIR, 'ui');
 const VIEWER_FILES = ['viewer.html', 'viewer.js', 'styles.css'] as const;
-
-// --- Resolve language from existing config (or default) ---
 
 function resolveLanguage(): Language {
   try {
@@ -200,7 +178,13 @@ async function chooseInstallLanguage(): Promise<Language> {
 interface BootstrapConfig {
   language: Language;
   worker: { port: number; host: string; logLevel: string };
-  compression: { concurrency: number; timeoutMs: number; maxRetries: number };
+  compression: {
+    concurrency: number;
+    minWarmRuntimes: number;
+    idleTtlMs: number;
+    timeoutMs: number;
+    maxRetries: number;
+  };
   context: {
     maxOutputBytes: number;
   };
@@ -213,17 +197,23 @@ function defaultConfig(language: Language): BootstrapConfig {
   return {
     language,
     worker: { port: 37778, host: '127.0.0.1', logLevel: 'info' },
-    compression: { concurrency: 3, timeoutMs: 30000, maxRetries: 2 },
+    compression: {
+      concurrency: 3,
+      // Written explicitly so the knobs deciding how many `kiro-cli acp`
+      // processes stay resident are discoverable in the file users actually open.
+      minWarmRuntimes: 1,
+      idleTtlMs: 600000,
+      timeoutMs: 30000,
+      maxRetries: 2,
+    },
     context: {
       maxOutputBytes: 8192,
     },
     filter: { skipTools: ['introspect', 'todo_list', '@kiro-mem/*'] },
-    // Written explicitly rather than left to the loader default so the rollback
-    // switch is discoverable in the file the user actually opens.
+    // Explicit, not left to the loader default, so the rollback switch is visible.
     retrieval: { semanticDiscovery: true },
-    // Empty means "use the default under dataDir" (see resolveRuntimeHome).
-    // Writing the resolved absolute path here instead would freeze the data dir
-    // into the config file and make the setting look user-chosen when it isn't.
+    // Empty = "default under dataDir" (resolveRuntimeHome). Writing the resolved
+    // path would freeze the data dir in and make the setting look user-chosen.
     runtime: { kiroHome: '' },
   };
 }
@@ -248,9 +238,23 @@ async function collectCompressionConfig(
     5,
     Math.max(2, isNaN(retriesRaw) ? 2 : retriesRaw),
   );
+  const warmRaw = parseInt(await ask(rl, cm.compressionMinWarmRuntimes, '1'));
+  // Bounded by the concurrency just chosen: a higher floor would pin runtimes
+  // that can never exist.
+  const minWarmRuntimes = Math.min(
+    concurrency,
+    Math.max(0, isNaN(warmRaw) ? 1 : warmRaw),
+  );
+  const idleRaw = parseInt(await ask(rl, cm.compressionIdleTtlMs, '600000'));
+  // Must not be clamped like the values above: 0 is a legal answer meaning "never
+  // retire on idle", and raising it to the floor would give continuous recycling
+  // to someone who asked for none.
+  const idleTtlMs = idleRaw === 0
+    ? 0
+    : Math.min(86400000, Math.max(1000, isNaN(idleRaw) ? 600000 : idleRaw));
 
   const cfg = defaultConfig(language);
-  cfg.compression = { concurrency, timeoutMs, maxRetries };
+  cfg.compression = { concurrency, minWarmRuntimes, idleTtlMs, timeoutMs, maxRetries };
   return cfg;
 }
 
@@ -294,12 +298,8 @@ async function install() {
   }
   console.log(`${ansi.ok('✓')} ${m.kiroCliCheckOk}`);
 
-  // 3. Resolve language + collect config
-  //
-  // Install is intentionally non-interactive beyond the language choice. ACP
-  // compression knobs (concurrency / timeoutMs / maxRetries) all default to
-  // values that work well for the typical local Kiro CLI runtime; users who
-  // want to tune them run `kiro-mem config` after install.
+  // 3. Resolve language + collect config. Non-interactive beyond the language
+  // choice; compression knobs are tuned later via `kiro-mem config`.
   const configPath = join(DATA_DIR, 'config.json');
   let config: BootstrapConfig;
   if (existsSync(configPath)) {
@@ -315,13 +315,11 @@ async function install() {
           ...defaultConfig(lang).compression,
           ...(existing.compression || {}),
         },
-        // Preserve a user-chosen runtime home. Overwriting it here meant a
-        // re-install silently moved the compressor runtime back to the default
-        // directory while the user's config still said otherwise.
+        // Preserve a user-chosen runtime home: overwriting it made a re-install
+        // silently move the compressor runtime back to the default directory.
         runtime: { kiroHome: existing.runtime?.kiroHome ?? '' },
       };
     } catch {
-      // Existing config unparseable — fall back to a fresh language choice.
       lang = await chooseInstallLanguage();
       m = t(lang);
       config = defaultConfig(lang);
@@ -346,7 +344,8 @@ async function install() {
   }
   console.log(`\n${ansi.ok('✓')} ${m.created} ${ansi.dim(DATA_DIR)}`);
 
-  // Requests from Hooks to the loopback Worker use a local bearer token.
+  // Hook -> loopback Worker auth. Written 0600 (owner-only); diagnose reports
+  // any looser mode as `insecure`.
   ensureLocalAuthToken(DATA_DIR);
 
   // 5. Save config
@@ -375,10 +374,8 @@ async function install() {
   mkdirSync(join(DATA_DIR, 'src', 'types'), { recursive: true });
   mkdirSync(join(DATA_DIR, 'src', 'hooks'), { recursive: true });
 
-  // The installed layout puts hooks at <dataDir>/hooks but server code at
-  // <dataDir>/src/server, so no single relative path reaches capture-log from
-  // both. Ship the same source file to both trees rather than forking it: the
-  // hooks append misses, the Worker's /health reads them back.
+  // Hooks live at <dataDir>/hooks, server code at <dataDir>/src/server, so no one
+  // relative path reaches capture-log from both. Same source shipped to both trees.
   copyFileSync(
     join(SRC_DIR, 'hooks', 'capture-log.ts'),
     join(DATA_DIR, 'src', 'hooks', 'capture-log.ts'),
@@ -389,9 +386,9 @@ async function install() {
     'mcp-server.ts',
     'mcp-scope.ts',
     'observation-search.ts',
-    // Viewer server surface. The Worker imports these directly, so a missing
-    // file here breaks the installed runtime while the in-tree build stays green
-    // — the case `missingInstalledImports` in setup.test.ts guards against.
+    // The Worker imports these directly: a missing file breaks the installed
+    // runtime while the in-tree build stays green — `missingInstalledImports` in
+    // setup.test.ts guards this whole list.
     'viewer-routes.ts',
     'viewer-stream.ts',
     'viewer-types.ts',
@@ -431,14 +428,12 @@ async function install() {
   for (const file of [
     'compressor.ts',
     'embedding.ts',
-    // Split out of embedding.ts so the MCP server can resolve the vector-space
-    // identity without pulling the inference runtime into every session.
+    // Split from embedding.ts so MCP can resolve the vector-space identity without
+    // pulling the inference runtime into every session.
     'embedding-space.ts',
     'semantic-en.ts',
     'worker-embedder.ts',
-    // Subtree RSS sampling for /health. The Worker imports it, so omitting it
-    // here would break the installed runtime while the in-tree build stayed
-    // green — which is exactly what `missingInstalledImports` guards against.
+    // Subtree RSS sampling for /health; same install-only import risk as above.
     'process-rss.ts',
     'bootstrap-context.ts',
     'config.ts',
@@ -461,12 +456,9 @@ async function install() {
   copyEmbeddingModel();
   console.log(`${ansi.ok('✓')} ${m.modelsCopied}`);
 
-  // 8b. Copy the Web Viewer bundle to <dataDir>/ui
-  //
-  // The Worker resolves the bundle from the INSTALLED directory first, because a
-  // real installation has no repository to fall back to. A missing bundle is not
-  // fatal — memory capture, compression and MCP all work without it, and `/ui`
-  // then answers with a build hint instead of the Worker refusing to start.
+  // 8b. Copy the Web Viewer bundle to <dataDir>/ui. The Worker resolves it from the
+  // installed directory first. A missing bundle is not fatal: capture, compression
+  // and MCP work without it, and `/ui` answers with a build hint.
   if (copyViewerBundle()) {
     console.log(`${ansi.ok('✓')} ${m.viewerInstalled}`);
   } else {
@@ -500,7 +492,6 @@ async function install() {
     join(RUNTIME_AGENT_DIR, `${COMPRESSOR_AGENT_NAME}.json`),
     compressorAgentTpl.replaceAll('__KIRO_MEMORY_DIR__', DATA_DIR),
   );
-  // Prompt: pick the language-matched body and write under runtime root.
   const promptSrc = join(
     SRC_DIR,
     'acp',
@@ -542,10 +533,8 @@ async function install() {
     process.exit(1);
   }
 
-  // 13. Register system service & (re)start worker
-  //
-  // restart(), not start(): step 7 just overwrote the runtime source, and a
-  // Worker left running from before the copy would keep serving the old build.
+  // 13. Register system service & (re)start worker. restart(), not start(): step 7
+  // overwrote the runtime source under a possibly-running Worker.
   const msg = registerService(lang);
   console.log(`${ansi.ok('✓')} ${msg}`);
   restart(lang);
@@ -575,12 +564,9 @@ function copyEmbeddingModel() {
 }
 
 /**
- * Copy `dist/ui` into `<dataDir>/ui`. Returns false when the package carries no
- * built bundle (a source checkout that has not run `bun run build:ui`).
- *
- * All three files or none: a directory with `viewer.html` but no `viewer.js`
- * would serve a blank page with no diagnosable error, which is worse than the
- * "bundle not found" hint the Worker shows for an absent directory.
+ * Returns false when the package carries no built bundle (a source checkout that
+ * has not run `bun run build:ui`). All three files or none: `viewer.html` without
+ * `viewer.js` serves a blank page with no diagnosable error.
  */
 function copyViewerBundle(): boolean {
   const present = VIEWER_FILES.every((f) => existsSync(join(VIEWER_SRC_DIR, f)));
@@ -616,9 +602,8 @@ function uninstall() {
     'node_modules',
     'logs',
     'kiro-runtime',
-    // The Viewer bundle is a build artefact of the installed package, not user
-    // data — it is reinstalled by `kiro-mem install`, so keeping it would leave a
-    // stale UI able to talk to a newer Worker.
+    // Build artefact, not user data: keeping it would leave a stale UI talking to
+    // a newer Worker.
     'ui',
   ]) {
     const p = join(DATA_DIR, dir);
@@ -664,6 +649,16 @@ async function configCmd() {
     );
     console.log(`  ${m.maxRetriesLabel}     ${ansi.cyan(String(c.maxRetries ?? 2))}`);
     console.log(
+      `  ${m.minWarmLabel}      ${ansi.cyan(String(c.minWarmRuntimes ?? 1))}`,
+    );
+    console.log(
+      `  ${m.idleTtlLabel}    ${
+        (c.idleTtlMs ?? 600000) === 0
+          ? ansi.warn(m.idleTtlOff)
+          : ansi.cyan(String(c.idleTtlMs ?? 600000))
+      }`,
+    );
+    console.log(
       `  ${m.runtimeHomeLabel}      ${ansi.cyan(resolveRuntimeHome(r.kiroHome, DATA_DIR))}`,
     );
     console.log(
@@ -687,9 +682,11 @@ async function configCmd() {
   const merged = {
     ...current,
     language: newLang,
-    compression: newCfg.compression,
-    // Kept verbatim: `kiro-mem config` edits language and compression only, so
-    // it must not turn an unset (default) runtime home into a hard-coded path.
+    // Merged, not replaced: a field this form does not ask about must survive
+    // `kiro-mem config`. Replacing the block is how a hand-edited `idleTtlMs`
+    // silently reverts when someone changes only the language.
+    compression: { ...c, ...newCfg.compression },
+    // Verbatim: must not turn an unset (default) runtime home into a hard path.
     runtime: { kiroHome: r.kiroHome ?? '' },
   };
   writeFileSync(configPath, JSON.stringify(merged, null, 2));
@@ -735,7 +732,6 @@ async function diagnose() {
   const configPath = join(DATA_DIR, 'config.json');
   const dbPath = join(DATA_DIR, 'kiro-mem.db');
 
-  // 1. Worker process
   console.log(
     `\n${ansi.bold(`── ${m.diagWorker} ──────────────────────────────`)}`,
   );
@@ -778,9 +774,8 @@ async function diagnose() {
         console.log(
           `  ${ansi.ok('✓')} ${padLabel(m.diagHealth, 10)}v${h.version || '?'}, ${m.diagJobsLabel}: ${jobsInfo}`,
         );
-        // The running Worker holds the code it loaded at boot. If it predates
-        // the installed files, everything else here still looks healthy while
-        // the deployed fix is not actually live.
+        // The running Worker holds the code it loaded at boot: a stale process
+        // looks healthy here while the deployed fix is not actually live.
         let installedVersion = '';
         try {
           installedVersion = JSON.parse(
@@ -793,11 +788,8 @@ async function diagnose() {
           );
         }
 
-        // --- Runtime footprint ---
-        //
-        // Only reachable from a live /health: RSS is per-process state that no
-        // amount of reading the database can reconstruct. Printed here rather
-        // than in the database section for that reason.
+        // --- Runtime footprint --- RSS is live per-process state the database
+        // cannot reconstruct, which is why it prints here and not under Database.
         const mb = (bytes: number | null | undefined) =>
           typeof bytes === 'number' && bytes >= 0
             ? `${(bytes / 1048576).toFixed(1)}MB`
@@ -826,6 +818,20 @@ async function diagnose() {
               );
             }
           }
+          // Idle governance from the live pool: whether idle ACP processes are
+          // actually being released, and under which settings.
+          const acp = h.acp;
+          if (acp && acp.config) {
+            const ttl = acp.config.idleTtlMs;
+            const ttlText = ttl === 0
+              ? m.idleTtlOff
+              : `${Math.round(ttl / 1000)}s`;
+            console.log(
+              `  ${padLabel(m.diagAcpIdleRecycle, 14)}${ansi.cyan(String(acp.idleRecycles ?? 0))} ${
+                ansi.dim(`· ${m.diagAcpTtl} ${ttlText} · ${m.diagAcpWarm} ${acp.config.minWarmRuntimes}`)
+              }`,
+            );
+          }
           const clients: any[] = Array.isArray(mem.mcpClientsSeen) ? mem.mcpClientsSeen : [];
           if (clients.length > 0) {
             const total = clients.reduce(
@@ -836,8 +842,7 @@ async function diagnose() {
               `  ${padLabel(m.diagMcpClients, 14)}${ansi.cyan(String(clients.length))} ${ansi.dim(`· ${mb(total)} ${m.diagTotal}`)}`,
             );
           }
-          // A failed `ps` makes every byte count above meaningless. Say so
-          // instead of letting the reader treat '?' as "small".
+          // A failed `ps` makes every byte count above meaningless — don't let '?' read as "small".
           if (mem.rssMeasured === false) {
             console.log(`  ${ansi.warn('⚠')} ${ansi.dim(m.diagRssUnmeasured)}`);
           } else if (mem.rssSampleAt === null && (slots.some((s) => s.pid != null) || clients.length > 0)) {
@@ -882,10 +887,8 @@ async function diagnose() {
     }
   }
 
-  // 2b. Local auth token + Hook -> Worker auth chain
-  //
-  // A rejected Hook request is invisible during normal use (Hooks are
-  // fire-and-forget), so diagnose is where a broken credential must surface.
+  // 2b. Local auth token + Hook -> Worker auth chain. Hooks are fire-and-forget,
+  // so a rejected request is invisible in normal use — diagnose must surface it.
   const tokenInfo = inspectLocalAuthToken(DATA_DIR);
   const tokenProblem: Record<string, string> = {
     missing: m.authTokenMissing,
@@ -900,8 +903,8 @@ async function diagnose() {
   );
 
   if (workerOk && tokenInfo.state !== 'missing') {
-    // Probe a read-only authenticated route the same way a Hook would. Sent via
-    // fetch, not curl, so the token never lands in the process list.
+    // Probes a read-only route the way a Hook would. fetch, not curl, so the token
+    // never lands in the process list.
     const probeUrl = `http://127.0.0.1:${port}/context/bootstrap?cwd=${encodeURIComponent(process.cwd())}`;
     let probeStatus = 0;
     try {
@@ -952,7 +955,6 @@ async function diagnose() {
       : `  ${ansi.err('✗')} ${padLabel(m.diagService, 10)}${svcName} ${m.diagNotRegistered}`,
   );
 
-  // 4. ACP runtime
   console.log(
     `\n${ansi.bold(`── ${m.diagACP} ──────────────────────────────`)}`,
   );
@@ -1068,7 +1070,6 @@ try {
     }
   }
 
-  // 5. Config
   console.log(
     `\n${ansi.bold(`── ${m.diagConfig} ──────────────────────────────`)}`,
   );
@@ -1101,14 +1102,13 @@ try {
     );
   }
 
-  // 6. Database stats
   console.log(
     `\n${ansi.bold(`── ${m.diagDatabase} ────────────────────────────`)}`,
   );
   if (existsSync(dbPath)) {
     try {
-      // Open through MemoryDB so the query logic is shared with /health and the
-      // metric_events table is created if an older DB predates it (idempotent).
+      // Via MemoryDB so query logic is shared with /health, and metric_events is
+      // created if an older DB predates it (idempotent).
       const mdb = new MemoryDB(dbPath);
       const turns =
         (mdb.raw.query('SELECT COUNT(*) AS c FROM turns').get() as { c: number } | null)?.c ?? 0;
@@ -1125,19 +1125,16 @@ try {
       console.log(
         `  ${padLabel(m.diagJobsLabel, 14)}${ansi.cyan(String(s.jobs.pending))} ${m.diagJobsPending} / ${ansi.cyan(String(s.jobs.leased))} ${m.diagJobsLeased} / ${ansi.cyan(String(s.jobs.dead))} ${m.diagJobsDead}`,
       );
-      // Nothing prunes either of these: `turn_events` gains a row per tool call
-      // and `succeeded` jobs are only ever marked, never deleted. Both are
-      // monotonic, so they belong next to the jobs line rather than in a
-      // "current state" group.
+      // Nothing prunes either: `turn_events` gains a row per tool call, `succeeded`
+      // jobs are only marked, never deleted. Both monotonic.
       console.log(
         `  ${padLabel(m.diagTurnEvents, 14)}${ansi.cyan(String(s.storage.turnEventsApprox))} ${ansi.dim(`· ${m.diagJobsSucceeded} ${s.storage.jobsSucceeded} ${m.diagJobsSucceededHint}`)}`,
       );
       console.log(
         `  ${padLabel(m.diagSearch, 14)}${ansi.cyan(String(s.search24h.requests))} / ${ansi.cyan(pct(s.search24h.degradeRate))} ${m.diagDegrade} / p50 ${ansi.cyan(`${s.search24h.latencyMsP50}ms`)} / p95 ${ansi.cyan(`${s.search24h.latencyMsP95}ms`)}`,
       );
-      // Independent semantic recall (phase 2C) only works in the English vector
-      // space, so its coverage is the number that decides whether the feature is
-      // actually reachable in this install — not the offline benchmark.
+      // Independent semantic recall (phase 2C) works only in the English vector
+      // space, so this coverage — not the offline benchmark — decides reachability.
       const cfgRetrieval = (() => {
         try {
           const raw = JSON.parse(readFileSync(configPath, 'utf-8'));
@@ -1154,17 +1151,15 @@ try {
           `  ${padLabel(m.diagZeroFts, 14)}${ansi.cyan(`${s.search24h.zeroFtsRecalled}/${s.search24h.zeroFts}`)} ${ansi.dim(`· ${m.diagSemanticOnly} ${s.search24h.semanticOnlyPerRequest} ${m.diagPerRequest} / max ${s.search24h.semanticOnlyMax}`)}`,
         );
       }
-      // scope 内向量数（方案 §8.2）：语义召回在这个 workspace 上到底有没有可能。
-      // 只在测量过的请求上报，`emptyScopeRequests` 非 0 时升级成告警——那批请求的
-      // 语义腿是结构性不可能，不是"没有相关记录"。
+      // scope 内向量数（方案 §8.2）：`emptyScopeRequests` 非 0 时升级成告警——那批
+      // 请求的语义腿是结构性不可能，不是"没有相关记录"。
       if (s.search24h.scopeVectorsMeasured > 0) {
         const empty = s.search24h.emptyScopeRequests;
         console.log(
           `  ${empty > 0 ? `${ansi.warn('⚠')} ` : ''}${padLabel(m.diagScopeVectors, empty > 0 ? 12 : 14)} ${ansi.cyan(String(s.search24h.scopeVectorsAvg))} ${ansi.dim(`· min ${s.search24h.scopeVectorsMin} · ${m.diagEmptyScope} ${empty}/${s.search24h.scopeVectorsMeasured}`)}`,
         );
       }
-      // Only when something was actually refused or omitted: a healthy install
-      // where the agent always passes the English form should stay quiet.
+      // Quiet on a healthy install; prints only when something was refused or omitted.
       const issues = Object.entries(s.search24h.semanticQueryIssues);
       if (issues.length > 0) {
         console.log(
@@ -1174,15 +1169,14 @@ try {
       console.log(
         `  ${padLabel(m.diagAcpWindow, 14)}${m.diagRepairs}: ${ansi.cyan(String(s.acp24h.repairs))} / ${m.diagContam}: ${ansi.cyan(String(s.acp24h.contaminations))}`,
       );
-      // Only surfaced when non-zero: a silent Hook rejection is worth a line,
-      // a healthy install should stay quiet.
+      // Non-zero only: a silent Hook rejection is worth a line.
       if (s.auth24h.unauthorized > 0) {
         console.log(
           `  ${ansi.warn('⚠')} ${padLabel(m.diagAuthRejected, 12)}${ansi.cyan(String(s.auth24h.unauthorized))} ${m.diagAuthRejectedHint}`,
         );
       }
-      // Capture is best-effort: a dropped raw event is unrecoverable, so make
-      // the gap visible instead of letting it look like an idle period.
+      // Capture is best-effort and a dropped raw event is unrecoverable — make the
+      // gap visible instead of letting it look like an idle period.
       const misses = readCaptureMisses(DATA_DIR);
       if (misses.total > 0) {
         const detail = Object.entries(misses.byReason)
@@ -1192,10 +1186,9 @@ try {
           `  ${ansi.warn('⚠')} ${padLabel(m.diagCaptureMissed, 12)}${ansi.cyan(String(misses.total))} ${ansi.dim(detail)} ${m.diagCaptureMissedHint}`,
         );
       }
-      // Size comes from the stats read above, not a second `Bun.file()` stat, so
-      // this line and `/health` can never disagree. WAL is reported beside it
-      // because a WAL several times the main database is a checkpoint-starvation
-      // signal — a different defect, with a different fix, than "the corpus grew".
+      // Size from the stats read above, not a second `Bun.file()` stat, so this line
+      // and `/health` can never disagree. WAL beside it because a WAL several times
+      // the main DB is checkpoint starvation — a different defect from "corpus grew".
       const sizeMb = (bytes: number) =>
         bytes >= 0 ? `${(bytes / 1048576).toFixed(1)} MB` : m.diagStorageUnavailable;
       console.log(
@@ -1214,7 +1207,6 @@ try {
     console.log(`  ${ansi.warn('⚠')} ${m.diagNotCreated}`);
   }
 
-  // 7. Recent errors
   console.log(
     `\n${ansi.bold(`── ${m.diagErrors} ──────────────────────────────`)}`,
   );
@@ -1241,16 +1233,12 @@ try {
 }
 
 /**
- * Reconcile the Truth Layer against its projections (P0-5).
+ * Reconcile the Truth Layer against its projections (P0-5). A dropped raw event is
+ * gone for good, but a missing projection is recoverable: the turn and its events
+ * are still there.
  *
- * A dropped raw event is gone for good, but a MISSING PROJECTION is recoverable:
- * the turn and its events are still there. Before this command existed, a
- * summarize job that reached `dead` left that turn permanently without an
- * Observation, and the cross-state dedupe index made re-enqueueing silently
- * impossible — the memory gap had no repair path at all.
- *
- * This never deletes a terminal job row: the original `last_error` is the only
- * record of why the projection failed, and repair must not destroy evidence.
+ * Never deletes a terminal job row — the original `last_error` is the only record
+ * of why the projection failed, and repair must not destroy evidence.
  */
 async function repair() {
   const dbPath = join(DATA_DIR, 'kiro-mem.db');
@@ -1261,14 +1249,11 @@ async function repair() {
 
   const mdb = new MemoryDB(dbPath);
   try {
-    // 动态引入：`src/embedding.ts` 会静态拉入 transformers，其它 CLI 子命令不该为它付启动成本。
-    // `embedding-space.ts` / `semantic-en.ts` 本身不含推理运行时，但保持同一处引入更好读。
+    // 动态引入：`src/embedding.ts` 会静态拉入 transformers，其它 CLI 子命令不该付这个启动成本。
     const { DIMENSIONS } = await import('../src/embedding-space');
     const { embeddingSpaceKey, RAW_PROTOCOL, SEMANTIC_EN_PROTOCOL } = await import('../src/semantic-en');
-    // 向量孤儿只认 raw-v1：它是本地可重算的那一腿（不需要 ACP 翻译）。
-    // semantic-en-v1 的向量不靠这里补——它依赖英文派生值先 ready，所以下面单独找
-    // "缺派生值"的 observation 并排 renormalize_observation，由 Worker 走 ACP 补译，
-    // 补完后那条 job 自己会排 embed。
+    // 向量孤儿只认 raw-v1：本地可重算、不需要 ACP 翻译。semantic-en-v1 依赖英文派生值先
+    // ready，所以下面单独排 renormalize_observation，补完后那条 job 自己会排 embed。
     const vector = {
       embeddingModel: embeddingSpaceKey(RAW_PROTOCOL),
       embeddingDimensions: DIMENSIONS,
@@ -1279,8 +1264,7 @@ async function repair() {
     const missingSemantic = mdb.findObservationsMissingSemanticText({
       protocol: SEMANTIC_EN_PROTOCOL,
     }).length;
-    // `failed` 不进重建队列（护栏两次拒绝过同一份内容），但必须显示出来，否则它就是
-    // 一个永远不会自愈、也没人知道的黑洞。
+    // `failed` 不进重建队列（护栏两次拒绝过同一份内容），但必须显示——否则是无人知晓的黑洞。
     const semanticStatus = mdb.countObservationSemanticTexts(SEMANTIC_EN_PROTOCOL);
 
     if (turns === 0 && observations === 0 && missingSemantic === 0) {
@@ -1333,13 +1317,10 @@ Commands:
 /**
  * Open the Web Viewer in the default browser (plan §6.1).
  *
- * The token travels in the URL FRAGMENT. A fragment is never sent to the server,
- * so it stays out of the Worker's access log and out of any Referer; the page then
- * moves it into that tab's `sessionStorage` and rewrites the URL. A query
- * parameter would have put a live credential into browser history.
- *
- * The Viewer opens on all workspaces by default. The user can narrow the feed
- * from the workspace selector after the page has authenticated.
+ * The token travels in the URL fragment, which is never sent to the server: it
+ * stays out of the Worker's access log and out of any Referer, and the page moves
+ * it into that tab's `sessionStorage`. A query parameter would put a live
+ * credential into browser history.
  */
 async function viewer() {
   if (!existsSync(join(DATA_DIR, 'config.json'))) {
@@ -1354,7 +1335,7 @@ async function viewer() {
   }
 
   // The running Worker's port, not the configured one: they differ while a config
-  // edit is waiting for a restart, and the Viewer has to reach the live process.
+  // edit waits for a restart, and the Viewer has to reach the live process.
   const portFile = join(DATA_DIR, '.worker.port');
   let port = 37778;
   try {
@@ -1381,8 +1362,8 @@ async function viewer() {
   const opener = process.platform === 'darwin' ? 'open' : 'xdg-open';
   const opened = spawnSync(opener, [url], { stdio: 'ignore' });
   if (opened.status !== 0) {
-    // No desktop session (SSH, headless): print the URL instead of failing. It
-    // carries a live token, so say so rather than logging it silently.
+    // No desktop session (SSH, headless): print the URL rather than fail. It carries
+    // a live token, so say so instead of printing it silently.
     console.log(`${ansi.warn('!')} ${m.viewerOpenManually}`);
     console.log(`   ${ansi.cyan(url)}`);
   }
