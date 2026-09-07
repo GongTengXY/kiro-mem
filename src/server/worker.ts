@@ -1186,6 +1186,8 @@ const compressor: MemoryCompressor = new ACPCompressor({
   minWarmRuntimes: config.compression.minWarmRuntimes,
   idleTtlMs: config.compression.idleTtlMs,
   timeoutMs: config.compression.timeoutMs,
+  // Handshake budget, separate from the per-prompt one.
+  startupTimeoutMs: config.compression.startupTimeoutMs,
   maxRetries: config.compression.maxRetries,
   onMetric: (kind) => db.recordAcpEvent(kind),
 });

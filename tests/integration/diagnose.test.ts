@@ -69,6 +69,40 @@ function isolatedHome(language: 'zh' | 'en' = 'en'): { home: string; dataDir: st
   return { home, dataDir };
 }
 
+/**
+ * The config section reports what the Worker will use, not what the file says.
+ * Echoing a value the loader already rejected sends the reader to debug the wrong
+ * thing: they see the number they typed and conclude it is in effect.
+ */
+describe('diagnose / config section', () => {
+  test('prints the handshake budget in effect, not the rejected one on disk', async () => {
+    const { home, dataDir } = isolatedHome('en');
+    writeFileSync(
+      join(dataDir, 'config.json'),
+      JSON.stringify({
+        language: 'en',
+        // Both unusable: the Worker runs on 30000 and 5000.
+        compression: { startupTimeoutMs: 0, timeoutMs: 250 },
+      }),
+    );
+
+    const out = await runDiagnose(home);
+    expect(out.exitCode).toBe(0);
+    expect(out.stdout).toMatch(/Handshake timeout \(ms\):\s+30000/);
+    expect(out.stdout).toMatch(/Compression timeout \(ms\):\s+5000/);
+  }, 20_000);
+
+  test('still renders the section when config.json cannot be parsed', async () => {
+    const { home, dataDir } = isolatedHome('en');
+    writeFileSync(join(dataDir, 'config.json'), '{ not json');
+
+    const out = await runDiagnose(home);
+    // In Chinese, because the language is read from that same unreadable file.
+    expect(out.exitCode).toBe(0);
+    expect(out.stdout).toContain('配置文件解析失败');
+  }, 20_000);
+});
+
 describe('diagnose / local auth', () => {
   test('reports a healthy auth chain, a rotated token and a missing token', async () => {
     const { home, dataDir } = isolatedHome();

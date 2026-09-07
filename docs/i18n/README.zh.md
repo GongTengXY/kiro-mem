@@ -210,6 +210,7 @@ Observation → 它的向量与语义归一化行 → 它的 FTS 条目 → 来�
     "minWarmRuntimes": 1,
     "idleTtlMs": 600000,
     "timeoutMs": 30000,
+    "startupTimeoutMs": 30000,
     "maxRetries": 2
   },
   "context": {
@@ -231,7 +232,8 @@ Observation → 它的向量与语义归一化行 → 它的 FTS 条目 → 来�
 - `compression.concurrency`：并行运行的 `kiro-cli acp` 进程数（默认 `3`）。这是对**进程数**的硬上限，而不只是对池内槽位的限制：正在关闭的 runtime 在其进程真正退出前仍占用配额，所以永远不会出现替补进程和尚未退出的旧进程并存。
 - `compression.minWarmRuntimes`：空闲回收永远不会动的 runtime 数量（默认 `1`，会被夹到 `[0, concurrency]`）。这是下限而不是目标——从未压缩过任何东西的 Worker 仍然是 0 个。设为 `0` 允许高峰过后池子完全清空，代价是下一次压缩要付 ACP 冷启动。
 - `compression.idleTtlMs`：runtime 释放后允许空闲多久才被回收（默认 `600000`，即 10 分钟；通过 `kiro-mem config` 修改时夹在 `[1000, 86400000]`）。**`0` 表示关闭空闲回收**，绝不表示"立即杀掉"。负数、`NaN` 和 `Infinity` 一律回退到默认值。
-- `compression.timeoutMs`：单次压缩超时（毫秒）。通过 `kiro-mem config` 修改时会限制在 `[5000, 60000]` 区间内（默认 `30000`）。
+- `compression.timeoutMs`：单次压缩超时（毫秒），夹在 `[5000, 60000]`（默认 `30000`）。0、负数、`NaN` 和非数字一律回退到默认值——这里没有"0 表示不限时"的语义，0ms 预算会让每次压缩在下一个 tick 就超时。
+- `compression.startupTimeoutMs`：ACP 握手预算（毫秒），覆盖 `initialize` 和紧随其后的 `session/new`，夹在 `[5000, 120000]`（默认 `30000`）。**和 `timeoutMs` 刻意分开**：握手等的是进程起来并完成协商（实测随后端冷热在 2 秒到 20 秒以上之间飘），压缩等的是模型写完摘要；共用一个预算时，调大到够压缩用会让真卡死的进程很久才被发现，调小到够握手用又会腰斩压缩。这不是吞吐参数而是**记忆质量**参数：握手预算不够时 `summarize_turn` 会失败，重试耗尽后那个 turn 被写成只有确定性证据的 `quality=fallback` Observation。与同结构的 `idleTtlMs` 相反，`0` 在这里**不表示关闭**，而是回退到默认值。
 - `compression.maxRetries`：JSON 修复重试次数，超出后降级为 `quality=fallback` 的 Observation（默认 `2`）。
 - `runtime.kiroHome`：压缩子 agent 使用的隔离 `KIRO_HOME`。空串时会回退到 `<dataDir>/kiro-runtime`，这是 `kiro-mem install` 默认布局。
 - `context.maxOutputBytes`：注入 Observation 索引的字节预算，保持在 `agentSpawn` 的 10KB 上限之下（默认 `8192`）。

@@ -93,6 +93,9 @@ export interface ACPRuntimeOptions {
   kiroCliPath?: string;
   kiroHome?: string;
   timeoutMs?: number;
+  /** Handshake budget (`initialize` + `session/new`), ms — not the model's
+   * writing time, which is `timeoutMs`. */
+  startupTimeoutMs?: number;
   maxOutputBytes?: number;
   agentName?: string;
 }

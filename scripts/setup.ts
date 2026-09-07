@@ -28,7 +28,12 @@ import { checkRuntimeHome } from '../src/acp/integrity';
 import { MemoryDB } from '../src/db';
 import { ensureLocalAuthToken, inspectLocalAuthToken, readLocalAuthToken } from '../src/auth-token';
 import { readCaptureMisses } from '../src/hooks/capture-log';
-import { resolveRuntimeHome } from '../src/config';
+import {
+  loadConfig,
+  resolveRuntimeHome,
+  sanitizeCompressionTimeoutMs,
+  sanitizeStartupTimeoutMs,
+} from '../src/config';
 import { PACKAGE_VERSION } from '../src/version';
 
 const HOME = process.env.HOME || '~';
@@ -183,6 +188,7 @@ interface BootstrapConfig {
     minWarmRuntimes: number;
     idleTtlMs: number;
     timeoutMs: number;
+    startupTimeoutMs: number;
     maxRetries: number;
   };
   context: {
@@ -204,6 +210,8 @@ function defaultConfig(language: Language): BootstrapConfig {
       minWarmRuntimes: 1,
       idleTtlMs: 600000,
       timeoutMs: 30000,
+      // Explicit for the same reason: an invisible knob never gets raised.
+      startupTimeoutMs: 30000,
       maxRetries: 2,
     },
     context: {
@@ -223,38 +231,37 @@ async function collectCompressionConfig(
   language: Language,
 ): Promise<BootstrapConfig> {
   const cm = t(language);
-  const concurrencyRaw = parseInt(await ask(rl, cm.compressionConcurrency, '3'));
-  const concurrency = Math.min(
-    10,
-    Math.max(1, isNaN(concurrencyRaw) ? 3 : concurrencyRaw),
+  // `Number`, not `parseInt`: `parseInt('30000abc')` is 30000, i.e. garbage
+  // accepted as clean. `ask()` fills in the empty line, so `Number('')` never runs.
+  const num = async (question: string, fallback: number): Promise<number> => {
+    const raw = Number(await ask(rl, question, String(fallback)));
+    return Number.isFinite(raw) ? raw : fallback;
+  };
+
+  const concurrency = Math.min(10, Math.max(1, Math.floor(await num(cm.compressionConcurrency, 3))));
+  // Same sanitizers the loader uses, so one answer cannot mean two things
+  // depending on which path it arrived by.
+  const timeoutMs = sanitizeCompressionTimeoutMs(await num(cm.compressionTimeoutMs, 30000));
+  const startupTimeoutMs = sanitizeStartupTimeoutMs(
+    await num(cm.compressionStartupTimeoutMs, 30000),
   );
-  const timeoutRaw = parseInt(await ask(rl, cm.compressionTimeoutMs, '30000'));
-  const timeoutMs = Math.min(
-    60000,
-    Math.max(5000, isNaN(timeoutRaw) ? 30000 : timeoutRaw),
-  );
-  const retriesRaw = parseInt(await ask(rl, cm.compressionMaxRetries, '2'));
-  const maxRetries = Math.min(
-    5,
-    Math.max(2, isNaN(retriesRaw) ? 2 : retriesRaw),
-  );
-  const warmRaw = parseInt(await ask(rl, cm.compressionMinWarmRuntimes, '1'));
+  const maxRetries = Math.min(5, Math.max(2, Math.floor(await num(cm.compressionMaxRetries, 2))));
   // Bounded by the concurrency just chosen: a higher floor would pin runtimes
   // that can never exist.
   const minWarmRuntimes = Math.min(
     concurrency,
-    Math.max(0, isNaN(warmRaw) ? 1 : warmRaw),
+    Math.max(0, Math.floor(await num(cm.compressionMinWarmRuntimes, 1))),
   );
-  const idleRaw = parseInt(await ask(rl, cm.compressionIdleTtlMs, '600000'));
+  const idleRaw = await num(cm.compressionIdleTtlMs, 600000);
   // Must not be clamped like the values above: 0 is a legal answer meaning "never
   // retire on idle", and raising it to the floor would give continuous recycling
-  // to someone who asked for none.
-  const idleTtlMs = idleRaw === 0
-    ? 0
-    : Math.min(86400000, Math.max(1000, isNaN(idleRaw) ? 600000 : idleRaw));
+  // to someone who asked for none. Neither timeout has that semantics.
+  const idleTtlMs = idleRaw === 0 ? 0 : Math.min(86400000, Math.max(1000, idleRaw));
 
   const cfg = defaultConfig(language);
-  cfg.compression = { concurrency, minWarmRuntimes, idleTtlMs, timeoutMs, maxRetries };
+  cfg.compression = {
+    concurrency, minWarmRuntimes, idleTtlMs, timeoutMs, startupTimeoutMs, maxRetries,
+  };
   return cfg;
 }
 
@@ -641,28 +648,35 @@ async function configCmd() {
   const r = current.runtime || {};
 
   if (showOnly) {
+    // `loadConfig()`, not the raw file: a rejected `idleTtlMs: 250` printed as 250
+    // while the pool ran on 1000, which reads as "my setting took effect".
+    const cfg = loadConfig();
+    const effective = cfg.compression;
     console.log(ansi.bold(m.currentConfig));
-    console.log(`  ${m.language}              ${ansi.cyan(current.language || 'zh')}`);
-    console.log(`  ${m.concurrencyLabel}        ${ansi.cyan(String(c.concurrency ?? 3))}`);
+    console.log(`  ${m.language}              ${ansi.cyan(cfg.language)}`);
+    console.log(`  ${m.concurrencyLabel}        ${ansi.cyan(String(effective.concurrency))}`);
     console.log(
-      `  ${m.timeoutLabel}    ${ansi.cyan(String(c.timeoutMs ?? 30000))}`,
+      `  ${m.timeoutLabel}    ${ansi.cyan(String(effective.timeoutMs))}`,
     );
-    console.log(`  ${m.maxRetriesLabel}     ${ansi.cyan(String(c.maxRetries ?? 2))}`);
     console.log(
-      `  ${m.minWarmLabel}      ${ansi.cyan(String(c.minWarmRuntimes ?? 1))}`,
+      `  ${m.startupTimeoutLabel}    ${ansi.cyan(String(effective.startupTimeoutMs))}`,
+    );
+    console.log(`  ${m.maxRetriesLabel}     ${ansi.cyan(String(effective.maxRetries))}`);
+    console.log(
+      `  ${m.minWarmLabel}      ${ansi.cyan(String(effective.minWarmRuntimes))}`,
     );
     console.log(
       `  ${m.idleTtlLabel}    ${
-        (c.idleTtlMs ?? 600000) === 0
+        effective.idleTtlMs === 0
           ? ansi.warn(m.idleTtlOff)
-          : ansi.cyan(String(c.idleTtlMs ?? 600000))
+          : ansi.cyan(String(effective.idleTtlMs))
       }`,
     );
     console.log(
-      `  ${m.runtimeHomeLabel}      ${ansi.cyan(resolveRuntimeHome(r.kiroHome, DATA_DIR))}`,
+      `  ${m.runtimeHomeLabel}      ${ansi.cyan(resolveRuntimeHome(cfg.runtime.kiroHome, DATA_DIR))}`,
     );
     console.log(
-      `  ${m.discoveryLabel}  ${current.retrieval?.semanticDiscovery === false ? ansi.warn('off (rollback)') : ansi.cyan('on')}`,
+      `  ${m.discoveryLabel}  ${cfg.retrieval.semanticDiscovery ? ansi.cyan('on') : ansi.warn('off (rollback)')}`,
     );
     return;
   }
@@ -712,8 +726,9 @@ async function configCmd() {
 async function diagnose() {
   const cjkWidth = (s: string) =>
     [...s].reduce((w, c) => w + (c.charCodeAt(0) > 0x7f ? 2 : 1), 0);
+  // At least one space, or a label wider than its column runs into the value.
   const padLabel = (s: string, width: number) =>
-    s + ' '.repeat(Math.max(0, width - cjkWidth(s)));
+    s + ' '.repeat(Math.max(1, width - cjkWidth(s)));
 
   console.log('');
   const title = m.diagTitle;
@@ -1015,6 +1030,16 @@ async function diagnose() {
   ) {
     process.stdout.write(`  ⏳ ${m.diagACPSmoke}...`);
     const runtimePath = resolve(SRC_DIR, 'acp/runtime.ts');
+    // The budget the Worker would use; a literal here answers a question nobody
+    // asked. A broken config falls back to the default rather than aborting —
+    // diagnose matters most when config.json is wrong.
+    const smokeStartupTimeoutMs = (() => {
+      try {
+        return loadConfig().compression.startupTimeoutMs;
+      } catch {
+        return sanitizeStartupTimeoutMs(undefined);
+      }
+    })();
     const smokeScript = `
 import { ACPRuntime } from ${JSON.stringify(runtimePath)};
 const rt = new ACPRuntime({
@@ -1022,6 +1047,7 @@ const rt = new ACPRuntime({
   kiroHome: ${JSON.stringify(RUNTIME_DIR)},
   agentName: ${JSON.stringify(COMPRESSOR_AGENT_NAME)},
   timeoutMs: 30000,
+  startupTimeoutMs: ${smokeStartupTimeoutMs},
   maxOutputBytes: 1024,
 });
 try {
@@ -1049,7 +1075,10 @@ try {
     const smokeResult = spawnSync('bun', ['-e', smokeScript], {
       cwd: DATA_DIR,
       stdio: 'pipe',
-      timeout: 45000,
+      // Twice the handshake budget (the script pays it for `initialize` and
+      // `session/new`) plus the prompt. The wall must never fire first: the old
+      // fixed 45s killed the child with empty stdout, printing reason `unknown`.
+      timeout: smokeStartupTimeoutMs * 2 + 60_000,
       env: {
         ...process.env,
         KIRO_MEMORY_DISABLE_HOOKS: '1',
@@ -1075,23 +1104,27 @@ try {
   );
   if (existsSync(configPath)) {
     try {
-      const cfg = JSON.parse(readFileSync(configPath, 'utf-8'));
-      const cc = cfg.compression || {};
-      const rr = cfg.runtime || {};
+      // In effect, not on disk: `startupTimeoutMs: 0` runs as 30000, and printing
+      // 0 would confirm a setting that never took effect.
+      const cfg = loadConfig();
+      const cc = cfg.compression;
       console.log(
-        `  ${padLabel(m.language, 14)}${ansi.cyan(cfg.language || 'zh')}`,
+        `  ${padLabel(m.language, 14)}${ansi.cyan(cfg.language)}`,
       );
       console.log(
-        `  ${padLabel(m.concurrencyLabel, 14)}${ansi.cyan(String(cc.concurrency ?? 3))}`,
+        `  ${padLabel(m.concurrencyLabel, 14)}${ansi.cyan(String(cc.concurrency))}`,
       );
       console.log(
-        `  ${padLabel(m.timeoutLabel, 14)}${ansi.cyan(String(cc.timeoutMs ?? 30000))}`,
+        `  ${padLabel(m.timeoutLabel, 14)}${ansi.cyan(String(cc.timeoutMs))}`,
       );
       console.log(
-        `  ${padLabel(m.maxRetriesLabel, 14)}${ansi.cyan(String(cc.maxRetries ?? 2))}`,
+        `  ${padLabel(m.startupTimeoutLabel, 14)}${ansi.cyan(String(cc.startupTimeoutMs))}`,
       );
       console.log(
-        `  ${padLabel(m.runtimeHomeLabel, 14)}${ansi.cyan(resolveRuntimeHome(rr.kiroHome, DATA_DIR))}`,
+        `  ${padLabel(m.maxRetriesLabel, 14)}${ansi.cyan(String(cc.maxRetries))}`,
+      );
+      console.log(
+        `  ${padLabel(m.runtimeHomeLabel, 14)}${ansi.cyan(resolveRuntimeHome(cfg.runtime.kiroHome, DATA_DIR))}`,
       );
     } catch {
       console.log(`  ${ansi.err('✗')} ${m.diagParseError}`);

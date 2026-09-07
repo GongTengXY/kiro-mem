@@ -46,7 +46,8 @@ function isolatedHome(config: Record<string, unknown>) {
 
 /**
  * Drives the interactive prompts. Answer order: language choice, then
- * concurrency, timeout, retries, minWarmRuntimes, idleTtlMs.
+ * concurrency, timeout, startup (handshake) timeout, retries, minWarmRuntimes,
+ * idleTtlMs.
  *
  * Answers are written one at a time on a pipe that stays OPEN. Handing the whole
  * script over as a single closed stdin does not work: readline consumes the first
@@ -126,7 +127,7 @@ describe('kiro-mem config write-back', () => {
     // English, then every field answered explicitly. Empty-line "accept the
     // default" is avoided on purpose — it makes the assertion depend on the
     // prompt's default rather than on what was written.
-    const run = await runConfig(home, ['2', '3', '30000', '2', '1', '600000']);
+    const run = await runConfig(home, ['2', '3', '30000', '45000', '2', '1', '600000']);
     expect(run.exitCode).toBe(0);
 
     const cfg = readConfig(dataDir);
@@ -135,6 +136,38 @@ describe('kiro-mem config write-back', () => {
     expect(cfg.language).toBe('en');
     expect(cfg.compression.minWarmRuntimes).toBe(1);
     expect(cfg.compression.idleTtlMs).toBe(600000);
+    // Not the default, so this also proves the answer reached disk rather than
+    // being written from `defaultConfig()`.
+    expect(cfg.compression.startupTimeoutMs).toBe(45000);
+  }, 20_000);
+
+  test('a handshake answer of 0 lands on the default, the same value the loader picks', async () => {
+    const { home, dataDir } = isolatedHome({
+      language: 'en',
+      compression: { concurrency: 3, timeoutMs: 30000, maxRetries: 2 },
+      runtime: { kiroHome: '' },
+    });
+
+    const run = await runConfig(home, ['2', '3', '30000', '0', '2', '1', '600000']);
+    expect(run.exitCode).toBe(0);
+
+    // 5000 would mean the form kept its own `Math.max(5000, …)` and disagreed with
+    // `loadConfig()`. Unlike `idleTtlMs`, 0 has no "off" reading here.
+    expect(readConfig(dataDir).compression.startupTimeoutMs).toBe(30000);
+  }, 20_000);
+
+  test('a trailing-garbage answer is rejected, not silently truncated', async () => {
+    const { home, dataDir } = isolatedHome({
+      language: 'en',
+      compression: { concurrency: 3, timeoutMs: 30000, maxRetries: 2 },
+      runtime: { kiroHome: '' },
+    });
+
+    const run = await runConfig(home, ['2', '3', '30000', '45000abc', '2', '1', '600000']);
+    expect(run.exitCode).toBe(0);
+
+    // `parseInt('45000abc')` is 45000, so this used to pass as a clean answer.
+    expect(readConfig(dataDir).compression.startupTimeoutMs).toBe(30000);
   }, 20_000);
 
   test('an explicit idleTtlMs of 0 is written as 0, not raised to the floor', async () => {
@@ -144,7 +177,7 @@ describe('kiro-mem config write-back', () => {
       runtime: { kiroHome: '' },
     });
 
-    const run = await runConfig(home, ['2', '3', '30000', '2', '1', '0']);
+    const run = await runConfig(home, ['2', '3', '30000', '30000', '2', '1', '0']);
     expect(run.exitCode).toBe(0);
 
     const cfg = readConfig(dataDir);
@@ -160,7 +193,7 @@ describe('kiro-mem config write-back', () => {
       runtime: { kiroHome: '' },
     });
 
-    const run = await runConfig(home, ['2', '3', '30000', '2', '1', '250']);
+    const run = await runConfig(home, ['2', '3', '30000', '30000', '2', '1', '250']);
     expect(run.exitCode).toBe(0);
     expect(readConfig(dataDir).compression.idleTtlMs).toBe(1000);
   }, 20_000);
@@ -173,7 +206,7 @@ describe('kiro-mem config write-back', () => {
     });
 
     // concurrency 1, then ask for 5 warm runtimes.
-    const run = await runConfig(home, ['2', '1', '30000', '2', '5', '600000']);
+    const run = await runConfig(home, ['2', '1', '30000', '30000', '2', '5', '600000']);
     expect(run.exitCode).toBe(0);
     const cfg = readConfig(dataDir);
     expect(cfg.compression.concurrency).toBe(1);
@@ -212,5 +245,35 @@ describe('kiro-mem config --show', () => {
     // switched off entirely.
     expect(show.stdout).toContain('Idle retire (ms):');
     expect(show.stdout).toContain('off');
+  }, 20_000);
+
+  test('reports the budgets in effect, not what the file says', async () => {
+    const { home } = isolatedHome({
+      language: 'en',
+      compression: {
+        concurrency: 2, maxRetries: 2, minWarmRuntimes: 1, idleTtlMs: 600000,
+        // Both rejected by the loader: the Worker runs on 5000 and 30000.
+        timeoutMs: 250,
+        startupTimeoutMs: 0,
+      },
+      runtime: { kiroHome: '' },
+    });
+    const show = await runConfig(home, [], ['config', '--show']);
+    expect(show.stdout).toMatch(/Compression timeout \(ms\):\s+5000/);
+    expect(show.stdout).toMatch(/Handshake timeout \(ms\):\s+30000/);
+  }, 20_000);
+
+  test('reports a rejected idle TTL as the value the pool will use', async () => {
+    const { home } = isolatedHome({
+      language: 'en',
+      compression: {
+        concurrency: 2, timeoutMs: 30000, maxRetries: 2,
+        // Under the floor: the pool runs on 1000.
+        minWarmRuntimes: 1, idleTtlMs: 250,
+      },
+      runtime: { kiroHome: '' },
+    });
+    const show = await runConfig(home, [], ['config', '--show']);
+    expect(show.stdout).toMatch(/Idle retire \(ms\):\s+1000/);
   }, 20_000);
 });
