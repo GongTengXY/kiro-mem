@@ -214,6 +214,7 @@ Edit `~/.kiro-mem/config.json`, or run `kiro-mem config` for interactive setup:
     "minWarmRuntimes": 1,
     "idleTtlMs": 600000,
     "timeoutMs": 30000,
+    "startupTimeoutMs": 30000,
     "maxRetries": 2
   },
   "context": {
@@ -235,7 +236,8 @@ Edit `~/.kiro-mem/config.json`, or run `kiro-mem config` for interactive setup:
 - `compression.concurrency`: number of parallel `kiro-cli acp` runtime processes (default `3`). This is a hard ceiling on **processes**, not just on pool slots: a runtime being shut down keeps its place in the budget until its process is actually gone, so a replacement is never started alongside it.
 - `compression.minWarmRuntimes`: how many runtimes idle reclamation may never take away (default `1`, clamped to `[0, concurrency]`). It is a floor, not a target — a Worker that has never compressed anything still holds zero. `0` lets the pool empty out completely between bursts, at the cost of an ACP cold start on the next turn.
 - `compression.idleTtlMs`: how long a released runtime may sit idle before it is retired (default `600000`, 10 minutes; clamped to `[1000, 86400000]` when set via `kiro-mem config`). **`0` turns idle reclamation off** — it never means "kill immediately". Negative, `NaN` and `Infinity` fall back to the default.
-- `compression.timeoutMs`: per-prompt timeout in milliseconds, clamped to `[5000, 60000]` when set via `kiro-mem config` (default `30000`).
+- `compression.timeoutMs`: per-prompt timeout in milliseconds, clamped to `[5000, 60000]` (default `30000`). 0, negatives, `NaN` and non-numbers fall back to the default — there is no "0 means unlimited" reading here, a 0ms budget times out on the next tick.
+- `compression.startupTimeoutMs`: ACP handshake budget in milliseconds, covering `initialize` and the `session/new` that follows it, clamped to `[5000, 120000]` (default `30000`). **Deliberately separate from `timeoutMs`**: the handshake waits for a process to come up and finish negotiation — measured between 2s and over 20s depending on how warm the backend is — while `timeoutMs` waits for the model to finish writing a summary. One shared budget forces a bad trade: large enough for compression means a genuinely hung process is detected late, small enough for the handshake halves the compression budget. This is a memory-**quality** setting rather than a throughput one — too small a handshake budget fails the `summarize_turn` job, and once its attempts run out the closed turn is written as a `quality=fallback` Observation carrying only deterministic evidence. Unlike the same-shaped `idleTtlMs`, `0` does **not** mean "off" here; it falls back to the default.
 - `compression.maxRetries`: how many JSON-repair retries to attempt before degrading to a `quality=fallback` Observation (default `2`).
 - `runtime.kiroHome`: isolated `KIRO_HOME` for the compressor sub-agent. Empty falls back to `<dataDir>/kiro-runtime`, which is the layout `kiro-mem install` lays down.
 - `context.maxOutputBytes`: byte budget for the injected Observation index, kept below the `agentSpawn` 10KB limit (default `8192`).

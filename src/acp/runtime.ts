@@ -61,6 +61,7 @@ export class ACPRuntime {
       kiroCliPath: opts.kiroCliPath ?? 'kiro-cli',
       kiroHome: opts.kiroHome ?? '',
       timeoutMs: opts.timeoutMs ?? 30000,
+      startupTimeoutMs: opts.startupTimeoutMs ?? 30000,
       maxOutputBytes: opts.maxOutputBytes ?? 16384,
       agentName: opts.agentName ?? '',
     };
@@ -107,11 +108,13 @@ export class ACPRuntime {
 
   async start(): Promise<InitializeResult> {
     this.client.start();
+    // Configurable, not a literal: cold starts were measured from ~2s to over 20s,
+    // and a handshake that loses the race costs the turn its summary.
     const result = await this.client.request('initialize', {
       protocolVersion: 1,
       clientCapabilities: {},
       clientInfo: { name: 'kiro-mem', version: PACKAGE_VERSION },
-    }, 15000) as InitializeResult;
+    }, this.opts.startupTimeoutMs) as InitializeResult;
     this.initialized = true;
     return result;
   }
@@ -123,7 +126,13 @@ export class ACPRuntime {
       cwd: cwd ?? process.cwd(),
       mcpServers: [],
     };
-    const result = await this.client.request('session/new', params, 20000) as SessionNewResult;
+    // Same budget as `initialize`: on a cold pool it lands right after it, so its
+    // own literal would just become the next ceiling.
+    const result = await this.client.request(
+      'session/new',
+      params,
+      this.opts.startupTimeoutMs,
+    ) as SessionNewResult;
     this.sessionId = result.sessionId;
     return result.sessionId;
   }

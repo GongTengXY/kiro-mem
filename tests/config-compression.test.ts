@@ -1,5 +1,6 @@
 /**
- * `compression.minWarmRuntimes` / `compression.idleTtlMs` validation.
+ * `compression` block validation: `minWarmRuntimes` / `idleTtlMs` (pool
+ * residency) and `timeoutMs` / `startupTimeoutMs` (the two ACP budgets).
  *
  * These two fields govern how many `kiro-cli acp` processes a long-running
  * Worker keeps resident, so a silently-mangled value is expensive in both
@@ -43,6 +44,8 @@ describe('compression pool config', () => {
     const c = withConfig({ language: 'zh', compression: { concurrency: 3, timeoutMs: 30000, maxRetries: 2 } });
     expect(c.minWarmRuntimes).toBe(1);
     expect(c.idleTtlMs).toBe(600000);
+    // The handshake budget is new in this round, so no existing config carries it.
+    expect(c.startupTimeoutMs).toBe(30000);
     // Untouched fields must survive the new sanitizers.
     expect(c.concurrency).toBe(3);
     expect(c.timeoutMs).toBe(30000);
@@ -98,5 +101,47 @@ describe('compression pool config', () => {
     expect(withConfig({ compression: { minWarmRuntimes: 'one' } }).minWarmRuntimes).toBe(1);
     // The fallback is still bounded by concurrency.
     expect(withConfig({ compression: { concurrency: 0, minWarmRuntimes: null } }).minWarmRuntimes).toBe(0);
+  });
+});
+
+/**
+ * The two ACP timeouts. Both are memory-QUALITY settings rather than throughput
+ * ones: a handshake budget too small for a cold `kiro-cli acp` fails
+ * `summarize_turn`, and once its attempts run out the turn is written as
+ * `quality=fallback`. Neither has the "off" semantics `idleTtlMs` above has.
+ */
+describe('compression timeout budgets', () => {
+  test('a handshake budget of 0 falls back to the default instead of meaning "off"', () => {
+    // The opposite of `idleTtlMs: 0`: a 0ms budget fails every cold start.
+    expect(withConfig({ compression: { startupTimeoutMs: 0 } }).startupTimeoutMs).toBe(30000);
+    expect(withConfig({ compression: { timeoutMs: 0 } }).timeoutMs).toBe(30000);
+  });
+
+  test('unusable budgets fall back to the default', () => {
+    for (const bad of [-1, null, '30000', Number.POSITIVE_INFINITY, Number.NaN]) {
+      expect(withConfig({ compression: { startupTimeoutMs: bad } }).startupTimeoutMs).toBe(30000);
+      expect(withConfig({ compression: { timeoutMs: bad } }).timeoutMs).toBe(30000);
+    }
+  });
+
+  test('a positive handshake budget is clamped to [5000, 120000]', () => {
+    expect(withConfig({ compression: { startupTimeoutMs: 1000 } }).startupTimeoutMs).toBe(5000);
+    expect(withConfig({ compression: { startupTimeoutMs: 999_999 } }).startupTimeoutMs).toBe(120_000);
+    // The value this round exists to make reachable: 15s was not enough.
+    expect(withConfig({ compression: { startupTimeoutMs: 60_000 } }).startupTimeoutMs).toBe(60_000);
+  });
+
+  test('a positive per-prompt budget keeps its own, narrower bounds', () => {
+    // Deliberately not the handshake's ceiling: 120s would hold a pool slot for
+    // two minutes per turn.
+    expect(withConfig({ compression: { timeoutMs: 250 } }).timeoutMs).toBe(5000);
+    expect(withConfig({ compression: { timeoutMs: 999_999 } }).timeoutMs).toBe(60_000);
+    expect(withConfig({ compression: { timeoutMs: 45_000 } }).timeoutMs).toBe(45_000);
+  });
+
+  test('the two budgets are independent', () => {
+    const c = withConfig({ compression: { timeoutMs: 45_000, startupTimeoutMs: 90_000 } });
+    expect(c.timeoutMs).toBe(45_000);
+    expect(c.startupTimeoutMs).toBe(90_000);
   });
 });

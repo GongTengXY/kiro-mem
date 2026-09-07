@@ -17,6 +17,13 @@ export interface Config {
     idleTtlMs: number;
     /** Per-prompt timeout for the ACP runtime, in milliseconds. */
     timeoutMs: number;
+    /**
+     * ACP handshake timeout (`initialize` + `session/new`), in milliseconds.
+     * Separate from `timeoutMs` on purpose: this waits for a process to start and
+     * negotiate, that one waits for the model to write. One shared budget is a bad
+     * trade in both directions.
+     */
+    startupTimeoutMs: number;
     /** Maximum repair retries when the model returns invalid JSON. */
     maxRetries: number;
   };
@@ -54,6 +61,7 @@ const defaults: Config = {
     minWarmRuntimes: 1,
     idleTtlMs: 600000,
     timeoutMs: 30000,
+    startupTimeoutMs: 30000,
     maxRetries: 2,
   },
   context: {
@@ -124,6 +132,40 @@ function sanitizeMinWarmRuntimes(value: unknown, concurrency: number): number {
   return Math.min(Math.floor(value), ceiling);
 }
 
+/** Handshake bounds: under 5s no cold start (measured from ~2s up) can use the
+ * budget; past 2min a hung process is indistinguishable from a slow one. */
+const MIN_CONFIG_STARTUP_TIMEOUT_MS = 5_000;
+const MAX_CONFIG_STARTUP_TIMEOUT_MS = 120_000;
+/** Per-prompt bounds, as the `kiro-mem config` form has always enforced them. */
+const MIN_CONFIG_TIMEOUT_MS = 5_000;
+const MAX_CONFIG_TIMEOUT_MS = 60_000;
+
+/**
+ * Unlike `idleTtlMs`, `0` has no "off" reading here — a 0ms budget fails every
+ * cold start — so it falls back to the default like NaN / negatives / non-numbers.
+ * Exported so the `kiro-mem config` form normalizes through this same function
+ * instead of a second clamp that disagrees with it.
+ */
+export function sanitizeStartupTimeoutMs(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return defaults.compression.startupTimeoutMs;
+  }
+  return Math.min(
+    MAX_CONFIG_STARTUP_TIMEOUT_MS,
+    Math.max(MIN_CONFIG_STARTUP_TIMEOUT_MS, value),
+  );
+}
+
+/** Same rules as the handshake budget, narrower bounds. `0` used to reach the pool
+ * untouched (`??` guards only null/undefined) and reject on the next tick,
+ * degrading every turn to `quality=fallback`. */
+export function sanitizeCompressionTimeoutMs(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return defaults.compression.timeoutMs;
+  }
+  return Math.min(MAX_CONFIG_TIMEOUT_MS, Math.max(MIN_CONFIG_TIMEOUT_MS, value));
+}
+
 export function loadConfig(): Config {
   const configPath = join(getDataDir(), 'config.json');
   if (!existsSync(configPath)) return defaults;
@@ -145,7 +187,8 @@ export function loadConfig(): Config {
           concurrency,
         ),
         idleTtlMs: sanitizeIdleTtlMs(raw.compression?.idleTtlMs),
-        timeoutMs: raw.compression?.timeoutMs ?? defaults.compression.timeoutMs,
+        timeoutMs: sanitizeCompressionTimeoutMs(raw.compression?.timeoutMs),
+        startupTimeoutMs: sanitizeStartupTimeoutMs(raw.compression?.startupTimeoutMs),
         maxRetries: raw.compression?.maxRetries ?? defaults.compression.maxRetries,
       };
     })(),

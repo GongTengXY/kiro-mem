@@ -77,6 +77,7 @@ export class ACPPool {
       kiroCliPath: opts.kiroCliPath ?? 'kiro-cli',
       kiroHome: opts.kiroHome ?? '',
       timeoutMs: opts.timeoutMs ?? 30000,
+      startupTimeoutMs: opts.startupTimeoutMs ?? 30000,
       maxOutputBytes: opts.maxOutputBytes ?? 16384,
       agentName: opts.agentName ?? '',
       concurrency,
@@ -91,6 +92,7 @@ export class ACPPool {
       kiroCliPath: this.opts.kiroCliPath,
       kiroHome: this.opts.kiroHome,
       timeoutMs: this.opts.timeoutMs,
+      startupTimeoutMs: this.opts.startupTimeoutMs,
       maxOutputBytes: this.opts.maxOutputBytes,
       agentName: this.opts.agentName,
     }));
